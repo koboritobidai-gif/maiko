@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>FDE特化型人材紹介事業 提案書</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "IPAPGothic", "IPAGothic", sans-serif;
+    color: #1a2332;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---- 表紙 ---- */
+  .cover {
+    height: 250mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 10px solid #0d3b66;
+    border-bottom: 3px solid #0d3b66;
+    padding: 0 8mm;
+  }
+  .cover .label {
+    color: #0d6e8c;
+    font-size: 11pt;
+    letter-spacing: 0.3em;
+    margin-bottom: 8mm;
+  }
+  .cover h1 {
+    font-size: 26pt;
+    line-height: 1.5;
+    margin: 0 0 6mm;
+    color: #0d3b66;
+  }
+  .cover .sub {
+    font-size: 13pt;
+    color: #33475b;
+    margin-bottom: 20mm;
+  }
+  .cover .meta { font-size: 10pt; color: #5a6b7d; }
+
+  h2 {
+    font-size: 15pt;
+    color: #0d3b66;
+    border-left: 6px solid #0d6e8c;
+    padding-left: 10px;
+    margin: 0 0 14px;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: #0d6e8c;
+    margin: 14px 0 5px;
+  }
+  p { margin: 6px 0; }
+  ul { margin: 6px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 10px 0;
+  }
+  th {
+    background: #0d3b66;
+    color: #fff;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: normal;
+  }
+  td {
+    border-bottom: 1px solid #cfd8e3;
+    padding: 5px 8px;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f2f6fa; }
+
+  .kpi-row { display: flex; gap: 10px; margin: 12px 0; }
+  .kpi {
+    flex: 1;
+    background: #eef4f9;
+    border-top: 4px solid #0d6e8c;
+    padding: 10px 12px;
+  }
+  .kpi .num { font-size: 17pt; color: #0d3b66; font-weight: bold; }
+  .kpi .cap { font-size: 8.5pt; color: #5a6b7d; line-height: 1.5; }
+
+  .callout {
+    background: #fdf3e7;
+    border-left: 5px solid #d97706;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .callout .ttl { color: #b45309; font-weight: bold; margin-bottom: 4px; }
+
+  .box {
+    background: #eef4f9;
+    border: 1px solid #c4d4e4;
+    padding: 10px 14px;
+    margin: 10px 0;
+  }
+  .small { font-size: 8.5pt; color: #5a6b7d; }
+  .footer-note { margin-top: 10px; font-size: 8pt; color: #8395a7; border-top: 1px solid #cfd8e3; padding-top: 4px; line-height: 1.5; }
+  .tag {
+    display: inline-block;
+    background: #0d6e8c;
+    color: #fff;
+    font-size: 8pt;
+    padding: 1px 8px;
+    border-radius: 8px;
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= 表紙 ================= -->
+<div class="page">
+  <div class="cover">
+    <div class="label">NEW BUSINESS PROPOSAL</div>
+    <h1>FDE（Forward Deployed Engineer）<br>特化型人材紹介事業のご提案</h1>
+    <div class="sub">― AI導入の「最後の1マイル」を担う人材市場で、先行者利益を獲る ―</div>
+    <div class="meta">
+      作成日：2026年7月16日<br>
+      区分：社内提案資料（新規事業）
+    </div>
+  </div>
+</div>
+
+<!-- ================= 1. エグゼクティブサマリー ================= -->
+<div class="page">
+  <h2>1. エグゼクティブサマリー</h2>
+  <p>FDE（フォワードデプロイドエンジニア）は、顧客企業の現場に入り込み、AIシステムの導入から定着までを一気通貫で担う職種です。Palantir発祥の役割が、生成AIブームで「AI導入のボトルネック＝実装・定着」が顕在化したことにより、2025〜2026年に採用ニーズが爆発しています。</p>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="num">+1,165%</div><div class="cap">FDE求人の前年比増加率（米国、Live Data Technologies調べ）</div></div>
+    <div class="kpi"><div class="num">95%</div><div class="cap">「測定可能な損益効果を出せない」企業AIパイロットの割合（MIT NANDA調査）。失敗の大半は導入起因</div></div>
+    <div class="kpi"><div class="num">800〜1,600万円</div><div class="cap">国内FDEの標準年収レンジ。外資は2,500万円超も</div></div>
+    <div class="kpi"><div class="num">約420万円</div><div class="cap">1成約あたり想定紹介手数料（年収1,200万円×35%）</div></div>
+  </div>
+
+  <h3>結論</h3>
+  <ul>
+    <li><b>参入の方向性は正しい。</b>高単価×急成長×候補者供給不足という、人材紹介にとって理想的な市場構造。</li>
+    <li><b>ただし営業ターゲットの見立てに1点修正が必要。</b>「AIに疎い社長」はFDEの<u>採用主ではなく、FDEが派遣される先（導入企業）</u>。フィーを払う顧客は、AIプロダクトを売る側の企業（AIスタートアップ・SaaS・大手SIer）であり、彼らはAIに精通している。営業戦略はここに合わせて再設計する（→第4章・第6章）。</li>
+    <li><b>勝ち筋は「候補者の目利きと供給」。</b>求人は増えているが「FDEが務まる人材」の見極めが難しく、企業側も選考基準が固まっていない。SES・コンサル・PdM出身者を「FDE候補」として発掘・翻訳できるエージェントには大きな価値がある。</li>
+  </ul>
+
+  <h3>本提案の構成</h3>
+  <table>
+    <tr><th style="width:22%">章</th><th>内容</th></tr>
+    <tr><td>2. 市場環境</td><td>FDEとは何か／なぜ今需要が急増しているか／国内の採用企業と年収相場</td></tr>
+    <tr><td>3. なぜ当社がやるべきか</td><td>人材紹介ビジネスとしての魅力度評価</td></tr>
+    <tr><td>4. 具体的アクション</td><td>90日で立ち上げる実行プラン（求人開拓・候補者開拓・ブランディング）</td></tr>
+    <tr><td>5. 収益モデル試算</td><td>初年度の売上シミュレーション</td></tr>
+    <tr><td>6. 課題とリスク</td><td>当初仮説の修正点を含む、正直なリスク評価と対策</td></tr>
+  </table>
+</div>
+
+<!-- ================= 2. 市場環境 ================= -->
+<div class="page">
+  <h2>2. 市場環境：FDEとは何か、なぜ今か</h2>
+
+  <h3>2-1. FDEの定義</h3>
+  <p>FDE（Forward Deployed Engineer）は、自社AIプロダクトを持つ企業に所属し、<b>顧客の現場に常駐・半常駐して</b>要件定義、カスタム実装（LLM連携、RAG構築、AIエージェント開発等）、業務への定着までを担うエンジニアです。「エンジニア×コンサル×カスタマーサクセス」のハイブリッド職で、データ分析企業Palantirが発祥です。</p>
+
+  <h3>2-2. なぜ需要が爆発しているのか</h3>
+  <ul>
+    <li><b>AI導入の失敗はモデルではなく「導入」で起きる。</b>MIT NANDAの調査では企業のAIパイロットの95%が損益に結びついておらず、その大半が導入・定着プロセスの失敗に起因。各社が「現場に入って動かし切る人材」を求め始めた。</li>
+    <li><b>大手が職種として制度化。</b>OpenAIはFDE専業の別会社「The Deployment Company」を設立（2026年5月）、AnthropicはBlackstone・Goldman Sachsと15億ドルのJVで金融顧客へのFDE常駐を開始。Salesforceは約1,000名のFDE体制を目標に掲げる。アクセンチュアもMicrosoftと共同でFDE専門組織を2026年に始動。</li>
+    <li><b>日本でも1年でゼロから立ち上がった。</b>国内公開求人は1年前のほぼゼロから急増中。FDE特化求人サイト「FDE Jobs」には既に70件超が掲載。</li>
+  </ul>
+
+  <h3>2-3. 国内の採用企業（＝当社の見込み顧客）</h3>
+  <table>
+    <tr><th style="width:26%">セグメント</th><th style="width:44%">企業例</th><th>特徴</th></tr>
+    <tr><td>外資AI・テック</td><td>OpenAI、Anthropic、Palantir、Salesforce、UiPath、Sierra</td><td>年収2,000万円超も。直接採用中心でエージェント経由の難易度は高い</td></tr>
+    <tr><td>国内AIスタートアップ</td><td>LayerX、AI Shift、テイラー、燈、ExaWizards、JDSC、Gen-AX（SB系）</td><td><b>最有望ターゲット。</b>採用力が採用意欲に追いつかず、外部支援ニーズ大</td></tr>
+    <tr><td>国内SaaS・大手</td><td>Sansan、マネーフォワード、ANDPAD、ソフトバンク（SB OAI Japan）、サイバーエージェント系</td><td>AIプロダクトの企業導入部隊としてFDE職を新設中</td></tr>
+    <tr><td>SIer・コンサル</td><td>アクセンチュア、マッキンゼー（QuantumBlack）、メンバーズ</td><td>FDE組織を大量採用する可能性。ボリュームゾーン</td></tr>
+  </table>
+
+  <h3>2-4. 年収相場（＝紹介手数料の源泉）</h3>
+  <table>
+    <tr><th>市場</th><th>年収レンジ</th><th>備考</th></tr>
+    <tr><td>国内（標準）</td><td>800〜1,600万円</td><td>SES・客先常駐SE（400〜700万円）とは明確に別水準</td></tr>
+    <tr><td>国内（外資・トップ）</td><td>1,000〜2,500万円</td><td>フロンティアAI企業の日本ポジション</td></tr>
+    <tr><td>米国（参考）</td><td>総報酬$180K〜$700K+</td><td>ミッドレベル中央値$385K。株式報酬比率が高い</td></tr>
+  </table>
+
+  <div class="box" style="page-break-inside: avoid;">
+    <b>ポイント：</b>候補者要件は意外に広く、「Pythonが書けるフルスタックエンジニア＋顧客折衝力」レベル。<b>「FDEになれるのに本人が気づいていない層」が国内に大量に存在する</b>――ここが人材紹介の介在価値です。
+  </div>
+</div>
+
+<!-- ================= 3. なぜ当社がやるべきか ================= -->
+<div class="page">
+  <h2>3. なぜ当社がやるべきか：事業としての魅力度</h2>
+
+  <table>
+    <tr><th style="width:24%">評価軸</th><th style="width:12%">評価</th><th>根拠</th></tr>
+    <tr><td>単価</td><td>◎</td><td>年収1,000万円級×手数料35%＝1件350〜500万円。ITエンジニア紹介の平均を大きく上回る</td></tr>
+    <tr><td>市場成長</td><td>◎</td><td>求人数が年率7〜11倍ペースで増加。今後2〜3年は拡大局面が続く公算</td></tr>
+    <tr><td>競合状況</td><td>○</td><td>Findy・ムービン・renue・FDE Jobs等が動き始めたが、<b>「FDE特化エージェント」としてブランドを確立した会社はまだない</b></td></tr>
+    <tr><td>介在価値</td><td>◎</td><td>職種定義が曖昧で、企業は要件を言語化できず、候補者は自分が該当すると気づかない。双方への「翻訳」が必要＝エージェントの出番</td></tr>
+    <tr><td>参入障壁の構築</td><td>○</td><td>候補者プールと成約実績を先に積んだ者が勝つ。先行者利益が効く市場</td></tr>
+    <tr><td>供給リスク</td><td>△</td><td>「即戦力FDE経験者」はほぼ存在しない。転換候補の発掘・育成が生命線（→第6章）</td></tr>
+  </table>
+
+  <h3>当社の勝ち筋：「FDE翻訳者」ポジション</h3>
+  <p>この市場のボトルネックは求人でも候補者の絶対数でもなく、<b>両者のマッチング精度</b>です。</p>
+  <ul>
+    <li><b>企業側の悩み：</b>「FDEを採りたいが、どんな経歴の人が務まるのか分からない。JDの書き方も選考方法も手探り」</li>
+    <li><b>候補者側の悩み：</b>「FDEという職種を知らない／自分がなれると思っていない／年収が跳ねることを知らない」</li>
+  </ul>
+  <p>両者の間に立ち、<b>「あなたの会社に必要なFDE像はこうです」「あなたの経歴はFDEとしてこう売れます」と翻訳できるエージェント</b>になることが、単なる求人横流しとの決定的な差別化になります。これは営業トークではなく、実際にJD設計支援・選考設計支援・キャリア転換支援という具体的サービスに落とせます（→第4章）。</p>
+</div>
+
+<!-- ================= 4. 具体的アクション ================= -->
+<div class="page">
+  <h2>4. 具体的アクション：90日立ち上げプラン</h2>
+
+  <h3><span class="tag">Phase 1</span>0〜30日：市場の解像度を上げ、商品を作る</h3>
+  <ul>
+    <li><b>求人の全数調査：</b>Indeed・Findy・FDE Jobs・各社採用ページから国内FDE求人（類似タイトル含む）を全件リスト化。※米国データでは同一職務が6種類以上のタイトルで募集されており、「FDE」の文字列検索だけでは市場の約1/3を取りこぼす。「AIソリューションエンジニア」「AI導入コンサルタント」「デプロイメントストラテジスト」等も含めて捕捉する。</li>
+    <li><b>採用企業10社にヒアリング：</b>「なぜFDEが必要か」「どんな経歴なら通るか」「選考で何を見るか」を直接聞く。この一次情報自体が営業資産になる。</li>
+    <li><b>FDE適性の「翻訳表」を作る：</b>SES出身・受託PM出身・コンサル出身・PdM出身・カスタマーサクセス出身それぞれについて「FDE求人にどう刺さるか」のレジュメ変換テンプレートを整備。</li>
+    <li><b>候補者ペルソナの確定：</b>第一ターゲットは「顧客折衝経験のある開発経験2年以上のエンジニア（現年収500〜800万円）」。年収が1.5〜2倍になる訴求が最も刺さる層。</li>
+  </ul>
+
+  <h3><span class="tag">Phase 2</span>31〜60日：候補者プールを作る</h3>
+  <ul>
+    <li><b>コンテンツで集める：</b>「FDEとは？年収と転職ロードマップ」記事・診断コンテンツ（「あなたのFDE適性診断」）を公開し、検索・SNS経由で登録を獲得。FDEはまだ検索ボリュームが小さく、良質な日本語コンテンツが少ないため上位表示を狙いやすい。</li>
+    <li><b>スカウトで攻める：</b>ビズリーチ・LinkedIn・Findy等で「SES/受託でAI案件経験あり×顧客折衝あり」の条件で直接スカウト。「FDEという選択肢をご存知ですか」という切り口は開封率が高い（本人が知らない高年収職種の提示）。</li>
+    <li><b>ミニ勉強会の開催：</b>「FDEキャリア入門」ウェビナーを月1回開催。現役FDE（成約者や知人）を1人ゲストに呼べれば信頼性が跳ねる。</li>
+  </ul>
+
+  <h3><span class="tag">Phase 3</span>61〜90日：企業開拓と初成約</h3>
+  <ul>
+    <li><b>最有望セグメントから攻める：</b>国内AIスタートアップ（LayerX、JDSC、Gen-AX、テイラー等）と、FDE組織を立ち上げ中のSIer。「FDE候補者を◯名プールしています」という具体的な玉付き営業が最強。</li>
+    <li><b>採用支援パッケージで差別化：</b>単なる紹介ではなく「FDEのJD設計＋選考基準設計＋候補者紹介」のセットで提案。要件が固まっていない企業ほど喜ばれ、他社エージェントを排除できる。</li>
+    <li><b>準FDE求人も扱う：</b>純粋なFDE求人だけでは初期は数が足りない。AI導入コンサル、AIソリューションアーキテクト等の隣接求人も扱い、キャッシュフローを作りながらFDE特化ブランドを育てる。</li>
+    <li><b>初成約の実績化：</b>最初の1〜2件は手数料率を下げてでも決め、事例（企業インタビュー・候補者インタビュー）としてコンテンツ化する。</li>
+  </ul>
+
+  <div class="box">
+    <b>営業リストの初手（優先順）：</b>①FDE Jobs・Findy掲載中の国内企業（今まさに採用中＝確度最高）　②直近でAI事業の資金調達をしたスタートアップ　③「FDE組織立ち上げ」を発表したSIer・コンサル　④外資AI企業の日本法人（難易度高いが単価最高）
+  </div>
+</div>
+
+<!-- ================= 5. 収益モデル ================= -->
+<div class="page">
+  <h2>5. 収益モデル試算（初年度）</h2>
+
+  <table>
+    <tr><th>項目</th><th>保守ケース</th><th>標準ケース</th><th>強気ケース</th></tr>
+    <tr><td>成約数（年間）</td><td>4件</td><td>8件</td><td>15件</td></tr>
+    <tr><td>平均決定年収</td><td>1,000万円</td><td>1,200万円</td><td>1,300万円</td></tr>
+    <tr><td>手数料率</td><td>32%</td><td>35%</td><td>35%</td></tr>
+    <tr><td><b>売上</b></td><td><b>1,280万円</b></td><td><b>3,360万円</b></td><td><b>6,825万円</b></td></tr>
+  </table>
+  <p class="small">※隣接職種（AI導入コンサル等）の成約を含む。専任1〜2名体制を想定。ITエンジニア紹介の一般的な成約ペース（コンサルタント1人あたり月0.5〜1件）に対し、立ち上げ期の学習コストを織り込んで保守的に設定。</p>
+
+  <h3>ユニットエコノミクスが良い理由</h3>
+  <ul>
+    <li><b>1件あたり単価が通常のIT紹介の1.5〜2倍。</b>同じ工数でも売上が跳ねる。</li>
+    <li><b>候補者のリピート・リファラルが期待できる。</b>FDEコミュニティは狭く、良い転職体験は横に伝播する。</li>
+    <li><b>企業側もリピートする。</b>FDEは1名では済まない職種（チームで増員していく）。1社開拓すれば複数成約が見込める。Salesforceの「1,000名体制」構想が象徴的。</li>
+  </ul>
+</div>
+
+<!-- ================= 6. 課題とリスク ================= -->
+<div class="page">
+  <h2>6. 課題とリスク（正直な評価）</h2>
+
+  <div class="callout">
+    <div class="ttl">【最重要】当初仮説の修正：「AIに疎い社長に提案しやすい」は営業戦略として成立しない</div>
+    <p>FDEを<b>雇用して給料を払う</b>のは、AIプロダクトを「売る側」の企業（AIスタートアップ、SaaS、SIer）です。彼らの経営者・採用責任者はAIに精通しており、専門性の低い提案は一発で見抜かれるリスクがあります。一方、「AIに疎い社長」の会社は<b>FDEが常駐しにいく先（導入企業）</b>であり、FDE求人を出す側ではありません。</p>
+    <p><b>ただし、この着眼は捨てなくてよい。</b>形を変えれば活きます：①導入企業側の「AI人材の社内窓口（AI推進担当）」採用支援という商品にする、②「AIに疎い経営者向けAI人材セミナー」を開き、そこから採用ニーズを拾う。つまり<b>「疎い社長」はFDE紹介の顧客ではなく、隣接商品の顧客</b>と再定義します。</p>
+  </div>
+
+  <table>
+    <tr><th style="width:30%">課題・リスク</th><th style="width:12%">深刻度</th><th>対策</th></tr>
+    <tr><td>①候補者供給の細さ。「FDE経験者」はほぼ市場に存在しない</td><td>高</td><td>経験者ではなく「転換候補」を売る前提で設計。翻訳表（4章）とキャリア面談で候補者を作り出す</td></tr>
+    <tr><td>②目利きの難易度。技術と対人の両方を評価する必要があり、ミスマッチ時の返金リスクが高い</td><td>高</td><td>採用企業ヒアリングで選考基準を先に学ぶ。技術顧問（現役エンジニア）を1名確保し、レジュメ・スキルの一次スクリーニングを依頼</td></tr>
+    <tr><td>③外資トップ企業はエージェントを使わない傾向。最高単価ゾーンに入れない可能性</td><td>中</td><td>初期は国内スタートアップ・SIerに集中。外資は候補者側の実績を積んでから接点を作る</td></tr>
+    <tr><td>④職種名の揺れ。「FDE」表記の求人だけ追うと市場の1/3を逃す</td><td>中</td><td>類似タイトル（AIソリューションエンジニア等）を含む捕捉リストを運用（4章 Phase1）</td></tr>
+    <tr><td>⑤競合の参入。Findy・ムービン・renue・FDE Jobs等が既にコンテンツを展開</td><td>中</td><td>大手は「特化」しきれない。特化ブランド＋採用支援パッケージ＋90日でのスピード立ち上げで先行</td></tr>
+    <tr><td>⑥ブームの反動。「FDE」という名称自体が数年で別の名称に置き換わる可能性</td><td>低〜中</td><td>本質は「AI導入・定着人材」の紹介。名称に依存しない候補者プールと企業リレーションを資産化する</td></tr>
+    <tr><td>⑦社内リソース。既存事業と兼務では立ち上がらない</td><td>中</td><td>最低1名の専任＋技術理解のあるメンバーのサポート体制を確保する</td></tr>
+  </table>
+
+  <h3>Go / No-Go の判断基準（90日後）</h3>
+  <ul>
+    <li>FDE候補者プール：<b>50名以上</b>（面談済み・転職意向あり）</li>
+    <li>取引企業（求人票保有）：<b>8社以上</b></li>
+    <li>成約：<b>1件以上</b>（または最終面接進行中3件以上）</li>
+  </ul>
+  <p>これを満たせば専任増員して本格化、未達なら隣接職種（AI人材全般）への軸足移動を判断します。</p>
+
+  <div class="footer-note">
+    主な参照情報：Live Data Technologies（FDE求人 前年比+1,165%）／MIT NANDA調査（AIパイロットの95%が損益効果なし）／Perspective AI「2026 FDE Compensation Report」／Paraform「FDE需要調査」／国内：Findy FDE特集（2026年3月）、FDE Jobs（fde-jobs.jp）、ムービン・renue・TechLabs各社のFDE解説記事、Indeed求人データ。数値は2026年7月時点の公開情報に基づく概算です。
+  </div>
+</div>
+
+</body>
+</html>
