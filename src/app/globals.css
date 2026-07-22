@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy: #16233f;
+  --color-navy-light: #23345a;
+  --color-cream: #faf8f4;
+  --color-card: #ffffff;
+  --color-border: #e6e0d4;
+  --color-gold: #b08d3e;
+  --color-gold-light: #cba959;
+  --color-text: #232323;
+  --color-text-muted: #6b6459;
+  --color-good: #2f7d4f;
+  --color-warn: #b9832a;
+  --color-bad: #b8412f;
+}
+
+:root[data-theme="dark"] {
+  --color-navy: #101a30;
+  --color-navy-light: #1c2c4d;
+  --color-cream: #14161c;
+  --color-card: #1d2029;
+  --color-border: #33384a;
+  --color-gold: #cba959;
+  --color-gold-light: #ddc07f;
+  --color-text: #f1efe9;
+  --color-text-muted: #a7a396;
+  --color-good: #57c481;
+  --color-warn: #e0a94a;
+  --color-bad: #e56c56;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-navy: #101a30;
+    --color-navy-light: #1c2c4d;
+    --color-cream: #14161c;
+    --color-card: #1d2029;
+    --color-border: #33384a;
+    --color-gold: #cba959;
+    --color-gold-light: #ddc07f;
+    --color-text: #f1efe9;
+    --color-text-muted: #a7a396;
+    --color-good: #57c481;
+    --color-warn: #e0a94a;
+    --color-bad: #e56c56;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-text);
+  font-family: var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic",
+    "Meiryo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-cream);
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 480px;
+    box-shadow: 0 0 0 1px var(--color-border);
+    min-height: 100vh;
+  }
+  body {
+    background: var(--color-navy);
+  }
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-gold) 14%, transparent);
+  color: var(--color-gold);
+  border: 1px solid color-mix(in srgb, var(--color-gold) 40%, transparent);
+  white-space: nowrap;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
