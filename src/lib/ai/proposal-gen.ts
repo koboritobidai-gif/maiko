@@ -8,9 +8,8 @@
  * 使えない・応答の形が不正な場合はテンプレートベース生成にフォールバックする。
  */
 import { askClaude } from "./client";
-import { candidates } from "@/lib/demo-data";
+import { CA_MEMBER_ID, candidates } from "@/lib/demo-data";
 import { getBranchById, getMemberById } from "@/lib/metrics";
-import { CA_MEMBER_ID } from "@/lib/demo-data";
 import { FEE_RATE } from "@/lib/types";
 
 export type AgeBand = "20代" | "30代" | "40代" | "50代以上";

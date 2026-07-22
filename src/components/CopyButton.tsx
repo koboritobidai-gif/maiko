@@ -53,20 +53,13 @@ export default function CopyButton({
     <button
       type="button"
       onClick={handleClick}
-      className={
-        className ??
-        "rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors"
-      }
-      style={
-        className
-          ? undefined
-          : {
-              background: copied
-                ? "color-mix(in srgb, var(--color-good) 16%, transparent)"
-                : "color-mix(in srgb, var(--color-navy) 8%, transparent)",
-              color: copied ? "var(--color-good)" : "var(--color-navy)",
-            }
-      }
+      className={`transition-colors ${className ?? "rounded-full px-3 py-1.5 text-[11px] font-medium"}`}
+      style={{
+        background: copied
+          ? "color-mix(in srgb, var(--color-good) 16%, transparent)"
+          : "color-mix(in srgb, var(--color-navy) 8%, transparent)",
+        color: copied ? "var(--color-good)" : "var(--color-navy)",
+      }}
     >
       {copied ? copiedLabel : label}
     </button>
