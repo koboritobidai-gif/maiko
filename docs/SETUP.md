@@ -43,17 +43,91 @@ Tobidai Cockpit はデフォルト(`DATA_MODE` 未設定 or `demo`)ではデモ�
 
 ### 1-5. 環境変数の設定
 
-1. ダウンロードした JSON ファイルをテキストエディタで開き、中身を1行の文字列としてコピーします。
-2. `.env.local` に以下を設定します(値は実際のものに置き換えてください)。
+#### `.env.local` とは
+
+アプリに「秘密の設定値」を渡すためのテキストファイルです。
+
+- 置き場所: **プロジェクトの一番上のフォルダ**(`package.json` と同じ場所)
+- ファイル名: `.env.local`(先頭のドットまで含めて正確にこの名前。拡張子はありません)
+- 作り方: 同じ場所にある見本ファイル `.env.example` をコピーして作るのが簡単です
+
+  ```bash
+  cp .env.example .env.local
+  ```
+
+  エクスプローラー/Finder 上でコピーして「.env.local」にリネームしても同じです
+  (Windows のメモ帳で保存する場合、「.env.local.txt」にならないよう注意)。
+- 中身は「変数名=値」を1行ずつ書く形式です。`=` の前後にスペースは入れません。値を囲む引用符も不要です。
+- このファイルは `.gitignore` により **git には保存されません**(秘密情報を誤って公開しないため)。
+
+#### 手順(おすすめ: 鍵ファイルをそのまま置く方法)
+
+1-3-6 でダウンロードした JSON ファイル(`プロジェクト名-xxxxxx.json` のような名前)を使います。
+**ファイルを開いて中身をコピーする必要はありません。**
+
+1. ダウンロードした JSON ファイルを、プロジェクトの一番上のフォルダ(`package.json` と同じ場所)に移動し、
+   ファイル名を `service-account.json` に変更します。
+   (この名前のファイルは `.gitignore` 済みなので、git に誤って入る心配はありません)
+2. `.env.local` に以下の3行を書きます。
 
    ```
    DATA_MODE=live
-   GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n", ...}
-   SHEET_ID=1AbCdEfGhIjKlMnOpQrStUvWxYz...
+   GOOGLE_SERVICE_ACCOUNT_FILE=./service-account.json
+   SHEET_ID=(1-4-3で控えたシートID)
    ```
 
-   `private_key` 内の改行は、JSONファイルそのままの `\n` エスケープ表記でも、実際の改行でもどちらでも
-   問題なく読み込めます。
+   - `DATA_MODE=live` … デモデータではなく実データ連携を使う、という切り替えスイッチです。
+   - `GOOGLE_SERVICE_ACCOUNT_FILE=./service-account.json` … 手順1で置いた鍵ファイルの場所です。
+     `./` は「プロジェクトの一番上のフォルダ」という意味なので、このままでOKです。
+   - `SHEET_ID=` … スプレッドシートを開いたときのURL
+     `https://docs.google.com/spreadsheets/d/1AbCd...XyZ/edit#gid=0`
+     のうち、**`/d/` と `/edit` に挟まれた部分**(例では `1AbCd...XyZ`)だけを貼り付けます。
+     URL全体を貼らないよう注意してください。
+
+   記入例(シートIDは架空のものです):
+
+   ```
+   DATA_MODE=live
+   GOOGLE_SERVICE_ACCOUNT_FILE=./service-account.json
+   SHEET_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+   ```
+
+3. 保存したら、開発サーバーを再起動します(起動中なら Ctrl+C で止めて `npm run dev` をやり直す)。
+   **`.env.local` の変更は再起動するまで反映されません。**
+
+#### 別法: JSONの中身を直接貼り付ける方法
+
+サーバーにファイルを置けないホスティング環境(Vercel など)では、こちらを使います。
+
+1. ダウンロードした JSON ファイルをテキストエディタ(メモ帳/テキストエディット等)で開きます。
+   中身は `{` で始まり `}` で終わる、`"type"`, `"project_id"`, `"private_key"`, `"client_email"` などが
+   並んだテキストです。
+2. **全選択(Ctrl+A / Cmd+A)してコピー**し、`GOOGLE_SERVICE_ACCOUNT_JSON=` の直後に貼り付けます。
+
+   ```
+   DATA_MODE=live
+   GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"tobidai-cockpit","private_key_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQ...(長い文字列)...\n-----END PRIVATE KEY-----\n","client_email":"tobidai-cockpit-reader@tobidai-cockpit.iam.gserviceaccount.com",...}
+   SHEET_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+   ```
+
+   - 注意点は1つだけ: **`{` から `}` までが `.env.local` 上で1行に収まっている**ことです。
+     ダウンロード直後のファイルは複数行に整形されていることが多いので、貼り付け後に
+     途中で改行されてしまっている場合は、行末で Delete を押して1行につなげてください。
+   - `private_key` の値の中にある `\n` という2文字(バックスラッシュ+n)は、**そのままにしてください**。
+     消したり実際の改行に直したりする必要はありません(どちらの形式でも読み込めますが、
+     そのままが一番安全です)。
+   - Vercel 等の管理画面から設定する場合は、環境変数 `GOOGLE_SERVICE_ACCOUNT_JSON` の値欄に
+     JSONファイルの中身をそのまま貼り付ければOKです(管理画面は複数行でも受け付けます)。
+
+#### うまくいかないとき(このステップ関連)
+
+| 症状 | 原因と対処 |
+|---|---|
+| バッジが「Sheets(デモ)」のまま | `DATA_MODE=live` が書かれていない/`.env.local` の場所・ファイル名が違う/サーバーを再起動していない |
+| 「GOOGLE_SERVICE_ACCOUNT_FILE のファイルを読み込めませんでした」 | パスの誤り。鍵ファイルが `package.json` と同じフォルダにあり、名前が `service-account.json` になっているか確認 |
+| 「JSON 解析に失敗しました」 | 貼り付けたJSONが途中で改行されて壊れている。1行につなげ直すか、おすすめのファイル方式に切り替える |
+| 「private_key で署名できませんでした」 | `private_key` の中身が欠けている(コピー漏れ)。ファイル方式に切り替えるのが確実 |
+| 認証は通るがデータが出ない | シートをサービスアカウントのメールに共有していない/`SHEET_ID` がURLの別の部分を貼っている |
 
 ---
 

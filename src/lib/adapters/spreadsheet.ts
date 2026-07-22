@@ -80,6 +80,33 @@ function base64url(input: Buffer | string): string {
     .replace(/=+$/, "");
 }
 
+/**
+ * サービスアカウント鍵JSONの取得元を解決する。
+ * `GOOGLE_SERVICE_ACCOUNT_FILE`(鍵ファイルへのパス。1行化不要でおすすめ)が設定されていれば
+ * そのファイルを読み込み、無ければ `GOOGLE_SERVICE_ACCOUNT_JSON`(JSON文字列)を使う。
+ */
+function resolveServiceAccountRaw(): string {
+  const filePath = process.env.GOOGLE_SERVICE_ACCOUNT_FILE;
+  if (filePath) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { readFileSync } = require("node:fs") as typeof import("node:fs");
+      return readFileSync(filePath, "utf8");
+    } catch {
+      throw new Error(
+        `GOOGLE_SERVICE_ACCOUNT_FILE のファイル(${filePath})を読み込めませんでした。パスが正しいか、ファイルが存在するか確認してください(プロジェクト直下に置いた場合は ./service-account.json のように指定します)。`,
+      );
+    }
+  }
+  const inlineJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!inlineJson) {
+    throw new Error(
+      "環境変数 GOOGLE_SERVICE_ACCOUNT_FILE(鍵ファイルのパス)または GOOGLE_SERVICE_ACCOUNT_JSON(鍵JSON文字列)のどちらかを設定してください。",
+    );
+  }
+  return inlineJson;
+}
+
 /** `GOOGLE_SERVICE_ACCOUNT_JSON`(鍵JSON文字列。private_key 内の改行は \n エスケープでも可)をパースする。 */
 function parseServiceAccountJson(raw: string): GoogleServiceAccountKey {
   let json: unknown;
@@ -138,10 +165,8 @@ async function getAccessToken(serviceAccountJson: string | undefined): Promise<s
   if (tokenCache && tokenCache.expiresAt > Date.now()) {
     return tokenCache.token;
   }
-  if (!serviceAccountJson) {
-    throw new Error("環境変数 GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。");
-  }
-  const key = parseServiceAccountJson(serviceAccountJson);
+  const raw = serviceAccountJson ?? resolveServiceAccountRaw();
+  const key = parseServiceAccountJson(raw);
   const jwt = buildSignedJwt(key);
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -566,7 +591,9 @@ export class GoogleSheetsSource implements SpreadsheetSource {
 export function getSpreadsheetSource(): SpreadsheetSource {
   if (process.env.DATA_MODE === "live") {
     return new GoogleSheetsSource({
-      serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+      // ファイル指定(GOOGLE_SERVICE_ACCOUNT_FILE)を優先するため、ここでは undefined のまま渡し
+      // トークン取得時に resolveServiceAccountRaw() で解決する
+      serviceAccountJson: undefined,
       sheetId: process.env.SHEET_ID,
     });
   }
