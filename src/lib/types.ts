@@ -8,7 +8,6 @@ export type Stage =
   | "新規登録"
   | "面談"
   | "企業提案"
-  | "書類選考"
   | "面接"
   | "内定"
   | "承諾"
@@ -20,7 +19,6 @@ export const PIPELINE_STAGES: Stage[] = [
   "新規登録",
   "面談",
   "企業提案",
-  "書類選考",
   "面接",
   "内定",
   "承諾",
@@ -33,28 +31,17 @@ export const ALL_STAGES: Stage[] = [...PIPELINE_STAGES, "辞退"];
 /** 紹介手数料率(理論年収に対する割合)。 */
 export const FEE_RATE = 0.35;
 
-/** 役割。 */
-export type Role = "CA" | "RA" | "管理";
+/** 役割。管理業務は代表に統合。 */
+export type Role = "代表" | "CA" | "RA";
 
-/** 拠点。 */
-export interface Branch {
-  id: string;
-  /** 拠点名(例: 東京本社) */
-  name: string;
-  /** 当該拠点の月次目標額(円) */
-  monthlyTargetAmount: number;
-}
-
-/** 社員(CA/RA/管理部門)。 */
+/** 社員(代表/CA/RA)。拠点概念は無く、個人単位で運用する。 */
 export interface Member {
   id: string;
   /** 氏名 */
   name: string;
   /** 役割 */
   role: Role;
-  /** 所属拠点 */
-  branchId: string;
-  /** 得意領域(業界・職種など) */
+  /** 得意領域(業界・職種・担当領域など) */
   specialty: string;
 }
 
@@ -65,8 +52,6 @@ export interface Candidate {
   name: string;
   /** 担当CA(Member.id) */
   caId: string;
-  /** 拠点(Branch.id) */
-  branchId: string;
   /** 選考ステージ */
   stage: Stage;
   /** 希望職種 */
@@ -92,8 +77,6 @@ export interface Placement {
   placedAt: Date;
   /** 手数料額(円) = 理論年収 × FEE_RATE */
   feeAmount: number;
-  /** 集計用: 拠点(Branch.id) */
-  branchId: string;
   /** 集計用: 担当CA(Member.id) */
   caId: string;
 }
@@ -133,6 +116,82 @@ export interface SlackPost {
   body: string;
 }
 
+// ─────────────────────────────────────────────
+// 週次KPI
+// ─────────────────────────────────────────────
+
+/** KPIの区分。求職者集客系 or 法人営業系。 */
+export type KpiCategory = "求職者" | "法人";
+
+/** 求職者(LINEファネル)系KPI項目。 */
+export type CandidateKpiKey =
+  | "PV数"
+  | "LINE登録人数"
+  | "面談予約数"
+  | "面談数"
+  | "1次〜最終前面接数"
+  | "最終面接数"
+  | "内定者数"
+  | "採用決定求職者数";
+
+/** 法人営業系KPI項目。 */
+export type CorporateKpiKey =
+  | "名刺交換数"
+  | "アポイント数(主権)"
+  | "アポイント数(非主権)"
+  | "アポイント数(外部)"
+  | "商談数(主権)"
+  | "商談数(非主権)"
+  | "商談数(外部)"
+  | "既存商談数(主権)"
+  | "既存商談数(非主権)"
+  | "契約数"
+  | "契約金額"
+  | "採用決定法人数";
+
+export const CANDIDATE_KPI_KEYS: CandidateKpiKey[] = [
+  "PV数",
+  "LINE登録人数",
+  "面談予約数",
+  "面談数",
+  "1次〜最終前面接数",
+  "最終面接数",
+  "内定者数",
+  "採用決定求職者数",
+];
+
+export const CORPORATE_KPI_KEYS: CorporateKpiKey[] = [
+  "名刺交換数",
+  "アポイント数(主権)",
+  "アポイント数(非主権)",
+  "アポイント数(外部)",
+  "商談数(主権)",
+  "商談数(非主権)",
+  "商談数(外部)",
+  "既存商談数(主権)",
+  "既存商談数(非主権)",
+  "契約数",
+  "契約金額",
+  "採用決定法人数",
+];
+
+/**
+ * 週次KPIレコード。毎週月曜に前週分を入力する運用(週次入力・月次集計)。
+ * 「契約金額」のみ単位が万円(その他の求人系KPIは全て件数・人数)。
+ */
+export interface WeeklyKpiRecord {
+  /** 対象週の月曜日(YYYY-MM-DD) */
+  weekStart: string;
+  /** 区分 */
+  category: KpiCategory;
+  /** 項目 */
+  key: CandidateKpiKey | CorporateKpiKey;
+  /** 値(「契約金額」のみ万円、他は件数・人数) */
+  value: number;
+  /** 入力担当者(氏名) */
+  owner: string;
+}
+
 /**
  * データ取得元の状態。
  * - live: 実連携(Google Sheets / Slack)から正常に取得できた
@@ -143,7 +202,7 @@ export type SourceStatus = "live" | "demo" | "live-error";
 
 /** システム設定(スプレッドシート「設定」タブ相当)。 */
 export interface Settings {
-  /** 紹介手数料率(理論年収に対する割合)。 */
+  /** 紹介手数料率(理論年収に対する割合)。成約の手数料自動計算に使用。 */
   feeRate: number;
 }
 
@@ -156,11 +215,12 @@ export interface Settings {
 export interface DataBundle {
   candidates: Candidate[];
   placements: Placement[];
-  branches: Branch[];
   projects: Project[];
   members: Member[];
   settings: Settings;
   slackPosts: SlackPost[];
+  /** 週次KPIレコード(直近数週間分)。 */
+  weeklyKpis: WeeklyKpiRecord[];
   /** スプレッドシート(Sheets)の取得ステータス。 */
   sourceStatus: SourceStatus;
   /** Slack の取得ステータス。 */

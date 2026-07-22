@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 interface KpiCardProps {
   label: string;
   value: string;
-  caption?: string;
+  caption?: ReactNode;
   accent?: boolean;
   sourceBadge?: ReactNode;
 }

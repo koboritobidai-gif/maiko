@@ -1,29 +1,40 @@
 /**
  * SpreadsheetSource アダプタ
- * 求職者・成約・拠点・プロジェクト・メンバー・設定のマスタデータを取得する抽象化層。
+ * 求職者・成約・プロジェクト・メンバー・設定・週次KPIのマスタデータを取得する抽象化層。
  * デモ段階は DemoSpreadsheetSource が demo-data.ts を返す。
- * 実連携は GoogleSheetsSource が Google Sheets の「設定/拠点/メンバー/求職者/成約/プロジェクト」
+ * 実連携は GoogleSheetsSource が Google Sheets の「設定/メンバー/求職者/成約/プロジェクト/週次KPI」
  * 6タブを Values API(batchGet)で読み取り、型へパースする(docs/SHEET_TEMPLATE.md 参照)。
  * googleapis 等の追加npm依存は使わず、node:crypto で RS256 JWT を組み立てて認証する。
  */
 import { createSign } from "node:crypto";
-import { ALL_STAGES, FEE_RATE } from "../types";
-import type { Branch, Candidate, Member, Placement, Project, Settings, Stage } from "../types";
+import { ALL_STAGES, CANDIDATE_KPI_KEYS, CORPORATE_KPI_KEYS, FEE_RATE } from "../types";
+import type {
+  Candidate,
+  CandidateKpiKey,
+  CorporateKpiKey,
+  KpiCategory,
+  Member,
+  Placement,
+  Project,
+  Settings,
+  Stage,
+  WeeklyKpiRecord,
+} from "../types";
 import {
-  branches,
   candidates,
   members,
   placements,
   projects,
+  weeklyKpis,
 } from "../demo-data";
 
 export interface SpreadsheetSource {
   getCandidates(): Promise<Candidate[]>;
   getPlacements(): Promise<Placement[]>;
-  getBranches(): Promise<Branch[]>;
   getProjects(): Promise<Project[]>;
   getMembers(): Promise<Member[]>;
   getSettings(): Promise<Settings>;
+  getWeeklyKpis(): Promise<WeeklyKpiRecord[]>;
 }
 
 /** デモ実装: demo-data.ts の内容をそのまま返す。 */
@@ -34,9 +45,6 @@ export class DemoSpreadsheetSource implements SpreadsheetSource {
   async getPlacements(): Promise<Placement[]> {
     return placements;
   }
-  async getBranches(): Promise<Branch[]> {
-    return branches;
-  }
   async getProjects(): Promise<Project[]> {
     return projects;
   }
@@ -45,6 +53,9 @@ export class DemoSpreadsheetSource implements SpreadsheetSource {
   }
   async getSettings(): Promise<Settings> {
     return { feeRate: FEE_RATE };
+  }
+  async getWeeklyKpis(): Promise<WeeklyKpiRecord[]> {
+    return weeklyKpis;
   }
 }
 
@@ -159,19 +170,19 @@ async function getAccessToken(serviceAccountJson: string | undefined): Promise<s
 // ─────────────────────────────────────────────
 
 const TAB_SETTINGS = "設定";
-const TAB_BRANCHES = "拠点";
 const TAB_MEMBERS = "メンバー";
 const TAB_CANDIDATES = "求職者";
 const TAB_PLACEMENTS = "成約";
 const TAB_PROJECTS = "プロジェクト";
+const TAB_WEEKLY_KPI = "週次KPI";
 
 const RANGES = [
   `${TAB_SETTINGS}!A:B`,
-  `${TAB_BRANCHES}!A:C`,
-  `${TAB_MEMBERS}!A:E`,
-  `${TAB_CANDIDATES}!A:I`,
-  `${TAB_PLACEMENTS}!A:H`,
+  `${TAB_MEMBERS}!A:D`,
+  `${TAB_CANDIDATES}!A:H`,
+  `${TAB_PLACEMENTS}!A:G`,
   `${TAB_PROJECTS}!A:G`,
+  `${TAB_WEEKLY_KPI}!A:E`,
 ];
 
 type SheetRow = unknown[];
@@ -271,7 +282,18 @@ function requireDate(row: SheetRow, index: number, field: string, tabName: strin
   return date;
 }
 
-const ROLE_VALUES = ["CA", "RA", "管理"] as const;
+/** 日付列の文字列(YYYY-MM-DD)をそのまま検証だけして返す(週次KPIの「週開始日」用)。 */
+function requireDateString(row: SheetRow, index: number, field: string, tabName: string, rowNumber: number): string {
+  const raw = cellToString(row[index]);
+  if (!DATE_RE.test(raw)) {
+    throw new SheetParseError(
+      `タブ「${tabName}」${rowNumber}行目: 「${field}」は YYYY-MM-DD 形式(月曜日)で入力してください(値: "${raw}")。`,
+    );
+  }
+  return raw;
+}
+
+const ROLE_VALUES = ["代表", "CA", "RA"] as const;
 
 function requireRole(row: SheetRow, index: number, tabName: string, rowNumber: number): Member["role"] {
   const raw = requireString(row, index, "役割", tabName, rowNumber);
@@ -305,6 +327,36 @@ function requireProjectStatus(row: SheetRow, index: number, tabName: string, row
   return raw as Project["status"];
 }
 
+const KPI_CATEGORY_VALUES: KpiCategory[] = ["求職者", "法人"];
+const ALL_KPI_KEYS: string[] = [...CANDIDATE_KPI_KEYS, ...CORPORATE_KPI_KEYS];
+
+function requireKpiCategory(row: SheetRow, index: number, tabName: string, rowNumber: number): KpiCategory {
+  const raw = requireString(row, index, "区分", tabName, rowNumber);
+  if (!(KPI_CATEGORY_VALUES as string[]).includes(raw)) {
+    throw new SheetParseError(
+      `タブ「${tabName}」${rowNumber}行目: 「区分」は ${KPI_CATEGORY_VALUES.join("/")} のいずれかで入力してください(値: "${raw}")。`,
+    );
+  }
+  return raw as KpiCategory;
+}
+
+function requireKpiKey(
+  row: SheetRow,
+  index: number,
+  category: KpiCategory,
+  tabName: string,
+  rowNumber: number,
+): CandidateKpiKey | CorporateKpiKey {
+  const raw = requireString(row, index, "項目", tabName, rowNumber);
+  const validKeys = category === "求職者" ? CANDIDATE_KPI_KEYS : CORPORATE_KPI_KEYS;
+  if (!(validKeys as string[]).includes(raw)) {
+    throw new SheetParseError(
+      `タブ「${tabName}」${rowNumber}行目: 区分「${category}」の「項目」は ${validKeys.join("/")} のいずれかで入力してください(値: "${raw}")。`,
+    );
+  }
+  return raw as CandidateKpiKey | CorporateKpiKey;
+}
+
 // ─────────────────────────────────────────────
 // 各タブのパース
 // ─────────────────────────────────────────────
@@ -330,26 +382,14 @@ function parseSettings(rows: SheetRow[]): Settings {
   return { feeRate };
 }
 
-function parseBranches(rows: SheetRow[]): Branch[] {
-  const result: Branch[] = [];
-  for (const { row, rowNumber } of dataRows(rows, TAB_BRANCHES)) {
-    const id = requireString(row, 0, "id", TAB_BRANCHES, rowNumber);
-    const name = requireString(row, 1, "拠点名", TAB_BRANCHES, rowNumber);
-    const targetMan = requireNumber(row, 2, "月次目標(万円)", TAB_BRANCHES, rowNumber);
-    result.push({ id, name, monthlyTargetAmount: Math.round(targetMan * 10000) });
-  }
-  return result;
-}
-
 function parseMembers(rows: SheetRow[]): Member[] {
   const result: Member[] = [];
   for (const { row, rowNumber } of dataRows(rows, TAB_MEMBERS)) {
     const id = requireString(row, 0, "id", TAB_MEMBERS, rowNumber);
     const name = requireString(row, 1, "氏名", TAB_MEMBERS, rowNumber);
     const role = requireRole(row, 2, TAB_MEMBERS, rowNumber);
-    const branchId = requireString(row, 3, "拠点id", TAB_MEMBERS, rowNumber);
-    const specialty = optionalString(row, 4);
-    result.push({ id, name, role, branchId, specialty });
+    const specialty = optionalString(row, 3);
+    result.push({ id, name, role, specialty });
   }
   return result;
 }
@@ -360,17 +400,15 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
     const id = requireString(row, 0, "id", TAB_CANDIDATES, rowNumber);
     const name = requireString(row, 1, "氏名", TAB_CANDIDATES, rowNumber);
     const caId = requireString(row, 2, "担当CAid", TAB_CANDIDATES, rowNumber);
-    const branchId = requireString(row, 3, "拠点id", TAB_CANDIDATES, rowNumber);
-    const stage = requireStage(row, 4, TAB_CANDIDATES, rowNumber);
-    const desiredRole = requireString(row, 5, "希望職種", TAB_CANDIDATES, rowNumber);
-    const incomeMan = requireNumber(row, 6, "理論年収(万円)", TAB_CANDIDATES, rowNumber);
-    const updatedAt = requireDate(row, 7, "更新日", TAB_CANDIDATES, rowNumber);
-    const latestNote = optionalString(row, 8);
+    const stage = requireStage(row, 3, TAB_CANDIDATES, rowNumber);
+    const desiredRole = requireString(row, 4, "希望職種", TAB_CANDIDATES, rowNumber);
+    const incomeMan = requireNumber(row, 5, "理論年収(万円)", TAB_CANDIDATES, rowNumber);
+    const updatedAt = requireDate(row, 6, "更新日", TAB_CANDIDATES, rowNumber);
+    const latestNote = optionalString(row, 7);
     result.push({
       id,
       name,
       caId,
-      branchId,
       stage,
       desiredRole,
       expectedAnnualIncome: Math.round(incomeMan * 10000),
@@ -391,15 +429,13 @@ function parsePlacements(rows: SheetRow[], feeRate: number): Placement[] {
     const incomeMan = requireNumber(row, 4, "理論年収(万円)", TAB_PLACEMENTS, rowNumber);
     const feeManInput = optionalNumber(row, 5);
     const feeMan = feeManInput ?? incomeMan * feeRate;
-    const branchId = requireString(row, 6, "拠点id", TAB_PLACEMENTS, rowNumber);
-    const caId = requireString(row, 7, "担当CAid", TAB_PLACEMENTS, rowNumber);
+    const caId = requireString(row, 6, "担当CAid", TAB_PLACEMENTS, rowNumber);
     result.push({
       id,
       candidateName,
       companyName,
       placedAt,
       feeAmount: Math.round(feeMan * 10000),
-      branchId,
       caId,
     });
   }
@@ -436,13 +472,29 @@ function parseProjects(rows: SheetRow[]): Project[] {
   return result;
 }
 
+function parseWeeklyKpis(rows: SheetRow[]): WeeklyKpiRecord[] {
+  const result: WeeklyKpiRecord[] = [];
+  for (const { row, rowNumber } of dataRows(rows, TAB_WEEKLY_KPI)) {
+    const weekStart = requireDateString(row, 0, "週開始日", TAB_WEEKLY_KPI, rowNumber);
+    const category = requireKpiCategory(row, 1, TAB_WEEKLY_KPI, rowNumber);
+    const key = requireKpiKey(row, 2, category, TAB_WEEKLY_KPI, rowNumber);
+    if (!ALL_KPI_KEYS.includes(key)) {
+      throw new SheetParseError(`タブ「${TAB_WEEKLY_KPI}」${rowNumber}行目: 「項目」が不正です(値: "${key}")。`);
+    }
+    const value = requireNumber(row, 3, "値", TAB_WEEKLY_KPI, rowNumber);
+    const owner = requireString(row, 4, "入力担当者", TAB_WEEKLY_KPI, rowNumber);
+    result.push({ weekStart, category, key, value, owner });
+  }
+  return result;
+}
+
 interface ParsedSheetData {
   settings: Settings;
-  branches: Branch[];
   members: Member[];
   candidates: Candidate[];
   placements: Placement[];
   projects: Project[];
+  weeklyKpis: WeeklyKpiRecord[];
 }
 
 /**
@@ -477,17 +529,17 @@ export class GoogleSheetsSource implements SpreadsheetSource {
       throw new Error("環境変数 SHEET_ID が設定されていません。");
     }
     const accessToken = await getAccessToken(this.config.serviceAccountJson);
-    const [settingsRows, branchRows, memberRows, candidateRows, placementRows, projectRows] =
+    const [settingsRows, memberRows, candidateRows, placementRows, projectRows, weeklyKpiRows] =
       await fetchAllTabs(this.config.sheetId, accessToken);
 
     const settings = parseSettings(settingsRows);
-    const branches = parseBranches(branchRows);
     const members = parseMembers(memberRows);
     const candidates = parseCandidates(candidateRows);
     const placements = parsePlacements(placementRows, settings.feeRate);
     const projects = parseProjects(projectRows);
+    const weeklyKpis = parseWeeklyKpis(weeklyKpiRows);
 
-    return { settings, branches, members, candidates, placements, projects };
+    return { settings, members, candidates, placements, projects, weeklyKpis };
   }
 
   async getCandidates(): Promise<Candidate[]> {
@@ -495,9 +547,6 @@ export class GoogleSheetsSource implements SpreadsheetSource {
   }
   async getPlacements(): Promise<Placement[]> {
     return (await this.ensureLoaded()).placements;
-  }
-  async getBranches(): Promise<Branch[]> {
-    return (await this.ensureLoaded()).branches;
   }
   async getProjects(): Promise<Project[]> {
     return (await this.ensureLoaded()).projects;
@@ -507,6 +556,9 @@ export class GoogleSheetsSource implements SpreadsheetSource {
   }
   async getSettings(): Promise<Settings> {
     return (await this.ensureLoaded()).settings;
+  }
+  async getWeeklyKpis(): Promise<WeeklyKpiRecord[]> {
+    return (await this.ensureLoaded()).weeklyKpis;
   }
 }
 

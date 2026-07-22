@@ -2,7 +2,7 @@
  * POST /api/deliver — 「届ける」の宛先提案・送信エンドポイント。
  * action: "suggest"(既定) | "send"
  *  - suggest: askClaude が使えれば宛先提案(JSON)を生成、不可/失敗なら deliver-router.ts の
- *    ルールベースにフォールバックする。DataBundle(実データ/デモデータ)のメンバー・拠点マスタを使用する。
+ *    ルールベースにフォールバックする。DataBundle(実データ/デモデータ)のメンバーマスタを使用する。
  *  - send: adapters/messenger.ts 経由で送信する(live: 実際にSlackへ投稿 / demo: デモ送信)。
  */
 import { NextResponse } from "next/server";
@@ -63,7 +63,7 @@ function parseClaudeSuggestion(raw: string, bodyText: string, bundle: DataBundle
         name: member.name,
         role: member.role,
         roleLabel: ROLE_LABELS[member.role],
-        branchName: bundle.branches.find((b) => b.id === member.branchId)?.name ?? member.branchId,
+        specialty: member.specialty,
         reason: typeof entry.reason === "string" && entry.reason ? entry.reason : "AIが関連性が高いと判断",
       });
     }

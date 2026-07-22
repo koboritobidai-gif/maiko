@@ -17,12 +17,12 @@ const ROLE_OPTIONS: {
   {
     role: "exec",
     title: "小堀社長(経営ビュー)",
-    description: "全社の数字・全拠点・全プロジェクトを俯瞰するビュー",
+    description: "全社の週次KPI・求職者パイプライン・全プロジェクトを俯瞰するビュー",
   },
   {
     role: "ca",
-    title: "高梨CA(現場ビュー)",
-    description: "自分の担当求職者・所属拠点を中心に見るビュー",
+    title: "佐藤CA(現場ビュー)",
+    description: "自分の担当求職者を中心に見るビュー",
   },
 ];
 

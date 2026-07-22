@@ -22,7 +22,7 @@ export default function DeliverMemberCard({ member }: { member: DeliverMemberSug
         </span>
       </div>
       <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-        {member.branchName}
+        {member.specialty}
       </p>
       <p className="text-[12px] leading-relaxed" style={{ color: "var(--color-text)" }}>
         {member.reason}

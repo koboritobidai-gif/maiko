@@ -17,11 +17,11 @@ interface ChatMessage {
 
 const SUGGESTIONS = [
   "今日の成約は?",
-  "月内の売上見込みは?",
+  "今月の面談数は?",
+  "LINE登録率は?",
+  "今月の契約金額は?",
   "遅れているプロジェクトは?",
-  "大阪拠点の状況は?",
   "選考中の求職者は?",
-  "高梨さんの担当求職者は?",
 ];
 
 const WELCOME_MESSAGE: ChatMessage = {

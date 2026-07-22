@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ロール選択(小堀社長 = exec / 高梨CA = ca)を localStorage に保持する軽量フック。
+ * ロール選択(小堀社長 = exec / 佐藤CA = ca)を localStorage に保持する軽量フック。
  * 設計書 4.0(ログイン/ロール選択)に対応。
  */
 import { useCallback, useEffect, useState } from "react";
@@ -21,7 +21,7 @@ export interface RoleProfile {
 
 const ROLE_PROFILES: Record<Role, RoleProfile> = {
   exec: { role: "exec", name: "小堀", memberId: EXEC_MEMBER_ID },
-  ca: { role: "ca", name: "高梨", memberId: CA_MEMBER_ID },
+  ca: { role: "ca", name: "佐藤", memberId: CA_MEMBER_ID },
 };
 
 export function getRoleProfile(role: Role): RoleProfile {

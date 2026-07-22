@@ -7,7 +7,7 @@
  * どちらの経路でも呼び出し元(api/meeting/route.ts)からは `generateMeetingResult` を呼ぶだけでよい。
  */
 import { askClaude } from "./client";
-import { findMemberByName, getBranchById } from "@/lib/metrics";
+import { findMemberByName } from "@/lib/metrics";
 import { PIPELINE_STAGES } from "@/lib/types";
 import type { DataBundle } from "@/lib/types";
 import type { MeetingKind } from "@/lib/demo-transcripts";
@@ -74,7 +74,7 @@ function extractHeaderField(transcript: string, label: string): string | null {
   return match[1].replace(/様\s*$/, "").trim();
 }
 
-/** 文字起こし冒頭の発言者名(例: 「高梨:」)から社内メンバーを推定する。 */
+/** 文字起こし冒頭の発言者名(例: 「今井:」)から社内メンバーを推定する。 */
 function extractSpeakerMember(transcript: string, bundle: DataBundle) {
   const attendee = extractHeaderField(transcript, "対応");
   const attendeeName = attendee?.split(/[(（]/)[0]?.trim();
@@ -119,7 +119,7 @@ const CORPORATE_KEYWORDS = {
   background: ["採用背景", "増員", "事業拡大", "欠員", "背景"],
   requirements: ["必須", "スキル", "経験", "年以上", "歓迎"],
   incomeRange: ["年収", "万円", "レンジ"],
-  process: ["選考", "面接", "書類選考", "一次", "最終", "内定"],
+  process: ["選考", "面接", "書類確認", "一次", "最終", "内定"],
   focus: ["重視", "懸念", "カルチャー", "協調性"],
 };
 
@@ -229,7 +229,6 @@ function generateCorporateDemo(transcript: string, bundle: DataBundle): MeetingR
   const companyField = extractHeaderField(transcript, "企業") ?? "対象企業";
   const speakerMember = extractSpeakerMember(transcript, bundle);
   const owner = speakerMember?.name ?? "担当RA";
-  const ownerBranch = speakerMember ? getBranchById(bundle.branches, speakerMember.branchId)?.name : undefined;
 
   const background = pickByKeywords(sentences, CORPORATE_KEYWORDS.background);
   const requirements = pickByKeywords(sentences, CORPORATE_KEYWORDS.requirements);
@@ -292,7 +291,7 @@ ${process[0] ? `選考フローについても「${process[0]}」の内容で認
 引き続きよろしくお願いいたします。
 
 株式会社翔び台
-${owner}${ownerBranch ? `(${ownerBranch})` : ""}`,
+${owner}`,
   };
 
   return { kind: "corporate", minutes, insight, actions, sheetUpdates, followUpEmail, source: "demo" };

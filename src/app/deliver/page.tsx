@@ -12,7 +12,7 @@ import type { SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
 
 const PLACEHOLDER_TEXT =
-  "例: 本日、IT企業様にてWebエンジニア職の内定承諾をいただきました。理論年収800万円、今月の東京拠点3件目の成約です。";
+  "例: 本日、IT企業様にてWebエンジニア職の内定承諾をいただきました。理論年収800万円、今月3件目の成約です。";
 
 export default function DeliverPage() {
   const { role } = useSession();

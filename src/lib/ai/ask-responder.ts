@@ -6,20 +6,22 @@
  */
 import { CA_MEMBER_ID, EXEC_MEMBER_ID } from "@/lib/demo-data";
 import {
-  getBranchById,
-  getBranchPerformance,
-  getCandidatesByBranch,
+  getCandidateFunnel,
   getCandidatesByCa,
+  getCorporateFunnel,
   getForecastRevenue,
+  getKpiTotalsByOwner,
   getMonthPlacements,
-  getMonthlyAchievement,
-  getPlacementsByBranch,
+  getMonthlyKpiTotal,
+  getPrimaryKpis,
+  getRecentWeeklyKpiTrend,
   getSortedProjects,
   getStagePipeline,
   getTodayPlacements,
+  getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { DataBundle, Member } from "@/lib/types";
+import type { CandidateKpiKey, CorporateKpiKey, DataBundle, Member } from "@/lib/types";
 
 export type AskRole = "exec" | "ca" | undefined;
 
@@ -40,22 +42,27 @@ function formatDate(date: Date): string {
 }
 
 export function buildAskSnapshot(bundle: DataBundle) {
-  const branchPerformance = getBranchPerformance(bundle.branches, bundle.placements);
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
+  const primary = getPrimaryKpis(bundle.weeklyKpis);
+  const candidateFunnel = getCandidateFunnel(bundle.weeklyKpis);
+  const corporateFunnel = getCorporateFunnel(bundle.weeklyKpis);
+  const weeklyTrend = getWeeklyTrendRows(bundle.weeklyKpis, 5);
 
   return {
     generatedAt: new Date().toISOString(),
     today: getTodayPlacements(bundle.placements),
     month: getMonthPlacements(bundle.placements),
-    achievement: getMonthlyAchievement(bundle.branches, bundle.placements),
     forecastRevenueYen: getForecastRevenue(bundle.candidates, bundle.settings.feeRate),
-    branches: branchPerformance.map((bp) => ({
-      name: bp.branch.name,
-      targetAmountYen: bp.targetAmount,
-      actualAmountYen: bp.actualAmount,
-      ratePercent: bp.rate,
-    })),
+    primaryKpisThisMonth: {
+      interviews: primary.interviews,
+      offers: primary.offers,
+      candidatePlacements: primary.candidatePlacements,
+      contractAmountMan: primary.contractAmountMan,
+    },
+    candidateFunnelThisMonth: candidateFunnel,
+    corporateFunnelThisMonth: corporateFunnel,
+    weeklyTrendRecent5Weeks: weeklyTrend,
     pipeline: pipeline.map((s) => ({ stage: s.stage, count: s.count })),
     withdrawnCount: getWithdrawnCount(bundle.candidates),
     projects: projectList.map((p) => ({
@@ -70,13 +77,11 @@ export function buildAskSnapshot(bundle: DataBundle) {
     members: bundle.members.map((m) => ({
       name: m.name,
       role: m.role,
-      branchName: getBranchById(bundle.branches, m.branchId)?.name ?? m.branchId,
       specialty: m.specialty,
     })),
     candidates: bundle.candidates.map((c) => ({
       name: c.name,
       caName: bundle.members.find((m) => m.id === c.caId)?.name ?? c.caId,
-      branchName: getBranchById(bundle.branches, c.branchId)?.name ?? c.branchId,
       stage: c.stage,
       desiredRole: c.desiredRole,
       updatedAt: c.updatedAt.toISOString(),
@@ -91,11 +96,14 @@ export type AskSnapshot = ReturnType<typeof buildAskSnapshot>;
 export const ASK_SYSTEM_PROMPT = `あなたは株式会社翔び台(人材紹介会社)の経営アシスタントです。
 ユーザーの質問に対して、渡されたデータスナップショット(JSON)に基づき、正確な数値と簡潔な一言インサイトで日本語で回答してください。
 
+データスナップショットには、週次入力(毎週月曜に前週分を入力)された求職者集客(LINEファネル)・法人営業のKPIの
+今月合計・週次推移(直近5週)・求職者パイプライン・プロジェクト・メンバー一覧が含まれます。
+
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
 - 回答は3〜5文程度、簡潔に。冒頭で結論(数値)を述べ、最後に一言インサイト(示唆・次のアクション)を添える。
 - 金額は万円単位で分かりやすく表示する(例: 1,234万円)。
-- 箇条書きが分かりやすい場合(拠点別・ステージ別など)は箇条書きを使ってよい。
+- 箇条書きが分かりやすい場合(ステージ別・週次推移など)は箇条書きを使ってよい。
 - 敬体(です・ます調)で、社内アシスタントらしい丁寧かつ簡潔なトーンで話す。
 - Markdownの強調記号(**など)は使わず、プレーンテキストで回答する。`;
 
@@ -110,19 +118,10 @@ function findMemberBySurnameInText(text: string, members: Member[]): Member | un
   });
 }
 
-const BRANCH_KEYWORDS: { keyword: string; branchId: string }[] = [
-  { keyword: "東京", branchId: "tokyo" },
-  { keyword: "本社", branchId: "tokyo" },
-  { keyword: "横浜", branchId: "yokohama" },
-  { keyword: "大阪", branchId: "osaka" },
-  { keyword: "名古屋", branchId: "nagoya" },
-  { keyword: "福岡", branchId: "fukuoka" },
-];
-
-function achievementInsight(rate: number): string {
-  if (rate >= 90) return "目標達成が目前です。この勢いを維持しましょう。";
-  if (rate >= 60) return "着実に積み上がっていますが、後半の追い上げが鍵になりそうです。";
-  return "目標との差が大きいため、企業提案〜面接段階の求職者を優先してフォローすることをおすすめします。";
+function kpiInsight(diff: number, positiveLabel: string, negativeLabel: string): string {
+  if (diff > 0) return positiveLabel;
+  if (diff < 0) return negativeLabel;
+  return "先月と横ばいです。";
 }
 
 function answerMemberCandidates(member: Member, role: AskRole, bundle: DataBundle): string {
@@ -133,27 +132,8 @@ function answerMemberCandidates(member: Member, role: AskRole, bundle: DataBundl
   }
   const listed = active.slice(0, 6).map((c) => `${c.name}(${c.stage})`);
   const suffix = active.length > 6 ? ` ほか${active.length - 6}名` : "";
-  const branch = getBranchById(bundle.branches, member.branchId);
   const you = role === "ca" && member.id === CA_MEMBER_ID ? "あなたが" : `${member.name}さんが`;
-  return `${you}担当している求職者は${active.length}名です(${branch?.name ?? ""}拠点)。内訳: ${listed.join("、")}${suffix}。内定・承諾に近い方から優先フォローすると成約につながりやすいです。`;
-}
-
-function answerBranch(branchId: string, bundle: DataBundle): string {
-  const branch = getBranchById(bundle.branches, branchId);
-  if (!branch) return "拠点情報が見つかりませんでした。";
-  const performance = getBranchPerformance(bundle.branches, bundle.placements).find(
-    (bp) => bp.branch.id === branchId,
-  );
-  const monthPlacements = getPlacementsByBranch(bundle.placements, branchId);
-  const activeCandidates = getCandidatesByBranch(bundle.candidates, branchId).filter(
-    (c) => c.stage !== "辞退",
-  );
-  if (!performance) return `${branch.name}拠点の実績データが見つかりませんでした。`;
-  return (
-    `${branch.name}拠点は月内実績${formatMan(performance.actualAmount)}(目標${formatMan(performance.targetAmount)})、` +
-    `達成率${performance.rate.toFixed(1)}%、成約${monthPlacements.length}件です。対応中の求職者は${activeCandidates.length}名います。` +
-    achievementInsight(performance.rate)
-  );
+  return `${you}担当している求職者は${active.length}名です。内訳: ${listed.join("、")}${suffix}。内定・承諾に近い方から優先フォローすると成約につながりやすいです。`;
 }
 
 function answerToday(bundle: DataBundle): string {
@@ -166,26 +146,7 @@ function answerToday(bundle: DataBundle): string {
 
 function answerForecast(bundle: DataBundle): string {
   const forecast = getForecastRevenue(bundle.candidates, bundle.settings.feeRate);
-  const { targetAmount, actualAmount } = getMonthlyAchievement(bundle.branches, bundle.placements);
-  const gap = targetAmount - actualAmount;
-  const covered = forecast >= gap && gap > 0;
-  return (
-    `内定・承諾ベースの売上見込みは${formatMan(forecast)}です。` +
-    (gap > 0
-      ? covered
-        ? `目標までの残り${formatMan(gap)}を、見込みでほぼカバーできる水準です。`
-        : `目標までの残り${formatMan(gap)}に対しては、まだ${formatMan(gap - forecast)}分の上積みが必要です。`
-      : `月次目標は既に達成済みです。見込み分はさらなる上乗せになります。`)
-  );
-}
-
-function answerMonth(bundle: DataBundle): string {
-  const { count, amount } = getMonthPlacements(bundle.placements);
-  const { rate, targetAmount } = getMonthlyAchievement(bundle.branches, bundle.placements);
-  return (
-    `月内累計成約は${count}件、${formatMan(amount)}です(目標${formatMan(targetAmount)}に対し達成率${rate.toFixed(1)}%)。` +
-    achievementInsight(rate)
-  );
+  return `内定・承諾ベースの売上見込みは${formatMan(forecast)}です。承諾済みの求職者は入社日調整を、内定段階の求職者は早めの意思決定フォローを進めるとよさそうです。`;
 }
 
 function answerProjects(bundle: DataBundle): string {
@@ -215,7 +176,7 @@ function answerProjects(bundle: DataBundle): string {
 function answerPipeline(bundle: DataBundle): string {
   const pipeline = getStagePipeline(bundle.candidates);
   const inSelection = pipeline
-    .filter((s) => ["企業提案", "書類選考", "面接"].includes(s.stage))
+    .filter((s) => ["企業提案", "面接"].includes(s.stage))
     .reduce((sum, s) => sum + s.count, 0);
   const listed = pipeline.map((s) => `${s.stage}${s.count}名`).join("、");
   const bottleneck = [...pipeline].sort((a, b) => b.count - a.count)[0];
@@ -225,8 +186,185 @@ function answerPipeline(bundle: DataBundle): string {
   );
 }
 
+// ─────────────────────────────────────────────
+// 週次KPI関連の質問応答
+// ─────────────────────────────────────────────
+
+type TimeScope = "thisWeek" | "lastWeek" | "thisMonth" | "lastMonth" | "compare";
+
+function resolveTimeScope(text: string): TimeScope {
+  if (text.includes("先週")) return "lastWeek";
+  if (text.includes("今週")) return "thisWeek";
+  if (text.includes("先月")) return "lastMonth";
+  if (text.includes("比べ") || text.includes("比較")) return "compare";
+  return "thisMonth";
+}
+
+interface CandidateKpiMatch {
+  key: CandidateKpiKey;
+  unit: string;
+}
+
+/** 候補求職者系KPIのキーワード判定(より具体的な語を先にチェックする)。 */
+function matchCandidateKpiKey(text: string): CandidateKpiMatch | null {
+  if (text.includes("面談予約")) return { key: "面談予約数", unit: "件" };
+  if (text.includes("最終面接")) return { key: "最終面接数", unit: "件" };
+  if (text.includes("1次") || text.includes("前面接")) return { key: "1次〜最終前面接数", unit: "件" };
+  if (text.includes("面談")) return { key: "面談数", unit: "件" };
+  if (text.includes("内定")) return { key: "内定者数", unit: "名" };
+  if (text.includes("採用決定") && !text.includes("法人")) {
+    return { key: "採用決定求職者数", unit: "名" };
+  }
+  if (text.includes("LINE登録")) return { key: "LINE登録人数", unit: "人" };
+  if (text.includes("PV")) return { key: "PV数", unit: "" };
+  return null;
+}
+
+interface CorporateKpiMatch {
+  key: CorporateKpiKey;
+  unit: string;
+}
+
+function matchCorporateKpiKey(text: string): CorporateKpiMatch | null {
+  if (text.includes("名刺交換")) return { key: "名刺交換数", unit: "件" };
+  if (text.includes("契約金額")) return { key: "契約金額", unit: "万円" };
+  if (text.includes("契約")) return { key: "契約数", unit: "件" };
+  if (text.includes("採用決定") && text.includes("法人")) return { key: "採用決定法人数", unit: "社" };
+  if (text.includes("既存商談")) return { key: "既存商談数(主権)", unit: "件" };
+  if (text.includes("商談")) return { key: "商談数(主権)", unit: "件" };
+  if (text.includes("アポ")) return { key: "アポイント数(主権)", unit: "件" };
+  return null;
+}
+
+/** 「面談」「商談」など複数キーに分かれる項目は、集計時に主権/非主権/外部を合算して答える。 */
+function aggregateKeysFor(key: CandidateKpiKey | CorporateKpiKey): (CandidateKpiKey | CorporateKpiKey)[] {
+  if (key === "商談数(主権)") return ["商談数(主権)", "商談数(非主権)", "商談数(外部)"];
+  if (key === "アポイント数(主権)") return ["アポイント数(主権)", "アポイント数(非主権)", "アポイント数(外部)"];
+  if (key === "既存商談数(主権)") return ["既存商談数(主権)", "既存商談数(非主権)"];
+  return [key];
+}
+
+function displayLabel(key: CandidateKpiKey | CorporateKpiKey): string {
+  if (key === "商談数(主権)") return "商談数";
+  if (key === "アポイント数(主権)") return "アポイント数";
+  if (key === "既存商談数(主権)") return "既存商談数";
+  return key;
+}
+
+function weeklyValueAt(
+  records: DataBundle["weeklyKpis"],
+  category: "求職者" | "法人",
+  keys: (CandidateKpiKey | CorporateKpiKey)[],
+  offsetFromLatest: number,
+): number {
+  return keys.reduce((sum, key) => {
+    const trend = getRecentWeeklyKpiTrend(records, category, key, offsetFromLatest + 1);
+    const point = trend[trend.length - 1 - offsetFromLatest];
+    return sum + (point?.value ?? 0);
+  }, 0);
+}
+
+function monthlyValue(
+  records: DataBundle["weeklyKpis"],
+  category: "求職者" | "法人",
+  keys: (CandidateKpiKey | CorporateKpiKey)[],
+  now: Date,
+): number {
+  return keys.reduce((sum, key) => sum + getMonthlyKpiTotal(records, category, key, now), 0);
+}
+
+/** 求職者/法人系KPIの数値質問に、時間軸(今週/先週/今月/先月/比較)を反映して答える。 */
+function answerKpiValue(
+  category: "求職者" | "法人",
+  key: CandidateKpiKey | CorporateKpiKey,
+  unit: string,
+  bundle: DataBundle,
+  scope: TimeScope,
+  ownerName?: string,
+): string {
+  const keys = aggregateKeysFor(key);
+  const label = displayLabel(key);
+  const now = new Date();
+
+  if (ownerName) {
+    const total = keys.reduce((sum, k) => {
+      const totals = getKpiTotalsByOwner(bundle.weeklyKpis, category, k);
+      return sum + (totals.find((o) => o.owner === ownerName)?.total ?? 0);
+    }, 0);
+    return `${ownerName}さんの今月の${label}は${total.toLocaleString("ja-JP")}${unit}です(週次入力の合計)。`;
+  }
+
+  switch (scope) {
+    case "thisWeek": {
+      const value = weeklyValueAt(bundle.weeklyKpis, category, keys, 0);
+      return `今週の${label}は${value.toLocaleString("ja-JP")}${unit}です(直近の週次入力ベース)。`;
+    }
+    case "lastWeek": {
+      const value = weeklyValueAt(bundle.weeklyKpis, category, keys, 1);
+      return `先週の${label}は${value.toLocaleString("ja-JP")}${unit}でした。`;
+    }
+    case "lastMonth": {
+      const lastMonthRef = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const value = monthlyValue(bundle.weeklyKpis, category, keys, lastMonthRef);
+      return `先月の${label}は${value.toLocaleString("ja-JP")}${unit}でした。`;
+    }
+    case "compare": {
+      const value = monthlyValue(bundle.weeklyKpis, category, keys, now);
+      const lastMonthRef = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const previousValue = monthlyValue(bundle.weeklyKpis, category, keys, lastMonthRef);
+      const diff = value - previousValue;
+      return (
+        `今月の${label}は${value.toLocaleString("ja-JP")}${unit}、先月は${previousValue.toLocaleString("ja-JP")}${unit}です。` +
+        kpiInsight(
+          diff,
+          `先月比+${diff}${unit}で伸びています。この調子を維持しましょう。`,
+          `先月比${diff}${unit}です。テコ入れを検討しましょう。`,
+        )
+      );
+    }
+    case "thisMonth":
+    default: {
+      const value = monthlyValue(bundle.weeklyKpis, category, keys, now);
+      return `今月の${label}は${value.toLocaleString("ja-JP")}${unit}です(週次入力の合計)。`;
+    }
+  }
+}
+
+function answerLineRegistrationRate(bundle: DataBundle): string {
+  const funnel = getCandidateFunnel(bundle.weeklyKpis);
+  return `今月のLINE登録率は${funnel.lineRegistrationRatePercent.toFixed(1)}%です(PV数${funnel.pv.toLocaleString(
+    "ja-JP",
+  )}件・LINE登録${funnel.lineRegistrations.toLocaleString("ja-JP")}人)。導線改善の効果測定に活用してください。`;
+}
+
+function answerInterviewExecutionRate(bundle: DataBundle): string {
+  const funnel = getCandidateFunnel(bundle.weeklyKpis);
+  return `今月の面談実行率は${funnel.interviewExecutionRatePercent.toFixed(1)}%です(面談予約${funnel.interviewBookings}件のうち面談実施${funnel.interviews}件)。`;
+}
+
+function answerInterviewConversionRate(bundle: DataBundle): string {
+  const funnel = getCandidateFunnel(bundle.weeklyKpis);
+  return `今月の面談移行率は${funnel.interviewConversionRatePercent.toFixed(1)}%です(LINE登録${funnel.lineRegistrations}人のうち面談実施${funnel.interviews}件)。`;
+}
+
+function answerMonthlyOverview(bundle: DataBundle): string {
+  const primary = getPrimaryKpis(bundle.weeklyKpis);
+  return (
+    `今月の主要指標は 面談数${primary.interviews.value}件(先月比${primary.interviews.diff >= 0 ? "+" : ""}${primary.interviews.diff}件)、` +
+    `内定者数${primary.offers.value}名(先月比${primary.offers.diff >= 0 ? "+" : ""}${primary.offers.diff}名)、` +
+    `採用決定(求職者)${primary.candidatePlacements.value}名、新規契約金額${primary.contractAmountMan.value.toLocaleString(
+      "ja-JP",
+    )}万円(先月比${primary.contractAmountMan.diff >= 0 ? "+" : ""}${primary.contractAmountMan.diff}万円)です。` +
+    kpiInsight(
+      primary.contractAmountMan.diff,
+      "契約金額は先月を上回るペースです。",
+      "契約金額が先月を下回っています。法人商談の巻き返しを検討しましょう。",
+    )
+  );
+}
+
 const FALLBACK_ANSWER =
-  "恐れ入りますが、その質問には今のデータからうまくお答えできませんでした。「今日の成約は?」「月内の売上見込みは?」「遅れているプロジェクトは?」「大阪拠点の状況は?」「選考中の求職者は?」「高梨さんの担当求職者は?」のような聞き方をお試しください。";
+  "恐れ入りますが、その質問には今のデータからうまくお答えできませんでした。「今日の成約は?」「今月の面談数は?」「LINE登録率は?」「今月の契約金額は?」「遅れているプロジェクトは?」「選考中の求職者は?」のような聞き方をお試しください。";
 
 /**
  * キーワードマッチで質問意図を判定し、metrics の実数値から日本語回答を組み立てる。
@@ -236,8 +374,23 @@ export function answerWithRules(question: string, role: AskRole, bundle: DataBun
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
+  const scope = resolveTimeScope(text);
 
-  // 1. 「私の/自分の」→ ロールに紐づくメンバー(CA)を優先的に解決
+  const mentionedMember = findMemberBySurnameInText(text, members);
+
+  // 1. 特定メンバー名 + KPIキーワード(例: 「清本さんの商談数は?」)
+  if (mentionedMember) {
+    const candidateMatch = matchCandidateKpiKey(text);
+    if (candidateMatch) {
+      return answerKpiValue("求職者", candidateMatch.key, candidateMatch.unit, bundle, scope, mentionedMember.name);
+    }
+    const corporateMatch = matchCorporateKpiKey(text);
+    if (corporateMatch) {
+      return answerKpiValue("法人", corporateMatch.key, corporateMatch.unit, bundle, scope, mentionedMember.name);
+    }
+  }
+
+  // 2. 「私の/自分の」→ ロールに紐づくメンバー(CA)を優先的に解決
   if ((text.includes("私の") || text.includes("自分の")) && role === "ca") {
     const me = members.find((m) => m.id === CA_MEMBER_ID);
     if (me) return answerMemberCandidates(me, role, bundle);
@@ -247,50 +400,60 @@ export function answerWithRules(question: string, role: AskRole, bundle: DataBun
     if (me) return answerMemberCandidates(me, role, bundle);
   }
 
-  // 2. 特定メンバー名を含む質問(「◯◯さんの担当求職者は?」など)
-  const mentionedMember = findMemberBySurnameInText(text, members);
+  // 3. 特定メンバー名を含む質問(「◯◯さんの担当求職者は?」など)
   if (mentionedMember && (text.includes("担当") || text.includes("求職者") || text.includes("さん"))) {
     return answerMemberCandidates(mentionedMember, role, bundle);
   }
 
-  // 3. 拠点名を含む質問
-  const branchMatch = BRANCH_KEYWORDS.find((b) => text.includes(b.keyword));
-  if (branchMatch) {
-    return answerBranch(branchMatch.branchId, bundle);
+  // 4. 自動計算率(LINE登録率・面談実行率・面談移行率)
+  if (text.includes("LINE登録率")) return answerLineRegistrationRate(bundle);
+  if (text.includes("面談実行率")) return answerInterviewExecutionRate(bundle);
+  if (text.includes("面談移行率")) return answerInterviewConversionRate(bundle);
+
+  // 5. 求職者系KPIの数値質問
+  const candidateKpiMatch = matchCandidateKpiKey(text);
+  if (candidateKpiMatch) {
+    return answerKpiValue("求職者", candidateKpiMatch.key, candidateKpiMatch.unit, bundle, scope);
   }
 
-  // 4. 本日の成約
+  // 6. 法人系KPIの数値質問
+  const corporateKpiMatch = matchCorporateKpiKey(text);
+  if (corporateKpiMatch) {
+    return answerKpiValue("法人", corporateKpiMatch.key, corporateKpiMatch.unit, bundle, scope);
+  }
+
+  // 7. 本日の成約
   if (text.includes("今日") || text.includes("本日")) {
     return answerToday(bundle);
   }
 
-  // 5. 売上見込み
+  // 8. 売上見込み
   if (text.includes("見込み") || text.includes("フォーキャスト") || text.includes("予測")) {
     return answerForecast(bundle);
   }
 
-  // 6. 月内/今月の数字・達成率
+  // 9. プロジェクト・遅延
+  if (text.includes("プロジェクト") || text.includes("遅れ") || text.includes("遅延")) {
+    return answerProjects(bundle);
+  }
+
+  // 10. 選考中・パイプライン・求職者全般
+  if (text.includes("選考中") || text.includes("パイプライン") || text.includes("求職者")) {
+    return answerPipeline(bundle);
+  }
+
+  // 11. 今月/月内/月次/月間、または「先月と比べて」の総合質問
   if (
     text.includes("今月") ||
     text.includes("月内") ||
     text.includes("月次") ||
     text.includes("月間") ||
-    text.includes("達成率")
+    scope === "compare"
   ) {
-    return answerMonth(bundle);
+    return answerMonthlyOverview(bundle);
   }
 
-  // 7. プロジェクト・遅延
-  if (text.includes("プロジェクト") || text.includes("遅れ") || text.includes("遅延")) {
-    return answerProjects(bundle);
-  }
-
-  // 8. 選考中・パイプライン・求職者全般
-  if (text.includes("選考中") || text.includes("パイプライン") || text.includes("求職者")) {
-    return answerPipeline(bundle);
-  }
-
-  // 9. メンバー名だけ言及されている(担当/さんが無い場合)
+  // 12. メンバー名だけ言及されている(担当/さんが無い場合)
   if (mentionedMember) {
     return answerMemberCandidates(mentionedMember, role, bundle);
   }

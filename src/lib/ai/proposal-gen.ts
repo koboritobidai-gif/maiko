@@ -9,7 +9,7 @@
  */
 import { askClaude } from "./client";
 import { CA_MEMBER_ID } from "@/lib/demo-data";
-import { getBranchById, getMemberById } from "@/lib/metrics";
+import { getMemberById } from "@/lib/metrics";
 import type { DataBundle } from "@/lib/types";
 
 export type AgeBand = "20代" | "30代" | "40代" | "50代以上";
@@ -101,14 +101,13 @@ function buildFeeCalc(input: ProposalInput, feeRate: number): FeeCalc {
   };
 }
 
-/** 氏名が求職者マスタと一致すれば、その担当CAを連絡先として使う。一致しなければ既定のCA(高梨CA)を使う。 */
+/** 氏名が求職者マスタと一致すれば、その担当CAを連絡先として使う。一致しなければ既定のCA(佐藤CA)を使う。 */
 function resolveCaContact(candidateName: string, bundle: DataBundle): CaContact {
   const matched = candidateName ? bundle.candidates.find((c) => c.name === candidateName) : undefined;
   const member = getMemberById(bundle.members, matched?.caId ?? CA_MEMBER_ID) ?? getMemberById(bundle.members, CA_MEMBER_ID);
-  const branchName = member ? getBranchById(bundle.branches, member.branchId)?.name : undefined;
   return {
-    name: member?.name ?? "高梨 玲奈",
-    roleLabel: member ? `${member.role} / ${branchName ?? ""}拠点` : "CA",
+    name: member?.name ?? "佐藤",
+    roleLabel: member ? member.role : "CA",
     // デモ環境のため実在しない連絡先(社内表記のダミー)
     email: "career-support@tobidai-cockpit.example",
     phone: "03-1234-5678(デモ表示)",

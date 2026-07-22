@@ -7,7 +7,17 @@
  * console.warn した上でデモデータへフォールバックし、sourceStatus / slackStatus に
  * "live-error" を設定する(呼び出し元はこれを見てソースバッジを出し分ける)。
  */
-import type { Branch, Candidate, DataBundle, Member, Placement, Project, Settings, SlackPost, SourceStatus } from "./types";
+import type {
+  Candidate,
+  DataBundle,
+  Member,
+  Placement,
+  Project,
+  Settings,
+  SlackPost,
+  SourceStatus,
+  WeeklyKpiRecord,
+} from "./types";
 import { DemoSpreadsheetSource, getSpreadsheetSource } from "./adapters/spreadsheet";
 import { DemoSlackSource, getMessengerSource } from "./adapters/messenger";
 
@@ -23,24 +33,24 @@ function isLiveMode(): boolean {
 interface SpreadsheetPart {
   candidates: Candidate[];
   placements: Placement[];
-  branches: Branch[];
   projects: Project[];
   members: Member[];
   settings: Settings;
+  weeklyKpis: WeeklyKpiRecord[];
   sourceStatus: SourceStatus;
 }
 
 async function loadDemoSpreadsheetPart(sourceStatus: SourceStatus): Promise<SpreadsheetPart> {
   const demo = new DemoSpreadsheetSource();
-  const [candidates, placements, branches, projects, members, settings] = await Promise.all([
+  const [candidates, placements, projects, members, settings, weeklyKpis] = await Promise.all([
     demo.getCandidates(),
     demo.getPlacements(),
-    demo.getBranches(),
     demo.getProjects(),
     demo.getMembers(),
     demo.getSettings(),
+    demo.getWeeklyKpis(),
   ]);
-  return { candidates, placements, branches, projects, members, settings, sourceStatus };
+  return { candidates, placements, projects, members, settings, weeklyKpis, sourceStatus };
 }
 
 async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
@@ -49,15 +59,15 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
   }
   try {
     const source = getSpreadsheetSource();
-    const [candidates, placements, branches, projects, members, settings] = await Promise.all([
+    const [candidates, placements, projects, members, settings, weeklyKpis] = await Promise.all([
       source.getCandidates(),
       source.getPlacements(),
-      source.getBranches(),
       source.getProjects(),
       source.getMembers(),
       source.getSettings(),
+      source.getWeeklyKpis(),
     ]);
-    return { candidates, placements, branches, projects, members, settings, sourceStatus: "live" };
+    return { candidates, placements, projects, members, settings, weeklyKpis, sourceStatus: "live" };
   } catch (error) {
     console.warn(
       "[data-bundle] Google Sheets の取得に失敗したため、デモデータへフォールバックします:",

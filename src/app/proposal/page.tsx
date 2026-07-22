@@ -6,5 +6,5 @@ export const revalidate = 60;
 
 export default async function ProposalPage() {
   const bundle = await loadDataBundle();
-  return <ProposalView candidates={bundle.candidates} branches={bundle.branches} />;
+  return <ProposalView candidates={bundle.candidates} />;
 }

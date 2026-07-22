@@ -5,8 +5,7 @@ import CopyButton from "@/components/CopyButton";
 import ProposalDocument, { buildProposalText } from "@/components/ProposalDocument";
 import SourceBadge from "@/components/SourceBadge";
 import { IconDocument } from "@/components/icons";
-import { getBranchById } from "@/lib/metrics";
-import type { Branch, Candidate } from "@/lib/types";
+import type { Candidate } from "@/lib/types";
 import {
   AGE_BANDS,
   CHANGE_REASONS,
@@ -17,10 +16,9 @@ import {
 
 interface ProposalViewProps {
   candidates: Candidate[];
-  branches: Branch[];
 }
 
-export default function ProposalView({ candidates, branches }: ProposalViewProps) {
+export default function ProposalView({ candidates }: ProposalViewProps) {
   const [candidateName, setCandidateName] = useState("");
   const [selectedDemoId, setSelectedDemoId] = useState("");
   const [ageBand, setAgeBand] = useState<AgeBand>("30代");
@@ -42,8 +40,6 @@ export default function ProposalView({ candidates, branches }: ProposalViewProps
     setCandidateName(candidate.name);
     setDesiredRole(candidate.desiredRole);
     setDesiredIncomeMan(String(Math.round(candidate.expectedAnnualIncome / 10000)));
-    const branchName = getBranchById(branches, candidate.branchId)?.name;
-    if (branchName) setDesiredLocation(branchName);
   }
 
   const incomeValue = Number(desiredIncomeMan);
