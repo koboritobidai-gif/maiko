@@ -1,13 +1,15 @@
 /**
  * POST /api/ask — 「AIに聞く」の質問応答エンドポイント。
- * 1. metrics.ts の集計関数からデータスナップショットを構築
- * 2. askClaude が使えれば経営アシスタントのシステムプロンプト+スナップショットJSONで回答生成
- * 3. askClaude が null の場合は ask-responder.ts のルールベース応答にフォールバック
+ * 1. loadDataBundle() で DataBundle(実データ/デモデータ)を取得
+ * 2. metrics.ts の集計関数からデータスナップショットを構築
+ * 3. askClaude が使えれば経営アシスタントのシステムプロンプト+スナップショットJSONで回答生成
+ * 4. askClaude が null の場合は ask-responder.ts のルールベース応答にフォールバック
  */
 import { NextResponse } from "next/server";
 import { askClaude } from "@/lib/ai/client";
 import { ASK_SYSTEM_PROMPT, answerWithRules, buildAskSnapshot } from "@/lib/ai/ask-responder";
 import type { AskRole } from "@/lib/ai/ask-responder";
+import { loadDataBundle } from "@/lib/data-bundle";
 
 interface AskRequestBody {
   question?: unknown;
@@ -33,15 +35,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const snapshot = buildAskSnapshot();
+  const bundle = await loadDataBundle();
+  const snapshot = buildAskSnapshot(bundle);
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
 
   const aiAnswer = await askClaude(ASK_SYSTEM_PROMPT, userPrompt);
   if (aiAnswer) {
-    return NextResponse.json({ answer: aiAnswer.trim(), source: "claude" as const });
+    return NextResponse.json({
+      answer: aiAnswer.trim(),
+      source: "claude" as const,
+      sourceStatus: bundle.sourceStatus,
+    });
   }
 
-  const ruleAnswer = answerWithRules(question, role);
-  return NextResponse.json({ answer: ruleAnswer, source: "rule" as const });
+  const ruleAnswer = answerWithRules(question, role, bundle);
+  return NextResponse.json({
+    answer: ruleAnswer,
+    source: "rule" as const,
+    sourceStatus: bundle.sourceStatus,
+  });
 }

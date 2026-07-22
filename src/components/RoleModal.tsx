@@ -16,7 +16,7 @@ const ROLE_OPTIONS: {
 }[] = [
   {
     role: "exec",
-    title: "宮崎社長(経営ビュー)",
+    title: "小堀社長(経営ビュー)",
     description: "全社の数字・全拠点・全プロジェクトを俯瞰するビュー",
   },
   {

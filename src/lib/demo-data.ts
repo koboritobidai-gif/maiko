@@ -71,7 +71,7 @@ export const COMPANY_MONTHLY_TARGET = branches.reduce(
 // メンバー(CA/RA/管理 12名)
 // ─────────────────────────────────────────────
 export const members: Member[] = [
-  { id: "m1", name: "宮崎 大輔", role: "管理", branchId: "tokyo", specialty: "経営企画・全社統括" },
+  { id: "m1", name: "小堀 大輔", role: "管理", branchId: "tokyo", specialty: "経営企画・全社統括" },
   { id: "m2", name: "高梨 玲奈", role: "CA", branchId: "tokyo", specialty: "IT・Web系エンジニア" },
   { id: "m3", name: "佐々木 亮", role: "CA", branchId: "tokyo", specialty: "管理部門・経理財務" },
   { id: "m4", name: "中村 美咲", role: "RA", branchId: "tokyo", specialty: "IT・Web系法人営業" },
@@ -86,7 +86,7 @@ export const members: Member[] = [
 ];
 
 // ログイン用デモ人格(設計書 4.0)
-export const EXEC_MEMBER_ID = "m1"; // 宮崎社長
+export const EXEC_MEMBER_ID = "m1"; // 小堀社長
 export const CA_MEMBER_ID = "m2"; // 高梨CA
 
 // ─────────────────────────────────────────────
@@ -213,7 +213,7 @@ export const projects: Project[] = [
     id: "proj1",
     name: "2027新卒採用",
     department: "管理部門",
-    owner: "宮崎 大輔",
+    owner: "小堀 大輔",
     status: "順調",
     progressPercent: 68,
     dueDate: daysFromNow(45),
@@ -299,7 +299,7 @@ export const slackPosts: SlackPost[] = [
   {
     id: "s4",
     channel: "#全社",
-    author: "宮崎 大輔",
+    author: "小堀 大輔",
     postedAt: daysAgo(2, 9, 30),
     body: "7月度、全社目標達成率75%まで来ました。ラストスパートよろしくお願いします!",
   },
@@ -327,7 +327,7 @@ export const slackPosts: SlackPost[] = [
   {
     id: "s8",
     channel: "#全社",
-    author: "宮崎 大輔",
+    author: "小堀 大輔",
     postedAt: daysAgo(7, 9, 0),
     body: "2027新卒採用、エントリー数が目標の110%に到達しました。ナイスファイト!",
   },

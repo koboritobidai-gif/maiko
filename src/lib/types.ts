@@ -132,3 +132,37 @@ export interface SlackPost {
   /** 本文 */
   body: string;
 }
+
+/**
+ * データ取得元の状態。
+ * - live: 実連携(Google Sheets / Slack)から正常に取得できた
+ * - demo: DATA_MODE が live ではない(デモデータを意図的に使用)
+ * - live-error: DATA_MODE=live だが接続・パースに失敗し、デモデータへフォールバックした
+ */
+export type SourceStatus = "live" | "demo" | "live-error";
+
+/** システム設定(スプレッドシート「設定」タブ相当)。 */
+export interface Settings {
+  /** 紹介手数料率(理論年収に対する割合)。 */
+  feeRate: number;
+}
+
+/**
+ * 全機能(ダッシュボード・AIに聞く・届ける・面談AI・提案書)が参照する統合データバンドル。
+ * `src/lib/data-bundle.ts` の `loadDataBundle()` が SpreadsheetSource / MessengerSource から
+ * 構築する。metrics.ts / ai/*.ts はこのバンドル(または内包する配列)を引数に取る純関数として実装し、
+ * demo-data.ts を直接 import しないこと。
+ */
+export interface DataBundle {
+  candidates: Candidate[];
+  placements: Placement[];
+  branches: Branch[];
+  projects: Project[];
+  members: Member[];
+  settings: Settings;
+  slackPosts: SlackPost[];
+  /** スプレッドシート(Sheets)の取得ステータス。 */
+  sourceStatus: SourceStatus;
+  /** Slack の取得ステータス。 */
+  slackStatus: SourceStatus;
+}

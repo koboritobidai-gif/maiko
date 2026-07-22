@@ -7,6 +7,8 @@ import Toast from "@/components/Toast";
 import { IconDeliver } from "@/components/icons";
 import type { DeliverCategory, DeliverSuggestion } from "@/lib/ai/deliver-router";
 import { DELIVER_CATEGORIES } from "@/lib/ai/deliver-router";
+import { sourceBadgeLabel } from "@/lib/source-status";
+import type { SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
 
 const PLACEHOLDER_TEXT =
@@ -18,6 +20,7 @@ export default function DeliverPage() {
   const [category, setCategory] = useState<DeliverCategory>("成果報告");
   const [suggestion, setSuggestion] = useState<DeliverSuggestion | null>(null);
   const [source, setSource] = useState<"claude" | "rule" | null>(null);
+  const [dataSourceStatus, setDataSourceStatus] = useState<SourceStatus>("demo");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +39,14 @@ export default function DeliverPage() {
         body: JSON.stringify({ text: trimmed, category, role }),
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      const data: { suggestion: DeliverSuggestion; source: "claude" | "rule" } = await res.json();
+      const data: {
+        suggestion: DeliverSuggestion;
+        source: "claude" | "rule";
+        sourceStatus?: SourceStatus;
+      } = await res.json();
       setSuggestion(data.suggestion);
       setSource(data.source);
+      setDataSourceStatus(data.sourceStatus ?? "demo");
     } catch {
       setError("宛先の提案に失敗しました。時間をおいて再度お試しください。");
     } finally {
@@ -154,7 +162,7 @@ export default function DeliverPage() {
             <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
               AIからの提案
             </h2>
-            <SourceBadge label={source === "claude" ? "Claude" : "Sheets(デモ)"} />
+            <SourceBadge label={source === "claude" ? "Claude" : sourceBadgeLabel("sheets", dataSourceStatus)} />
           </div>
 
           <div className="flex flex-col gap-2">

@@ -8,9 +8,9 @@
  * 使えない・応答の形が不正な場合はテンプレートベース生成にフォールバックする。
  */
 import { askClaude } from "./client";
-import { CA_MEMBER_ID, candidates } from "@/lib/demo-data";
+import { CA_MEMBER_ID } from "@/lib/demo-data";
 import { getBranchById, getMemberById } from "@/lib/metrics";
-import { FEE_RATE } from "@/lib/types";
+import type { DataBundle } from "@/lib/types";
 
 export type AgeBand = "20代" | "30代" | "40代" | "50代以上";
 export type ChangeReason =
@@ -92,20 +92,20 @@ function buildConditionsTable(input: ProposalInput): ConditionRow[] {
   ];
 }
 
-function buildFeeCalc(input: ProposalInput): FeeCalc {
-  const feeMan = Math.round(input.desiredIncomeMan * FEE_RATE);
+function buildFeeCalc(input: ProposalInput, feeRate: number): FeeCalc {
+  const feeMan = Math.round(input.desiredIncomeMan * feeRate);
   return {
     incomeMan: input.desiredIncomeMan,
-    feeRateLabel: `${Math.round(FEE_RATE * 100)}%`,
+    feeRateLabel: `${Math.round(feeRate * 100)}%`,
     feeMan,
   };
 }
 
-/** 氏名がデモ求職者と一致すれば、その担当CAを連絡先として使う。一致しなければ既定のCA(高梨CA)を使う。 */
-function resolveCaContact(candidateName: string): CaContact {
-  const matched = candidateName ? candidates.find((c) => c.name === candidateName) : undefined;
-  const member = getMemberById(matched?.caId ?? CA_MEMBER_ID) ?? getMemberById(CA_MEMBER_ID);
-  const branchName = member ? getBranchById(member.branchId)?.name : undefined;
+/** 氏名が求職者マスタと一致すれば、その担当CAを連絡先として使う。一致しなければ既定のCA(高梨CA)を使う。 */
+function resolveCaContact(candidateName: string, bundle: DataBundle): CaContact {
+  const matched = candidateName ? bundle.candidates.find((c) => c.name === candidateName) : undefined;
+  const member = getMemberById(bundle.members, matched?.caId ?? CA_MEMBER_ID) ?? getMemberById(bundle.members, CA_MEMBER_ID);
+  const branchName = member ? getBranchById(bundle.branches, member.branchId)?.name : undefined;
   return {
     name: member?.name ?? "高梨 玲奈",
     roleLabel: member ? `${member.role} / ${branchName ?? ""}拠点` : "CA",
@@ -213,7 +213,10 @@ function fromClaudeJson(
  * 数値・表(希望条件表/手数料計算/CA連絡先)は常にこのファイルで決定的に計算し、
  * 推薦文(サマリ/推薦理由/ハイライト)のみ Claude → テンプレートの順で生成する。
  */
-export async function generateProposalResult(input: ProposalInput): Promise<ProposalResult> {
+export async function generateProposalResult(
+  input: ProposalInput,
+  bundle: DataBundle,
+): Promise<ProposalResult> {
   const candidateLabel = input.candidateName.trim() || "本求職者";
 
   const claudeText = await askClaude(
@@ -238,8 +241,8 @@ export async function generateProposalResult(input: ProposalInput): Promise<Prop
     reasons: narrative.reasons,
     highlights: narrative.highlights,
     conditionsTable: buildConditionsTable(input),
-    feeCalc: buildFeeCalc(input),
-    caContact: resolveCaContact(input.candidateName.trim()),
+    feeCalc: buildFeeCalc(input, bundle.settings.feeRate),
+    caContact: resolveCaContact(input.candidateName.trim(), bundle),
     source,
   };
 }

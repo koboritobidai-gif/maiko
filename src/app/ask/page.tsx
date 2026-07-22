@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import ChatBubble, { ChatTypingIndicator } from "@/components/ChatBubble";
 import SuggestionChip from "@/components/SuggestionChip";
 import { IconChat } from "@/components/icons";
+import { sourceBadgeLabel } from "@/lib/source-status";
+import type { SourceStatus } from "@/lib/types";
 import { useSession } from "@/store/session";
 
 interface ChatMessage {
@@ -62,14 +64,15 @@ export default function AskPage() {
         body: JSON.stringify({ question: trimmed, role }),
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      const data: { answer: string; source: "claude" | "rule" } = await res.json();
+      const data: { answer: string; source: "claude" | "rule"; sourceStatus?: SourceStatus } =
+        await res.json();
       setMessages((prev) => [
         ...prev,
         {
           id: nextId(),
           role: "ai",
           text: data.answer,
-          sourceLabel: "Sheets(デモ)",
+          sourceLabel: sourceBadgeLabel("sheets", data.sourceStatus ?? "demo"),
         },
       ]);
     } catch {

@@ -7,6 +7,7 @@ import {
   type ChangeReason,
   type ProposalInput,
 } from "@/lib/ai/proposal-gen";
+import { loadDataBundle } from "@/lib/data-bundle";
 
 function isAgeBand(v: unknown): v is AgeBand {
   return typeof v === "string" && (AGE_BANDS as string[]).includes(v);
@@ -62,7 +63,8 @@ export async function POST(request: Request) {
   };
 
   try {
-    const result = await generateProposalResult(input);
+    const bundle = await loadDataBundle();
+    const result = await generateProposalResult(input, bundle);
     return NextResponse.json(result);
   } catch (error) {
     console.error("[api/proposal] 生成に失敗しました:", error);

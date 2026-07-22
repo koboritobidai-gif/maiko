@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateMeetingResult } from "@/lib/ai/meeting-gen";
+import { loadDataBundle } from "@/lib/data-bundle";
 import type { MeetingKind } from "@/lib/demo-transcripts";
 
 export async function POST(request: Request) {
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
   const safeKind: MeetingKind = kind === "corporate" ? "corporate" : "candidate";
 
   try {
-    const result = await generateMeetingResult(transcript.trim(), safeKind);
+    const bundle = await loadDataBundle();
+    const result = await generateMeetingResult(transcript.trim(), safeKind, bundle);
     return NextResponse.json(result);
   } catch (error) {
     console.error("[api/meeting] 生成に失敗しました:", error);

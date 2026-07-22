@@ -1,12 +1,11 @@
 /**
  * 「届ける」の宛先ルーティング(デモレスポンダ)。
- * 本文とカテゴリからキーワードを抽出し、demo-data のメンバー12名の役割・拠点・得意領域と
+ * 本文とカテゴリからキーワードを抽出し、DataBundle のメンバー・拠点マスタ(役割・拠点・得意領域)と
  * マッチングして宛先メンバー・配信先Slackチャンネル・整形メッセージ案を組み立てる。
  * Claude が使える場合は api/deliver/route.ts が Claude 応答を優先し、
  * 使えない/失敗した場合にこちらへフォールバックする。
  */
-import { branches, members } from "@/lib/demo-data";
-import type { Member, Role } from "@/lib/types";
+import type { Branch, DataBundle, Member, Role } from "@/lib/types";
 
 export type DeliverCategory = "成果報告" | "ニュース" | "相談" | "所感";
 
@@ -32,7 +31,7 @@ export interface DeliverSuggestion {
   };
 }
 
-const ROLE_LABELS: Record<Role, string> = {
+export const ROLE_LABELS: Record<Role, string> = {
   CA: "キャリアアドバイザー(CA)",
   RA: "法人営業(RA)",
   管理: "管理部門",
@@ -45,14 +44,16 @@ const CATEGORY_HEADLINE: Record<DeliverCategory, string> = {
   所感: "【所感】",
 };
 
-function branchLabel(branchId: string): string {
+function branchLabel(branches: Branch[], branchId: string): string {
   const branch = branches.find((b) => b.id === branchId);
   // 「東京本社」→「東京」のように、チャンネル名としては短い呼称を使う
   return branch ? branch.name.replace("本社", "") : branchId;
 }
 
-function findMentionedBranchIds(text: string): string[] {
-  return branches.filter((b) => text.includes(branchLabel(b.id)) || text.includes(b.name)).map((b) => b.id);
+function findMentionedBranchIds(text: string, branches: Branch[]): string[] {
+  return branches
+    .filter((b) => text.includes(branchLabel(branches, b.id)) || text.includes(b.name))
+    .map((b) => b.id);
 }
 
 /** メンバーの得意領域文字列を「・」「/」区切りでトークン化する。 */
@@ -66,16 +67,26 @@ interface ScoredMember {
   reasons: string[];
 }
 
+/** 経営層(役割=管理・東京本社所属)は常に一定スコアを持たせ、全社的な情報共有の受け皿にする。 */
+function isTopManagement(member: Member): boolean {
+  return member.role === "管理" && member.branchId === "tokyo";
+}
+
 /**
  * 本文・カテゴリから宛先メンバーをスコアリングして選ぶ。
  * ルール:
  *  - 本文中の拠点名に所属するメンバーを加点
  *  - 本文中の単語が得意領域(specialty)トークンと一致するメンバーを加点
  *  - カテゴリごとに役割の重み付け(成果報告→CA/RA、ニュース/所感→管理、相談→同職種)
- *  - 常に経営(宮崎)を候補に含め、全社共有の目が届くようにする
+ *  - 常に経営層(東京本社・管理部門)を候補に含め、全社共有の目が届くようにする
  */
-function scoreMembers(text: string, category: DeliverCategory): ScoredMember[] {
-  const mentionedBranchIds = findMentionedBranchIds(text);
+function scoreMembers(
+  text: string,
+  category: DeliverCategory,
+  members: Member[],
+  branches: Branch[],
+): ScoredMember[] {
+  const mentionedBranchIds = findMentionedBranchIds(text, branches);
 
   return members.map((member) => {
     let score = 0;
@@ -83,7 +94,7 @@ function scoreMembers(text: string, category: DeliverCategory): ScoredMember[] {
 
     if (mentionedBranchIds.includes(member.branchId)) {
       score += 4;
-      reasons.push(`本文に登場する${branchLabel(member.branchId)}拠点の担当者`);
+      reasons.push(`本文に登場する${branchLabel(branches, member.branchId)}拠点の担当者`);
     }
 
     const matchedTokens = specialtyTokens(member.specialty).filter((token) => text.includes(token));
@@ -116,7 +127,10 @@ function scoreMembers(text: string, category: DeliverCategory): ScoredMember[] {
           score += 2;
           reasons.push("求職者対応に関する相談として近い職種");
         }
-        if (member.role === "RA" && (text.includes("企業") || text.includes("商談") || text.includes("RA") || text.includes("法人"))) {
+        if (
+          member.role === "RA" &&
+          (text.includes("企業") || text.includes("商談") || text.includes("RA") || text.includes("法人"))
+        ) {
           score += 2;
           reasons.push("法人営業に関する相談として近い職種");
         }
@@ -135,8 +149,8 @@ function scoreMembers(text: string, category: DeliverCategory): ScoredMember[] {
         break;
     }
 
-    // 経営(宮崎)は常に一定スコアを持たせ、全社的な情報共有の受け皿にする
-    if (member.id === "m1") {
+    // 経営層は常に一定スコアを持たせ、全社的な情報共有の受け皿にする
+    if (isTopManagement(member)) {
       score += 1.5;
       if (reasons.length === 0) reasons.push("経営として全社の動きを把握する立場");
     }
@@ -146,7 +160,7 @@ function scoreMembers(text: string, category: DeliverCategory): ScoredMember[] {
 }
 
 /** カテゴリ・本文から配信先Slackチャンネルを決める。 */
-function resolveChannels(text: string, category: DeliverCategory): string[] {
+function resolveChannels(text: string, category: DeliverCategory, branches: Branch[]): string[] {
   const channels = new Set<string>();
 
   if (category === "成果報告") channels.add("#成約報告");
@@ -154,9 +168,9 @@ function resolveChannels(text: string, category: DeliverCategory): string[] {
   if (category === "所感") channels.add("#お知らせ");
   if (category === "相談") channels.add("#お知らせ");
 
-  const mentionedBranchIds = findMentionedBranchIds(text);
+  const mentionedBranchIds = findMentionedBranchIds(text, branches);
   for (const branchId of mentionedBranchIds) {
-    channels.add(`#営業-${branchLabel(branchId)}`);
+    channels.add(`#営業-${branchLabel(branches, branchId)}`);
   }
 
   // 全社的な内容(達成率・全社という語)や、拠点言及が無い成果報告は #全社 にも共有する
@@ -169,17 +183,18 @@ function resolveChannels(text: string, category: DeliverCategory): string[] {
 }
 
 /** ルールベースで宛先メンバー・チャンネル・メッセージ案を組み立てる。 */
-export function routeDelivery(text: string, category: DeliverCategory): DeliverSuggestion {
-  const scored = scoreMembers(text, category)
+export function routeDelivery(text: string, category: DeliverCategory, bundle: DataBundle): DeliverSuggestion {
+  const { members, branches } = bundle;
+  const scored = scoreMembers(text, category, members, branches)
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
 
   let picked = scored.slice(0, 4);
   if (picked.length < 2) {
-    // スコアが立たない場合のセーフティネット: 経営 + 東京拠点のCA/RAを補充
+    // スコアが立たない場合のセーフティネット: 経営層 + 東京拠点のCA/RAを補充
     const fallbackIds = new Set(picked.map((p) => p.member.id));
     const fallbackCandidates = members.filter(
-      (m) => !fallbackIds.has(m.id) && (m.id === "m1" || m.branchId === "tokyo"),
+      (m) => !fallbackIds.has(m.id) && (isTopManagement(m) || m.branchId === "tokyo"),
     );
     for (const m of fallbackCandidates) {
       if (picked.length >= 2) break;
@@ -197,7 +212,7 @@ export function routeDelivery(text: string, category: DeliverCategory): DeliverS
     reason: reasons[0] ?? "関連するメンバーとして選定",
   }));
 
-  const channels = resolveChannels(text, category);
+  const channels = resolveChannels(text, category, branches);
   const headline = CATEGORY_HEADLINE[category];
   const mentions = memberSuggestions.map((m) => `@${m.name}`);
   const formatted = [
@@ -216,7 +231,8 @@ export function routeDelivery(text: string, category: DeliverCategory): DeliverS
 }
 
 /** Claude 用システムプロンプト。JSON のみを返させ、api/deliver/route.ts でパースする。 */
-export function buildDeliverSystemPrompt(): string {
+export function buildDeliverSystemPrompt(bundle: DataBundle): string {
+  const { members, branches } = bundle;
   const memberList = members
     .map(
       (m) =>

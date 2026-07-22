@@ -7,9 +7,9 @@
  * どちらの経路でも呼び出し元(api/meeting/route.ts)からは `generateMeetingResult` を呼ぶだけでよい。
  */
 import { askClaude } from "./client";
-import { candidates } from "@/lib/demo-data";
 import { findMemberByName, getBranchById } from "@/lib/metrics";
 import { PIPELINE_STAGES } from "@/lib/types";
+import type { DataBundle } from "@/lib/types";
 import type { MeetingKind } from "@/lib/demo-transcripts";
 
 export interface MeetingActionItem {
@@ -75,11 +75,11 @@ function extractHeaderField(transcript: string, label: string): string | null {
 }
 
 /** 文字起こし冒頭の発言者名(例: 「高梨:」)から社内メンバーを推定する。 */
-function extractSpeakerMember(transcript: string) {
+function extractSpeakerMember(transcript: string, bundle: DataBundle) {
   const attendee = extractHeaderField(transcript, "対応");
   const attendeeName = attendee?.split(/[(（]/)[0]?.trim();
   if (attendeeName) {
-    const member = findMemberByName(attendeeName);
+    const member = findMemberByName(bundle.members, attendeeName);
     if (member) return member;
   }
   const firstLine = transcript
@@ -87,7 +87,7 @@ function extractSpeakerMember(transcript: string) {
     .map((l) => l.trim())
     .find((l) => /^[^\s:：]+[:：]/.test(l) && !l.startsWith("【"));
   const speaker = firstLine?.match(/^([^\s:：]+)[:：]/)?.[1];
-  return speaker ? findMemberByName(speaker) : undefined;
+  return speaker ? findMemberByName(bundle.members, speaker) : undefined;
 }
 
 /** 文字起こしを発言単位の文(「。」区切り)に分解する(話者ラベルは除去)。 */
@@ -127,11 +127,11 @@ function positiveTemperature(transcript: string): boolean {
   return ["急ぎ", "すぐにでも", "前向き", "早期", "最短"].some((k) => transcript.includes(k));
 }
 
-function generateCandidateDemo(transcript: string): MeetingResult {
+function generateCandidateDemo(transcript: string, bundle: DataBundle): MeetingResult {
   const sentences = splitSentences(transcript);
   const nameField = extractHeaderField(transcript, "求職者") ?? "対象求職者";
   const roleField = extractHeaderField(transcript, "希望職種");
-  const speakerMember = extractSpeakerMember(transcript);
+  const speakerMember = extractSpeakerMember(transcript, bundle);
   const owner = speakerMember?.name ?? "担当CA";
 
   const background = pickByKeywords(sentences, CANDIDATE_KEYWORDS.background);
@@ -154,7 +154,7 @@ function generateCandidateDemo(transcript: string): MeetingResult {
     `転職活動の温度感は${temperature}と見立てられます。`,
   ].join("");
 
-  const matchedCandidate = candidates.find(
+  const matchedCandidate = bundle.candidates.find(
     (c) => c.name === nameField || c.name.includes(nameField) || nameField.includes(c.name),
   );
 
@@ -224,12 +224,12 @@ ${owner}`,
   return { kind: "candidate", minutes, insight, actions, sheetUpdates, followUpEmail, source: "demo" };
 }
 
-function generateCorporateDemo(transcript: string): MeetingResult {
+function generateCorporateDemo(transcript: string, bundle: DataBundle): MeetingResult {
   const sentences = splitSentences(transcript);
   const companyField = extractHeaderField(transcript, "企業") ?? "対象企業";
-  const speakerMember = extractSpeakerMember(transcript);
+  const speakerMember = extractSpeakerMember(transcript, bundle);
   const owner = speakerMember?.name ?? "担当RA";
-  const ownerBranch = speakerMember ? getBranchById(speakerMember.branchId)?.name : undefined;
+  const ownerBranch = speakerMember ? getBranchById(bundle.branches, speakerMember.branchId)?.name : undefined;
 
   const background = pickByKeywords(sentences, CORPORATE_KEYWORDS.background);
   const requirements = pickByKeywords(sentences, CORPORATE_KEYWORDS.requirements);
@@ -298,8 +298,10 @@ ${owner}${ownerBranch ? `(${ownerBranch})` : ""}`,
   return { kind: "corporate", minutes, insight, actions, sheetUpdates, followUpEmail, source: "demo" };
 }
 
-function generateDemoMeetingResult(transcript: string, kind: MeetingKind): MeetingResult {
-  return kind === "corporate" ? generateCorporateDemo(transcript) : generateCandidateDemo(transcript);
+function generateDemoMeetingResult(transcript: string, kind: MeetingKind, bundle: DataBundle): MeetingResult {
+  return kind === "corporate"
+    ? generateCorporateDemo(transcript, bundle)
+    : generateCandidateDemo(transcript, bundle);
 }
 
 // ─────────────────────────────────────────────
@@ -398,6 +400,7 @@ function fromClaudeJson(json: Record<string, unknown>, kind: MeetingKind): Meeti
 export async function generateMeetingResult(
   transcript: string,
   kind: MeetingKind,
+  bundle: DataBundle,
 ): Promise<MeetingResult> {
   const claudeText = await askClaude(MEETING_SYSTEM_PROMPT, buildMeetingUserPrompt(transcript, kind));
   if (claudeText) {
@@ -405,6 +408,6 @@ export async function generateMeetingResult(
     const parsed = json ? fromClaudeJson(json, kind) : null;
     if (parsed) return parsed;
   }
-  return generateDemoMeetingResult(transcript, kind);
+  return generateDemoMeetingResult(transcript, kind, bundle);
 }
 

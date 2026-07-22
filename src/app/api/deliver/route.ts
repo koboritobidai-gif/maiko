@@ -2,26 +2,21 @@
  * POST /api/deliver — 「届ける」の宛先提案・送信エンドポイント。
  * action: "suggest"(既定) | "send"
  *  - suggest: askClaude が使えれば宛先提案(JSON)を生成、不可/失敗なら deliver-router.ts の
- *    ルールベースにフォールバックする。
- *  - send: adapters/messenger.ts の DemoSlackSource 経由でデモ送信する。
+ *    ルールベースにフォールバックする。DataBundle(実データ/デモデータ)のメンバー・拠点マスタを使用する。
+ *  - send: adapters/messenger.ts 経由で送信する(live: 実際にSlackへ投稿 / demo: デモ送信)。
  */
 import { NextResponse } from "next/server";
 import { askClaude } from "@/lib/ai/client";
 import {
   DELIVER_CATEGORIES,
+  ROLE_LABELS,
   buildDeliverSystemPrompt,
   routeDelivery,
 } from "@/lib/ai/deliver-router";
 import type { DeliverCategory, DeliverMemberSuggestion, DeliverSuggestion } from "@/lib/ai/deliver-router";
 import { getMessengerSource } from "@/lib/adapters/messenger";
-import { branches, members } from "@/lib/demo-data";
-import type { Role } from "@/lib/types";
-
-const ROLE_LABELS: Record<Role, string> = {
-  CA: "キャリアアドバイザー(CA)",
-  RA: "法人営業(RA)",
-  管理: "管理部門",
-};
+import { loadDataBundle } from "@/lib/data-bundle";
+import type { DataBundle } from "@/lib/types";
 
 interface SuggestRequestBody {
   action?: "suggest";
@@ -53,7 +48,7 @@ function extractJson(raw: string): string {
   return (fenced ? fenced[1] : raw).trim();
 }
 
-function parseClaudeSuggestion(raw: string, bodyText: string): DeliverSuggestion | null {
+function parseClaudeSuggestion(raw: string, bodyText: string, bundle: DataBundle): DeliverSuggestion | null {
   try {
     const parsed = JSON.parse(extractJson(raw)) as ClaudeDeliverResponse;
     if (!Array.isArray(parsed.members) || parsed.members.length === 0) return null;
@@ -61,14 +56,14 @@ function parseClaudeSuggestion(raw: string, bodyText: string): DeliverSuggestion
     const memberSuggestions: DeliverMemberSuggestion[] = [];
     for (const entry of parsed.members) {
       if (typeof entry.id !== "string") continue;
-      const member = members.find((m) => m.id === entry.id);
+      const member = bundle.members.find((m) => m.id === entry.id);
       if (!member) continue;
       memberSuggestions.push({
         id: member.id,
         name: member.name,
         role: member.role,
         roleLabel: ROLE_LABELS[member.role],
-        branchName: branches.find((b) => b.id === member.branchId)?.name ?? member.branchId,
+        branchName: bundle.branches.find((b) => b.id === member.branchId)?.name ?? member.branchId,
         reason: typeof entry.reason === "string" && entry.reason ? entry.reason : "AIが関連性が高いと判断",
       });
     }
@@ -107,19 +102,24 @@ async function handleSuggest(body: SuggestRequestBody) {
     return NextResponse.json({ error: "text は必須です。" }, { status: 400 });
   }
 
-  const system = buildDeliverSystemPrompt();
+  const bundle = await loadDataBundle();
+  const system = buildDeliverSystemPrompt(bundle);
   const user = `# カテゴリ\n${category}\n\n# 本文\n${text}`;
 
   const aiRaw = await askClaude(system, user);
   if (aiRaw) {
-    const parsed = parseClaudeSuggestion(aiRaw, text);
+    const parsed = parseClaudeSuggestion(aiRaw, text, bundle);
     if (parsed) {
-      return NextResponse.json({ suggestion: parsed, source: "claude" as const });
+      return NextResponse.json({ suggestion: parsed, source: "claude" as const, sourceStatus: bundle.sourceStatus });
     }
   }
 
-  const ruleSuggestion = routeDelivery(text, category);
-  return NextResponse.json({ suggestion: ruleSuggestion, source: "rule" as const });
+  const ruleSuggestion = routeDelivery(text, category, bundle);
+  return NextResponse.json({
+    suggestion: ruleSuggestion,
+    source: "rule" as const,
+    sourceStatus: bundle.sourceStatus,
+  });
 }
 
 async function handleSend(body: SendRequestBody) {
@@ -132,8 +132,16 @@ async function handleSend(body: SendRequestBody) {
   }
 
   const messenger = getMessengerSource();
-  const result = await messenger.postMessage(channel, author || "Tobidai Cockpit", messageBody);
-  return NextResponse.json({ ok: result.ok, post: result.post });
+  try {
+    const result = await messenger.postMessage(channel, author || "Tobidai Cockpit", messageBody);
+    return NextResponse.json({ ok: result.ok, post: result.post });
+  } catch (error) {
+    console.error("[api/deliver] Slack への送信に失敗しました:", error);
+    return NextResponse.json(
+      { error: "Slackへの送信に失敗しました。設定(SLACK_BOT_TOKEN 等)を確認してください。" },
+      { status: 502 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
