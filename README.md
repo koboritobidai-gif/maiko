@@ -28,3 +28,5 @@ npm run build && npm run start   # 本番ビルド
 - `DATA_MODE` 未設定(既定値)では**デモデータ**(実行日基準で自動生成)で全機能が動作します。`ANTHROPIC_API_KEY` を設定すると AI 応答が Claude API による生成に切り替わります(未設定でもルールベースで動作)。
 - `DATA_MODE=live` にすると、Google スプレッドシート / Slack との実連携(`src/lib/adapters/`)に切り替わります。接続・認証に失敗した場合は自動でデモデータへフォールバックし、アプリは落ちません。
 - 環境変数の一覧は `.env.example`、セットアップ手順は `docs/SETUP.md`、スプレッドシートのタブ・列仕様は `docs/SHEET_TEMPLATE.md` を参照してください。設計の詳細は docs/DESIGN.md §6 を参照。
+
+公開手順は docs/DEPLOY.md 参照。
