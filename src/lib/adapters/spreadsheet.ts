@@ -107,27 +107,66 @@ function resolveServiceAccountRaw(): string {
   return inlineJson;
 }
 
-/** `GOOGLE_SERVICE_ACCOUNT_JSON`(鍵JSON文字列。private_key 内の改行は \n エスケープでも可)をパースする。 */
+/**
+ * `GOOGLE_SERVICE_ACCOUNT_JSON`(鍵JSON文字列)をパースする。
+ * 手作業での貼り付けを想定し、よくある崩れ(BOM・前後の引用符・前後の余計な文字・
+ * 途中の実改行)は自動で修復を試みる。JSON.parse に失敗しても、client_email と
+ * private_key を直接抽出できれば動作させる。
+ */
 function parseServiceAccountJson(raw: string): GoogleServiceAccountKey {
-  let json: unknown;
+  // 1) よくある崩れの除去: BOM・前後空白・全体を囲む引用符・{ より前 / } より後のゴミ
+  let text = raw.replace(/^﻿/, "").trim();
+  if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+    text = text.slice(1, -1);
+  }
+  const braceStart = text.indexOf("{");
+  const braceEnd = text.lastIndexOf("}");
+  if (braceStart >= 0 && braceEnd > braceStart) {
+    text = text.slice(braceStart, braceEnd + 1);
+  }
+
+  let clientEmail: string | undefined;
+  let privateKeyRaw: string | undefined;
+
+  // 2) まず通常の JSON.parse を試す
   try {
-    json = JSON.parse(raw);
+    const obj = JSON.parse(text) as Record<string, unknown>;
+    if (typeof obj.client_email === "string" && obj.client_email) clientEmail = obj.client_email;
+    if (typeof obj.private_key === "string" && obj.private_key) privateKeyRaw = obj.private_key;
   } catch {
+    // 3) 失敗したら、必要な2項目だけを正規表現で直接抽出する(貼り付け崩れへの最終救済)
+    const emailMatch = text.match(/"client_email"\s*:\s*"([^"]+)"/);
+    const keyMatch = text.match(/"private_key"\s*:\s*"([^"]+)"/);
+    if (emailMatch) clientEmail = emailMatch[1];
+    if (keyMatch) privateKeyRaw = keyMatch[1];
+    // 引用符がエスケープされた形(\" )で貼り付けられているケースへの追加救済
+    if (!clientEmail || !privateKeyRaw) {
+      const unescaped = text.replace(/\\"/g, '"');
+      const emailMatch2 = unescaped.match(/"client_email"\s*:\s*"([^"]+)"/);
+      const keyMatch2 = unescaped.match(/"private_key"\s*:\s*"([^"]+)"/);
+      if (!clientEmail && emailMatch2) clientEmail = emailMatch2[1];
+      if (!privateKeyRaw && keyMatch2) privateKeyRaw = keyMatch2[1];
+    }
+  }
+
+  if (!clientEmail || !privateKeyRaw) {
+    // 秘密情報を出さずに、原因の切り分けに役立つ診断情報だけを添える
+    const diag = [
+      `長さ${raw.length}文字`,
+      `先頭「${raw.trim().charAt(0) || "(空)"}」`,
+      `末尾「${raw.trim().slice(-1) || "(空)"}」`,
+      `client_email を含む: ${text.includes("client_email") ? "はい" : "いいえ"}`,
+      `private_key を含む: ${text.includes("private_key") ? "はい" : "いいえ"}`,
+    ].join(" / ");
     throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON の JSON 解析に失敗しました。サービスアカウントの鍵ファイルの中身をそのまま(1行のJSON文字列として)設定してください。",
+      `GOOGLE_SERVICE_ACCOUNT_JSON を読み取れませんでした。鍵ファイル(service-account.json)をメモ帳で開き、Ctrl+A で全選択してコピーした内容をそのまま貼り付けてください。(診断: ${diag})`,
     );
   }
-  const obj = json as Record<string, unknown>;
-  const clientEmail = obj.client_email;
-  const privateKeyRaw = obj.private_key;
-  if (typeof clientEmail !== "string" || !clientEmail) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON に client_email が含まれていません。");
-  }
-  if (typeof privateKeyRaw !== "string" || !privateKeyRaw) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON に private_key が含まれていません。");
-  }
-  // .env に貼り付ける際に改行が \n としてエスケープされているケースに対応する
-  const privateKey = privateKeyRaw.includes("\\n") ? privateKeyRaw.replace(/\\n/g, "\n") : privateKeyRaw;
+
+  // 改行が \n エスケープのままでも、実改行に変換されていてもどちらでも動作させる
+  const privateKey = privateKeyRaw.includes("\\n")
+    ? privateKeyRaw.replace(/\\n/g, "\n")
+    : privateKeyRaw;
   return { clientEmail, privateKey };
 }
 
