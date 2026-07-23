@@ -15,6 +15,7 @@ export default async function TodayDashboardPage() {
       summary={summary}
       candidates={bundle.candidates}
       sourceStatus={bundle.sourceStatus}
+      sourceErrorMessage={bundle.sourceErrorMessage}
       slackStatus={bundle.slackStatus}
     />
   );

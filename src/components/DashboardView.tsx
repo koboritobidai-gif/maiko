@@ -113,6 +113,7 @@ interface DashboardViewProps {
   summary: DashboardSummary;
   candidates: Candidate[];
   sourceStatus: SourceStatus;
+  sourceErrorMessage?: string;
   slackStatus: SourceStatus;
 }
 
@@ -120,6 +121,7 @@ export default function DashboardView({
   summary,
   candidates,
   sourceStatus,
+  sourceErrorMessage,
   slackStatus,
 }: DashboardViewProps) {
   const { role } = useSession();
@@ -172,6 +174,18 @@ export default function DashboardView({
           </h2>
           <SourceBadge label={sheetsBadge} />
         </div>
+        {sourceStatus === "live-error" && sourceErrorMessage && (
+          <p
+            className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+            style={{
+              color: "var(--color-bad)",
+              borderColor: "var(--color-bad)",
+              background: "var(--color-card)",
+            }}
+          >
+            接続エラーの内容: {sourceErrorMessage}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-2.5">
           <KpiCard
             label="面談数"

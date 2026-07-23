@@ -38,6 +38,7 @@ interface SpreadsheetPart {
   settings: Settings;
   weeklyKpis: WeeklyKpiRecord[];
   sourceStatus: SourceStatus;
+  sourceErrorMessage?: string;
 }
 
 async function loadDemoSpreadsheetPart(sourceStatus: SourceStatus): Promise<SpreadsheetPart> {
@@ -73,7 +74,11 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
       "[data-bundle] Google Sheets の取得に失敗したため、デモデータへフォールバックします:",
       error,
     );
-    return loadDemoSpreadsheetPart("live-error");
+    const part = await loadDemoSpreadsheetPart("live-error");
+    return {
+      ...part,
+      sourceErrorMessage: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

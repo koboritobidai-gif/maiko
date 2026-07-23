@@ -223,6 +223,8 @@ export interface DataBundle {
   weeklyKpis: WeeklyKpiRecord[];
   /** スプレッドシート(Sheets)の取得ステータス。 */
   sourceStatus: SourceStatus;
+  /** Sheets 接続失敗時のエラー内容(live-error のときのみ。画面での自己診断用)。 */
+  sourceErrorMessage?: string;
   /** Slack の取得ステータス。 */
   slackStatus: SourceStatus;
 }
