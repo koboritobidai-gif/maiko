@@ -28,7 +28,7 @@ export default function KpiCard({
       </div>
       <span
         className="text-[20px] font-bold leading-tight"
-        style={{ color: accent ? "var(--color-gold)" : "var(--color-navy)" }}
+        style={{ color: accent ? "var(--color-gold)" : "var(--color-kpi-value)" }}
       >
         {value}
       </span>

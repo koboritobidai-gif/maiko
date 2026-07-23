@@ -9,6 +9,7 @@
   --color-gold: #b08d3e;
   --color-gold-light: #cba959;
   --color-text: #232323;
+  --color-kpi-value: #16233f;
   --color-text-muted: #6b6459;
   --color-good: #2f7d4f;
   --color-warn: #b9832a;
@@ -24,6 +25,7 @@
   --color-gold: #cba959;
   --color-gold-light: #ddc07f;
   --color-text: #f1efe9;
+  --color-kpi-value: #f1efe9;
   --color-text-muted: #a7a396;
   --color-good: #57c481;
   --color-warn: #e0a94a;
@@ -40,6 +42,7 @@
     --color-gold: #cba959;
     --color-gold-light: #ddc07f;
     --color-text: #f1efe9;
+    --color-kpi-value: #f1efe9;
     --color-text-muted: #a7a396;
     --color-good: #57c481;
     --color-warn: #e0a94a;

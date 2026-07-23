@@ -183,6 +183,7 @@ export default function DashboardView({
             label="内定者数"
             value={`${primary.offers.value}名`}
             caption={<DiffCaption diff={primary.offers.diff} unit="名" />}
+            accent
           />
           <KpiCard
             label="採用決定(求職者)"
