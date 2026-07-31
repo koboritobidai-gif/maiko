@@ -62,6 +62,16 @@ export interface Candidate {
   updatedAt: Date;
   /** 最新メモ */
   latestNote: string;
+  /** 性別(任意。自由記述: 「男性」「女性」「その他/未回答」など) */
+  gender?: string;
+  /** 年齢(任意) */
+  age?: number;
+  /** 流入経路(任意。例: LINE広告/Instagram/紹介/求人媒体) */
+  inflowChannel?: string;
+  /** 送客先(任意。紹介先企業名) */
+  referredTo?: string;
+  /** 面接結果(任意。例: 1次通過/最終待ち/内定) */
+  interviewResult?: string;
 }
 
 /** 成約(内定承諾・入社が確定した紹介実績)。 */

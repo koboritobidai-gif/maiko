@@ -21,7 +21,7 @@ import {
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { CandidateKpiKey, CorporateKpiKey, DataBundle, Member } from "@/lib/types";
+import type { Candidate, CandidateKpiKey, CorporateKpiKey, DataBundle, Member } from "@/lib/types";
 
 export type AskRole = "exec" | "ca" | undefined;
 
@@ -86,6 +86,11 @@ export function buildAskSnapshot(bundle: DataBundle) {
       desiredRole: c.desiredRole,
       updatedAt: c.updatedAt.toISOString(),
       latestNote: c.latestNote,
+      gender: c.gender,
+      age: c.age,
+      inflowChannel: c.inflowChannel,
+      referredTo: c.referredTo,
+      interviewResult: c.interviewResult,
     })),
   };
 }
@@ -98,6 +103,9 @@ export const ASK_SYSTEM_PROMPT = `あなたは株式会社翔び台(人材紹介
 
 データスナップショットには、週次入力(毎週月曜に前週分を入力)された求職者集客(LINEファネル)・法人営業のKPIの
 今月合計・週次推移(直近5週)・求職者パイプライン・プロジェクト・メンバー一覧が含まれます。
+求職者一覧(candidates)には氏名・担当CA・ステージ・希望職種・更新日・最新メモに加え、性別(gender)・年齢(age)・
+流入経路(inflowChannel)・送客先(referredTo)・面接結果(interviewResult)が任意項目として含まれる場合があります
+(未登録の求職者は空欄のことがあります)。特定の求職者名で質問された場合は、これらの情報も自然に添えて答えてください。
 
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
@@ -116,6 +124,31 @@ function findMemberBySurnameInText(text: string, members: Member[]): Member | un
     const surname = m.name.split(" ")[0];
     return surname.length >= 2 && text.includes(surname);
   });
+}
+
+/** 質問文に求職者のフルネーム(スペース除去して比較)が含まれるか探す。 */
+function findCandidateByNameInText(text: string, candidates: Candidate[]): Candidate | undefined {
+  const normalizedText = text.replace(/\s+/g, "");
+  return candidates.find((c) => {
+    const fullName = c.name.replace(/\s+/g, "");
+    return fullName.length >= 2 && normalizedText.includes(fullName);
+  });
+}
+
+/** 求職者名を含む質問に、性別・年齢・流入経路・送客先・面接結果を含めて答える。 */
+function answerCandidateDetail(candidate: Candidate, bundle: DataBundle): string {
+  const caName = bundle.members.find((m) => m.id === candidate.caId)?.name ?? candidate.caId;
+  const profileParts = [candidate.gender, candidate.age != null ? `${candidate.age}歳` : null].filter(Boolean);
+  const profile = profileParts.length > 0 ? `(${profileParts.join("・")})` : "";
+
+  const parts: string[] = [
+    `${candidate.name}さん${profile}は現在「${candidate.stage}」ステージです(担当: ${caName}CA、希望職種: ${candidate.desiredRole})。`,
+  ];
+  if (candidate.inflowChannel) parts.push(`流入経路は${candidate.inflowChannel}です。`);
+  if (candidate.referredTo) parts.push(`送客先は${candidate.referredTo}です。`);
+  if (candidate.interviewResult) parts.push(`面接結果は「${candidate.interviewResult}」です。`);
+  parts.push(`最新メモ: ${candidate.latestNote || "特になし"}`);
+  return parts.join(" ");
 }
 
 function kpiInsight(diff: number, positiveLabel: string, negativeLabel: string): string {
@@ -377,6 +410,12 @@ export function answerWithRules(question: string, role: AskRole, bundle: DataBun
   const scope = resolveTimeScope(text);
 
   const mentionedMember = findMemberBySurnameInText(text, members);
+
+  // 0. 特定求職者名(氏名フルネーム一致)→ ステージ・流入経路・送客先・面接結果を含む個別詳細
+  const mentionedCandidate = findCandidateByNameInText(text, bundle.candidates);
+  if (mentionedCandidate) {
+    return answerCandidateDetail(mentionedCandidate, bundle);
+  }
 
   // 1. 特定メンバー名 + KPIキーワード(例: 「清本さんの商談数は?」)
   if (mentionedMember) {

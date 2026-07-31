@@ -243,7 +243,7 @@ const TAB_WEEKLY_KPI = "週次KPI";
 const RANGES = [
   `${TAB_SETTINGS}!A:B`,
   `${TAB_MEMBERS}!A:D`,
-  `${TAB_CANDIDATES}!A:H`,
+  `${TAB_CANDIDATES}!A:M`,
   `${TAB_PLACEMENTS}!A:G`,
   `${TAB_PROJECTS}!A:G`,
   `${TAB_WEEKLY_KPI}!A:E`,
@@ -308,6 +308,12 @@ function requireString(row: SheetRow, index: number, field: string, tabName: str
 
 function optionalString(row: SheetRow, index: number): string {
   return cellToString(row[index]);
+}
+
+/** 任意列を string | undefined として読む(空欄・列自体が無い場合は undefined)。 */
+function optionalStringOrUndefined(row: SheetRow, index: number): string | undefined {
+  const value = cellToString(row[index]);
+  return value ? value : undefined;
 }
 
 function requireNumber(row: SheetRow, index: number, field: string, tabName: string, rowNumber: number): number {
@@ -469,6 +475,13 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
     const incomeMan = requireNumber(row, 5, "理論年収(万円)", TAB_CANDIDATES, rowNumber);
     const updatedAt = requireDate(row, 6, "更新日", TAB_CANDIDATES, rowNumber);
     const latestNote = optionalString(row, 7);
+    // I〜M列(任意): 性別 / 年齢 / 流入経路 / 送客先 / 面接結果。
+    // 列が無い・空欄でもエラーにしない(既存シート=8列のままでも動作する後方互換のため)。
+    const gender = optionalStringOrUndefined(row, 8);
+    const age = optionalNumber(row, 9) ?? undefined;
+    const inflowChannel = optionalStringOrUndefined(row, 10);
+    const referredTo = optionalStringOrUndefined(row, 11);
+    const interviewResult = optionalStringOrUndefined(row, 12);
     result.push({
       id,
       name,
@@ -478,6 +491,11 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
       expectedAnnualIncome: Math.round(incomeMan * 10000),
       updatedAt,
       latestNote,
+      gender,
+      age,
+      inflowChannel,
+      referredTo,
+      interviewResult,
     });
   }
   return result;

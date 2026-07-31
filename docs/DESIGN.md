@@ -58,6 +58,23 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 - プロジェクト進捗カード: 状態バッジ(順調/注意/遅延)、担当部門・担当者、進捗%バー、期日、最新一言
 - Slack 最新ハイライト: チャンネル名・投稿者・時刻・本文の要約フィード
 - ロール別表示: 経営ビュー(小堀)は全体を表示。現場ビュー(佐藤CA)は自分の担当求職者数を先頭カードに追加表示
+- 「求職者パイプライン(ステージ別)」セクションのヘッダー右に「一覧を見る →」リンクを表示し、4.1.1 の求職者一覧(`/candidates`)へ遷移する
+
+### 4.1.1 求職者一覧(`/candidates`)
+
+社内Slack「#求職者」チャンネルに書かれる求職者情報(氏名・性別・年齢・流入経路・送客先・面接結果)を
+一覧で確認するための専用画面。下部タブには含めず、ダッシュボードからのリンク経由でアクセスする
+(4.1 参照)。ページ側に「← 今日の経営へ戻る」リンクを設置する。
+
+- 上部: 検索ボックス(氏名・流入経路・送客先の部分一致)+ ステージ絞り込みチップ
+  (全て/新規登録/面談/企業提案/面接/内定/承諾/入社/辞退。各チップに件数バッジ)
+- 求職者カード(更新日の新しい順): 氏名(太字)/ ステージバッジ(StatusBadge風の配色。辞退はグレー)/
+  性別・年齢(例「女性・26歳」。無ければ非表示)/ 希望職種 / 流入経路 / 送客先 / 面接結果 /
+  担当CA名 / 更新日 / 最新メモ。性別・年齢・流入経路・送客先・面接結果は任意項目のため、
+  値が無い項目は行ごと省略して詰めて表示する
+- 右上に SourceBadge(Sheets連携状態)を表示
+- データソース: `loadDataBundle()`(`revalidate = 60`)。求職者タブの任意列(性別/年齢/流入経路/送客先/
+  面接結果)は `docs/SHEET_TEMPLATE.md` 参照
 
 ### 4.2 AIに聞く
 - サジェストチップ: 「今日の成約は?」「今月の面談数は?」「LINE登録率は?」「今月の契約金額は?」「遅れているプロジェクトは?」「選考中の求職者は?」
@@ -83,6 +100,7 @@ src/
   app/
     layout.tsx / globals.css
     page.tsx                # 今日の経営
+    candidates/page.tsx     # 求職者一覧(ダッシュボードからリンク遷移。下部タブには含めない)
     ask/page.tsx            # AIに聞く
     deliver/page.tsx        # 届ける
     meeting/page.tsx        # 面談AI
@@ -91,7 +109,8 @@ src/
     api/deliver/route.ts
     api/meeting/route.ts
     api/proposal/route.ts
-  components/               # TabBar, Header, KpiCard, ProgressBar, StatusBadge, ChatBubble, DashboardView など
+  components/               # TabBar, Header, KpiCard, ProgressBar, StatusBadge(+StageBadge), ChatBubble,
+                             # DashboardView, CandidateListView など
   lib/
     types.ts                # Candidate, Placement, Member, Project, SlackPost, Stage, WeeklyKpiRecord, DataBundle, Settings...
     demo-data.ts            # デモデータ生成(実行日基準。週次KPIは直近8週分)

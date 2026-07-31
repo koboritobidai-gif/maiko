@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
@@ -347,7 +348,16 @@ export default function DashboardView({
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
             求職者パイプライン(ステージ別)
           </h2>
-          <SourceBadge label={sheetsBadge} />
+          <div className="flex items-center gap-2">
+            <Link
+              href="/candidates"
+              className="text-[11px] font-semibold whitespace-nowrap"
+              style={{ color: "var(--color-gold)" }}
+            >
+              一覧を見る →
+            </Link>
+            <SourceBadge label={sheetsBadge} />
+          </div>
         </div>
         <div className="card flex flex-col gap-2.5 p-3.5">
           {summary.pipeline.map((s) => (
