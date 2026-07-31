@@ -4,7 +4,7 @@ import { getDashboardSummary } from "@/lib/metrics";
 
 // ライブデータ(Google Sheets / Slack)を60秒おきに再取得して反映する。
 // loadDataBundle() 自体もモジュールメモリに60秒キャッシュを持つため、二重に整合する。
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function TodayDashboardPage() {
   const bundle = await loadDataBundle();

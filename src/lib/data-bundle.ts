@@ -30,6 +30,20 @@ function isLiveMode(): boolean {
   return process.env.DATA_MODE === "live";
 }
 
+/**
+ * Next.js が「このページは動的に描画すべき」と判断するために投げる内部エラー。
+ * これを catch して握りつぶすと静的化されたページにデモデータが焼き込まれてしまうため、
+ * フォールバックせずに再スローする。
+ */
+function isNextDynamicUsageError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    (error as { digest?: unknown }).digest === "DYNAMIC_SERVER_USAGE"
+  );
+}
+
 interface SpreadsheetPart {
   candidates: Candidate[];
   placements: Placement[];
@@ -70,6 +84,7 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
     ]);
     return { candidates, placements, projects, members, settings, weeklyKpis, sourceStatus: "live" };
   } catch (error) {
+    if (isNextDynamicUsageError(error)) throw error;
     console.warn(
       "[data-bundle] Google Sheets の取得に失敗したため、デモデータへフォールバックします:",
       error,
@@ -102,6 +117,7 @@ async function loadSlackPart(): Promise<SlackPart> {
     const slackPosts = await messenger.getRecentPosts(SLACK_HIGHLIGHT_LIMIT);
     return { slackPosts, slackStatus: "live" };
   } catch (error) {
+    if (isNextDynamicUsageError(error)) throw error;
     console.warn("[data-bundle] Slack の取得に失敗したため、デモ投稿へフォールバックします:", error);
     const part = await loadDemoSlackPart("live-error");
     return {
