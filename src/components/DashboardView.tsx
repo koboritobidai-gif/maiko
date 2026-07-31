@@ -116,6 +116,7 @@ interface DashboardViewProps {
   sourceStatus: SourceStatus;
   sourceErrorMessage?: string;
   slackStatus: SourceStatus;
+  slackErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -124,6 +125,7 @@ export default function DashboardView({
   sourceStatus,
   sourceErrorMessage,
   slackStatus,
+  slackErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
   if (!role) return null;
@@ -442,6 +444,18 @@ export default function DashboardView({
           </h2>
           <SourceBadge label={slackBadge} />
         </div>
+        {slackStatus === "live-error" && slackErrorMessage && (
+          <p
+            className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+            style={{
+              color: "var(--color-bad)",
+              borderColor: "var(--color-bad)",
+              background: "var(--color-card)",
+            }}
+          >
+            接続エラーの内容: {slackErrorMessage}
+          </p>
+        )}
         <div
           className="card flex flex-col divide-y"
           style={{ borderColor: "var(--color-border)" }}

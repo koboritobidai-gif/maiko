@@ -85,6 +85,7 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
 interface SlackPart {
   slackPosts: SlackPost[];
   slackStatus: SourceStatus;
+  slackErrorMessage?: string;
 }
 
 async function loadDemoSlackPart(slackStatus: SourceStatus): Promise<SlackPart> {
@@ -102,7 +103,11 @@ async function loadSlackPart(): Promise<SlackPart> {
     return { slackPosts, slackStatus: "live" };
   } catch (error) {
     console.warn("[data-bundle] Slack の取得に失敗したため、デモ投稿へフォールバックします:", error);
-    return loadDemoSlackPart("live-error");
+    const part = await loadDemoSlackPart("live-error");
+    return {
+      ...part,
+      slackErrorMessage: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
