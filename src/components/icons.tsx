@@ -64,6 +64,17 @@ export function IconDocument(props: IconProps) {
   );
 }
 
+export function IconCandidates(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M16 4.5a3 3 0 0 1 0 6" />
+      <path d="M17 13.5c2.4.4 4 1.8 4 3.8V20" />
+    </svg>
+  );
+}
+
 export function IconChevronDown(props: IconProps) {
   return (
     <svg {...base} strokeWidth={2} {...props}>

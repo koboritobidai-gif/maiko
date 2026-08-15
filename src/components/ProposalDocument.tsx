@@ -46,7 +46,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       {/* ヘッダー */}
       <div className="flex items-start justify-between border-b pb-3" style={{ borderColor: "#d8d2c4" }}>
         <div>
-          <p className="text-[15px] font-bold tracking-wide" style={{ color: "#16233f" }}>
+          <p className="text-[15px] font-bold tracking-wide" style={{ color: "#1d3c8f" }}>
             株式会社翔び台
           </p>
           <p className="mt-0.5 text-[11px]" style={{ color: "#6b6459" }}>
@@ -58,7 +58,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
         </p>
       </div>
 
-      <h1 className="text-center text-[16px] font-bold tracking-wide" style={{ color: "#16233f" }}>
+      <h1 className="text-center text-[16px] font-bold tracking-wide" style={{ color: "#1d3c8f" }}>
         候補者ご推薦のご案内
       </h1>
 
@@ -66,7 +66,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       <section className="flex flex-col gap-1.5">
         <h2
           className="text-[12px] font-bold"
-          style={{ color: "#b08d3e", borderBottom: "1px solid #eee6d6", paddingBottom: 4 }}
+          style={{ color: "#2b5cd9", borderBottom: "1px solid #dbe5f7", paddingBottom: 4 }}
         >
           候補者: {result.candidateLabel}
         </h2>
@@ -77,7 +77,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       <section className="flex flex-col gap-1.5">
         <h2
           className="text-[12px] font-bold"
-          style={{ color: "#b08d3e", borderBottom: "1px solid #eee6d6", paddingBottom: 4 }}
+          style={{ color: "#2b5cd9", borderBottom: "1px solid #dbe5f7", paddingBottom: 4 }}
         >
           推薦理由
         </h2>
@@ -92,14 +92,14 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       <section className="flex flex-col gap-1.5">
         <h2
           className="text-[12px] font-bold"
-          style={{ color: "#b08d3e", borderBottom: "1px solid #eee6d6", paddingBottom: 4 }}
+          style={{ color: "#2b5cd9", borderBottom: "1px solid #dbe5f7", paddingBottom: 4 }}
         >
           スキル・経験ハイライト
         </h2>
         <ul className="flex flex-col gap-1 text-[13px] leading-relaxed">
           {result.highlights.map((h, i) => (
             <li key={i} className="flex gap-1.5">
-              <span aria-hidden style={{ color: "#b08d3e" }}>
+              <span aria-hidden style={{ color: "#2b5cd9" }}>
                 ・
               </span>
               <span>{h}</span>
@@ -112,7 +112,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       <section className="flex flex-col gap-1.5">
         <h2
           className="text-[12px] font-bold"
-          style={{ color: "#b08d3e", borderBottom: "1px solid #eee6d6", paddingBottom: 4 }}
+          style={{ color: "#2b5cd9", borderBottom: "1px solid #dbe5f7", paddingBottom: 4 }}
         >
           希望条件
         </h2>
@@ -134,7 +134,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
       <section className="flex flex-col gap-1.5">
         <h2
           className="text-[12px] font-bold"
-          style={{ color: "#b08d3e", borderBottom: "1px solid #eee6d6", paddingBottom: 4 }}
+          style={{ color: "#2b5cd9", borderBottom: "1px solid #dbe5f7", paddingBottom: 4 }}
         >
           想定紹介手数料
         </h2>
@@ -142,7 +142,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
           <span>
             {result.feeCalc.incomeMan.toLocaleString("ja-JP")}万円 × {result.feeCalc.feeRateLabel}
           </span>
-          <span className="text-[15px] font-bold" style={{ color: "#16233f" }}>
+          <span className="text-[15px] font-bold" style={{ color: "#1d3c8f" }}>
             {result.feeCalc.feeMan.toLocaleString("ja-JP")}万円(想定)
           </span>
         </div>
@@ -150,7 +150,7 @@ export default function ProposalDocument({ result }: { result: ProposalResult })
 
       {/* 担当CA連絡先 */}
       <section className="flex flex-col gap-1 border-t pt-3" style={{ borderColor: "#d8d2c4" }}>
-        <p className="text-[12px] font-semibold" style={{ color: "#16233f" }}>
+        <p className="text-[12px] font-semibold" style={{ color: "#1d3c8f" }}>
           担当CA: {result.caContact.name}({result.caContact.roleLabel})
         </p>
         <p className="text-[11px]" style={{ color: "#6b6459" }}>

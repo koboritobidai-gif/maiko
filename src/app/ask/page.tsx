@@ -83,7 +83,7 @@ export default function AskPage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
       <div className="flex flex-col gap-2 border-b px-4 pb-3 pt-1" style={{ borderColor: "var(--color-border)" }}>
         <div className="flex items-center gap-2">
           <div

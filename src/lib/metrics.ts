@@ -385,6 +385,53 @@ export function getWeeklyTrendRows(records: WeeklyKpiRecord[], weeks = 5): Weekl
   }));
 }
 
+export interface MonthlyKpiPoint {
+  /** 対象月("YYYY-MM") */
+  month: string;
+  /** 面談数(求職者) */
+  interviews: number;
+  /** 内定者数(求職者) */
+  offers: number;
+  /** 採用決定求職者数 */
+  candidatePlacements: number;
+  /** 契約金額(万円、法人) */
+  contractAmountMan: number;
+  /** PV数(求職者) */
+  pv: number;
+  /** LINE登録人数(求職者) */
+  lineRegistrations: number;
+}
+
+/** 月初(YYYY-MM)の Date からラベル用のキー文字列を作る。 */
+function toMonthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * weeklyKpis から月別集計(直近 n ヶ月、既定6ヶ月・古い月→新しい月の昇順)を返す。
+ * 管理者向けダッシュボードの「月次推移」セクション用。
+ */
+export function getMonthlyKpiHistory(
+  records: WeeklyKpiRecord[],
+  months = 6,
+  now: Date = new Date(),
+): MonthlyKpiPoint[] {
+  const points: MonthlyKpiPoint[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const ref = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    points.push({
+      month: toMonthKey(ref),
+      interviews: getMonthlyKpiTotal(records, "求職者", "面談数", ref),
+      offers: getMonthlyKpiTotal(records, "求職者", "内定者数", ref),
+      candidatePlacements: getMonthlyKpiTotal(records, "求職者", "採用決定求職者数", ref),
+      contractAmountMan: getMonthlyKpiTotal(records, "法人", "契約金額", ref),
+      pv: getMonthlyKpiTotal(records, "求職者", "PV数", ref),
+      lineRegistrations: getMonthlyKpiTotal(records, "求職者", "LINE登録人数", ref),
+    });
+  }
+  return points;
+}
+
 export interface DashboardSummary {
   today: CountAmount;
   month: CountAmount;
@@ -393,6 +440,7 @@ export interface DashboardSummary {
   candidateFunnel: CandidateFunnel;
   corporateFunnel: CorporateFunnel;
   weeklyTrend: WeeklyTrendRow[];
+  monthlyHistory: MonthlyKpiPoint[];
   pipeline: StageCount[];
   withdrawnCount: number;
   projects: Project[];
@@ -409,6 +457,7 @@ export function getDashboardSummary(bundle: DataBundle, now: Date = new Date()):
     candidateFunnel: getCandidateFunnel(bundle.weeklyKpis, now),
     corporateFunnel: getCorporateFunnel(bundle.weeklyKpis, now),
     weeklyTrend: getWeeklyTrendRows(bundle.weeklyKpis, 5),
+    monthlyHistory: getMonthlyKpiHistory(bundle.weeklyKpis, 6, now),
     pipeline: getStagePipeline(bundle.candidates),
     withdrawnCount: getWithdrawnCount(bundle.candidates),
     projects: getSortedProjects(bundle.projects),

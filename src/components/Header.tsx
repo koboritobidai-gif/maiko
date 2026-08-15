@@ -37,15 +37,15 @@ export default function Header({ profile, onRequestSwitchRole }: HeaderProps) {
 
   return (
     <header
-      className="sticky top-0 z-40 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+14px)]"
-      style={{ background: "var(--color-navy)", color: "#f2efe6" }}
+      className="sticky top-0 z-40 border-b px-4 pb-4 pt-[calc(env(safe-area-inset-top)+14px)] lg:px-8 lg:py-3.5"
+      style={{ background: "#ffffff", borderColor: "var(--color-border)", color: "var(--color-text)" }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 lg:items-center">
         <div>
-          <p className="text-lg font-bold leading-snug">
+          <p className="text-lg font-bold leading-snug lg:text-[15px]" style={{ color: "var(--color-navy)" }}>
             {now ? getGreeting(now) : "こんにちは"}、{profile.name}さん
           </p>
-          <p className="mt-0.5 text-[12px]" style={{ color: "#b7bfd6" }}>
+          <p className="mt-0.5 text-[12px]" style={{ color: "var(--color-text-muted)" }}>
             {now ? formatDate(now) : ""}
           </p>
         </div>
@@ -54,8 +54,8 @@ export default function Header({ profile, onRequestSwitchRole }: HeaderProps) {
           onClick={onRequestSwitchRole}
           className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium"
           style={{
-            background: "color-mix(in srgb, var(--color-gold) 22%, transparent)",
-            color: "var(--color-gold-light)",
+            background: "color-mix(in srgb, var(--color-gold) 14%, transparent)",
+            color: "var(--color-gold)",
             border: "1px solid color-mix(in srgb, var(--color-gold) 45%, transparent)",
           }}
         >

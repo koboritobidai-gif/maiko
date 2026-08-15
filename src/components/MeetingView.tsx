@@ -77,7 +77,7 @@ export default function MeetingView() {
   }
 
   return (
-    <div className="flex flex-col gap-6 px-4 pt-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-8 pt-4">
       {/* 説明ヘッダー */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center gap-3">

@@ -115,7 +115,7 @@ export default function CandidateListView({ candidates, members, sourceStatus }:
   }, [candidates, stageFilter, query]);
 
   return (
-    <div className="flex flex-col gap-3.5 px-4 pt-4 pb-4">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3.5 px-4 pb-4 pt-4 lg:gap-5 lg:px-8 lg:pb-10 lg:pt-6">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">
           <Link href="/" className="text-[12px] font-semibold" style={{ color: "var(--color-gold)" }}>
@@ -169,12 +169,12 @@ export default function CandidateListView({ candidates, members, sourceStatus }:
         })}
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        {filtered.length === 0 && (
-          <p className="py-8 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-            該当する求職者が見つかりませんでした。
-          </p>
-        )}
+      {filtered.length === 0 && (
+        <p className="py-8 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+          該当する求職者が見つかりませんでした。
+        </p>
+      )}
+      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:gap-3 xl:grid-cols-3">
         {filtered.map((c) => (
           <CandidateCard key={c.id} candidate={c} caName={caNameById.get(c.caId) ?? c.caId} />
         ))}

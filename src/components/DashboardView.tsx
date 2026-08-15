@@ -31,6 +31,12 @@ function formatWeekLabel(weekStart: string): string {
   return `${m}/${d}週`;
 }
 
+/** 月キー(YYYY-MM)を「YYYY年M月」表示に変換する。 */
+function formatMonthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return `${y}年${m}月`;
+}
+
 /** 先月比の差分を「+n」「-n」「±0」の形式で表す。 */
 function formatDiff(diff: number, unit = ""): string {
   const rounded = Math.round(diff);
@@ -151,7 +157,7 @@ export default function DashboardView({
   );
 
   return (
-    <div className="flex flex-col gap-6 px-4 pt-4">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 pt-4 lg:gap-8 lg:px-8 lg:pb-12 lg:pt-6">
       {isCa && (
         <div
           className="card flex items-center justify-between p-3.5"
@@ -189,7 +195,7 @@ export default function DashboardView({
             接続エラーの内容: {sourceErrorMessage}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
           <KpiCard
             label="面談数"
             value={`${primary.interviews.value}件`}
@@ -215,7 +221,8 @@ export default function DashboardView({
         </div>
       </section>
 
-      {/* 2. 求職者ファネル(月内) */}
+      {/* 2-3. 求職者ファネル・法人営業ファネル(lgでは左右2カラム) */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -301,8 +308,10 @@ export default function DashboardView({
           </div>
         </div>
       </section>
+      </div>
 
-      {/* 4. 週次推移(直近5週) */}
+      {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム) */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -344,7 +353,66 @@ export default function DashboardView({
         </div>
       </section>
 
-      {/* 5. 求職者パイプライン */}
+      {/* 4b. 月次推移(直近6ヶ月・管理者向け) */}
+      <section className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+            月次推移(直近6ヶ月)
+          </h2>
+          <SourceBadge label={sheetsBadge} />
+        </div>
+        <div className="card overflow-x-auto p-3 lg:p-3.5">
+          <table className="w-full min-w-[520px] text-left text-[11px] lg:min-w-0 lg:text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-1.5 font-medium">月</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">面談数</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">内定者数</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">採用決定</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">契約金額</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">PV数</th>
+                <th className="pb-2 text-right font-medium">LINE登録</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+              {summary.monthlyHistory.map((row, i) => {
+                const isCurrentMonth = i === summary.monthlyHistory.length - 1;
+                const rowStyle = isCurrentMonth
+                  ? { fontWeight: 700, background: "color-mix(in srgb, var(--color-gold) 6%, transparent)" }
+                  : undefined;
+                return (
+                  <tr key={row.month} style={rowStyle}>
+                    <td
+                      className="whitespace-nowrap py-2 pr-1.5 font-medium"
+                      style={{ color: isCurrentMonth ? "var(--color-gold)" : "var(--color-navy)" }}
+                    >
+                      {formatMonthLabel(row.month)}
+                      {isCurrentMonth && (
+                        <span className="ml-1 text-[10px] font-normal" style={{ color: "var(--color-text-muted)" }}>
+                          (当月)
+                        </span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-1.5 text-right">{row.interviews}件</td>
+                    <td className="whitespace-nowrap py-2 pr-1.5 text-right">{row.offers}名</td>
+                    <td className="whitespace-nowrap py-2 pr-1.5 text-right">{row.candidatePlacements}名</td>
+                    <td className="whitespace-nowrap py-2 pr-1.5 text-right">{row.contractAmountMan.toLocaleString("ja-JP")}万円</td>
+                    <td className="whitespace-nowrap py-2 pr-1.5 text-right">{row.pv.toLocaleString("ja-JP")}</td>
+                    <td className="whitespace-nowrap py-2 text-right">{row.lineRegistrations.toLocaleString("ja-JP")}人</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            週次入力(毎週月曜に前週分)を月単位で集計した推移です。当月はデータが揃うまで少なめに表示されます。
+          </p>
+        </div>
+      </section>
+      </div>
+
+      {/* 5-6. 求職者パイプライン・プロジェクト進捗(lgでは左右2カラム) */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -435,8 +503,9 @@ export default function DashboardView({
           ))}
         </div>
       </section>
+      </div>
 
-      {/* 7. Slack 最新ハイライト */}
+      {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に) */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -456,12 +525,9 @@ export default function DashboardView({
             接続エラーの内容: {slackErrorMessage}
           </p>
         )}
-        <div
-          className="card flex flex-col divide-y"
-          style={{ borderColor: "var(--color-border)" }}
-        >
+        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
           {summary.slack.map((post) => (
-            <div key={post.id} className="flex flex-col gap-1 p-3.5">
+            <div key={post.id} className="card flex flex-col gap-1 p-3.5">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-semibold" style={{ color: "var(--color-gold)" }}>
                   {post.channel}

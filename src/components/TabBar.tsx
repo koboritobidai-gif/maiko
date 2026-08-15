@@ -23,12 +23,12 @@ export default function TabBar() {
 
   return (
     <nav
-      className="sticky bottom-0 left-0 right-0 z-40 border-t"
+      className="sticky bottom-0 left-0 right-0 z-40 border-t lg:hidden"
       style={{
-        background: "var(--color-navy)",
-        borderColor: "var(--color-navy-light)",
+        background: "#ffffff",
+        borderColor: "var(--color-border)",
       }}
-      aria-label="メインナビゲーション"
+      aria-label="メインナビゲーション(モバイル)"
     >
       <ul className="flex items-stretch justify-between px-1">
         {TABS.map(({ href, label, icon: Icon }) => {
@@ -39,13 +39,16 @@ export default function TabBar() {
                 href={href}
                 className="flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors"
                 style={{
-                  color: active ? "var(--color-gold-light)" : "#9aa3bd",
+                  color: active ? "var(--color-navy)" : "var(--color-text-muted)",
                 }}
               >
                 <Icon
                   width={21}
                   height={21}
-                  style={{ opacity: active ? 1 : 0.85 }}
+                  style={{
+                    color: active ? "var(--color-gold)" : "var(--color-text-muted)",
+                    opacity: active ? 1 : 0.85,
+                  }}
                 />
                 <span className={active ? "font-semibold" : undefined}>
                   {label}

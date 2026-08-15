@@ -1,53 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --color-navy: #16233f;
-  --color-navy-light: #23345a;
-  --color-cream: #faf8f4;
+  /* アクセント(トビダイブルー)。tobidai.co.jp のブランドカラーに合わせた
+     鮮やかなブルー基調。面積の大きいヘッダー/ナビ地色ではなく、
+     選択状態・アイコン・見出し・バッジなど「アクセントとしてのみ」使用する。
+     (変数名は歴史的経緯で navy/gold のまま: navy=濃ブルー、gold=鮮やかなブランドブルー) */
+  --color-navy: #1d3c8f;
+  --color-navy-light: #2b5cd9;
+  --color-gold: #2b5cd9;
+  --color-gold-light: #55a8ea;
+
+  /* 背景は常にライト(ダークモード対応は完全に廃止)。 */
+  --color-bg: #ffffff;
   --color-card: #ffffff;
-  --color-border: #e6e0d4;
-  --color-gold: #b08d3e;
-  --color-gold-light: #cba959;
-  --color-text: #232323;
-  --color-kpi-value: #16233f;
-  --color-text-muted: #6b6459;
-  --color-good: #2f7d4f;
+  /* カード内のインセットパネル(引用風メモなど)用の、ごくわずかに沈んだニュートラルグレー。
+     生成り(暖色オフホワイト)は使わず、あくまで白に近い中立グレーにする。 */
+  --color-cream: #f4f5f7;
+  --color-border: #e5e7eb;
+
+  --color-text: #1a1a1a;
+  --color-kpi-value: #1d3c8f;
+  --color-text-muted: #6b7280;
+
+  --color-good: #227a4c;
   --color-warn: #b9832a;
   --color-bad: #b8412f;
-}
-
-:root[data-theme="dark"] {
-  --color-navy: #101a30;
-  --color-navy-light: #1c2c4d;
-  --color-cream: #14161c;
-  --color-card: #1d2029;
-  --color-border: #33384a;
-  --color-gold: #cba959;
-  --color-gold-light: #ddc07f;
-  --color-text: #f1efe9;
-  --color-kpi-value: #f1efe9;
-  --color-text-muted: #a7a396;
-  --color-good: #57c481;
-  --color-warn: #e0a94a;
-  --color-bad: #e56c56;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-navy: #101a30;
-    --color-navy-light: #1c2c4d;
-    --color-cream: #14161c;
-    --color-card: #1d2029;
-    --color-border: #33384a;
-    --color-gold: #cba959;
-    --color-gold-light: #ddc07f;
-    --color-text: #f1efe9;
-    --color-kpi-value: #f1efe9;
-    --color-text-muted: #a7a396;
-    --color-good: #57c481;
-    --color-warn: #e0a94a;
-    --color-bad: #e56c56;
-  }
 }
 
 * {
@@ -60,38 +37,18 @@ body {
 }
 
 body {
-  background: var(--color-cream);
+  background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic",
     "Meiryo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-.app-shell {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-cream);
-  position: relative;
-}
-
-@media (min-width: 640px) {
-  .app-shell {
-    max-width: 480px;
-    box-shadow: 0 0 0 1px var(--color-border);
-    min-height: 100vh;
-  }
-  body {
-    background: var(--color-navy);
-  }
-}
-
 .card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .source-badge {
