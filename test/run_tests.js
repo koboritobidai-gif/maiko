@@ -32,7 +32,29 @@ const Utilities = {
     };
     return fmt.replace(/yyyy|MM|dd|HH|mm|ss/g, (m) => map[m]);
   },
-  sleep() {}
+  sleep() {},
+  // Utilities.parseCsv 相当（引用符・改行入りフィールドに対応）
+  parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+        } else field += ch;
+        continue;
+      }
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (ch !== '\r') field += ch;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
 };
 
 const Logger = { log: () => {} };
@@ -65,7 +87,7 @@ const sandbox = {
 vm.createContext(sandbox);
 
 const SRC = path.join(__dirname, '..', 'src');
-['00_Config.gs', '20_Aggregator.gs'].forEach((f) => {
+['00_Config.gs', '20_Aggregator.gs', '60_CsvImport.gs'].forEach((f) => {
   vm.runInContext(fs.readFileSync(path.join(SRC, f), 'utf8'), sandbox, { filename: f });
 });
 
@@ -154,10 +176,13 @@ check('7/27週 面談予約数', agg['2026-07-27'].reserved, 1);
 check('7/27週 面談数', agg['2026-07-27'].held, 0);
 
 // 除外ステータスの設定が効くこと
+const defaultStatuses = sandbox.CONFIG.COUNT_STATUSES;
 sandbox.CONFIG.COUNT_STATUSES = ['normal'];
 const aggNormalOnly = aggregateByWeek_(friends);
 check('ブロックを除外した場合の登録人数', aggNormalOnly['2026-08-03'].registrations, 3);
-sandbox.CONFIG.COUNT_STATUSES = ['normal', 'block', 'hide'];
+sandbox.CONFIG.COUNT_STATUSES = defaultStatuses;
+check('既定のステータスにCSVの日本語表記が含まれる',
+  ['normal', '有効', 'ブロック'].every((s) => defaultStatuses.indexOf(s) !== -1), true);
 
 // タグモード
 sandbox.CONFIG.MEETING.mode = 'tag';
@@ -172,7 +197,41 @@ check('タグモード 予約数', aggTag['2026-08-03'].reserved, 2);
 check('タグモード 面談数', aggTag['2026-08-03'].held, 1);
 sandbox.CONFIG.MEETING.mode = 'dateField';
 
-// ── 4. 実KPI表の週列マップとの突き合わせ ────────────────────
+// ── 4. CSV取り込み ──────────────────────────────────────────
+const csvToRecords_ = sandbox.csvToRecords_;
+const looksGarbled_ = sandbox.looksGarbled_;
+
+const csv = [
+  '友だち登録日時,表示名,ステータス,面談予約日,面談実施日',
+  '2026-08-03 10:00:00,山田 太郎,有効,2026-08-04,2026-08-06',
+  '2026-08-09 23:30:00,"佐藤, 花子",有効,2026-08-09,',
+  '2026-08-05 09:00:00,鈴木 一郎,ブロック,,',
+  '2026-07-28 12:00:00,高橋 次郎,有効,2026-07-30,2026-08-05',
+  '',
+  '2026-08-06 08:00:00,田中 三郎,有効,2026-08-07,'
+].join('\n');
+
+const csvRecords = csvToRecords_(csv);
+check('CSV行数（空行を除く）', csvRecords.length, 5);
+check('引用符内のカンマを保持', csvRecords[1]['表示名'], '佐藤, 花子');
+check('CSVヘッダーがキーになる', csvRecords[0]['友だち登録日時'], '2026-08-03 10:00:00');
+
+const csvAgg = aggregateByWeek_(csvRecords);
+check('CSV 8/3週 LINE登録人数', csvAgg['2026-08-03'].registrations, 4);
+check('CSV 8/3週 面談予約数', csvAgg['2026-08-03'].reserved, 3);
+check('CSV 8/3週 面談数', csvAgg['2026-08-03'].held, 2);
+check('CSV 7/27週 LINE登録人数', csvAgg['2026-07-27'].registrations, 1);
+check('CSV 7/27週 面談数は0（実施は8/3週）', csvAgg['2026-07-27'].held, 0);
+check('APIルートとCSVルートで結果が一致', csvAgg['2026-08-03'], agg['2026-08-03']);
+
+// BOM付きヘッダーでも列名が壊れないこと
+const bomRecords = csvToRecords_('﻿友だち登録日時,ステータス\n2026-08-03,有効');
+check('BOM付きCSVのヘッダー', Object.keys(bomRecords[0])[0], '友だち登録日時');
+
+check('文字化け検出（正常）', looksGarbled_('友だち登録日時,表示名'), false);
+check('文字化け検出（化けている）', looksGarbled_('�����,����'), true);
+
+// ── 5. 実KPI表の週列マップとの突き合わせ ────────────────────
 const fixturePath = path.join(__dirname, 'fixtures', 'weekmap.json');
 if (fs.existsSync(fixturePath)) {
   const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
