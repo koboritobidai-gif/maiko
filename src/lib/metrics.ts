@@ -4,17 +4,20 @@
  * demo-data.ts / adapters/* を直接 import しないこと(画面・API・AI応答のいずれも
  * このファイル経由で集計し、実データ・デモデータの両方に同一ロジックを適用する)。
  */
-import { PIPELINE_STAGES } from "./types";
+import { ALL_STAGES, PIPELINE_STAGES } from "./types";
 import type {
+  AdDailyRecord,
   Candidate,
   CandidateKpiKey,
   CorporateKpiKey,
   DataBundle,
   KpiCategory,
+  MarketingData,
   Member,
   Placement,
   Project,
   SlackPost,
+  SnsWeeklyRecord,
   Stage,
   WeeklyKpiRecord,
 } from "./types";
@@ -59,6 +62,15 @@ export function getMonthPlacements(placements: Placement[], now: Date = new Date
   return summarize(placements.filter((p) => isSameMonth(p.placedAt, now)));
 }
 
+/** 特定CA担当分の月内累計成約(件数・手数料合計)。CA個別実績の集計に使用する。 */
+export function getCaMonthPlacements(
+  placements: Placement[],
+  caId: string,
+  now: Date = new Date(),
+): CountAmount {
+  return summarize(placements.filter((p) => p.caId === caId && isSameMonth(p.placedAt, now)));
+}
+
 /** 売上見込み(内定+承諾ステージの理論年収 × 手数料率)。 */
 export function getForecastRevenue(candidates: Candidate[], feeRate: number): number {
   return candidates
@@ -100,6 +112,17 @@ export function getRecentSlackPosts(slackPosts: SlackPost[], limit = 8): SlackPo
 /** 特定CA担当の求職者一覧。 */
 export function getCandidatesByCa(candidates: Candidate[], caId: string): Candidate[] {
   return candidates.filter((c) => c.caId === caId);
+}
+
+export interface CaStageBreakdown {
+  stage: Stage;
+  count: number;
+}
+
+/** 特定CA担当の求職者数(ステージ別内訳、辞退含む)。CA個別実績の集計に使用する。 */
+export function getCaCandidateBreakdown(candidates: Candidate[], caId: string): CaStageBreakdown[] {
+  const mine = getCandidatesByCa(candidates, caId);
+  return ALL_STAGES.map((stage) => ({ stage, count: mine.filter((c) => c.stage === stage).length }));
 }
 
 /** id からメンバーを引く。 */
@@ -231,6 +254,55 @@ export function getKpiTotalsByOwner(
   return [...byOwner.entries()]
     .map(([owner, total]) => ({ owner, total }))
     .sort((a, b) => b.total - a.total);
+}
+
+export interface OwnerMonthlyKpiEntry {
+  category: KpiCategory;
+  key: CandidateKpiKey | CorporateKpiKey;
+  total: number;
+}
+
+/** 特定担当者の今月の週次KPI入力分(区分・項目ごとの合計。値0の項目は除く)。CA個別実績で使用する。 */
+export function getMonthlyKpiEntriesByOwner(
+  records: WeeklyKpiRecord[],
+  ownerName: string,
+  now: Date = new Date(),
+): OwnerMonthlyKpiEntry[] {
+  const inMonth = records.filter(
+    (r) => r.owner === ownerName && isSameMonth(weekStartToDate(r.weekStart), now),
+  );
+  const byKey = new Map<string, OwnerMonthlyKpiEntry>();
+  for (const r of inMonth) {
+    const mapKey = `${r.category}::${r.key}`;
+    const existing = byKey.get(mapKey);
+    if (existing) existing.total += r.value;
+    else byKey.set(mapKey, { category: r.category, key: r.key, total: r.value });
+  }
+  return [...byKey.values()].filter((e) => e.total !== 0);
+}
+
+export interface BlockRateSummary {
+  /** 週次KPIに「ブロック数」の入力実績が1件でもあるか(任意項目のため未入力の場合がある)。 */
+  hasAnyData: boolean;
+  /** 今月のブロック数合計。 */
+  blockCount: number;
+  /** 今月のLINE登録人数合計。 */
+  lineRegistrations: number;
+  /** ブロック率(%) = ブロック数 / LINE登録人数。未入力または分母0の場合は null。 */
+  ratePercent: number | null;
+}
+
+/** ブロック率(今月、Lステップのブロック数 ÷ LINE登録人数)。「ブロック数」は任意項目のため未入力の場合がある。 */
+export function getBlockRate(records: WeeklyKpiRecord[], now: Date = new Date()): BlockRateSummary {
+  const hasAnyData = records.some((r) => r.category === "求職者" && r.key === "ブロック数");
+  const blockCount = getMonthlyKpiTotal(records, "求職者", "ブロック数", now);
+  const lineRegistrations = getMonthlyKpiTotal(records, "求職者", "LINE登録人数", now);
+  return {
+    hasAnyData,
+    blockCount,
+    lineRegistrations,
+    ratePercent: hasAnyData && lineRegistrations > 0 ? (blockCount / lineRegistrations) * 100 : null,
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -462,5 +534,168 @@ export function getDashboardSummary(bundle: DataBundle, now: Date = new Date()):
     withdrawnCount: getWithdrawnCount(bundle.candidates),
     projects: getSortedProjects(bundle.projects),
     slack: getRecentSlackPosts(bundle.slackPosts),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 集客・広告データ(アイドマ=広告運用シート / リズリアライズ=SNS運用シート)の集計
+// ─────────────────────────────────────────────
+
+/** 分母0のときは null(UIでは「—」表示)にする率(%)。 */
+function rateOrNull(numerator: number, denominator: number): number | null {
+  return denominator > 0 ? (numerator / denominator) * 100 : null;
+}
+
+/** 分母0のときは null(UIでは「—」表示)にする単価(円)。 */
+function divOrNull(numerator: number, denominator: number): number | null {
+  return denominator > 0 ? numerator / denominator : null;
+}
+
+export interface AdChannelSummary {
+  channel: "Google広告" | "Meta広告";
+  cost: number;
+  impressions: number;
+  clicks: number;
+  lineRegs: number;
+  reservations: number;
+  interviews: number;
+  /** クリック率(%) = クリック数 / 表示回数 */
+  ctr: number | null;
+  /** 遷移率(%) = LINE登録数 / クリック数 */
+  regRate: number | null;
+  /** 予約率(%) = 面談予約数 / LINE登録数 */
+  reserveRate: number | null;
+  /** 面談実行率(%) = 面談実施数 / 面談予約数 */
+  execRate: number | null;
+  /** 登録単価(円) = 費用 / LINE登録数 */
+  cpa: number | null;
+  /** 面談単価(円) = 費用 / 面談実施数 */
+  costPerInterview: number | null;
+}
+
+function summarizeAdChannel(
+  records: AdDailyRecord[],
+  channel: "Google広告" | "Meta広告",
+  now: Date,
+): AdChannelSummary {
+  const inMonth = records.filter((r) => r.channel === channel && isSameMonth(r.date, now));
+  const cost = inMonth.reduce((sum, r) => sum + r.cost, 0);
+  const impressions = inMonth.reduce((sum, r) => sum + r.impressions, 0);
+  const clicks = inMonth.reduce((sum, r) => sum + r.clicks, 0);
+  const lineRegs = inMonth.reduce((sum, r) => sum + r.lineRegs, 0);
+  const reservations = inMonth.reduce((sum, r) => sum + r.reservations, 0);
+  const interviews = inMonth.reduce((sum, r) => sum + r.interviews, 0);
+  return {
+    channel,
+    cost,
+    impressions,
+    clicks,
+    lineRegs,
+    reservations,
+    interviews,
+    ctr: rateOrNull(clicks, impressions),
+    regRate: rateOrNull(lineRegs, clicks),
+    reserveRate: rateOrNull(reservations, lineRegs),
+    execRate: rateOrNull(interviews, reservations),
+    cpa: divOrNull(cost, lineRegs),
+    costPerInterview: divOrNull(cost, interviews),
+  };
+}
+
+export interface SnsSummary {
+  /** SNS運用の月額固定費用(円)。週次実績とは別の固定値。 */
+  cost: number;
+  plays: number;
+  profileVisits: number;
+  lpViews: number;
+  lineRegs: number;
+  interviews: number;
+  /** LP遷移率(%) = LP閲覧合計 / 合計再生数 */
+  lpRate: number | null;
+  /** LINE登録率(%) = LINE登録(実) / LP閲覧合計 */
+  regRate: number | null;
+  /** 登録単価(円) = 月額費用 / LINE登録(実) */
+  cpa: number | null;
+  /** 面談単価(円) = 月額費用 / 面談(実) */
+  costPerInterview: number | null;
+}
+
+function summarizeSns(records: SnsWeeklyRecord[], monthlyCostYen: number, now: Date): SnsSummary {
+  const inMonth = records.filter((r) => isSameMonth(r.weekStart, now));
+  const plays = inMonth.reduce((sum, r) => sum + r.plays, 0);
+  const profileVisits = inMonth.reduce((sum, r) => sum + r.profileVisits, 0);
+  const lpViews = inMonth.reduce((sum, r) => sum + r.lpViews, 0);
+  const lineRegs = inMonth.reduce((sum, r) => sum + r.lineRegs, 0);
+  const interviews = inMonth.reduce((sum, r) => sum + r.interviews, 0);
+  return {
+    cost: monthlyCostYen,
+    plays,
+    profileVisits,
+    lpViews,
+    lineRegs,
+    interviews,
+    lpRate: rateOrNull(lpViews, plays),
+    regRate: rateOrNull(lineRegs, lpViews),
+    cpa: divOrNull(monthlyCostYen, lineRegs),
+    costPerInterview: divOrNull(monthlyCostYen, interviews),
+  };
+}
+
+export interface MarketingTransitionRates {
+  /** クリック→LINE登録率(%)。Google広告・Meta広告の合算値。 */
+  clickToLineRegRatePercent: number | null;
+  /** LINE→予約率(%)。Google広告・Meta広告の合算値。 */
+  lineToReservationRatePercent: number | null;
+  /** 予約→面談実行率(%)。Google広告・Meta広告の合算値。 */
+  reservationToInterviewRatePercent: number | null;
+  /** SNS再生→LP率(%)。 */
+  snsPlayToLpRatePercent: number | null;
+}
+
+export interface MarketingSummary {
+  /** 媒体別(Google広告・Meta広告)の月内サマリ。 */
+  channels: AdChannelSummary[];
+  /** SNS運用(リズリアライズ)の月内サマリ。 */
+  sns: SnsSummary;
+  /** 広告費用合計(Google広告+Meta広告)+SNS月額。 */
+  totalCost: number;
+  totalLineRegs: number;
+  /** 面談予約合計(Google広告+Meta広告。SNSは予約数を計測しないため含まない)。 */
+  totalReservations: number;
+  totalInterviews: number;
+  /** 面接回数(週次KPIの1次〜最終前面接数+最終面接数、月内合計)。既存の getCandidateFunnel を再利用。 */
+  interviewsCombined: number;
+  transitionRates: MarketingTransitionRates;
+}
+
+/** 集客・広告データ(月内)のまとめ。ダッシュボード「集客・広告(月内)」セクション・AI応答の両方で使用する。 */
+export function getMarketingSummary(
+  data: MarketingData,
+  weeklyKpis: WeeklyKpiRecord[],
+  now: Date = new Date(),
+): MarketingSummary {
+  const google = summarizeAdChannel(data.adDaily, "Google広告", now);
+  const meta = summarizeAdChannel(data.adDaily, "Meta広告", now);
+  const sns = summarizeSns(data.snsWeekly, data.snsMonthlyCostYen, now);
+
+  const adClicks = google.clicks + meta.clicks;
+  const adLineRegs = google.lineRegs + meta.lineRegs;
+  const adReservations = google.reservations + meta.reservations;
+  const adInterviews = google.interviews + meta.interviews;
+
+  return {
+    channels: [google, meta],
+    sns,
+    totalCost: google.cost + meta.cost + sns.cost,
+    totalLineRegs: adLineRegs + sns.lineRegs,
+    totalReservations: adReservations,
+    totalInterviews: adInterviews + sns.interviews,
+    interviewsCombined: getCandidateFunnel(weeklyKpis, now).interviewsCombined,
+    transitionRates: {
+      clickToLineRegRatePercent: rateOrNull(adLineRegs, adClicks),
+      lineToReservationRatePercent: rateOrNull(adReservations, adLineRegs),
+      reservationToInterviewRatePercent: rateOrNull(adInterviews, adReservations),
+      snsPlayToLpRatePercent: sns.lpRate,
+    },
   };
 }

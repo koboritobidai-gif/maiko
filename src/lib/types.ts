@@ -184,7 +184,8 @@ export type CandidateKpiKey =
   | "1次〜最終前面接数"
   | "最終面接数"
   | "内定者数"
-  | "採用決定求職者数";
+  | "採用決定求職者数"
+  | "ブロック数";
 
 /** 法人営業系KPI項目。 */
 export type CorporateKpiKey =
@@ -210,6 +211,9 @@ export const CANDIDATE_KPI_KEYS: CandidateKpiKey[] = [
   "最終面接数",
   "内定者数",
   "採用決定求職者数",
+  // 任意項目: Lステップ(LINE公式アカウント)のブロック数。週次で記録すると「ブロック率」の
+  // AI質問応答(ask-responder.ts)に利用できる。ダッシュボードの求職者ファネルには表示しない。
+  "ブロック数",
 ];
 
 export const CORPORATE_KPI_KEYS: CorporateKpiKey[] = [
@@ -281,4 +285,56 @@ export interface DataBundle {
   slackStatus: SourceStatus;
   /** Slack 接続失敗時のエラー内容(live-error のときのみ。画面での自己診断用)。 */
   slackErrorMessage?: string;
+}
+
+// ─────────────────────────────────────────────
+// 集客・広告データ(外部スプレッドシート2つ: アイドマ=広告運用 / リズリアライズ=SNS運用)
+// ─────────────────────────────────────────────
+
+/** 広告運用シート(アイドマ)の日次実績。媒体ごとに1日1レコード。 */
+export interface AdDailyRecord {
+  /** 媒体(タブ名) */
+  channel: "Google広告" | "Meta広告";
+  /** 実績日 */
+  date: Date;
+  /** 費用(円) */
+  cost: number;
+  /** 表示回数 */
+  impressions: number;
+  /** クリック数 */
+  clicks: number;
+  /** LINE登録数 */
+  lineRegs: number;
+  /** 面談予約数 */
+  reservations: number;
+  /** 面談実施数 */
+  interviews: number;
+}
+
+/** SNS運用シート(リズリアライズ)の週次実績。 */
+export interface SnsWeeklyRecord {
+  /** 対象週の開始日(シートの「期間」表記から算出) */
+  weekStart: Date;
+  /** 期間表記(シートの値をそのまま保持。例: 「6/19-6/25」) */
+  label: string;
+  /** 合計再生数(TikTok/IG) */
+  plays: number;
+  /** プロフィール遷移数(TikTok/IGの合算) */
+  profileVisits: number;
+  /** LP閲覧合計 */
+  lpViews: number;
+  /** LINE登録(実) */
+  lineRegs: number;
+  /** 面談(実) */
+  interviews: number;
+}
+
+/** 集客・広告データ(2つの外部スプレッドシートから統合)。 */
+export interface MarketingData {
+  /** 広告運用(アイドマ)の日次実績(Google広告・Meta広告) */
+  adDaily: AdDailyRecord[];
+  /** SNS運用(リズリアライズ)の週次実績 */
+  snsWeekly: SnsWeeklyRecord[];
+  /** SNS運用の月額固定費用(円)。`MARKETING_SNS_MONTHLY_COST` 環境変数(未設定時 495,000円)。 */
+  snsMonthlyCostYen: number;
 }

@@ -75,6 +75,18 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 - 挨拶+日付
 - 主要指標(今月): 面談数 / 内定者数 / 採用決定(求職者) / 新規契約金額(万円)。各カードに先月同値との差分(+n/-n)を小さく表示。
   カード数はスマホ/sm=2枚、PC(lg)=4枚のグリッド
+- **集客・広告(月内)**: 主要指標の直後に配置。外部の広告・SNS運用シート2つ(6.5参照)から集計した
+  当月の集客・広告データを表示する。SourceBadge(独自の`marketing`ステータス)+ live-error 時の赤枠を
+  求職者ファネル等と同じパターンで表示する。
+  - 合計カード列: 広告費用合計(円表示)/ LINE登録合計 / 面談予約合計 / 面談実績合計 / 面接回数
+    (週次KPIの1次〜最終前+最終面接数の月内合計)。スマホ2枚/PC(lg)5枚のグリッド
+  - 媒体別テーブル(Google広告/Meta広告/SNS運用(リズリアライズ)。列: 費用/LINE登録/予約/面談/CPA/面談単価。
+    スマホは横スクロール、SNSは予約数を計測しないため「—」表示)
+  - 遷移率バッジ列: クリック→LINE登録率・LINE→予約率・予約→面談実行率・SNS再生→LP率
+    (分母0で算出不可のものは非表示)
+  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, now)`(純関数)。
+    データソースは `src/lib/marketing-data.ts` の `loadMarketingData()`(5分メモリキャッシュ、
+    live失敗時はデモへフォールバック。詳細は6.5参照)
 - 求職者ファネル(月内): PV数 → LINE登録 → 面談予約 → 面談 → 面接(1次〜最終前+最終) → 内定 → 採用決定 を横棒ファネル表示。
   LINE登録率・面談実行率・面談移行率をバッジ表示
 - 法人営業ファネル(月内): 名刺交換 → アポイント(主権/非主権/外部の内訳) → 商談(同内訳) → 契約(件数+金額)。
@@ -151,6 +163,11 @@ force-dynamic のサーバーコンポーネント(`page.tsx`)+ クライアン�
 ### 4.2 AIに聞く
 - サジェストチップ: 「今日の成約は?」「今月の面談数は?」「LINE登録率は?」「今月の契約金額は?」「遅れているプロジェクトは?」「選考中の求職者は?」
 - チャットUI。回答はデータから計算した正確な数値+一言インサイト。週次入力(今週/先週)・月次集計(今月/先月)・前月比較・担当者別(例:「清本さんの商談数は?」)の質問に対応
+- 集客・広告(6.5参照)関連: 「広告費は?」「広告金額は?」(月内媒体別+合計)、「CPAは?」「登録単価は?」(媒体別CPA)、
+  「ブロック率は?」(週次KPIの任意項目「ブロック数」の月内合計 ÷ 月内LINE登録人数。未入力時は案内を返す)にも対応
+- CA個別実績: 「◯◯さんの結果は?」「◯◯さんの実績は?」(氏名は今井/佐藤/富田等の姓)で、担当求職者数と
+  ステージ内訳・月内成約(件数・手数料合計)・週次KPIの入力担当分をまとめて回答する
+  (既存の「◯◯さんの担当求職者は?」応答とは別のキーワードで共存する)
 
 ### 4.3 届ける
 - 配信したい情報(成果報告・ニュース・相談・所感)を入力 → 「AIに宛先を考えてもらう」
@@ -188,46 +205,56 @@ src/
                                  # CandidateThreadListView, CandidateThreadDetailView, CandidateListView など
   lib/
     types.ts                    # Candidate, CandidateThread(+Reply), Placement, Member, Project, SlackPost,
-                                 # Stage, WeeklyKpiRecord, DataBundle, Settings...
+                                 # Stage, WeeklyKpiRecord, DataBundle, Settings, AdDailyRecord, SnsWeeklyRecord,
+                                 # MarketingData...
     demo-data.ts                # デモデータ生成(実行日基準。週次KPIは直近8週分、求職者スレッドは8名分)
-    metrics.ts                  # KPI集計ロジック(DataBundle/配列を引数に取る純関数。唯一の集計箇所)
+    metrics.ts                  # KPI集計ロジック(DataBundle/配列を引数に取る純関数。唯一の集計箇所。
+                                 # 集客・広告データの集計(getMarketingSummary)もここに含む)
     data-bundle.ts              # loadDataBundle(): アダプタから DataBundle を構築(60秒メモリキャッシュ、live失敗時はデモへフォールバック)
     candidate-threads.ts        # loadCandidateThreads(): #求職者チャンネルのスレッド一覧を取得(5分メモリキャッシュ、同上のフォールバック方針)
-    next-dynamic-usage-error.ts # isNextDynamicUsageError(): DYNAMIC_SERVER_USAGE の判定(data-bundle.ts / candidate-threads.ts で共用)
-    source-status.ts            # SourceStatus → ソースバッジ文言のマッピング(クライアント安全)
+    marketing-data.ts           # loadMarketingData(): 集客・広告データ(外部シート2つ)を取得(5分メモリキャッシュ、同上のフォールバック方針)
+    next-dynamic-usage-error.ts # isNextDynamicUsageError(): DYNAMIC_SERVER_USAGE の判定(data-bundle.ts / candidate-threads.ts / marketing-data.ts で共用)
+    source-status.ts            # SourceStatus → ソースバッジ文言のマッピング(クライアント安全。sheets/slack/marketingの3種)
     adapters/spreadsheet.ts     # SpreadsheetSource IF + DemoSpreadsheetSource + GoogleSheetsSource(実装)
     adapters/messenger.ts       # MessengerSource IF(getRecentPosts/postMessage/getCandidateThreads) + DemoSlackSource + SlackSource(実装)
+    adapters/marketing.ts       # MarketingSource IF(getMarketingData) + DemoMarketingSource + GoogleSheetsMarketingSource(実装。
+                                 # adapters/spreadsheet.ts の認証・batchGet呼び出しを共用)
     ai/client.ts                # Claude API 呼び出し(キー無しならnull)
-    ai/ask-responder.ts         # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundle + CandidateThread[] を引数に取る)
+    ai/ask-responder.ts         # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundle + CandidateThread[] + MarketingData を引数に取る)
     ai/deliver-router.ts        # 「届ける」宛先ルーティング(DataBundleを引数に取る)
     ai/meeting-gen.ts           # 「面談AI」生成ロジック(DataBundleを引数に取る)
     ai/proposal-gen.ts          # 「提案書」生成ロジック(DataBundleを引数に取る)
   store/session.ts              # ロール選択(localStorage)
 ```
 
-## 6. 実連携(Google Sheets / Slack)の構成
+## 6. 実連携(Google Sheets / Slack / 集客・広告シート)の構成
 
 DATA_MODE を環境変数で切り替えることで、実データ連携とデモデータを切り替えられる(セットアップ手順は
 `docs/SETUP.md`、シート仕様は `docs/SHEET_TEMPLATE.md` を参照)。
 
 ### 6.1 データフロー
 
-`src/lib/data-bundle.ts` の `loadDataBundle()` が、求職者Slackスレッド(進捗データベース)を除く
-全機能の唯一のデータ取得口になっている。求職者Slackスレッドは `src/lib/candidate-threads.ts` の
-`loadCandidateThreads()` が独立した取得口・キャッシュを持つ(4.1.1/4.1.2、6.3参照)。
+`src/lib/data-bundle.ts` の `loadDataBundle()` が、求職者Slackスレッド(進捗データベース)・
+集客・広告データを除く全機能の唯一のデータ取得口になっている。求職者Slackスレッドは
+`src/lib/candidate-threads.ts` の `loadCandidateThreads()`、集客・広告データは
+`src/lib/marketing-data.ts` の `loadMarketingData()` がそれぞれ独立した取得口・キャッシュを持つ
+(4.1.1/4.1.2、6.3参照。集客・広告データは4.1/6.4参照)。
 
-1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` を呼び、
-   `metrics.ts` で集計した結果をクライアントコンポーネント(`DashboardView`)へ props で渡す
-   (`export const revalidate = 60` により60秒おきにライブデータを再取得)。
+1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` と
+   `loadMarketingData()` を並行して呼び、`metrics.ts` で集計した結果をクライアントコンポーネント
+   (`DashboardView`)へ props で渡す(`export const dynamic = "force-dynamic"` によりリクエストの
+   たびにライブデータを再取得する。各 `load*()` 自体のメモリキャッシュにより実際のHTTP呼び出し頻度は
+   抑えられる)。
 2. 求職者一覧(`src/app/candidates/page.tsx`)・求職者個別ページ(`src/app/candidates/t/[threadTs]/page.tsx`)は
    `force-dynamic` のサーバーコンポーネントとして `loadDataBundle()` と `loadCandidateThreads()` を
    並行して呼び、それぞれ `CandidatesTabs` / `CandidateThreadDetailView` へ props で渡す。
 3. API Routes(`api/ask` `api/deliver` `api/meeting` `api/proposal`)はリクエストのたびに
-   `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。`api/ask` はさらに `loadCandidateThreads()`
-   も呼び、求職者Slackスレッドの情報をスナップショットに含める(4.2 / 6.3参照)。
-4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` は5分キャッシュを
-   持つため、同一プロセス内では Google Sheets / Slack への実際のHTTP呼び出しはそれぞれ60秒・5分に
-   1回程度に抑えられる。
+   `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。`api/ask` はさらに `loadCandidateThreads()`・
+   `loadMarketingData()` も呼び、求職者Slackスレッド・集客広告データの情報をスナップショットに含める
+   (4.2 / 6.3 / 6.4参照)。
+4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` / `loadMarketingData()`
+   は5分キャッシュを持つため、同一プロセス内では Google Sheets / Slack / 集客・広告シートへの実際の
+   HTTP呼び出しはそれぞれ60秒・5分・5分に1回程度に抑えられる。
 
 ### 6.2 Google Sheets(`GoogleSheetsSource`)
 
@@ -265,19 +292,48 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 - 環境変数: `SLACK_BOT_TOKEN` / `SLACK_HIGHLIGHT_CHANNELS` / `SLACK_DEFAULT_CHANNEL` /
   `SLACK_CANDIDATE_CHANNEL`。
 
-### 6.4 フォールバックとソースバッジ
+### 6.4 集客・広告データ(`MarketingSource`)
+
+- 経営者が個別に運用している外部スプレッドシート2つ(社内シートとは別)を読み取る。取得口・型定義は
+  `src/lib/adapters/marketing.ts`(`MarketingSource` IF + `DemoMarketingSource` + `GoogleSheetsMarketingSource`)、
+  `src/lib/types.ts`(`AdDailyRecord` / `SnsWeeklyRecord` / `MarketingData`)。
+  - **アイドマ(広告運用シート、`MARKETING_AD_SHEET_ID`)**: タブ「Google広告 」(末尾に半角スペース)・
+    「Meta広告」の日次広告実績(日付/費用/表示回数/クリック数/LINE登録数/面談予約数/面談実施数)。
+    ヘッダー行・列位置はタブごとにズレることがあるため、固定位置ではなく見出し文字列で検出する。
+    CTR・CPC・CPA等のシート側計算列は読まず、`metrics.ts` 側で再計算する。
+  - **リズリアライズ(SNS運用シート、`MARKETING_SNS_SHEET_ID`)**: タブ「週次トラッキング」の週次実績
+    (期間/合計再生数/プロフィール遷移(TikTok・IG合算)/LP閲覧合計/LINE登録(実)/面談(実))。
+    費用はシートに実績列が無いため `MARKETING_SNS_MONTHLY_COST` 環境変数(円、既定495,000円)の
+    月額固定値を使う。
+  - 認証(サービスアカウントJWT・アクセストークン取得)・Sheets Values API 呼び出しは
+    `adapters/spreadsheet.ts` の実装を関数エクスポート(`getAccessToken` / `fetchSheetsValuesBatchGet` /
+    `fetchSheetTabTitles`)して再利用しており、`GoogleSheetsSource` と同じ認証情報
+    (`GOOGLE_SERVICE_ACCOUNT_FILE` / `GOOGLE_SERVICE_ACCOUNT_JSON`)を共用する。
+  - タブ名が trim すると同名になるものが複数存在する場合(実運用シートに旧テンプレートタブが
+    残っているケースがあるため)、実データ行数が多い方を自動的に採用する。
+  - 対象タブが見つからない等のエラーでは、`MARKETING_AD_SHEET_ID` と `MARKETING_SNS_SHEET_ID` の
+    値が入れ替わっていないか確認するよう促すメッセージを含める。
+  - 取得口は `src/lib/marketing-data.ts` の `loadMarketingData()`。`candidate-threads.ts` と同じパターン
+    (live失敗時は `console.warn` の上でデモデータへフォールバックし、`SourceStatus` に `live-error` を設定)で、
+    独立して5分のモジュールメモリキャッシュを持つ。
+  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, now)`(純関数)。媒体別(Google広告/
+    Meta広告)・SNS運用の当月サマリ、遷移率(`transitionRates`)、合計値をまとめて返す。
+  - 環境変数: `MARKETING_AD_SHEET_ID` / `MARKETING_SNS_SHEET_ID` / `MARKETING_SNS_MONTHLY_COST`。
+
+### 6.5 フォールバックとソースバッジ
 
 - `DATA_MODE=live` で接続・パースに失敗した場合、`console.warn` した上で自動的にデモデータへ
   フォールバックする(アプリ自体はエラーにならない)。この判定(`DYNAMIC_SERVER_USAGE` エラーの
   再スロー含む)は `src/lib/next-dynamic-usage-error.ts` の `isNextDynamicUsageError()` に共通化され、
-  `data-bundle.ts` と `candidate-threads.ts` の双方から使われる。
+  `data-bundle.ts` ・ `candidate-threads.ts` ・ `marketing-data.ts` の3者から使われる。
 - `DataBundle` は `sourceStatus`(Sheets)と `slackStatus`(Slack)をそれぞれ独立に持ち、
   `"live" | "demo" | "live-error"` の3値を取る。求職者データベース(`loadCandidateThreads()` の
-  戻り値の `status`)も同じ `SourceStatus` 型を再利用する、DataBundle とは独立した状態である。
+  戻り値の `status`)・集客・広告データ(`loadMarketingData()` の戻り値の `status`)も同じ
+  `SourceStatus` 型を再利用する、DataBundle とは独立した状態である。
   ソースバッジは `src/lib/source-status.ts` の `sourceBadgeLabel()` で以下のように出し分けられる。
-  - `live` → 「Sheets(連携中)」/「Slack(連携中)」
-  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」
-  - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」
+  - `live` → 「Sheets(連携中)」/「Slack(連携中)」/「集客データ(連携中)」
+  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」/「集客データ(デモ)」
+  - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」/「集客データ(接続エラー・デモ表示)」
   - 求職者データベース(進捗データベースタブ・個別ページ)のバッジは `sourceBadgeLabel("slack", status)`
     をそのまま流用しているため、表示文言はダッシュボードの Slack バッジと共通(「Slack(連携中)」等)
 

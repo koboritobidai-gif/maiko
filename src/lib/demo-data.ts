@@ -572,6 +572,8 @@ function generateWeeklyKpis(): WeeklyKpiRecord[] {
     const finalInterviews = Math.min(randInt(rng, 3, 6), earlyInterviews);
     const offers = Math.min(randInt(rng, 1, 3), Math.max(finalInterviews, 1));
     const placementsCount = Math.min(randInt(rng, 0, 2), offers);
+    // 任意項目: LステップのLINE公式アカウント ブロック数(週5〜15件程度。LINE登録者数を超えない)。
+    const blockCount = Math.min(randInt(rng, 5, 15), lineRegistrations);
 
     const candidateValues: Record<CandidateKpiKey, number> = {
       "PV数": pv,
@@ -582,6 +584,7 @@ function generateWeeklyKpis(): WeeklyKpiRecord[] {
       "最終面接数": finalInterviews,
       "内定者数": offers,
       "採用決定求職者数": placementsCount,
+      "ブロック数": blockCount,
     };
 
     (Object.keys(candidateValues) as CandidateKpiKey[]).forEach((key, keyIndex) => {

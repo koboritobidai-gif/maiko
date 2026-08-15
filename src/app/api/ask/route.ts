@@ -11,6 +11,7 @@ import { ASK_SYSTEM_PROMPT, answerWithRules, buildAskSnapshot } from "@/lib/ai/a
 import type { AskRole } from "@/lib/ai/ask-responder";
 import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
+import { loadMarketingData } from "@/lib/marketing-data";
 
 interface AskRequestBody {
   question?: unknown;
@@ -36,8 +37,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const [bundle, threadsResult] = await Promise.all([loadDataBundle(), loadCandidateThreads()]);
-  const snapshot = buildAskSnapshot(bundle, threadsResult.threads);
+  const [bundle, threadsResult, marketingResult] = await Promise.all([
+    loadDataBundle(),
+    loadCandidateThreads(),
+    loadMarketingData(),
+  ]);
+  const snapshot = buildAskSnapshot(bundle, threadsResult.threads, marketingResult.data);
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
 
@@ -50,7 +55,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const ruleAnswer = answerWithRules(question, role, bundle, threadsResult.threads);
+  const ruleAnswer = answerWithRules(question, role, bundle, threadsResult.threads, marketingResult.data);
   return NextResponse.json({
     answer: ruleAnswer,
     source: "rule" as const,

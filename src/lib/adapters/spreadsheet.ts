@@ -199,8 +199,11 @@ function buildSignedJwt(key: GoogleServiceAccountKey): string {
   return `${signingInput}.${base64url(signature)}`;
 }
 
-/** サービスアカウントの JWT を Google OAuth2 トークンエンドポイントに交換し、アクセストークンを取得する(メモリキャッシュ付き)。 */
-async function getAccessToken(serviceAccountJson: string | undefined): Promise<string> {
+/**
+ * サービスアカウントの JWT を Google OAuth2 トークンエンドポイントに交換し、アクセストークンを取得する
+ * (メモリキャッシュ付き)。`adapters/marketing.ts`(集客・広告シート連携)からも共用する。
+ */
+export async function getAccessToken(serviceAccountJson: string | undefined): Promise<string> {
   if (tokenCache && tokenCache.expiresAt > Date.now()) {
     return tokenCache.token;
   }
@@ -249,12 +252,23 @@ const RANGES = [
   `${TAB_WEEKLY_KPI}!A:E`,
 ];
 
-type SheetRow = unknown[];
+export type SheetValuesRow = unknown[];
+type SheetRow = SheetValuesRow;
 
-async function fetchAllTabs(sheetId: string, accessToken: string): Promise<SheetRow[][]> {
+/**
+ * Sheets Values API の `batchGet` で複数レンジをまとめて取得する汎用ヘルパー。
+ * `adapters/marketing.ts`(集客・広告シート連携。タブ名をヘッダーで動的に解決するため
+ * 固定レンジの `fetchAllTabs` とは別に汎用の呼び出しが必要)からも共用する。
+ */
+export async function fetchSheetsValuesBatchGet(
+  sheetId: string,
+  ranges: string[],
+  accessToken: string,
+  valueRenderOption: "UNFORMATTED_VALUE" | "FORMATTED_VALUE" = "UNFORMATTED_VALUE",
+): Promise<SheetValuesRow[][]> {
   const params = new URLSearchParams();
-  for (const range of RANGES) params.append("ranges", range);
-  params.append("valueRenderOption", "UNFORMATTED_VALUE");
+  for (const range of ranges) params.append("ranges", range);
+  params.append("valueRenderOption", valueRenderOption);
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
     sheetId,
@@ -268,9 +282,36 @@ async function fetchAllTabs(sheetId: string, accessToken: string): Promise<Sheet
     const text = await res.text().catch(() => "");
     throw new Error(`Google Sheets API の呼び出しに失敗しました(status ${res.status}): ${text.slice(0, 300)}`);
   }
-  const json = (await res.json()) as { valueRanges?: { values?: SheetRow[] }[] };
+  const json = (await res.json()) as { valueRanges?: { values?: SheetValuesRow[] }[] };
   const valueRanges = json.valueRanges ?? [];
-  return RANGES.map((_, i) => valueRanges[i]?.values ?? []);
+  return ranges.map((_, i) => valueRanges[i]?.values ?? []);
+}
+
+/**
+ * スプレッドシート内の全タブ名を順番どおりに取得する(`adapters/marketing.ts` 専用)。
+ * 集客・広告シートはタブ名の末尾に半角スペースが付いている・同名タブが複数存在する等の
+ * 揺れがあるため、実際のタブ名一覧をメタデータAPIで確認したうえで trim 一致で解決する。
+ */
+export async function fetchSheetTabTitles(sheetId: string, accessToken: string): Promise<string[]> {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
+    sheetId,
+  )}?fields=sheets.properties.title`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Google Sheets API(タブ一覧取得)の呼び出しに失敗しました(status ${res.status}): ${text.slice(0, 300)}`,
+    );
+  }
+  const json = (await res.json()) as { sheets?: { properties?: { title?: string } }[] };
+  return (json.sheets ?? []).map((s) => s.properties?.title ?? "").filter((t) => t !== "");
+}
+
+async function fetchAllTabs(sheetId: string, accessToken: string): Promise<SheetRow[][]> {
+  return fetchSheetsValuesBatchGet(sheetId, RANGES, accessToken, "UNFORMATTED_VALUE");
 }
 
 // ─────────────────────────────────────────────

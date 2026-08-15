@@ -6,12 +6,17 @@
  */
 import { CA_MEMBER_ID, EXEC_MEMBER_ID } from "@/lib/demo-data";
 import {
+  getBlockRate,
+  getCaCandidateBreakdown,
+  getCaMonthPlacements,
   getCandidateFunnel,
   getCandidatesByCa,
   getCorporateFunnel,
   getForecastRevenue,
   getKpiTotalsByOwner,
+  getMarketingSummary,
   getMonthPlacements,
+  getMonthlyKpiEntriesByOwner,
   getMonthlyKpiTotal,
   getPrimaryKpis,
   getRecentWeeklyKpiTrend,
@@ -21,12 +26,14 @@ import {
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
+import type { MarketingSummary } from "@/lib/metrics";
 import type {
   Candidate,
   CandidateKpiKey,
   CandidateThread,
   CorporateKpiKey,
   DataBundle,
+  MarketingData,
   Member,
 } from "@/lib/types";
 
@@ -48,13 +55,38 @@ function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
 }
 
-export function buildAskSnapshot(bundle: DataBundle, candidateThreads: CandidateThread[] = []) {
+/** 円額を「¥123,456」形式で表示する(広告費用など、万円換算しない金額用)。 */
+function formatYenPlain(amountYen: number): string {
+  return `¥${Math.round(amountYen).toLocaleString("ja-JP")}`;
+}
+
+export function buildAskSnapshot(
+  bundle: DataBundle,
+  candidateThreads: CandidateThread[] = [],
+  marketingData: MarketingData | null = null,
+) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
   const primary = getPrimaryKpis(bundle.weeklyKpis);
   const candidateFunnel = getCandidateFunnel(bundle.weeklyKpis);
   const corporateFunnel = getCorporateFunnel(bundle.weeklyKpis);
   const weeklyTrend = getWeeklyTrendRows(bundle.weeklyKpis, 5);
+  // CA(及び全メンバー)個別実績: 担当求職者のステージ内訳・月内成約・週次KPI入力担当分をまとめる
+  // (「◯◯さんの結果は?」「◯◯さんの実績は?」に、Claude 経由でもルールベースでも答えられるようにする)。
+  const caResults = bundle.members.map((m) => {
+    const stageBreakdown = getCaCandidateBreakdown(bundle.candidates, m.id).filter((b) => b.count > 0);
+    const monthPlacements = getCaMonthPlacements(bundle.placements, m.id);
+    const monthlyKpiInput = getMonthlyKpiEntriesByOwner(bundle.weeklyKpis, m.name);
+    return {
+      name: m.name,
+      role: m.role,
+      activeCandidateCount: stageBreakdown.reduce((sum, b) => sum + b.count, 0),
+      stageBreakdown,
+      monthPlacementCount: monthPlacements.count,
+      monthPlacementFeeAmountMan: toManYen(monthPlacements.amount),
+      monthlyKpiInput,
+    };
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -70,6 +102,14 @@ export function buildAskSnapshot(bundle: DataBundle, candidateThreads: Candidate
     candidateFunnelThisMonth: candidateFunnel,
     corporateFunnelThisMonth: corporateFunnel,
     weeklyTrendRecent5Weeks: weeklyTrend,
+    // 集客・広告データ(アイドマ=広告運用シート/リズリアライズ=SNS運用シート)の今月サマリ。
+    // marketingData が渡されなかった場合(呼び出し元が未取得)は null。
+    marketingThisMonth: marketingData ? getMarketingSummary(marketingData, bundle.weeklyKpis) : null,
+    // ブロック率(Lステップのブロック数 ÷ LINE登録人数)。「ブロック数」は週次KPIの任意項目のため
+    // hasAnyData が false の場合は未入力(ratePercent も null)。
+    blockRateThisMonth: getBlockRate(bundle.weeklyKpis),
+    // CA(及び全メンバー)個別実績。
+    caResults,
     pipeline: pipeline.map((s) => ({ stage: s.stage, count: s.count })),
     withdrawnCount: getWithdrawnCount(bundle.candidates),
     projects: projectList.map((p) => ({
@@ -131,6 +171,23 @@ candidateThreads は社内Slack「#求職者」チャンネル(1人の求職者�
 氏名・登録日時(registeredAt)・最終更新日時(updatedAt)・返信数(replyCount)・直近の返信2件(latestReplies、
 投稿者・日時・本文)が含まれます。candidates(シート台帳)とは別管理で、両方に同じ氏名が存在する場合は
 どちらの情報も自然に言及してください(シート台帳にのみ、またはSlackスレッドにのみ存在する求職者もいます)。
+
+marketingThisMonth には広告運用(アイドマ)シート・SNS運用(リズリアライズ)シートから集計した今月の集客・広告データが
+含まれます(null の場合は集客データ未取得)。channels(Google広告・Meta広告、それぞれ費用/表示回数/クリック数/
+LINE登録数/面談予約数/面談実施数/CTR/遷移率regRate/予約率reserveRate/面談実行率execRate/登録単価cpa/面談単価
+costPerInterview)、sns(SNS運用の月額固定費用cost/再生数plays/プロフィール遷移profileVisits/LP閲覧lpViews/
+LINE登録lineRegs/面談interviews/LP遷移率lpRate/登録率regRate/登録単価cpa/面談単価costPerInterview)、
+totalCost/totalLineRegs/totalReservations/totalInterviews(広告+SNS合算)、transitionRates(遷移率まとめ)が
+含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
+
+blockRateThisMonth は Lステップ(LINE公式アカウント)のブロック率(ブロック数 ÷ LINE登録人数)です。
+hasAnyData が false の場合は週次KPIに「ブロック数」がまだ入力されていないという意味なので、
+「ブロック数が未入力です。週次KPIタブに『ブロック数』を追加すると回答できます」のように案内してください。
+
+caResults は全メンバー(CA: 今井/佐藤/富田 を含む)個別の今月実績で、担当求職者数(activeCandidateCount)・
+ステージ内訳(stageBreakdown)・今月の成約件数と手数料合計(monthPlacementCount/monthPlacementFeeAmountMan、
+万円単位)・週次KPIの入力担当分(monthlyKpiInput)が含まれます。「◯◯さんの結果は?」「◯◯さんの実績は?」
+のような質問には、該当メンバーの caResults を使って具体的に答えてください。
 
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
@@ -216,6 +273,28 @@ function answerMemberCandidates(member: Member, role: AskRole, bundle: DataBundl
   return `${you}担当している求職者は${active.length}名です。内訳: ${listed.join("、")}${suffix}。内定・承諾に近い方から優先フォローすると成約につながりやすいです。`;
 }
 
+/** 「◯◯さんの結果は?」「◯◯さんの実績は?」への回答: 担当求職者のステージ内訳・月内成約・週次KPI入力担当分。 */
+function answerMemberResults(member: Member, bundle: DataBundle): string {
+  const breakdown = getCaCandidateBreakdown(bundle.candidates, member.id).filter((b) => b.count > 0);
+  const totalCandidates = breakdown.reduce((sum, b) => sum + b.count, 0);
+  const stageText =
+    breakdown.length > 0 ? breakdown.map((b) => `${b.stage}${b.count}名`).join("、") : "担当求職者は見つかりませんでした";
+
+  const { count: placementCount, amount: placementAmount } = getCaMonthPlacements(bundle.placements, member.id);
+
+  const kpiEntries = getMonthlyKpiEntriesByOwner(bundle.weeklyKpis, member.name);
+  const kpiText =
+    kpiEntries.length > 0
+      ? kpiEntries.map((e) => `${e.key}${e.total.toLocaleString("ja-JP")}`).join("、")
+      : "今月の週次KPI入力実績は見つかりませんでした";
+
+  return (
+    `${member.name}さんの今月の実績です。担当求職者は${totalCandidates}名(内訳: ${stageText})。` +
+    `今月の成約は${placementCount}件、手数料合計${formatMan(placementAmount)}です。` +
+    `週次KPIの入力担当分: ${kpiText}。`
+  );
+}
+
 function answerToday(bundle: DataBundle): string {
   const { count, amount } = getTodayPlacements(bundle.placements);
   if (count === 0) {
@@ -227,6 +306,43 @@ function answerToday(bundle: DataBundle): string {
 function answerForecast(bundle: DataBundle): string {
   const forecast = getForecastRevenue(bundle.candidates, bundle.settings.feeRate);
   return `内定・承諾ベースの売上見込みは${formatMan(forecast)}です。承諾済みの求職者は入社日調整を、内定段階の求職者は早めの意思決定フォローを進めるとよさそうです。`;
+}
+
+/** 「広告費は?」「広告金額は?」への回答: 月内媒体別+合計。 */
+function answerAdCost(marketingSummary: MarketingSummary | null): string {
+  if (!marketingSummary) return "集客・広告データが取得できませんでした。";
+  const google = marketingSummary.channels.find((c) => c.channel === "Google広告");
+  const meta = marketingSummary.channels.find((c) => c.channel === "Meta広告");
+  return (
+    `今月の広告費用は合計${formatYenPlain(marketingSummary.totalCost)}です` +
+    `(Google広告 ${formatYenPlain(google?.cost ?? 0)}、Meta広告 ${formatYenPlain(meta?.cost ?? 0)}、` +
+    `SNS運用(リズリアライズ)月額 ${formatYenPlain(marketingSummary.sns.cost)})。` +
+    `LINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件につながっています。`
+  );
+}
+
+/** 「CPAは?」「登録単価は?」への回答: 媒体別CPA(登録単価)。 */
+function answerCpa(marketingSummary: MarketingSummary | null): string {
+  if (!marketingSummary) return "集客・広告データが取得できませんでした。";
+  const google = marketingSummary.channels.find((c) => c.channel === "Google広告");
+  const meta = marketingSummary.channels.find((c) => c.channel === "Meta広告");
+  const fmt = (v: number | null | undefined) => (v == null ? "算出できません(LINE登録0件)" : formatYenPlain(v));
+  return (
+    `今月の登録単価(CPA)は Google広告 ${fmt(google?.cpa)}、Meta広告 ${fmt(meta?.cpa)}、` +
+    `SNS運用(リズリアライズ) ${fmt(marketingSummary.sns.cpa)} です。`
+  );
+}
+
+/** 「ブロック率は?」への回答: 週次KPIの任意項目「ブロック数」の月内合計 ÷ 月内LINE登録人数。 */
+function answerBlockRateQuestion(bundle: DataBundle): string {
+  const block = getBlockRate(bundle.weeklyKpis);
+  if (!block.hasAnyData) {
+    return "ブロック数が未入力です。週次KPIタブに「ブロック数」を追加すると回答できます。";
+  }
+  if (block.ratePercent === null) {
+    return `今月のLINE登録人数が0のため、ブロック率を算出できません(ブロック数${block.blockCount}件)。`;
+  }
+  return `今月のブロック率は${block.ratePercent.toFixed(1)}%です(ブロック数${block.blockCount}件 ÷ LINE登録${block.lineRegistrations}人)。`;
 }
 
 function answerProjects(bundle: DataBundle): string {
@@ -455,11 +571,13 @@ export function answerWithRules(
   role: AskRole,
   bundle: DataBundle,
   candidateThreads: CandidateThread[] = [],
+  marketingData: MarketingData | null = null,
 ): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
   const scope = resolveTimeScope(text);
+  const marketingSummary = marketingData ? getMarketingSummary(marketingData, bundle.weeklyKpis) : null;
 
   const mentionedMember = findMemberBySurnameInText(text, members);
 
@@ -486,6 +604,12 @@ export function answerWithRules(
     }
   }
 
+  // 1.5. 特定メンバー名 + 「結果」「実績」(例: 「今井さんの結果は?」「佐藤さんの実績は?」)
+  //      → CA個別実績(担当求職者のステージ内訳・月内成約・週次KPI入力担当分)
+  if (mentionedMember && (text.includes("結果") || text.includes("実績"))) {
+    return answerMemberResults(mentionedMember, bundle);
+  }
+
   // 2. 「私の/自分の」→ ロールに紐づくメンバー(CA)を優先的に解決
   if ((text.includes("私の") || text.includes("自分の")) && role === "ca") {
     const me = members.find((m) => m.id === CA_MEMBER_ID);
@@ -505,6 +629,11 @@ export function answerWithRules(
   if (text.includes("LINE登録率")) return answerLineRegistrationRate(bundle);
   if (text.includes("面談実行率")) return answerInterviewExecutionRate(bundle);
   if (text.includes("面談移行率")) return answerInterviewConversionRate(bundle);
+
+  // 4.5. 集客・広告データ(広告費/CPA/ブロック率)
+  if (text.includes("ブロック率")) return answerBlockRateQuestion(bundle);
+  if (text.includes("CPA") || text.includes("登録単価")) return answerCpa(marketingSummary);
+  if (text.includes("広告費") || text.includes("広告金額")) return answerAdCost(marketingSummary);
 
   // 5. 求職者系KPIの数値質問
   const candidateKpiMatch = matchCandidateKpiKey(text);

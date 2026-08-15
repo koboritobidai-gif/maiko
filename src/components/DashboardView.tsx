@@ -6,7 +6,7 @@ import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { getCandidatesByCa } from "@/lib/metrics";
-import type { DashboardSummary } from "@/lib/metrics";
+import type { DashboardSummary, MarketingSummary } from "@/lib/metrics";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
@@ -116,6 +116,16 @@ function RateBadge({ label, value }: { label: string; value: number }) {
   );
 }
 
+/** 円額を「¥123,456」形式で表示する。 */
+function formatYen(amountYen: number): string {
+  return `¥${Math.round(amountYen).toLocaleString("ja-JP")}`;
+}
+
+/** 円額(単価等)を表示する。null(分母0で算出不可)は「—」。 */
+function formatYenOrDash(amountYen: number | null): string {
+  return amountYen === null ? "—" : formatYen(amountYen);
+}
+
 interface DashboardViewProps {
   summary: DashboardSummary;
   candidates: Candidate[];
@@ -123,6 +133,9 @@ interface DashboardViewProps {
   sourceErrorMessage?: string;
   slackStatus: SourceStatus;
   slackErrorMessage?: string;
+  marketingSummary: MarketingSummary;
+  marketingStatus: SourceStatus;
+  marketingErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -132,6 +145,9 @@ export default function DashboardView({
   sourceErrorMessage,
   slackStatus,
   slackErrorMessage,
+  marketingSummary,
+  marketingStatus,
+  marketingErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
   if (!role) return null;
@@ -139,6 +155,10 @@ export default function DashboardView({
   const profile = getRoleProfile(role);
   const sheetsBadge = sourceBadgeLabel("sheets", sourceStatus);
   const slackBadge = sourceBadgeLabel("slack", slackStatus);
+  const marketingBadge = sourceBadgeLabel("marketing", marketingStatus);
+  const googleAd = marketingSummary.channels.find((c) => c.channel === "Google広告");
+  const metaAd = marketingSummary.channels.find((c) => c.channel === "Meta広告");
+  const { transitionRates } = marketingSummary;
 
   // ca ロール(佐藤CA)は自分の担当求職者数を先頭に見せる。
   const isCa = role === "ca";
@@ -218,6 +238,99 @@ export default function DashboardView({
             value={`${primary.contractAmountMan.value.toLocaleString("ja-JP")}万円`}
             caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
           />
+        </div>
+      </section>
+
+      {/* 1.5 集客・広告(月内) */}
+      <section className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+            集客・広告(月内)
+          </h2>
+          <SourceBadge label={marketingBadge} />
+        </div>
+        {marketingStatus === "live-error" && marketingErrorMessage && (
+          <p
+            className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+            style={{
+              color: "var(--color-bad)",
+              borderColor: "var(--color-bad)",
+              background: "var(--color-card)",
+            }}
+          >
+            接続エラーの内容: {marketingErrorMessage}
+          </p>
+        )}
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5 lg:gap-4">
+          <KpiCard label="広告費用合計" value={formatYen(marketingSummary.totalCost)} accent />
+          <KpiCard label="LINE登録合計" value={`${marketingSummary.totalLineRegs.toLocaleString("ja-JP")}人`} />
+          <KpiCard label="面談予約合計" value={`${marketingSummary.totalReservations.toLocaleString("ja-JP")}件`} />
+          <KpiCard label="面談実績合計" value={`${marketingSummary.totalInterviews.toLocaleString("ja-JP")}件`} />
+          <KpiCard label="面接回数" value={`${marketingSummary.interviewsCombined.toLocaleString("ja-JP")}件`} />
+        </div>
+        <div className="card overflow-x-auto p-3.5">
+          <table className="w-full min-w-[560px] text-left text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-2 font-medium">媒体</th>
+                <th className="pb-2 pr-2 text-right font-medium">費用</th>
+                <th className="pb-2 pr-2 text-right font-medium">LINE登録</th>
+                <th className="pb-2 pr-2 text-right font-medium">予約</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談</th>
+                <th className="pb-2 pr-2 text-right font-medium">CPA</th>
+                <th className="pb-2 text-right font-medium">面談単価</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+              <tr>
+                <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                  Google広告
+                </td>
+                <td className="py-2 pr-2 text-right">{formatYen(googleAd?.cost ?? 0)}</td>
+                <td className="py-2 pr-2 text-right">{(googleAd?.lineRegs ?? 0).toLocaleString("ja-JP")}人</td>
+                <td className="py-2 pr-2 text-right">{(googleAd?.reservations ?? 0).toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{(googleAd?.interviews ?? 0).toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{formatYenOrDash(googleAd?.cpa ?? null)}</td>
+                <td className="py-2 text-right">{formatYenOrDash(googleAd?.costPerInterview ?? null)}</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                  Meta広告
+                </td>
+                <td className="py-2 pr-2 text-right">{formatYen(metaAd?.cost ?? 0)}</td>
+                <td className="py-2 pr-2 text-right">{(metaAd?.lineRegs ?? 0).toLocaleString("ja-JP")}人</td>
+                <td className="py-2 pr-2 text-right">{(metaAd?.reservations ?? 0).toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{(metaAd?.interviews ?? 0).toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{formatYenOrDash(metaAd?.cpa ?? null)}</td>
+                <td className="py-2 text-right">{formatYenOrDash(metaAd?.costPerInterview ?? null)}</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                  SNS運用(リズリアライズ)
+                </td>
+                <td className="py-2 pr-2 text-right">{formatYen(marketingSummary.sns.cost)}</td>
+                <td className="py-2 pr-2 text-right">{marketingSummary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                <td className="py-2 pr-2 text-right">—</td>
+                <td className="py-2 pr-2 text-right">{marketingSummary.sns.interviews.toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{formatYenOrDash(marketingSummary.sns.cpa)}</td>
+                <td className="py-2 text-right">{formatYenOrDash(marketingSummary.sns.costPerInterview)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {transitionRates.clickToLineRegRatePercent !== null && (
+            <RateBadge label="クリック→LINE登録率" value={transitionRates.clickToLineRegRatePercent} />
+          )}
+          {transitionRates.lineToReservationRatePercent !== null && (
+            <RateBadge label="LINE→予約率" value={transitionRates.lineToReservationRatePercent} />
+          )}
+          {transitionRates.reservationToInterviewRatePercent !== null && (
+            <RateBadge label="予約→面談実行率" value={transitionRates.reservationToInterviewRatePercent} />
+          )}
+          {transitionRates.snsPlayToLpRatePercent !== null && (
+            <RateBadge label="SNS再生→LP率" value={transitionRates.snsPlayToLpRatePercent} />
+          )}
         </div>
       </section>
 
