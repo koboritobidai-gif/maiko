@@ -1,13 +1,15 @@
 /**
  * MessengerSource アダプタ
- * Slack投稿の取得(ハイライトフィード)と、メッセージ配信(「届ける」機能)を抽象化する。
- * デモ段階は DemoSlackSource が demo-data.ts の投稿を返し、送信は実際には飛ばさず
+ * Slack投稿の取得(ハイライトフィード)、求職者Slackスレッド(#求職者チャンネル、1人1スレッド運用の
+ * 進捗データベース)の取得、メッセージ配信(「届ける」機能)を抽象化する。
+ * デモ段階は DemoSlackSource が demo-data.ts の投稿・スレッドを返し、送信は実際には飛ばさず
  * その場でエコーする(コンソール出力+成功レスポンス)。
- * 実連携は SlackSource が Slack Web API(chat.postMessage / conversations.history / users.info)
- * を直接 fetch で呼び出す(@slack/web-api 等の追加npm依存は使わない)。
+ * 実連携は SlackSource が Slack Web API(chat.postMessage / conversations.history /
+ * conversations.replies / chat.getPermalink / users.info)を直接 fetch で呼び出す
+ * (@slack/web-api 等の追加npm依存は使わない)。
  */
-import type { SlackPost } from "../types";
-import { slackPosts } from "../demo-data";
+import type { CandidateThread, CandidateThreadReply, SlackPost } from "../types";
+import { candidateThreads, slackPosts } from "../demo-data";
 
 export interface PostMessageResult {
   ok: boolean;
@@ -17,9 +19,11 @@ export interface PostMessageResult {
 export interface MessengerSource {
   getRecentPosts(limit?: number): Promise<SlackPost[]>;
   postMessage(channel: string, author: string, body: string): Promise<PostMessageResult>;
+  /** 求職者Slackスレッド(#求職者チャンネル)一覧を取得する(更新日時の新しい順)。 */
+  getCandidateThreads(): Promise<CandidateThread[]>;
 }
 
-/** デモ実装: demo-data.ts の投稿を返し、送信はメモリ上でエコーするのみ。 */
+/** デモ実装: demo-data.ts の投稿・スレッドを返し、送信はメモリ上でエコーするのみ。 */
 export class DemoSlackSource implements MessengerSource {
   async getRecentPosts(limit = 8): Promise<SlackPost[]> {
     return [...slackPosts]
@@ -42,6 +46,10 @@ export class DemoSlackSource implements MessengerSource {
     // デモ段階では実送信を行わず、ログのみ出力する。
     console.log(`[DemoSlackSource] ${channel} へ配信(デモ): ${author} - ${body}`);
     return { ok: true, post };
+  }
+
+  async getCandidateThreads(): Promise<CandidateThread[]> {
+    return [...candidateThreads].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 }
 
@@ -106,8 +114,26 @@ interface SlackChannelInfoResponse extends SlackApiResponseBase {
   channel?: { name?: string };
 }
 
+interface SlackMessage {
+  ts: string;
+  text?: string;
+  user?: string;
+  bot_id?: string;
+  subtype?: string;
+  /** 親メッセージのみに含まれる、スレッド内の返信数(conversations.history 経由)。 */
+  reply_count?: number;
+}
+
 interface SlackHistoryResponse extends SlackApiResponseBase {
-  messages?: { ts: string; text?: string; user?: string; bot_id?: string; subtype?: string }[];
+  messages?: SlackMessage[];
+}
+
+interface SlackRepliesResponse extends SlackApiResponseBase {
+  messages?: SlackMessage[];
+}
+
+interface SlackPermalinkResponse extends SlackApiResponseBase {
+  permalink?: string;
 }
 
 /**
@@ -124,6 +150,8 @@ export class SlackSource implements MessengerSource {
       botToken?: string;
       highlightChannels?: string[];
       defaultChannel?: string;
+      /** 求職者データベース(#求職者チャンネル)の取得対象チャンネルID */
+      candidateChannel?: string;
     } = {},
   ) {}
 
@@ -165,6 +193,136 @@ export class SlackSource implements MessengerSource {
     } catch {
       return channelId;
     }
+  }
+
+  /**
+   * Slackメッセージ本文を表示用に整形する。
+   * `<@U…>` メンションは可能な限り表示名へ、`<url|label>` は label へ、`<url>` は url(素の文字列)へ変換する。
+   */
+  private async formatMessageText(botToken: string, text: string): Promise<string> {
+    if (!text) return "";
+    let formatted = text;
+
+    // <@U12345> → @表示名(解決できるユーザーIDのみ置換)
+    const mentionIds = Array.from(new Set(Array.from(text.matchAll(/<@([A-Z0-9]+)>/g)).map((m) => m[1])));
+    for (const userId of mentionIds) {
+      const name = await this.resolveUserName(botToken, userId);
+      formatted = formatted.replaceAll(`<@${userId}>`, `@${name}`);
+    }
+
+    // <https://...|表示ラベル> → 表示ラベル
+    formatted = formatted.replace(/<(https?:\/\/[^|>]+)\|([^>]+)>/g, "$2");
+    // <https://...> → https://...(角括弧のみ除去)
+    formatted = formatted.replace(/<(https?:\/\/[^>]+)>/g, "$1");
+
+    return formatted;
+  }
+
+  /**
+   * 求職者データベース(#求職者チャンネル)の1スレッド分の返信を取得する(最大50件)。
+   * 親メッセージ自身・subtype付き(channel_joinなど)・ボット投稿は除外する。
+   */
+  private async fetchThreadReplies(
+    botToken: string,
+    channelId: string,
+    threadTs: string,
+  ): Promise<CandidateThreadReply[]> {
+    const res = await slackGet<SlackRepliesResponse>(botToken, "conversations.replies", {
+      channel: channelId,
+      ts: threadTs,
+      limit: "50",
+    });
+    const replyMessages = (res.messages ?? []).filter(
+      (m) => m.ts !== threadTs && !m.subtype && !m.bot_id && m.text,
+    );
+    return Promise.all(
+      replyMessages.map(async (m) => ({
+        author: m.user ? await this.resolveUserName(botToken, m.user) : "Slack Bot",
+        postedAt: new Date(Number(m.ts.split(".")[0]) * 1000),
+        text: await this.formatMessageText(botToken, m.text ?? ""),
+      })),
+    );
+  }
+
+  /** 親メッセージへのパーマリンクを取得する。失敗しても処理は継続する(undefined を返す)。 */
+  private async fetchPermalink(
+    botToken: string,
+    channelId: string,
+    messageTs: string,
+  ): Promise<string | undefined> {
+    try {
+      const res = await slackGet<SlackPermalinkResponse>(botToken, "chat.getPermalink", {
+        channel: channelId,
+        message_ts: messageTs,
+      });
+      return res.permalink;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * 求職者Slackスレッド(#求職者チャンネル、1人1スレッド運用)を取得する。
+   * conversations.history で親メッセージ(reply_count>0 のものがスレッドの親)を取得し、
+   * subtype付き(channel_joinなど)とボット投稿は除外、親テキストの1行目(20文字まで)を
+   * name とする。
+   *
+   * API呼び出し数を抑えるため、conversations.replies(返信取得)と chat.getPermalink
+   * (パーマリンク取得)は「直近アクティブな30スレッド」まで(=conversations.history が
+   * 新しい順で返す先頭30件)に限定する。超過分は返信取得をスキップし、親メッセージの
+   * 情報(氏名・登録日時・返信数)のみを返す。
+   */
+  async getCandidateThreads(): Promise<CandidateThread[]> {
+    const botToken = this.requireToken();
+    const channelId = this.config.candidateChannel;
+    if (!channelId) {
+      throw new Error("環境変数 SLACK_CANDIDATE_CHANNEL(#求職者のチャンネルID)を設定してください。");
+    }
+
+    const REPLY_FETCH_LIMIT = 30;
+
+    const history = await slackGet<SlackHistoryResponse>(botToken, "conversations.history", {
+      channel: channelId,
+      limit: "100",
+    });
+
+    const parents = (history.messages ?? []).filter((m) => !m.subtype && !m.bot_id && m.text);
+
+    const threads = await Promise.all(
+      parents.map(async (m, index) => {
+        const firstLine = (m.text ?? "").split("\n")[0]?.trim() ?? "";
+        const name = firstLine.slice(0, 20);
+        const registeredAt = new Date(Number(m.ts.split(".")[0]) * 1000);
+        const replyCount = m.reply_count ?? 0;
+
+        // 直近アクティブな30スレッドまでのみ、返信本文とパーマリンクを取得する(API呼び出し数抑制)。
+        const withinBudget = index < REPLY_FETCH_LIMIT;
+
+        const [replies, permalink] = await Promise.all([
+          replyCount > 0 && withinBudget
+            ? this.fetchThreadReplies(botToken, channelId, m.ts)
+            : Promise.resolve<CandidateThreadReply[]>([]),
+          withinBudget ? this.fetchPermalink(botToken, channelId, m.ts) : Promise.resolve(undefined),
+        ]);
+
+        const latest = replies[replies.length - 1];
+
+        const thread: CandidateThread = {
+          threadTs: m.ts,
+          name,
+          registeredAt,
+          updatedAt: latest ? latest.postedAt : registeredAt,
+          replyCount,
+          parentText: await this.formatMessageText(botToken, m.text ?? ""),
+          latestText: latest ? latest.text : "",
+          permalink,
+          replies,
+        };
+        return thread;
+      }),
+    );
+
+    return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 
   async getRecentPosts(limit = 8): Promise<SlackPost[]> {
@@ -239,6 +397,7 @@ export function getMessengerSource(): MessengerSource {
         .map((c) => c.trim())
         .filter(Boolean),
       defaultChannel: process.env.SLACK_DEFAULT_CHANNEL,
+      candidateChannel: process.env.SLACK_CANDIDATE_CHANNEL,
     });
   }
   return new DemoSlackSource();

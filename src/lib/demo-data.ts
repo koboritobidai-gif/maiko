@@ -9,6 +9,8 @@
 import type {
   Candidate,
   CandidateKpiKey,
+  CandidateThread,
+  CandidateThreadReply,
   CorporateKpiKey,
   Member,
   Placement,
@@ -313,6 +315,187 @@ export const slackPosts: SlackPost[] = [
     body: "CA新人研修プログラムの教材ドラフトができました。来週レビューお願いします。",
   },
 ];
+
+// ─────────────────────────────────────────────
+// 求職者Slackスレッド(#求職者チャンネル、1人1スレッド運用のデモ)8名分
+// 親メッセージ=氏名のみ。返信で 基本情報 → 面談メモ → 企業提案 → 面接結果 → 内定 …と
+// 進捗が読み取れるように、求職者ごとに異なる段階まで進んだ状態を用意している。
+// ─────────────────────────────────────────────
+interface CandidateThreadReplySeed {
+  author: string;
+  /** 登録日からの経過日数(0=登録当日) */
+  daysAfterRegistration: number;
+  hour: number;
+  minute: number;
+  text: string;
+}
+
+interface CandidateThreadSeed {
+  name: string;
+  /** 「今日」から何日前に登録(親メッセージ投稿)されたか */
+  registeredDaysAgo: number;
+  registeredHour: number;
+  registeredMinute: number;
+  replies: CandidateThreadReplySeed[];
+}
+
+const candidateThreadSeeds: CandidateThreadSeed[] = [
+  // 1. 内定承諾まで進んだフルファネル(8返信)
+  {
+    name: "宮田裕真",
+    registeredDaysAgo: 24,
+    registeredHour: 10,
+    registeredMinute: 5,
+    replies: [
+      { author: "今井", daysAfterRegistration: 0, hour: 10, minute: 20, text: "【基本情報】男性・28歳。現職はSES企業でPHPをメイン開発、フロントエンド(React)にも挑戦したく転職検討中とのこと。LINE広告経由で登録。希望年収500〜550万円。" },
+      { author: "今井", daysAfterRegistration: 2, hour: 15, minute: 0, text: "【面談メモ】8/3面談実施。物腰柔らかくコミュニケーション力高い印象。自社開発企業を希望、転職理由は現職の裁量権の少なさ。React学習にも意欲的。" },
+      { author: "今井", daysAfterRegistration: 4, hour: 11, minute: 30, text: "【企業提案】株式会社トライアングルシステムズへ提案しました。本人の反応も良く、応募意思確認済みです。" },
+      { author: "今井", daysAfterRegistration: 7, hour: 9, minute: 45, text: "書類選考通過のご連絡いただきました。一次面接、8/12(火)15:00で確定しています。" },
+      { author: "今井", daysAfterRegistration: 9, hour: 17, minute: 10, text: "【面接結果】一次面接通過とのご連絡。技術力を高く評価いただいたそうです。最終面接は来週調整します。" },
+      { author: "今井", daysAfterRegistration: 15, hour: 18, minute: 20, text: "最終面接、本日実施しました(社長・CTO同席)。ご本人からも手応え良好とのコメントあり。結果は今週中とのことです。" },
+      { author: "今井", daysAfterRegistration: 17, hour: 13, minute: 0, text: "【内定】内定のご連絡をいただきました!年収530万円での提示です。ご本人にも速報済み、来週頭に返答予定。" },
+      { author: "今井", daysAfterRegistration: 20, hour: 10, minute: 40, text: "【承諾】内定承諾いただきました。入社日は10/1で企業側と調整中です。引き続き入社までフォローします。" },
+    ],
+  },
+  // 2. 面接落選まで進んだクローズ寄りケース(5返信)
+  {
+    name: "大西彩乃",
+    registeredDaysAgo: 19,
+    registeredHour: 13,
+    registeredMinute: 15,
+    replies: [
+      { author: "佐藤", daysAfterRegistration: 0, hour: 13, minute: 40, text: "【基本情報】女性・25歳。前職はアパレル販売、人事は未経験だが独学中とのこと。Instagram経由で登録。希望年収380〜420万円。" },
+      { author: "佐藤", daysAfterRegistration: 3, hour: 16, minute: 0, text: "【面談メモ】面談実施。人物重視の採用に強い意欲あり。土日休みの企業を希望。ポテンシャル採用に前向きな企業を中心に探索予定。" },
+      { author: "佐藤", daysAfterRegistration: 6, hour: 12, minute: 20, text: "【企業提案】北陸フーズ株式会社の人事アシスタント職へ提案しました。" },
+      { author: "佐藤", daysAfterRegistration: 10, hour: 11, minute: 0, text: "一次面接、実施しました。結果は今週中に連絡いただける予定です。" },
+      { author: "佐藤", daysAfterRegistration: 12, hour: 15, minute: 50, text: "【面接結果】残念ながら一次面接で不採用のご連絡でした。理由は業界経験不足とのこと。他社を並行して探す方向で本人とすり合わせ中です。" },
+    ],
+  },
+  // 3. 企業提案〜選考序盤(6返信)
+  {
+    name: "桑原健太",
+    registeredDaysAgo: 15,
+    registeredHour: 9,
+    registeredMinute: 50,
+    replies: [
+      { author: "富田", daysAfterRegistration: 0, hour: 10, minute: 10, text: "【基本情報】男性・33歳。前職は自動車部品メーカーで生産管理を5年経験。紹介経由で登録。希望年収550〜600万円。" },
+      { author: "富田", daysAfterRegistration: 2, hour: 14, minute: 30, text: "【面談メモ】面談実施。現場マネジメント経験が豊富で、次はマネージャー職を希望とのこと。転職理由は評価制度への不満。" },
+      { author: "富田", daysAfterRegistration: 5, hour: 11, minute: 0, text: "【企業提案】中央オートパーツ株式会社へ提案準備中です。職務経歴書のブラッシュアップを本人と実施しました。" },
+      { author: "富田", daysAfterRegistration: 8, hour: 17, minute: 15, text: "書類選考、通過のご連絡いただきました。" },
+      { author: "富田", daysAfterRegistration: 10, hour: 10, minute: 30, text: "一次面接の日程、来週水曜14:00で確定しました。" },
+      { author: "富田", daysAfterRegistration: 13, hour: 19, minute: 0, text: "面接に向けて職務経歴の深掘りと逆質問リストの準備を本人と実施しました。手応えありそうです。" },
+    ],
+  },
+  // 4. 面談段階(4返信)
+  {
+    name: "藤井美咲",
+    registeredDaysAgo: 9,
+    registeredHour: 11,
+    registeredMinute: 0,
+    replies: [
+      { author: "今井", daysAfterRegistration: 0, hour: 11, minute: 20, text: "【基本情報】女性・30歳。訪問看護の実務経験3年。求人媒体経由で登録。希望年収450〜480万円。" },
+      { author: "今井", daysAfterRegistration: 3, hour: 15, minute: 40, text: "【面談メモ】面談実施。ワークライフバランス重視、夜勤なしを希望とのこと。土日休みも優先条件。" },
+      { author: "今井", daysAfterRegistration: 5, hour: 10, minute: 0, text: "希望条件に合う求人をピックアップ中です。訪問看護ステーション3社ほど候補が挙がっています。" },
+      { author: "今井", daysAfterRegistration: 7, hour: 16, minute: 30, text: "来週、候補企業への提案を進める予定です。本人にも候補一覧を共有済み。" },
+    ],
+  },
+  // 5. 面接進行中(7返信)
+  {
+    name: "望月隼人",
+    registeredDaysAgo: 21,
+    registeredHour: 14,
+    registeredMinute: 0,
+    replies: [
+      { author: "佐藤", daysAfterRegistration: 0, hour: 14, minute: 25, text: "【基本情報】男性・27歳。現職はIT商社で法人営業3年。LINE広告経由で登録。希望年収480〜520万円。" },
+      { author: "佐藤", daysAfterRegistration: 2, hour: 17, minute: 0, text: "【面談メモ】面談実施。数字への意識が高く、SaaS業界への転向を希望。転職理由はキャリアの伸びしろ。" },
+      { author: "佐藤", daysAfterRegistration: 4, hour: 10, minute: 30, text: "【企業提案】株式会社クラウドゲートへ提案しました。" },
+      { author: "佐藤", daysAfterRegistration: 7, hour: 13, minute: 0, text: "書類選考通過、一次面接をセットしました。" },
+      { author: "佐藤", daysAfterRegistration: 9, hour: 18, minute: 45, text: "【面接結果】一次面接通過とのご連絡です!人柄を評価いただいたとのこと。" },
+      { author: "佐藤", daysAfterRegistration: 13, hour: 11, minute: 15, text: "最終面接、来週火曜10:00で確定しました。" },
+      { author: "佐藤", daysAfterRegistration: 18, hour: 16, minute: 0, text: "最終面接に向けて、給与交渉のポイントを事前にすり合わせ済みです。ご本人も準備万端とのこと。" },
+    ],
+  },
+  // 6. 新規登録直後(3返信)
+  {
+    name: "平田さくら",
+    registeredDaysAgo: 3,
+    registeredHour: 16,
+    registeredMinute: 30,
+    replies: [
+      { author: "今井", daysAfterRegistration: 0, hour: 16, minute: 50, text: "【基本情報】女性・24歳。前職は広告代理店で企画職。紹介経由で登録。希望年収400万円前後。" },
+      { author: "今井", daysAfterRegistration: 1, hour: 10, minute: 0, text: "ヒアリングシート回収済みです。来週、面談を実施予定です。" },
+      { author: "今井", daysAfterRegistration: 2, hour: 14, minute: 20, text: "面談日程、8/18(火)19:00で確定しました。" },
+    ],
+  },
+  // 7. 内定(条件調整中、5返信)
+  {
+    name: "黒田拓真",
+    registeredDaysAgo: 27,
+    registeredHour: 9,
+    registeredMinute: 30,
+    replies: [
+      { author: "富田", daysAfterRegistration: 0, hour: 9, minute: 50, text: "【基本情報】男性・38歳。介護施設で主任として5年勤務。求人媒体経由で登録。希望年収550〜600万円。" },
+      { author: "富田", daysAfterRegistration: 3, hour: 13, minute: 10, text: "【面談メモ】面談実施。マネジメント経験が豊富で、施設長候補としての適性が高い印象。" },
+      { author: "富田", daysAfterRegistration: 6, hour: 15, minute: 0, text: "【企業提案】みらいリハビリクリニックへ提案しました。" },
+      { author: "富田", daysAfterRegistration: 11, hour: 17, minute: 30, text: "面接実施、高評価をいただきました。決裁者との最終調整に入るとのことです。" },
+      { author: "富田", daysAfterRegistration: 16, hour: 12, minute: 0, text: "【内定】内定のご連絡をいただきました。条件面(年収・入社時期)のすり合わせを進めています。" },
+    ],
+  },
+  // 8. 家庭都合でクローズ(4返信)
+  {
+    name: "小林優輝",
+    registeredDaysAgo: 12,
+    registeredHour: 10,
+    registeredMinute: 45,
+    replies: [
+      { author: "佐藤", daysAfterRegistration: 0, hour: 11, minute: 0, text: "【基本情報】男性・31歳。自動車部品メーカーで設計を5年経験。Instagram経由で登録。希望年収500〜550万円。" },
+      { author: "佐藤", daysAfterRegistration: 2, hour: 14, minute: 30, text: "【面談メモ】面談実施。転職意欲は高いが、家庭都合で勤務地に制約ありとのこと。通勤圏が限定的。" },
+      { author: "佐藤", daysAfterRegistration: 6, hour: 16, minute: 15, text: "勤務地条件に合う求人が少なく、選定に時間がかかっています。エリアを広げられないか本人に再確認中。" },
+      { author: "佐藤", daysAfterRegistration: 9, hour: 10, minute: 20, text: "本人都合により転職活動を一時中断したいとのご連絡がありました。またご縁があれば連絡いただく形で、一旦クローズとします。" },
+    ],
+  },
+];
+
+/** Slack の ts(unix秒.マイクロ秒)風の文字列を組み立てる(デモ用の疑似ID)。 */
+function pseudoTs(date: Date, seq: number): string {
+  return `${Math.floor(date.getTime() / 1000)}.${String(seq).padStart(6, "0")}`;
+}
+
+/** 実際には投稿されていないデモスレッドへの、Slackパーマリンク風のURL(見た目確認用)。 */
+function demoPermalink(threadTs: string): string {
+  const channel = "C071ZU15QBX";
+  return `https://tobidai-hr.slack.com/archives/${channel}/p${threadTs.replace(".", "")}`;
+}
+
+export const candidateThreads: CandidateThread[] = candidateThreadSeeds.map((seed, seedIndex) => {
+  const registeredAt = daysAgo(seed.registeredDaysAgo, seed.registeredHour, seed.registeredMinute);
+  const threadTs = pseudoTs(registeredAt, seedIndex * 1000);
+
+  const replies: CandidateThreadReply[] = seed.replies.map((r) => {
+    const postedAt = new Date(registeredAt);
+    postedAt.setDate(postedAt.getDate() + r.daysAfterRegistration);
+    postedAt.setHours(r.hour, r.minute, 0, 0);
+    return {
+      author: r.author,
+      postedAt,
+      text: r.text,
+    };
+  });
+
+  const latest = replies[replies.length - 1];
+
+  return {
+    threadTs,
+    name: seed.name,
+    registeredAt,
+    updatedAt: latest ? latest.postedAt : registeredAt,
+    replyCount: replies.length,
+    parentText: seed.name,
+    latestText: latest ? latest.text : "",
+    permalink: demoPermalink(threadTs),
+    replies,
+  };
+});
 
 // ─────────────────────────────────────────────
 // 週次KPI(直近8週分。毎週月曜に前週分を入力する運用)

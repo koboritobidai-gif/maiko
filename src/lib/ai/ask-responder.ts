@@ -21,7 +21,14 @@ import {
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { Candidate, CandidateKpiKey, CorporateKpiKey, DataBundle, Member } from "@/lib/types";
+import type {
+  Candidate,
+  CandidateKpiKey,
+  CandidateThread,
+  CorporateKpiKey,
+  DataBundle,
+  Member,
+} from "@/lib/types";
 
 export type AskRole = "exec" | "ca" | undefined;
 
@@ -41,7 +48,7 @@ function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
 }
 
-export function buildAskSnapshot(bundle: DataBundle) {
+export function buildAskSnapshot(bundle: DataBundle, candidateThreads: CandidateThread[] = []) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
   const primary = getPrimaryKpis(bundle.weeklyKpis);
@@ -92,6 +99,19 @@ export function buildAskSnapshot(bundle: DataBundle) {
       referredTo: c.referredTo,
       interviewResult: c.interviewResult,
     })),
+    // 求職者Slackスレッド(#求職者チャンネル、1人1スレッド運用の進捗データベース)。
+    // 上記 candidates(シート台帳)とは別管理で、氏名以外の突合キーは持たない。
+    candidateThreads: candidateThreads.map((t) => ({
+      name: t.name,
+      registeredAt: t.registeredAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+      replyCount: t.replyCount,
+      latestReplies: t.replies.slice(-2).map((r) => ({
+        author: r.author,
+        postedAt: r.postedAt.toISOString(),
+        text: r.text,
+      })),
+    })),
   };
 }
 
@@ -106,6 +126,11 @@ export const ASK_SYSTEM_PROMPT = `あなたは株式会社翔び台(人材紹介
 求職者一覧(candidates)には氏名・担当CA・ステージ・希望職種・更新日・最新メモに加え、性別(gender)・年齢(age)・
 流入経路(inflowChannel)・送客先(referredTo)・面接結果(interviewResult)が任意項目として含まれる場合があります
 (未登録の求職者は空欄のことがあります)。特定の求職者名で質問された場合は、これらの情報も自然に添えて答えてください。
+
+candidateThreads は社内Slack「#求職者」チャンネル(1人の求職者につき1スレッドの運用)から取得した進捗データベースで、
+氏名・登録日時(registeredAt)・最終更新日時(updatedAt)・返信数(replyCount)・直近の返信2件(latestReplies、
+投稿者・日時・本文)が含まれます。candidates(シート台帳)とは別管理で、両方に同じ氏名が存在する場合は
+どちらの情報も自然に言及してください(シート台帳にのみ、またはSlackスレッドにのみ存在する求職者もいます)。
 
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
@@ -135,6 +160,15 @@ function findCandidateByNameInText(text: string, candidates: Candidate[]): Candi
   });
 }
 
+/** 質問文に求職者Slackスレッドの氏名(スペース除去して比較)が含まれるか探す。 */
+function findCandidateThreadByNameInText(text: string, threads: CandidateThread[]): CandidateThread | undefined {
+  const normalizedText = text.replace(/\s+/g, "");
+  return threads.find((t) => {
+    const name = t.name.replace(/\s+/g, "");
+    return name.length >= 2 && normalizedText.includes(name);
+  });
+}
+
 /** 求職者名を含む質問に、性別・年齢・流入経路・送客先・面接結果を含めて答える。 */
 function answerCandidateDetail(candidate: Candidate, bundle: DataBundle): string {
   const caName = bundle.members.find((m) => m.id === candidate.caId)?.name ?? candidate.caId;
@@ -149,6 +183,19 @@ function answerCandidateDetail(candidate: Candidate, bundle: DataBundle): string
   if (candidate.interviewResult) parts.push(`面接結果は「${candidate.interviewResult}」です。`);
   parts.push(`最新メモ: ${candidate.latestNote || "特になし"}`);
   return parts.join(" ");
+}
+
+/** 求職者Slackスレッド(#求職者チャンネル)名を含む質問に、最新返信2件・登録日・返信数を含めて答える。 */
+function answerCandidateThreadDetail(thread: CandidateThread): string {
+  const latestReplies = thread.replies.slice(-2);
+  const quoted =
+    latestReplies.length > 0
+      ? latestReplies.map((r) => `「${r.text}」(${formatDate(r.postedAt)}・${r.author})`).join(" / ")
+      : "まだ返信はありません";
+  return (
+    `Slackスレッド(#求職者)によると、${thread.name}さんは${formatDate(thread.registeredAt)}に登録され、` +
+    `これまでに返信${thread.replyCount}件のやり取りがあります。直近の投稿: ${quoted}`
+  );
 }
 
 function kpiInsight(diff: number, positiveLabel: string, negativeLabel: string): string {
@@ -403,7 +450,12 @@ const FALLBACK_ANSWER =
  * キーワードマッチで質問意図を判定し、metrics の実数値から日本語回答を組み立てる。
  * Claude が使えない場合のフォールバック応答。
  */
-export function answerWithRules(question: string, role: AskRole, bundle: DataBundle): string {
+export function answerWithRules(
+  question: string,
+  role: AskRole,
+  bundle: DataBundle,
+  candidateThreads: CandidateThread[] = [],
+): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
@@ -411,10 +463,15 @@ export function answerWithRules(question: string, role: AskRole, bundle: DataBun
 
   const mentionedMember = findMemberBySurnameInText(text, members);
 
-  // 0. 特定求職者名(氏名フルネーム一致)→ ステージ・流入経路・送客先・面接結果を含む個別詳細
+  // 0. 特定求職者名(氏名フルネーム一致)→ シート台帳のステージ等詳細 + Slackスレッドの進捗を
+  //    両方見つかった場合は両方言及する(片方にしか存在しない求職者もいる)。
   const mentionedCandidate = findCandidateByNameInText(text, bundle.candidates);
-  if (mentionedCandidate) {
-    return answerCandidateDetail(mentionedCandidate, bundle);
+  const mentionedThread = findCandidateThreadByNameInText(text, candidateThreads);
+  if (mentionedCandidate || mentionedThread) {
+    const parts: string[] = [];
+    if (mentionedCandidate) parts.push(answerCandidateDetail(mentionedCandidate, bundle));
+    if (mentionedThread) parts.push(answerCandidateThreadDetail(mentionedThread));
+    return parts.join(" ");
   }
 
   // 1. 特定メンバー名 + KPIキーワード(例: 「清本さんの商談数は?」)

@@ -93,9 +93,29 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 
 ### 4.1.1 求職者一覧(`/candidates`)
 
-社内Slack「#求職者」チャンネルに書かれる求職者情報(氏名・性別・年齢・流入経路・送客先・面接結果)を
-一覧で確認するための専用画面。下部タブには含めず、ダッシュボードからのリンク経由でアクセスする
-(4.1 参照)。ページ側に「← 今日の経営へ戻る」リンクを設置する。
+求職者に関する2種類の情報源(Slackスレッド/スプレッドシート台帳)を切り替えて確認するための専用画面。
+下部タブには含めず、ダッシュボードからのリンク経由でアクセスする(4.1 参照)。ページ上部にタブ
+(セクション切替、`CandidatesTabs`)を常設し、URL遷移を伴わないクライアント側の状態切替で
+2つのビューを行き来する。既定タブは「進捗データベース」。
+
+**タブ1: 進捗データベース(#求職者)**(既定表示)
+
+社内Slack「#求職者」チャンネル(公開チャンネル、1人の求職者につき1スレッドの運用。親メッセージ=
+氏名のみ、スレッド返信に基本情報・特徴・面談履歴・進捗が書かれる)を「新着通知」ではなく
+求職者のデータベース兼進捗管理として見るビュー(`CandidateThreadListView`)。
+
+- 上部: 「← 今日の経営へ戻る」リンク+見出し+氏名検索ボックス(部分一致)
+- 求職者スレッドカード(`updatedAt` 降順): 氏名(太字)/ 返信数バッジ / 登録日・最終更新日時 /
+  最新投稿(無ければ親メッセージ)の抜粋2行。カード全体が個別ページ(4.1.2)へのリンク
+- カード配置はスマホ1カラム、PC(lg)は2カラム、より広い画面(xl)は3カラムのグリッド
+- 右上に SourceBadge(Slack連携状態)を表示。`live-error` 時は赤枠でエラー内容を表示
+  (ダッシュボードの Slack ハイライトと同じパターン)
+- データソース: `loadCandidateThreads()`(5分メモリキャッシュ。取得仕様は6.3参照)
+
+**タブ2: シート台帳**
+
+従来の求職者一覧。実体は `CandidateListView` コンポーネントをそのまま流用しており、
+本タブの追加によって既存機能・見た目に変更は無い。
 
 - 上部: 検索ボックス(氏名・流入経路・送客先の部分一致)+ ステージ絞り込みチップ
   (全て/新規登録/面談/企業提案/面接/内定/承諾/入社/辞退。各チップに件数バッジ)
@@ -107,6 +127,26 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 - 右上に SourceBadge(Sheets連携状態)を表示
 - データソース: `loadDataBundle()`(`revalidate = 60`)。求職者タブの任意列(性別/年齢/流入経路/送客先/
   面接結果)は `docs/SHEET_TEMPLATE.md` 参照
+
+### 4.1.2 求職者個別ページ(`/candidates/t/[threadTs]`)
+
+進捗データベース(4.1.1 タブ1)のカードから遷移する、Slackスレッド1件分の詳細ページ。
+`threadTs`(Slackメッセージts。URLエンコードして埋め込む)を動的ルートパラメータに持つ
+force-dynamic のサーバーコンポーネント(`page.tsx`)+ クライアント表示コンポーネント
+(`CandidateThreadDetailView`)の構成。
+
+- ヘッダー: 氏名(大)/ 登録日・最終更新・返信数 / permalink が取得できていれば
+  「Slackでスレッドを開く」リンク(新規タブ)
+- 「基本情報・特徴」カード: 親メッセージ全文 + 最初の返信(あれば)。運用上、最初の返信に
+  基本情報がまとまって書かれることが多いための構成
+- 「進捗タイムライン」: 返信を時系列(古→新)の縦タイムラインで表示。各項目は
+  日付(`YYYY/M/D HH:mm`)・投稿者名・本文(改行保持)。最新の項目には「最新」バッジ+
+  ブランドブルーの強調枠(2px枠+淡い影)を付ける
+- API呼び出し数抑制のため返信取得がスキップされたスレッド(6.3参照)を直接開いた場合は、
+  タイムラインにその旨を示す注記を表示する
+- 該当スレッドが見つからない場合(削除・URL誤り等)は「見つかりません」+一覧への戻りリンクを表示する
+- データソース: `loadCandidateThreads()` の結果から `threadTs` 完全一致で検索
+  (個別ページ専用のAPI呼び出しは行わず、一覧と同じ5分キャッシュを共有する)
 
 ### 4.2 AIに聞く
 - サジェストチップ: 「今日の成約は?」「今月の面談数は?」「LINE登録率は?」「今月の契約金額は?」「遅れているプロジェクトは?」「選考中の求職者は?」
@@ -131,33 +171,38 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 src/
   app/
     layout.tsx / globals.css
-    page.tsx                # 今日の経営
-    candidates/page.tsx     # 求職者一覧(ダッシュボードからリンク遷移。下部タブには含めない)
-    ask/page.tsx            # AIに聞く
-    deliver/page.tsx        # 届ける
-    meeting/page.tsx        # 面談AI
-    proposal/page.tsx       # 提案書
+    page.tsx                    # 今日の経営
+    candidates/page.tsx         # 求職者一覧(ダッシュボードからリンク遷移。下部タブには含めない)
+    candidates/t/[threadTs]/page.tsx  # 求職者個別ページ(進捗データベースの1スレッド詳細)
+    ask/page.tsx                # AIに聞く
+    deliver/page.tsx            # 届ける
+    meeting/page.tsx            # 面談AI
+    proposal/page.tsx           # 提案書
     api/ask/route.ts
     api/deliver/route.ts
     api/meeting/route.ts
     api/proposal/route.ts
-  components/               # AppShell, Sidebar(PC左ナビ), TabBar(スマホ下部ナビ), Header, KpiCard,
-                             # ProgressBar, StatusBadge(+StageBadge), ChatBubble,
-                             # DashboardView, CandidateListView など
+  components/                   # AppShell, Sidebar(PC左ナビ), TabBar(スマホ下部ナビ), Header, KpiCard,
+                                 # ProgressBar, StatusBadge(+StageBadge), ChatBubble, DashboardView,
+                                 # CandidatesTabs(進捗データベース/シート台帳の切替)、
+                                 # CandidateThreadListView, CandidateThreadDetailView, CandidateListView など
   lib/
-    types.ts                # Candidate, Placement, Member, Project, SlackPost, Stage, WeeklyKpiRecord, DataBundle, Settings...
-    demo-data.ts            # デモデータ生成(実行日基準。週次KPIは直近8週分)
-    metrics.ts              # KPI集計ロジック(DataBundle/配列を引数に取る純関数。唯一の集計箇所)
-    data-bundle.ts          # loadDataBundle(): アダプタから DataBundle を構築(60秒メモリキャッシュ、live失敗時はデモへフォールバック)
-    source-status.ts        # SourceStatus → ソースバッジ文言のマッピング(クライアント安全)
-    adapters/spreadsheet.ts # SpreadsheetSource IF + DemoSpreadsheetSource + GoogleSheetsSource(実装)
-    adapters/messenger.ts   # MessengerSource IF + DemoSlackSource + SlackSource(実装)
-    ai/client.ts            # Claude API 呼び出し(キー無しならnull)
-    ai/ask-responder.ts     # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundleを引数に取る)
-    ai/deliver-router.ts    # 「届ける」宛先ルーティング(DataBundleを引数に取る)
-    ai/meeting-gen.ts       # 「面談AI」生成ロジック(DataBundleを引数に取る)
-    ai/proposal-gen.ts      # 「提案書」生成ロジック(DataBundleを引数に取る)
-  store/session.ts          # ロール選択(localStorage)
+    types.ts                    # Candidate, CandidateThread(+Reply), Placement, Member, Project, SlackPost,
+                                 # Stage, WeeklyKpiRecord, DataBundle, Settings...
+    demo-data.ts                # デモデータ生成(実行日基準。週次KPIは直近8週分、求職者スレッドは8名分)
+    metrics.ts                  # KPI集計ロジック(DataBundle/配列を引数に取る純関数。唯一の集計箇所)
+    data-bundle.ts              # loadDataBundle(): アダプタから DataBundle を構築(60秒メモリキャッシュ、live失敗時はデモへフォールバック)
+    candidate-threads.ts        # loadCandidateThreads(): #求職者チャンネルのスレッド一覧を取得(5分メモリキャッシュ、同上のフォールバック方針)
+    next-dynamic-usage-error.ts # isNextDynamicUsageError(): DYNAMIC_SERVER_USAGE の判定(data-bundle.ts / candidate-threads.ts で共用)
+    source-status.ts            # SourceStatus → ソースバッジ文言のマッピング(クライアント安全)
+    adapters/spreadsheet.ts     # SpreadsheetSource IF + DemoSpreadsheetSource + GoogleSheetsSource(実装)
+    adapters/messenger.ts       # MessengerSource IF(getRecentPosts/postMessage/getCandidateThreads) + DemoSlackSource + SlackSource(実装)
+    ai/client.ts                # Claude API 呼び出し(キー無しならnull)
+    ai/ask-responder.ts         # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundle + CandidateThread[] を引数に取る)
+    ai/deliver-router.ts        # 「届ける」宛先ルーティング(DataBundleを引数に取る)
+    ai/meeting-gen.ts           # 「面談AI」生成ロジック(DataBundleを引数に取る)
+    ai/proposal-gen.ts          # 「提案書」生成ロジック(DataBundleを引数に取る)
+  store/session.ts              # ロール選択(localStorage)
 ```
 
 ## 6. 実連携(Google Sheets / Slack)の構成
@@ -167,15 +212,22 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 
 ### 6.1 データフロー
 
-`src/lib/data-bundle.ts` の `loadDataBundle()` が全機能の唯一のデータ取得口になっている。
+`src/lib/data-bundle.ts` の `loadDataBundle()` が、求職者Slackスレッド(進捗データベース)を除く
+全機能の唯一のデータ取得口になっている。求職者Slackスレッドは `src/lib/candidate-threads.ts` の
+`loadCandidateThreads()` が独立した取得口・キャッシュを持つ(4.1.1/4.1.2、6.3参照)。
 
 1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` を呼び、
    `metrics.ts` で集計した結果をクライアントコンポーネント(`DashboardView`)へ props で渡す
    (`export const revalidate = 60` により60秒おきにライブデータを再取得)。
-2. API Routes(`api/ask` `api/deliver` `api/meeting` `api/proposal`)はリクエストのたびに
-   `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。
-3. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュを持つため、同一プロセス内では
-   Google Sheets / Slack への実際のHTTP呼び出しは60秒に1回程度に抑えられる。
+2. 求職者一覧(`src/app/candidates/page.tsx`)・求職者個別ページ(`src/app/candidates/t/[threadTs]/page.tsx`)は
+   `force-dynamic` のサーバーコンポーネントとして `loadDataBundle()` と `loadCandidateThreads()` を
+   並行して呼び、それぞれ `CandidatesTabs` / `CandidateThreadDetailView` へ props で渡す。
+3. API Routes(`api/ask` `api/deliver` `api/meeting` `api/proposal`)はリクエストのたびに
+   `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。`api/ask` はさらに `loadCandidateThreads()`
+   も呼び、求職者Slackスレッドの情報をスナップショットに含める(4.2 / 6.3参照)。
+4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` は5分キャッシュを
+   持つため、同一プロセス内では Google Sheets / Slack への実際のHTTP呼び出しはそれぞれ60秒・5分に
+   1回程度に抑えられる。
 
 ### 6.2 Google Sheets(`GoogleSheetsSource`)
 
@@ -189,19 +241,62 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 ### 6.3 Slack(`SlackSource`)
 
 - 追加npm依存なし。Slack Web API(`chat.postMessage` / `conversations.history` /
-  `conversations.info` / `users.info`)を直接 `fetch` で呼び出す。
+  `conversations.replies` / `chat.getPermalink` / `conversations.info` / `users.info`)を直接
+  `fetch` で呼び出す。
 - 「届ける」の送信は live 時は `chat.postMessage` で実際に投稿し、demo 時は従来通りログ出力のみ。
 - ダッシュボードの Slack ハイライトは `SLACK_HIGHLIGHT_CHANNELS`(カンマ区切りチャンネルID)の
   `conversations.history` を取得し、`users.info` / `conversations.info` で投稿者名・チャンネル名を解決する。
-- 環境変数: `SLACK_BOT_TOKEN` / `SLACK_HIGHLIGHT_CHANNELS` / `SLACK_DEFAULT_CHANNEL`。
+- **求職者データベース(`getCandidateThreads()`)**: `SLACK_CANDIDATE_CHANNEL`(#求職者チャンネルの
+  ID)の `conversations.history`(直近100件)を取得し、`CandidateThread[]` を組み立てる。
+  - subtype付き(`channel_join` など)・ボット投稿の親メッセージは除外する。親テキストの1行目
+    (trim、20文字まで)を `name` とする
+  - `reply_count > 0` の親には `conversations.replies` で返信(最大50件/スレッド)を取得するが、
+    API呼び出し数を抑えるため「直近アクティブな30スレッド」まで(`conversations.history` が
+    新しい順で返す先頭30件)に限定し、超過分は返信取得・パーマリンク取得をスキップして
+    親情報(氏名・登録日時・返信数)のみを返す(`getCandidateThreads()` 内にコメントで明記)
+  - `users.info` で投稿者の表示名を解決する(インスタンス内メモリキャッシュを highlight 取得と共有)
+  - 本文整形(`formatMessageText`): `<@U…>` メンションは可能なら表示名へ、`<url|label>` は label へ、
+    `<url>` は url(素の文字列)へ変換する
+  - `chat.getPermalink` で親メッセージへのパーマリンクを取得する(失敗しても処理は継続し、
+    `permalink` は省略される)
+  - 取得口は `src/lib/candidate-threads.ts` の `loadCandidateThreads()`。`data-bundle.ts` と同じ
+    パターン(live失敗時は `console.warn` の上でデモスレッドへフォールバックし、`SourceStatus` に
+    `live-error` を設定)だが、独立して5分のモジュールメモリキャッシュを持つ(6.1参照)
+- 環境変数: `SLACK_BOT_TOKEN` / `SLACK_HIGHLIGHT_CHANNELS` / `SLACK_DEFAULT_CHANNEL` /
+  `SLACK_CANDIDATE_CHANNEL`。
 
 ### 6.4 フォールバックとソースバッジ
 
 - `DATA_MODE=live` で接続・パースに失敗した場合、`console.warn` した上で自動的にデモデータへ
-  フォールバックする(アプリ自体はエラーにならない)。
+  フォールバックする(アプリ自体はエラーにならない)。この判定(`DYNAMIC_SERVER_USAGE` エラーの
+  再スロー含む)は `src/lib/next-dynamic-usage-error.ts` の `isNextDynamicUsageError()` に共通化され、
+  `data-bundle.ts` と `candidate-threads.ts` の双方から使われる。
 - `DataBundle` は `sourceStatus`(Sheets)と `slackStatus`(Slack)をそれぞれ独立に持ち、
-  `"live" | "demo" | "live-error"` の3値を取る。ダッシュボードのソースバッジは
-  `src/lib/source-status.ts` の `sourceBadgeLabel()` で以下のように出し分けられる。
+  `"live" | "demo" | "live-error"` の3値を取る。求職者データベース(`loadCandidateThreads()` の
+  戻り値の `status`)も同じ `SourceStatus` 型を再利用する、DataBundle とは独立した状態である。
+  ソースバッジは `src/lib/source-status.ts` の `sourceBadgeLabel()` で以下のように出し分けられる。
   - `live` → 「Sheets(連携中)」/「Slack(連携中)」
   - `demo` → 「Sheets(デモ)」/「Slack(デモ)」
   - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」
+  - 求職者データベース(進捗データベースタブ・個別ページ)のバッジは `sourceBadgeLabel("slack", status)`
+    をそのまま流用しているため、表示文言はダッシュボードの Slack バッジと共通(「Slack(連携中)」等)
+
+## 7. ロードマップ(将来構想)
+
+今回実装した求職者データベース(4.1.1/4.1.2、`CandidateThread`)は、氏名以外の突合キーを持たない
+自由記述ベースのデータ構造として意図的にシンプルにとどめている。将来、以下の拡張を見据える。
+
+- **企業情報 × 求職者のマッチング**: 法人営業(RA)側にも `#求職者` と同様の「1社1スレッド」等の
+  データベース運用(または既存のシート求職者/成約タブと対になる企業タブ)を導入し、企業の募集要件・
+  特徴を蓄積する。`CandidateThread` の進捗タイムライン(自由記述)から希望条件(職種・年収・勤務地・
+  転職理由など)を抽出/要約するAI処理を `ai/*.ts` に追加し、企業側の募集要件と突き合わせて
+  提案候補をレコメンドする機能を検討する。既存の設計方針(`metrics.ts` / `ai/*.ts` は `DataBundle`
+  や配列を引数に取る純関数とし、demo-data.ts やアダプタを直接 import しない)を踏襲し、
+  実データ・デモデータの双方に同一ロジックを適用できる形で実装する想定
+- **求職者データベースの構造化・要約**: 現状は Slack投稿の自由記述をそのまま表示しているが、
+  AIによる要約(基本情報の抽出、現在の進捗ステージの推定など)を個別ページ上部にキャッシュ表示する案。
+  シート台帳(`Candidate.stage`)との自動突合(氏名一致等)によるステータス統合も検討課題
+  (突合精度の担保が前提となるため、今回は意図的に未実装)
+- **API呼び出し数の最適化**: `getCandidateThreads()` の「直近アクティブな30スレッド」制限は
+  現状のSlack API呼び出し回数を抑えるための簡易対策。求職者数の増加に応じて、Slackの
+  Events API(Webhook)によるプッシュ型更新や、スレッド単位の差分キャッシュへの移行を検討する

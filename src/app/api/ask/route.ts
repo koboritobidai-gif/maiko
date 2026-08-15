@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { askClaude } from "@/lib/ai/client";
 import { ASK_SYSTEM_PROMPT, answerWithRules, buildAskSnapshot } from "@/lib/ai/ask-responder";
 import type { AskRole } from "@/lib/ai/ask-responder";
+import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
 
 interface AskRequestBody {
@@ -35,8 +36,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const bundle = await loadDataBundle();
-  const snapshot = buildAskSnapshot(bundle);
+  const [bundle, threadsResult] = await Promise.all([loadDataBundle(), loadCandidateThreads()]);
+  const snapshot = buildAskSnapshot(bundle, threadsResult.threads);
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const ruleAnswer = answerWithRules(question, role, bundle);
+  const ruleAnswer = answerWithRules(question, role, bundle, threadsResult.threads);
   return NextResponse.json({
     answer: ruleAnswer,
     source: "rule" as const,

@@ -20,6 +20,7 @@ import type {
 } from "./types";
 import { DemoSpreadsheetSource, getSpreadsheetSource } from "./adapters/spreadsheet";
 import { DemoSlackSource, getMessengerSource } from "./adapters/messenger";
+import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
 
 const CACHE_MS = 60_000;
 const SLACK_HIGHLIGHT_LIMIT = 20;
@@ -28,20 +29,6 @@ let cache: { bundle: DataBundle; expiresAt: number } | null = null;
 
 function isLiveMode(): boolean {
   return process.env.DATA_MODE === "live";
-}
-
-/**
- * Next.js が「このページは動的に描画すべき」と判断するために投げる内部エラー。
- * これを catch して握りつぶすと静的化されたページにデモデータが焼き込まれてしまうため、
- * フォールバックせずに再スローする。
- */
-function isNextDynamicUsageError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "digest" in error &&
-    (error as { digest?: unknown }).digest === "DYNAMIC_SERVER_USAGE"
-  );
 }
 
 interface SpreadsheetPart {

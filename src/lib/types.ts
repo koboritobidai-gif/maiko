@@ -126,6 +126,48 @@ export interface SlackPost {
   body: string;
 }
 
+/** 求職者Slackスレッド内の1件の返信。 */
+export interface CandidateThreadReply {
+  /** 投稿者の表示名 */
+  author: string;
+  /** 投稿日時 */
+  postedAt: Date;
+  /** 本文(メンション・リンクを表示用に整形済み、改行は保持) */
+  text: string;
+}
+
+/**
+ * 求職者Slackスレッド(社内Slack「#求職者」チャンネル、1人の求職者につき1スレッドの運用)。
+ * 親メッセージ=氏名のみ、スレッド返信に基本情報・特徴・面談履歴・進捗が書かれる想定で、
+ * 「新着通知」ではなく求職者のデータベース兼進捗管理として扱う。
+ * シート台帳(`Candidate`)とは別管理(氏名以外の突合キーを持たない)。
+ * 将来的に企業情報とのマッチングへ拡張する余地があるため、進捗テキストは自由記述のまま
+ * 保持し、構造化(ステージ・希望条件などのフィールド化)は行っていない(docs/DESIGN.md 7章)。
+ */
+export interface CandidateThread {
+  /** スレッド(親メッセージ)の ts。個別ページ(`/candidates/t/[threadTs]`)のURLにも使用 */
+  threadTs: string;
+  /** 求職者名(親メッセージ本文の1行目、最大20文字) */
+  name: string;
+  /** 登録日時(親メッセージの投稿日時) */
+  registeredAt: Date;
+  /** 最終更新日時(最新返信の投稿日時。返信が無ければ登録日時と同じ) */
+  updatedAt: Date;
+  /** 返信数 */
+  replyCount: number;
+  /** 親メッセージ本文 */
+  parentText: string;
+  /** 最新返信の本文(返信が無ければ空文字) */
+  latestText: string;
+  /** Slackの当該メッセージへのパーマリンク(取得できなかった場合は省略) */
+  permalink?: string;
+  /**
+   * 返信一覧(古い順)。API呼び出し数抑制のため取得をスキップしたスレッドでは空配列になる
+   * (`replyCount` は実際の返信数を保持するため、`replies.length` と一致しないことがある)。
+   */
+  replies: CandidateThreadReply[];
+}
+
 // ─────────────────────────────────────────────
 // 週次KPI
 // ─────────────────────────────────────────────
