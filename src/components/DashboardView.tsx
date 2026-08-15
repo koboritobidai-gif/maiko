@@ -262,7 +262,14 @@ export default function DashboardView({
           </p>
         )}
         <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5 lg:gap-4">
-          <KpiCard label="広告費用合計" value={formatYen(marketingSummary.totalCost)} accent />
+          <KpiCard
+            label="広告費用合計"
+            value={formatYen(marketingSummary.totalCost)}
+            caption={`広告 ${formatYen(
+              marketingSummary.channels.reduce((sum, c) => sum + c.cost, 0),
+            )} + SNS ${formatYen(marketingSummary.sns.cost)} + 送客 ${formatYen(marketingSummary.referralTotalYen)}`}
+            accent
+          />
           <KpiCard label="LINE登録合計" value={`${marketingSummary.totalLineRegs.toLocaleString("ja-JP")}人`} />
           <KpiCard label="面談予約合計" value={`${marketingSummary.totalReservations.toLocaleString("ja-JP")}件`} />
           <KpiCard label="面談実績合計" value={`${marketingSummary.totalInterviews.toLocaleString("ja-JP")}件`} />
@@ -331,6 +338,49 @@ export default function DashboardView({
           {transitionRates.snsPlayToLpRatePercent !== null && (
             <RateBadge label="SNS再生→LP率" value={transitionRates.snsPlayToLpRatePercent} />
           )}
+        </div>
+        <div className="card overflow-x-auto p-3.5">
+          <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+            送客パートナー(成果報酬)
+          </p>
+          <table className="w-full min-w-[420px] text-left text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-2 font-medium">経路</th>
+                <th className="pb-2 pr-2 text-right font-medium">単価</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談人数</th>
+                <th className="pb-2 text-right font-medium">費用(月内)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+              {marketingSummary.referralPartners.map((r) => (
+                <tr key={r.channel}>
+                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    {r.channel}
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatYen(r.unitCostYen)}</td>
+                  <td className="py-2 pr-2 text-right">{r.count.toLocaleString("ja-JP")}名</td>
+                  <td className="py-2 text-right">{formatYen(r.costYen)}</td>
+                </tr>
+              ))}
+              <tr style={{ fontWeight: 700 }}>
+                <td className="py-2 pr-2 whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                  合計
+                </td>
+                <td className="py-2 pr-2 text-right">—</td>
+                <td className="py-2 pr-2 text-right">
+                  {marketingSummary.referralPartners
+                    .reduce((sum, r) => sum + r.count, 0)
+                    .toLocaleString("ja-JP")}
+                  名
+                </td>
+                <td className="py-2 text-right">{formatYen(marketingSummary.referralTotalYen)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            対象人数 = 流入経路が一致し面談以降へ進んだ求職者(辞退除く)。月の判定は登録日(未入力時は更新日)。
+          </p>
         </div>
       </section>
 

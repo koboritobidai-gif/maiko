@@ -78,15 +78,24 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
 - **集客・広告(月内)**: 主要指標の直後に配置。外部の広告・SNS運用シート2つ(6.5参照)から集計した
   当月の集客・広告データを表示する。SourceBadge(独自の`marketing`ステータス)+ live-error 時の赤枠を
   求職者ファネル等と同じパターンで表示する。
-  - 合計カード列: 広告費用合計(円表示)/ LINE登録合計 / 面談予約合計 / 面談実績合計 / 面接回数
-    (週次KPIの1次〜最終前+最終面接数の月内合計)。スマホ2枚/PC(lg)5枚のグリッド
+  - 合計カード列: 広告費用合計(円表示。キャプションに「広告+SNS+送客」の内訳を一行で表示)/
+    LINE登録合計 / 面談予約合計 / 面談実績合計 / 面接回数(週次KPIの1次〜最終前+最終面接数の月内合計)。
+    スマホ2枚/PC(lg)5枚のグリッド
   - 媒体別テーブル(Google広告/Meta広告/SNS運用(リズリアライズ)。列: 費用/LINE登録/予約/面談/CPA/面談単価。
     スマホは横スクロール、SNSは予約数を計測しないため「—」表示)
+  - **送客パートナー(成果報酬)小テーブル**: 媒体別テーブルの下に表示。成果報酬型(1人登録・面談ごとに
+    費用が発生)の送客パートナー(既定4経路: KANOA/マホガニー/foresma/2peace(Tさん))の当月費用を
+    経路/単価/面談人数/費用(月内)の列+合計行で表示する。対象人数は求職者台帳(`Candidate`)のうち
+    流入経路(`inflowChannel`)が経路名と部分一致(trim・大文字小文字無視)し、ステージが面談以降
+    (面談/企業提案/面接/内定/承諾/入社。辞退は除外)へ進んだ人数。月内判定は求職者の登録日
+    (`registeredAt`。無ければ更新日で近似)。脚注に集計ルールを小さく表示する。単価マスタは
+    `Settings.referralRates`(連携シートの任意タブ「送客単価」。無ければ組み込みの既定値。6.2参照)
   - 遷移率バッジ列: クリック→LINE登録率・LINE→予約率・予約→面談実行率・SNS再生→LP率
     (分母0で算出不可のものは非表示)
-  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, now)`(純関数)。
+  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, candidates, referralRates, now)`
+    (純関数。送客パートナー費用を `totalCost` に合算する)。
     データソースは `src/lib/marketing-data.ts` の `loadMarketingData()`(5分メモリキャッシュ、
-    live失敗時はデモへフォールバック。詳細は6.5参照)
+    live失敗時はデモへフォールバック。詳細は6.5参照)+ `DataBundle` の `candidates` / `settings.referralRates`
 - 求職者ファネル(月内): PV数 → LINE登録 → 面談予約 → 面談 → 面接(1次〜最終前+最終) → 内定 → 採用決定 を横棒ファネル表示。
   LINE登録率・面談実行率・面談移行率をバッジ表示
 - 法人営業ファネル(月内): 名刺交換 → アポイント(主権/非主権/外部の内訳) → 商談(同内訳) → 契約(件数+金額)。
@@ -262,7 +271,12 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   JWT を組み立て、`https://oauth2.googleapis.com/token` でアクセストークンを取得する(50分メモリキャッシュ)。
 - Sheets Values API の `batchGet` で「設定/メンバー/求職者/成約/プロジェクト/週次KPI」6タブを1回のHTTP
   呼び出しでまとめて取得し、`types.ts` の型へパースする(数値・日付・ステージ名などをバリデーションし、
-  失敗時はどの行の何が不正かを含む日本語エラーメッセージを投げる)。
+  失敗時はどの行の何が不正かを含む日本語エラーメッセージを投げる)。求職者タブのN列(任意、「登録日」)は
+  送客パートナー費用集計(4.1参照)の月内判定に使う
+- **送客単価**(任意タブ)は上記6タブの `batchGet` には含めない。存在しないタブを `batchGet` の
+  `ranges` に含めると呼び出し全体が失敗するため、別リクエストで取得し、タブが無い・読めない場合は
+  `DEFAULT_REFERRAL_RATES`(組み込みの既定単価)にフォールバックする(エラーにしない。`Settings.referralRates`
+  として `DataBundle` に含まれる)
 - 環境変数: `GOOGLE_SERVICE_ACCOUNT_JSON`(鍵JSON文字列)/ `SHEET_ID`。
 
 ### 6.3 Slack(`SlackSource`)
@@ -316,8 +330,9 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   - 取得口は `src/lib/marketing-data.ts` の `loadMarketingData()`。`candidate-threads.ts` と同じパターン
     (live失敗時は `console.warn` の上でデモデータへフォールバックし、`SourceStatus` に `live-error` を設定)で、
     独立して5分のモジュールメモリキャッシュを持つ。
-  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, now)`(純関数)。媒体別(Google広告/
-    Meta広告)・SNS運用の当月サマリ、遷移率(`transitionRates`)、合計値をまとめて返す。
+  - 集計は `metrics.ts` の `getMarketingSummary(data, weeklyKpis, candidates, referralRates, now)`
+    (純関数)。媒体別(Google広告/Meta広告)・SNS運用・送客パートナー(成果報酬、4.1参照)の当月サマリ、
+    遷移率(`transitionRates`)、合計値(送客パートナー費用込み)をまとめて返す。
   - 環境変数: `MARKETING_AD_SHEET_ID` / `MARKETING_SNS_SHEET_ID` / `MARKETING_SNS_MONTHLY_COST`。
 
 ### 6.5 フォールバックとソースバッジ
@@ -326,6 +341,10 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   フォールバックする(アプリ自体はエラーにならない)。この判定(`DYNAMIC_SERVER_USAGE` エラーの
   再スロー含む)は `src/lib/next-dynamic-usage-error.ts` の `isNextDynamicUsageError()` に共通化され、
   `data-bundle.ts` ・ `candidate-threads.ts` ・ `marketing-data.ts` の3者から使われる。
+- 送客単価タブ(6.2参照)は上記とは別系統の、より粒度の細かいフォールバックである。`SourceStatus` は
+  変更せず(6タブ本体の取得結果に影響しない)、タブ自体が存在しない・パースできない等どんな理由でも
+  `DEFAULT_REFERRAL_RATES` に静かにフォールバックする(`console.warn` もしない。運用上「未設定でも困らない」
+  ことを優先する任意タブのため)。
 - `DataBundle` は `sourceStatus`(Sheets)と `slackStatus`(Slack)をそれぞれ独立に持ち、
   `"live" | "demo" | "live-error"` の3値を取る。求職者データベース(`loadCandidateThreads()` の
   戻り値の `status`)・集客・広告データ(`loadMarketingData()` の戻り値の `status`)も同じ

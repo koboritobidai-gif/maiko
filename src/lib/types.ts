@@ -60,6 +60,8 @@ export interface Candidate {
   expectedAnnualIncome: number;
   /** 更新日時 */
   updatedAt: Date;
+  /** 登録日(任意。求職者タブN列。無ければ月内判定は updatedAt で近似する) */
+  registeredAt?: Date;
   /** 最新メモ */
   latestNote: string;
   /** 性別(任意。自由記述: 「男性」「女性」「その他/未回答」など) */
@@ -256,10 +258,32 @@ export interface WeeklyKpiRecord {
  */
 export type SourceStatus = "live" | "demo" | "live-error";
 
+/**
+ * 送客パートナー(成果報酬型)の単価マスタ。1人登録(面談)あたりの単価。
+ * 連携シートの任意タブ「送客単価」(A列: 経路名 / B列: 1人あたり単価(円))から読み取る。
+ * タブが無い・読めない場合は `DEFAULT_REFERRAL_RATES` を使用する(エラーにしない)。
+ */
+export interface ReferralRate {
+  /** 経路名。求職者の流入経路(inflowChannel)との部分一致(trim・大文字小文字無視)で判定する。 */
+  channel: string;
+  /** 1人あたり単価(円) */
+  unitCostYen: number;
+}
+
+/** 送客パートナー単価の既定値(経営者からの申告ベース)。 */
+export const DEFAULT_REFERRAL_RATES: ReferralRate[] = [
+  { channel: "KANOA", unitCostYen: 27_500 },
+  { channel: "マホガニー", unitCostYen: 22_000 },
+  { channel: "foresma", unitCostYen: 27_500 },
+  { channel: "2peace(Tさん)", unitCostYen: 22_000 },
+];
+
 /** システム設定(スプレッドシート「設定」タブ相当)。 */
 export interface Settings {
   /** 紹介手数料率(理論年収に対する割合)。成約の手数料自動計算に使用。 */
   feeRate: number;
+  /** 送客パートナー単価マスタ(任意タブ「送客単価」。無ければ DEFAULT_REFERRAL_RATES)。 */
+  referralRates: ReferralRate[];
 }
 
 /**

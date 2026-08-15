@@ -7,7 +7,13 @@
  * googleapis 等の追加npm依存は使わず、node:crypto で RS256 JWT を組み立てて認証する。
  */
 import { createSign } from "node:crypto";
-import { ALL_STAGES, CANDIDATE_KPI_KEYS, CORPORATE_KPI_KEYS, FEE_RATE } from "../types";
+import {
+  ALL_STAGES,
+  CANDIDATE_KPI_KEYS,
+  CORPORATE_KPI_KEYS,
+  DEFAULT_REFERRAL_RATES,
+  FEE_RATE,
+} from "../types";
 import type {
   Candidate,
   CandidateKpiKey,
@@ -16,6 +22,7 @@ import type {
   Member,
   Placement,
   Project,
+  ReferralRate,
   Settings,
   Stage,
   WeeklyKpiRecord,
@@ -52,7 +59,7 @@ export class DemoSpreadsheetSource implements SpreadsheetSource {
     return members;
   }
   async getSettings(): Promise<Settings> {
-    return { feeRate: FEE_RATE };
+    return { feeRate: FEE_RATE, referralRates: DEFAULT_REFERRAL_RATES };
   }
   async getWeeklyKpis(): Promise<WeeklyKpiRecord[]> {
     return weeklyKpis;
@@ -242,11 +249,14 @@ const TAB_CANDIDATES = "求職者";
 const TAB_PLACEMENTS = "成約";
 const TAB_PROJECTS = "プロジェクト";
 const TAB_WEEKLY_KPI = "週次KPI";
+/** 任意タブ。無い/読めない場合は DEFAULT_REFERRAL_RATES にフォールバックする(RANGES には含めない。下記参照)。 */
+const TAB_REFERRAL_RATES = "送客単価";
 
+// N列(登録日)を含める。既存シート(M列まで)でもエラーにならない(列自体が存在しないだけ)。
 const RANGES = [
   `${TAB_SETTINGS}!A:B`,
   `${TAB_MEMBERS}!A:D`,
-  `${TAB_CANDIDATES}!A:M`,
+  `${TAB_CANDIDATES}!A:N`,
   `${TAB_PLACEMENTS}!A:G`,
   `${TAB_PROJECTS}!A:G`,
   `${TAB_WEEKLY_KPI}!A:E`,
@@ -393,6 +403,20 @@ function requireDate(row: SheetRow, index: number, field: string, tabName: strin
   return date;
 }
 
+/**
+ * 任意の日付列を Date | undefined として読む(空欄・列自体が無い・YYYY-MM-DD形式でない場合は undefined。
+ * 求職者タブN列「登録日」用。エラーにはしない)。
+ */
+function optionalDateOrUndefined(row: SheetRow, index: number): Date | undefined {
+  const raw = cellToString(row[index]);
+  if (!raw) return undefined;
+  const match = DATE_RE.exec(raw);
+  if (!match) return undefined;
+  const [, y, mo, d] = match;
+  const date = new Date(Number(y), Number(mo) - 1, Number(d), 10, 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 /** 日付列の文字列(YYYY-MM-DD)をそのまま検証だけして返す(週次KPIの「週開始日」用)。 */
 function requireDateString(row: SheetRow, index: number, field: string, tabName: string, rowNumber: number): string {
   const raw = cellToString(row[index]);
@@ -472,7 +496,7 @@ function requireKpiKey(
 // 各タブのパース
 // ─────────────────────────────────────────────
 
-function parseSettings(rows: SheetRow[]): Settings {
+function parseSettings(rows: SheetRow[]): Pick<Settings, "feeRate"> {
   let feeRate: number | null = null;
   for (const { row } of dataRows(rows, TAB_SETTINGS)) {
     const label = cellToString(row[0]);
@@ -523,6 +547,9 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
     const inflowChannel = optionalStringOrUndefined(row, 10);
     const referredTo = optionalStringOrUndefined(row, 11);
     const interviewResult = optionalStringOrUndefined(row, 12);
+    // N列(任意): 登録日(YYYY-MM-DD)。送客パートナー費用集計の月内判定に使用。
+    // 空欄・列自体が無い場合は undefined(集計側は updatedAt で近似する)。
+    const registeredAt = optionalDateOrUndefined(row, 13);
     result.push({
       id,
       name,
@@ -531,6 +558,7 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
       desiredRole,
       expectedAnnualIncome: Math.round(incomeMan * 10000),
       updatedAt,
+      registeredAt,
       latestNote,
       gender,
       age,
@@ -611,6 +639,36 @@ function parseWeeklyKpis(rows: SheetRow[]): WeeklyKpiRecord[] {
   return result;
 }
 
+/**
+ * 任意タブ「送客単価」(A列: 経路名 / B列: 1人あたり単価(円)。1行目ヘッダー)を読み取る。
+ * `RANGES`(batchGet)には含めない: タブが存在しないと batchGet 全体が失敗し、既存6タブの取得まで
+ * 巻き込んでしまうため、別リクエストで取得する。タブが無い・読めない・行が空などどんな理由でも
+ * 失敗時は DEFAULT_REFERRAL_RATES にフォールバックし、エラーにしない。
+ */
+async function fetchReferralRates(sheetId: string, accessToken: string): Promise<ReferralRate[]> {
+  try {
+    const [rows] = await fetchSheetsValuesBatchGet(
+      sheetId,
+      [`${TAB_REFERRAL_RATES}!A:B`],
+      accessToken,
+      "UNFORMATTED_VALUE",
+    );
+    if (!rows || rows.length < 2) return DEFAULT_REFERRAL_RATES;
+    const result: ReferralRate[] = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i] ?? [];
+      if (isBlankRow(row)) continue;
+      const channel = cellToString(row[0]);
+      const unitCostYen = optionalNumber(row, 1);
+      if (!channel || unitCostYen === null) continue;
+      result.push({ channel, unitCostYen: Math.round(unitCostYen) });
+    }
+    return result.length > 0 ? result : DEFAULT_REFERRAL_RATES;
+  } catch {
+    return DEFAULT_REFERRAL_RATES;
+  }
+}
+
 interface ParsedSheetData {
   settings: Settings;
   members: Member[];
@@ -654,8 +712,10 @@ export class GoogleSheetsSource implements SpreadsheetSource {
     const accessToken = await getAccessToken(this.config.serviceAccountJson);
     const [settingsRows, memberRows, candidateRows, placementRows, projectRows, weeklyKpiRows] =
       await fetchAllTabs(this.config.sheetId, accessToken);
+    // 送客単価タブは任意・別リクエスト(上記コメント参照)。失敗しても6タブの取得結果には影響しない。
+    const referralRates = await fetchReferralRates(this.config.sheetId, accessToken);
 
-    const settings = parseSettings(settingsRows);
+    const settings: Settings = { ...parseSettings(settingsRows), referralRates };
     const members = parseMembers(memberRows);
     const candidates = parseCandidates(candidateRows);
     const placements = parsePlacements(placementRows, settings.feeRate);

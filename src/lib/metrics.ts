@@ -16,6 +16,7 @@ import type {
   Member,
   Placement,
   Project,
+  ReferralRate,
   SlackPost,
   SnsWeeklyRecord,
   Stage,
@@ -641,6 +642,55 @@ function summarizeSns(records: SnsWeeklyRecord[], monthlyCostYen: number, now: D
   };
 }
 
+/** 送客パートナー(成果報酬型)1経路分の月内実績。 */
+export interface ReferralPartnerSummary {
+  /** 経路名(単価マスタの表記そのまま) */
+  channel: string;
+  /** 1人あたり単価(円) */
+  unitCostYen: number;
+  /** 対象人数(月内、面談以降・辞退除く) */
+  count: number;
+  /** 費用(円) = unitCostYen × count */
+  costYen: number;
+}
+
+/** 送客パートナー費用の対象ステージ(面談以降。辞退・新規登録は対象外)。 */
+const REFERRAL_TARGET_STAGES: Stage[] = ["面談", "企業提案", "面接", "内定", "承諾", "入社"];
+
+function normalizeChannelText(text: string): string {
+  return text.trim().toLowerCase();
+}
+
+/**
+ * 送客パートナー費用(成果報酬)のまとめ。単価マスタ(`referralRates`)の順に、count=0 の経路も含めて返す。
+ * 対象人数のカウント規則:
+ * 1. 求職者の流入経路(inflowChannel)が単価マスタの経路名と部分一致(trim・大文字小文字無視)
+ * 2. ステージが面談以降(辞退は除外)
+ * 3. 月内判定は registeredAt があればそれ、無ければ updatedAt で近似
+ */
+export function getReferralPartnerSummary(
+  candidates: Candidate[],
+  referralRates: ReferralRate[],
+  now: Date = new Date(),
+): ReferralPartnerSummary[] {
+  return referralRates.map((rate) => {
+    const normalizedChannel = normalizeChannelText(rate.channel);
+    const count = candidates.filter((c) => {
+      if (!c.inflowChannel) return false;
+      if (!REFERRAL_TARGET_STAGES.includes(c.stage)) return false;
+      if (!normalizeChannelText(c.inflowChannel).includes(normalizedChannel)) return false;
+      const referenceDate = c.registeredAt ?? c.updatedAt;
+      return isSameMonth(referenceDate, now);
+    }).length;
+    return {
+      channel: rate.channel,
+      unitCostYen: rate.unitCostYen,
+      count,
+      costYen: rate.unitCostYen * count,
+    };
+  });
+}
+
 export interface MarketingTransitionRates {
   /** クリック→LINE登録率(%)。Google広告・Meta広告の合算値。 */
   clickToLineRegRatePercent: number | null;
@@ -657,7 +707,11 @@ export interface MarketingSummary {
   channels: AdChannelSummary[];
   /** SNS運用(リズリアライズ)の月内サマリ。 */
   sns: SnsSummary;
-  /** 広告費用合計(Google広告+Meta広告)+SNS月額。 */
+  /** 送客パートナー(成果報酬型)の月内サマリ。単価マスタ順、count=0の経路も含む。 */
+  referralPartners: ReferralPartnerSummary[];
+  /** 送客パートナー費用合計(円)。 */
+  referralTotalYen: number;
+  /** 広告費用合計(Google広告+Meta広告)+SNS月額+送客パートナー費用。 */
   totalCost: number;
   totalLineRegs: number;
   /** 面談予約合計(Google広告+Meta広告。SNSは予約数を計測しないため含まない)。 */
@@ -672,11 +726,15 @@ export interface MarketingSummary {
 export function getMarketingSummary(
   data: MarketingData,
   weeklyKpis: WeeklyKpiRecord[],
+  candidates: Candidate[],
+  referralRates: ReferralRate[],
   now: Date = new Date(),
 ): MarketingSummary {
   const google = summarizeAdChannel(data.adDaily, "Google広告", now);
   const meta = summarizeAdChannel(data.adDaily, "Meta広告", now);
   const sns = summarizeSns(data.snsWeekly, data.snsMonthlyCostYen, now);
+  const referralPartners = getReferralPartnerSummary(candidates, referralRates, now);
+  const referralTotalYen = referralPartners.reduce((sum, r) => sum + r.costYen, 0);
 
   const adClicks = google.clicks + meta.clicks;
   const adLineRegs = google.lineRegs + meta.lineRegs;
@@ -686,7 +744,9 @@ export function getMarketingSummary(
   return {
     channels: [google, meta],
     sns,
-    totalCost: google.cost + meta.cost + sns.cost,
+    referralPartners,
+    referralTotalYen,
+    totalCost: google.cost + meta.cost + sns.cost + referralTotalYen,
     totalLineRegs: adLineRegs + sns.lineRegs,
     totalReservations: adReservations,
     totalInterviews: adInterviews + sns.interviews,

@@ -31,6 +31,15 @@ function daysAgoInMonth(n: number, hour = 10, minute = 0): Date {
   return new Date(year, month, day, hour, minute);
 }
 
+/**
+ * 前月の指定日(1〜28に収める)。送客パートナー費用デモの「先月分」求職者登録日を作るために使う
+ * (Date コンストラクタは month=-1 を自動的に前年12月として正規化する)。
+ */
+function lastMonthDay(day: number, hour = 10, minute = 0): Date {
+  const clamped = Math.min(28, Math.max(1, day));
+  return new Date(year, month - 1, clamped, hour, minute);
+}
+
 /** 本日の日付(時刻指定)。 */
 function todayAt(hour: number, minute: number): Date {
   return new Date(year, month, today, hour, minute);
@@ -92,47 +101,53 @@ interface CandidateSeed {
   referredTo?: string;
   /** 面接結果(任意。面接以降で入る) */
   interviewResult?: string;
+  /**
+   * 登録日(任意。求職者タブN列相当)。送客パートナー費用集計の月内判定に使う
+   * (無ければ updatedAt で近似)。送客パートナー経由の求職者の一部にのみ設定し、
+   * 「月内・先月の混在」「registeredAt優先(updatedAtは直近でも登録は先月なら対象外)」を再現している。
+   */
+  registeredAt?: Date;
 }
 
 const CA_ROTATION = ["m2", "m3", "m4"];
 
 const candidateSeeds: CandidateSeed[] = [
   // 新規登録 5名(送客先・面接結果はまだ発生しないため空欄)
-  { name: "田中 悠斗", stage: "新規登録", desiredRole: "Webエンジニア", incomeYen: 5_200_000, note: "自社開発企業を中心に希望。ポートフォリオ確認中。", updatedHoursAgo: 4, gender: "男性", age: 26, inflowChannel: "LINE広告" },
+  { name: "田中 悠斗", stage: "新規登録", desiredRole: "Webエンジニア", incomeYen: 5_200_000, note: "自社開発企業を中心に希望。ポートフォリオ確認中。", updatedHoursAgo: 4, gender: "男性", age: 26, inflowChannel: "KANOA紹介", registeredAt: daysAgoInMonth(3, 9, 0) },
   { name: "石井 美月", stage: "新規登録", desiredRole: "広報", incomeYen: 4_500_000, note: "登録直後。ヒアリングシート送付済み。", updatedHoursAgo: 2, gender: "女性", age: 29, inflowChannel: "Instagram" },
   { name: "西村 遥", stage: "新規登録", desiredRole: "店舗マネージャー", incomeYen: 4_600_000, note: "登録完了。希望条件のヒアリング予定。", updatedHoursAgo: 3, gender: "女性", age: 33, inflowChannel: "求人媒体" },
   { name: "松井 優斗", stage: "新規登録", desiredRole: "自動車設計エンジニア", incomeYen: 6_300_000, note: "登録完了。経歴を確認中。", updatedHoursAgo: 5, gender: "男性", age: 31, inflowChannel: "紹介" },
   { name: "長谷川 舞", stage: "新規登録", desiredRole: "看護師(訪問看護)", incomeYen: 4_900_000, note: "登録完了。希望条件をヒアリング予定。", updatedHoursAgo: 6, gender: "女性", age: 38, inflowChannel: "LINE広告" },
   // 面談 5名(まだ企業へは提案していないため送客先・面接結果は空欄)
-  { name: "鈴木 美穂", stage: "面談", desiredRole: "人事(採用担当)", incomeYen: 4_800_000, note: "来週初回面談を実施予定。", updatedHoursAgo: 9, gender: "女性", age: 34, inflowChannel: "Instagram" },
+  { name: "鈴木 美穂", stage: "面談", desiredRole: "人事(採用担当)", incomeYen: 4_800_000, note: "来週初回面談を実施予定。", updatedHoursAgo: 9, gender: "女性", age: 34, inflowChannel: "マホガニー", registeredAt: daysAgoInMonth(9, 9, 30) },
   { name: "小川 直人", stage: "面談", desiredRole: "生産管理", incomeYen: 5_800_000, note: "来週面談予定。実務年数を確認。", updatedHoursAgo: 11, gender: "男性", age: 41, inflowChannel: "求人媒体" },
-  { name: "前田 翔", stage: "面談", desiredRole: "EC運営担当", incomeYen: 5_000_000, note: "来週面談。転職理由をヒアリング予定。", updatedHoursAgo: 14, gender: "男性", age: 27, inflowChannel: "LINE広告" },
+  { name: "前田 翔", stage: "面談", desiredRole: "EC運営担当", incomeYen: 5_000_000, note: "来週面談。転職理由をヒアリング予定。", updatedHoursAgo: 14, gender: "男性", age: 27, inflowChannel: "foresma", registeredAt: lastMonthDay(20, 9, 0) },
   { name: "橋本 恵", stage: "面談", desiredRole: "品質保証", incomeYen: 5_600_000, note: "来週面談予定。", updatedHoursAgo: 13, gender: "女性", age: 30, inflowChannel: "紹介" },
   { name: "福田 拓也", stage: "面談", desiredRole: "介護施設 施設長候補", incomeYen: 5_500_000, note: "来週面談予定。", updatedHoursAgo: 12, gender: "男性", age: 45, inflowChannel: "求人媒体" },
   // 企業提案 4名(送客先が確定。面接前のため面接結果は空欄)
-  { name: "加藤 拓海", stage: "企業提案", desiredRole: "プロダクトマネージャー", incomeYen: 7_500_000, note: "IT企業2社へ提案準備中。", updatedHoursAgo: 15, gender: "男性", age: 35, inflowChannel: "紹介", referredTo: "株式会社トライアングルシステムズ" },
+  { name: "加藤 拓海", stage: "企業提案", desiredRole: "プロダクトマネージャー", incomeYen: 7_500_000, note: "IT企業2社へ提案準備中。", updatedHoursAgo: 15, gender: "男性", age: 35, inflowChannel: "KANOA", referredTo: "株式会社トライアングルシステムズ", registeredAt: daysAgoInMonth(15, 9, 0) },
   { name: "森田 千尋", stage: "企業提案", desiredRole: "品質管理", incomeYen: 5_200_000, note: "食品メーカー2社へ提案準備中。", updatedHoursAgo: 18, gender: "女性", age: 32, inflowChannel: "求人媒体", referredTo: "北陸フーズ株式会社" },
   { name: "藤原 麻衣", stage: "企業提案", desiredRole: "バイヤー", incomeYen: 5_300_000, note: "小売2社へ提案中、反応良好。", updatedHoursAgo: 19, gender: "女性", age: 28, inflowChannel: "Instagram", referredTo: "株式会社サンライズリテール" },
   { name: "竹内 亮太", stage: "企業提案", desiredRole: "生産技術", incomeYen: 6_100_000, note: "自動車部品メーカーへ提案準備中。", updatedHoursAgo: 21, gender: "男性", age: 39, inflowChannel: "LINE広告", referredTo: "中央オートパーツ株式会社" },
   // 面接 5名
-  { name: "渡部 蓮", stage: "面接", desiredRole: "法人営業(SaaS)", incomeYen: 6_000_000, note: "来週最終面接。給与交渉のポイントを整理中。", updatedHoursAgo: 26, gender: "男性", age: 29, inflowChannel: "紹介", referredTo: "株式会社クラウドゲート", interviewResult: "最終待ち" },
+  { name: "渡部 蓮", stage: "面接", desiredRole: "法人営業(SaaS)", incomeYen: 6_000_000, note: "来週最終面接。給与交渉のポイントを整理中。", updatedHoursAgo: 26, gender: "男性", age: 29, inflowChannel: "2peace(Tさん)", referredTo: "株式会社クラウドゲート", interviewResult: "最終待ち", registeredAt: daysAgoInMonth(20, 9, 0) },
   { name: "村上 由紀", stage: "面接", desiredRole: "生産技術", incomeYen: 5_700_000, note: "来週最終面接。逆質問リストを準備中。", updatedHoursAgo: 8, gender: "女性", age: 36, inflowChannel: "求人媒体", referredTo: "中央オートパーツ株式会社", interviewResult: "最終待ち" },
-  { name: "岩崎 健太郎", stage: "面接", desiredRole: "エリアマネージャー", incomeYen: 6_800_000, note: "来週最終面接。対策を実施中。", updatedHoursAgo: 10, gender: "男性", age: 40, inflowChannel: "LINE広告", referredTo: "株式会社サンライズリテール", interviewResult: "1次通過" },
+  { name: "岩崎 健太郎", stage: "面接", desiredRole: "エリアマネージャー", incomeYen: 6_800_000, note: "来週最終面接。対策を実施中。", updatedHoursAgo: 10, gender: "男性", age: 40, inflowChannel: "マホガニー", referredTo: "株式会社サンライズリテール", interviewResult: "1次通過", registeredAt: lastMonthDay(25, 9, 0) },
   { name: "川口 直樹", stage: "面接", desiredRole: "工程管理", incomeYen: 6_700_000, note: "来週最終面接。", updatedHoursAgo: 17, gender: "男性", age: 44, inflowChannel: "紹介", referredTo: "北陸フーズ株式会社", interviewResult: "1次通過" },
   { name: "秋山 健", stage: "面接", desiredRole: "薬剤師", incomeYen: 6_500_000, note: "一次面接を通過。最終面接の日程調整中。", updatedHoursAgo: 20, gender: "男性", age: 31, inflowChannel: "求人媒体", referredTo: "みらい調剤薬局グループ", interviewResult: "1次通過・最終日程調整中" },
   // 内定 3名
-  { name: "山田 花子", stage: "内定", desiredRole: "マーケティング担当", incomeYen: 6_500_000, note: "内定連絡受領。返答期限は今週末。", updatedHoursAgo: 5, gender: "女性", age: 27, inflowChannel: "Instagram", referredTo: "株式会社グロースフィールド", interviewResult: "内定" },
+  { name: "山田 花子", stage: "内定", desiredRole: "マーケティング担当", incomeYen: 6_500_000, note: "内定連絡受領。返答期限は今週末。", updatedHoursAgo: 5, gender: "女性", age: 27, inflowChannel: "foresma", referredTo: "株式会社グロースフィールド", interviewResult: "内定", registeredAt: daysAgoInMonth(5, 9, 0) },
   { name: "三浦 大和", stage: "内定", desiredRole: "工場長候補", incomeYen: 8_200_000, note: "内定獲得。年収交渉が最終段階。", updatedHoursAgo: 6, gender: "男性", age: 48, inflowChannel: "紹介", referredTo: "中央オートパーツ株式会社", interviewResult: "内定" },
   { name: "平野 沙織", stage: "内定", desiredRole: "購買", incomeYen: 5_200_000, note: "内定連絡受領。承諾検討中。", updatedHoursAgo: 27, gender: "女性", age: 34, inflowChannel: "求人媒体", referredTo: "北陸フーズ株式会社", interviewResult: "内定" },
   // 承諾 3名
-  { name: "高橋 大輝", stage: "承諾", desiredRole: "バックエンドエンジニア", incomeYen: 7_000_000, note: "内定承諾済み。入社日を調整中。", updatedHoursAgo: 12, gender: "男性", age: 28, inflowChannel: "LINE広告", referredTo: "株式会社トライアングルシステムズ", interviewResult: "内定承諾" },
+  { name: "高橋 大輝", stage: "承諾", desiredRole: "バックエンドエンジニア", incomeYen: 7_000_000, note: "内定承諾済み。入社日を調整中。", updatedHoursAgo: 12, gender: "男性", age: 28, inflowChannel: "KANOA紹介", referredTo: "株式会社トライアングルシステムズ", interviewResult: "内定承諾", registeredAt: daysAgoInMonth(10, 9, 0) },
   { name: "木下 彩", stage: "承諾", desiredRole: "販売促進", incomeYen: 5_400_000, note: "内定承諾済み。前職の引き継ぎ調整中。", updatedHoursAgo: 16, gender: "女性", age: 30, inflowChannel: "Instagram", referredTo: "株式会社サンライズリテール", interviewResult: "内定承諾" },
   { name: "原田 由美", stage: "承諾", desiredRole: "理学療法士", incomeYen: 5_000_000, note: "内定承諾済み。入社書類を準備中。", updatedHoursAgo: 20, gender: "女性", age: 26, inflowChannel: "紹介", referredTo: "みらいリハビリクリニック", interviewResult: "内定承諾" },
   // 入社 2名
-  { name: "中島 陽菜", stage: "入社", desiredRole: "カスタマーサクセス", incomeYen: 5_500_000, note: "入社1週目。オンボーディング順調との報告あり。", updatedHoursAgo: 30, gender: "女性", age: 25, inflowChannel: "Instagram", referredTo: "株式会社クラウドゲート", interviewResult: "入社" },
+  { name: "中島 陽菜", stage: "入社", desiredRole: "カスタマーサクセス", incomeYen: 5_500_000, note: "入社1週目。オンボーディング順調との報告あり。", updatedHoursAgo: 30, gender: "女性", age: 25, inflowChannel: "2peace(Tさん)", referredTo: "株式会社クラウドゲート", interviewResult: "入社", registeredAt: lastMonthDay(15, 9, 0) },
   { name: "大野 悠", stage: "入社", desiredRole: "店舗開発", incomeYen: 6_000_000, note: "入社2週目。実績資料の引き継ぎも完了。", updatedHoursAgo: 24, gender: "男性", age: 33, inflowChannel: "求人媒体", referredTo: "株式会社サンライズリテール", interviewResult: "入社" },
   // 辞退 3名
-  { name: "岡田 健一", stage: "辞退", desiredRole: "経営企画", incomeYen: 8_000_000, note: "選考中に他社内定を承諾されクローズ。", updatedHoursAgo: 40, gender: "男性", age: 37, inflowChannel: "紹介", referredTo: "株式会社グロースフィールド", interviewResult: "選考辞退(他社内定承諾)" },
+  { name: "岡田 健一", stage: "辞退", desiredRole: "経営企画", incomeYen: 8_000_000, note: "選考中に他社内定を承諾されクローズ。", updatedHoursAgo: 40, gender: "男性", age: 37, inflowChannel: "マホガニー", referredTo: "株式会社グロースフィールド", interviewResult: "選考辞退(他社内定承諾)", registeredAt: daysAgoInMonth(25, 9, 0) },
   { name: "佐野 涼", stage: "辞退", desiredRole: "機械設計エンジニア", incomeYen: 6_200_000, note: "条件面で折り合わずクローズ。", updatedHoursAgo: 22, gender: "男性", age: 42, inflowChannel: "求人媒体", referredTo: "中央オートパーツ株式会社", interviewResult: "選考辞退(条件不一致)" },
   { name: "伊藤 さくら", stage: "辞退", desiredRole: "経理(会計事務所)", incomeYen: 5_000_000, note: "転職活動自体を一時中断されクローズ。", updatedHoursAgo: 25, gender: "女性", age: 29, inflowChannel: "LINE広告" },
 ];
@@ -145,6 +160,7 @@ export const candidates: Candidate[] = candidateSeeds.map((seed, i) => ({
   desiredRole: seed.desiredRole,
   expectedAnnualIncome: seed.incomeYen,
   updatedAt: hoursAgo(seed.updatedHoursAgo),
+  registeredAt: seed.registeredAt,
   latestNote: seed.note,
   gender: seed.gender,
   age: seed.age,

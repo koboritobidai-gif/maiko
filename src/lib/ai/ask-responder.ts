@@ -26,7 +26,7 @@ import {
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { MarketingSummary } from "@/lib/metrics";
+import type { MarketingSummary, ReferralPartnerSummary } from "@/lib/metrics";
 import type {
   Candidate,
   CandidateKpiKey,
@@ -104,7 +104,9 @@ export function buildAskSnapshot(
     weeklyTrendRecent5Weeks: weeklyTrend,
     // 集客・広告データ(アイドマ=広告運用シート/リズリアライズ=SNS運用シート)の今月サマリ。
     // marketingData が渡されなかった場合(呼び出し元が未取得)は null。
-    marketingThisMonth: marketingData ? getMarketingSummary(marketingData, bundle.weeklyKpis) : null,
+    marketingThisMonth: marketingData
+      ? getMarketingSummary(marketingData, bundle.weeklyKpis, bundle.candidates, bundle.settings.referralRates)
+      : null,
     // ブロック率(Lステップのブロック数 ÷ LINE登録人数)。「ブロック数」は週次KPIの任意項目のため
     // hasAnyData が false の場合は未入力(ratePercent も null)。
     blockRateThisMonth: getBlockRate(bundle.weeklyKpis),
@@ -177,8 +179,14 @@ marketingThisMonth には広告運用(アイドマ)シート・SNS運用(リズ�
 LINE登録数/面談予約数/面談実施数/CTR/遷移率regRate/予約率reserveRate/面談実行率execRate/登録単価cpa/面談単価
 costPerInterview)、sns(SNS運用の月額固定費用cost/再生数plays/プロフィール遷移profileVisits/LP閲覧lpViews/
 LINE登録lineRegs/面談interviews/LP遷移率lpRate/登録率regRate/登録単価cpa/面談単価costPerInterview)、
-totalCost/totalLineRegs/totalReservations/totalInterviews(広告+SNS合算)、transitionRates(遷移率まとめ)が
+referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー/foresma/2peace(Tさん)の4経路それぞれの
+channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。対象人数は流入経路が一致し
+面談以降のステージへ進んだ求職者〈辞退は除く〉で、月の判定は登録日〈未入力時は更新日〉基準です)、
+referralTotalYen(送客パートナー費用の合計)、totalCost/totalLineRegs/totalReservations/totalInterviews
+(広告+SNS+送客パートナー合算。totalCost にのみ送客パートナー費用を含む)、transitionRates(遷移率まとめ)が
 含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
+「送客費用は?」「送客パートナーは?」のような全体質問には4経路+合計を、「KANOAの費用/実績は?」
+「マホガニーは?」のような経路名を含む質問にはその経路の単価・人数・費用を個別に答えてください。
 
 blockRateThisMonth は Lステップ(LINE公式アカウント)のブロック率(ブロック数 ÷ LINE登録人数)です。
 hasAnyData が false の場合は週次KPIに「ブロック数」がまだ入力されていないという意味なので、
@@ -330,6 +338,41 @@ function answerCpa(marketingSummary: MarketingSummary | null): string {
   return (
     `今月の登録単価(CPA)は Google広告 ${fmt(google?.cpa)}、Meta広告 ${fmt(meta?.cpa)}、` +
     `SNS運用(リズリアライズ) ${fmt(marketingSummary.sns.cpa)} です。`
+  );
+}
+
+/** 「送客費用」「送客パートナー」への回答: 4経路の単価・人数・費用+合計。 */
+function answerReferralPartnersOverview(marketingSummary: MarketingSummary | null): string {
+  if (!marketingSummary) return "集客・広告データが取得できませんでした。";
+  const lines = marketingSummary.referralPartners
+    .map((r) => `${r.channel}(単価${formatYenPlain(r.unitCostYen)}) 面談${r.count}名・${formatYenPlain(r.costYen)}`)
+    .join("、");
+  return (
+    `今月の送客パートナー費用は合計${formatYenPlain(marketingSummary.referralTotalYen)}です(${lines})。` +
+    `対象人数は流入経路が一致し面談以降へ進んだ求職者(辞退除く)で、月の判定は登録日(未入力時は更新日)基準です。`
+  );
+}
+
+/** 「KANOAの費用/実績は?」「マホガニーは?」など、経路名を含む質問への個別回答。 */
+function answerReferralPartnerChannel(r: ReferralPartnerSummary): string {
+  return `${r.channel}の今月実績は面談${r.count}名、単価${formatYenPlain(r.unitCostYen)}、費用は${formatYenPlain(r.costYen)}です。`;
+}
+
+/** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」のように、質問文が
+ *  括弧部分を省略していてもマッチできるようにするための正規化。 */
+function referralChannelCore(channel: string): string {
+  return channel.split("(")[0].trim();
+}
+
+/** 質問文に送客パートナーの経路名(本体部分、大文字小文字無視)が含まれるか探す。 */
+function findReferralPartnerInText(
+  text: string,
+  marketingSummary: MarketingSummary | null,
+): ReferralPartnerSummary | undefined {
+  if (!marketingSummary) return undefined;
+  const normalizedText = text.toLowerCase();
+  return marketingSummary.referralPartners.find((r) =>
+    normalizedText.includes(referralChannelCore(r.channel).toLowerCase()),
   );
 }
 
@@ -577,7 +620,9 @@ export function answerWithRules(
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
   const scope = resolveTimeScope(text);
-  const marketingSummary = marketingData ? getMarketingSummary(marketingData, bundle.weeklyKpis) : null;
+  const marketingSummary = marketingData
+    ? getMarketingSummary(marketingData, bundle.weeklyKpis, bundle.candidates, bundle.settings.referralRates)
+    : null;
 
   const mentionedMember = findMemberBySurnameInText(text, members);
 
@@ -634,6 +679,18 @@ export function answerWithRules(
   if (text.includes("ブロック率")) return answerBlockRateQuestion(bundle);
   if (text.includes("CPA") || text.includes("登録単価")) return answerCpa(marketingSummary);
   if (text.includes("広告費") || text.includes("広告金額")) return answerAdCost(marketingSummary);
+
+  // 4.6. 送客パートナー(成果報酬): 経路名(KANOA/マホガニー/foresma/2peace(Tさん)等)の個別質問を優先し、
+  //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は4経路+合計で答える。
+  const referralPartnerMatch = findReferralPartnerInText(text, marketingSummary);
+  if (referralPartnerMatch) return answerReferralPartnerChannel(referralPartnerMatch);
+  if (
+    text.includes("送客費用") ||
+    text.includes("送客パートナー") ||
+    (text.includes("送客") && (text.includes("費用") || text.includes("実績") || text.includes("コスト")))
+  ) {
+    return answerReferralPartnersOverview(marketingSummary);
+  }
 
   // 5. 求職者系KPIの数値質問
   const candidateKpiMatch = matchCandidateKpiKey(text);

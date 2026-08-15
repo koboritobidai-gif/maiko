@@ -11,7 +11,13 @@ export default async function TodayDashboardPage() {
   const now = new Date();
   const [bundle, marketingResult] = await Promise.all([loadDataBundle(), loadMarketingData()]);
   const summary = getDashboardSummary(bundle, now);
-  const marketingSummary = getMarketingSummary(marketingResult.data, bundle.weeklyKpis, now);
+  const marketingSummary = getMarketingSummary(
+    marketingResult.data,
+    bundle.weeklyKpis,
+    bundle.candidates,
+    bundle.settings.referralRates,
+    now,
+  );
 
   return (
     <DashboardView
