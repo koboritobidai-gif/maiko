@@ -181,19 +181,26 @@ const MONTH_ONLY_RE = /(\d{1,2})\s*月\s*分/;
  * (請求書は翌月に届く運用のため、投稿月と対象月がズレて年をまたぐケースへの対応)。
  * どの表記も見つからなければ、請求書は翌月に届く運用を踏まえて「投稿月の前月」を推定値として使う。
  */
-function detectTargetMonth(text: string, postedAt: Date): { month: string; estimated: boolean } {
-  // どの表記も見つからない・信頼できない場合の推定値(投稿月の前月。請求書は翌月に届く運用)。
-  const fallback = () => {
-    const estimated = new Date(postedAt.getFullYear(), postedAt.getMonth() - 1, 1);
-    return { month: monthKey(estimated.getFullYear(), estimated.getMonth() + 1), estimated: true };
-  };
-  // 妥当性チェック: 対象月が投稿日から大きく離れている(7ヶ月以上前 or 2ヶ月以上未来)場合は、
-  // 請求書内の別の日付(契約日・登録番号など)を対象月と誤認したとみなし、推定値に切り替える
-  // (例: PDF内の「2023年7月」を拾って「2023年7月分の支払い」と表示してしまう誤検出の防止)。
-  const validated = (year: number, month: number): { month: string; estimated: boolean } => {
-    const diff = (postedAt.getFullYear() * 12 + postedAt.getMonth()) - (year * 12 + (month - 1));
-    if (month < 1 || month > 12 || diff > 6 || diff < -1) return fallback();
-    return { month: monthKey(year, month), estimated: false };
+/**
+ * PDF本文から「支払月」を求める。本文に書かれる「2026年6月(分)」等は請求の対象月であり、
+ * 翌月に支払う運用のため、支払月 = 対象月の翌月として返す。
+ * どの表記も見つからない・信頼できない場合は投稿月を推定支払月とする(投稿された月の月末に支払う運用)。
+ */
+function detectPaymentMonthFromContent(text: string, postedAt: Date): { month: string; estimated: boolean } {
+  const fallback = () => ({
+    month: monthKey(postedAt.getFullYear(), postedAt.getMonth() + 1),
+    estimated: true,
+  });
+  // 妥当性チェック: 算出した支払月が投稿月から大きく離れる場合(2ヶ月超のズレ)は、請求書内の
+  // 別の日付(契約日・登録番号など)を対象月と誤認したとみなし推定値に切り替える
+  // (例: PDF内の「2023年7月」を拾って古い月の支払いと誤表示するのを防ぐ)。
+  const validated = (targetYear: number, targetMonth: number): { month: string; estimated: boolean } => {
+    if (targetMonth < 1 || targetMonth > 12) return fallback();
+    const pay = new Date(targetYear, targetMonth, 15); // 対象月の翌月(支払月)
+    const diff =
+      (pay.getFullYear() * 12 + pay.getMonth()) - (postedAt.getFullYear() * 12 + postedAt.getMonth());
+    if (diff > 2 || diff < -2) return fallback();
+    return { month: monthKey(pay.getFullYear(), pay.getMonth() + 1), estimated: false };
   };
 
   const kanji = YEAR_MONTH_KANJI_RE.exec(text);
@@ -212,6 +219,24 @@ function detectTargetMonth(text: string, postedAt: Date): { month: string; estim
   }
 
   return fallback();
+}
+
+/** スレッド親メッセージの「7月支払い 請求書【月末払い】」のような表記から支払月を求める。 */
+const PAYMENT_MONTH_RE = /(\d{1,2})\s*月\s*(?:末)?\s*(?:支払|払い)/;
+
+function detectPaymentMonthFromThreadTitle(text: string, postedAt: Date): string | undefined {
+  const match = PAYMENT_MONTH_RE.exec(text);
+  if (!match) return undefined;
+  const month = Number(match[1]);
+  if (month < 1 || month > 12) return undefined;
+  // 年はスレッド作成日に一番近い解釈を採用する(12月作成の「1月支払い」→翌年1月、など)。
+  const postedIndex = postedAt.getFullYear() * 12 + postedAt.getMonth();
+  let best: { year: number; distance: number } | null = null;
+  for (const year of [postedAt.getFullYear() - 1, postedAt.getFullYear(), postedAt.getFullYear() + 1]) {
+    const distance = Math.abs(year * 12 + (month - 1) - postedIndex);
+    if (!best || distance < best.distance) best = { year, distance };
+  }
+  return monthKey(best!.year, month);
 }
 
 const AMOUNT_KEYWORDS = ["合計", "ご請求金額", "請求金額", "総額"];
@@ -333,6 +358,7 @@ export class SlackInvoiceSource implements InvoiceSource {
     message: SlackInvoiceMessage,
     file: SlackFile,
     permalinkBase?: string,
+    threadPaymentMonth?: string,
   ): Promise<ReferralInvoice> {
     const postedAt = tsToDate(message.ts);
     const fileName = file.name ?? "invoice.pdf";
@@ -353,7 +379,11 @@ export class SlackInvoiceSource implements InvoiceSource {
 
     const partnerChannel = findPartnerChannel(text, fileName, message.text ?? "");
     const vendorName = findVendorName(text, fileName, message.text ?? "");
-    const { month: targetMonth, estimated: targetMonthIsEstimated } = detectTargetMonth(text, postedAt);
+    // 支払月は、スレッド親の「7月支払い 請求書【月末払い】」表記(threadPaymentMonth)を最優先し、
+    // 無ければPDF本文から推定する(#請求書は支払月ごとのスレッドに請求書を集める運用のため)。
+    const fromContent = detectPaymentMonthFromContent(text, postedAt);
+    const targetMonth = threadPaymentMonth ?? fromContent.month;
+    const targetMonthIsEstimated = threadPaymentMonth ? false : fromContent.estimated;
     const amountYen = text ? findAmountYen(text) : undefined;
     if (amountYen === undefined && !parseNote) {
       parseNote = "請求金額を読み取れませんでした。";
@@ -391,25 +421,28 @@ export class SlackInvoiceSource implements InvoiceSource {
     });
 
     const cutoff = Date.now() - RECENT_WINDOW_MS;
-    const pdfEntries: { message: SlackInvoiceMessage; file: SlackFile }[] = [];
-    const collectPdfFiles = (message: SlackInvoiceMessage) => {
+    const pdfEntries: { message: SlackInvoiceMessage; file: SlackFile; paymentMonth?: string }[] = [];
+    const collectPdfFiles = (message: SlackInvoiceMessage, paymentMonth?: string) => {
       if (!message.files || message.files.length === 0) return;
       if (tsToDate(message.ts).getTime() < cutoff) return;
       for (const file of message.files) {
-        if (isPdfFile(file)) pdfEntries.push({ message, file });
+        if (isPdfFile(file)) pdfEntries.push({ message, file, paymentMonth });
       }
     };
     for (const message of history.messages ?? []) {
-      collectPdfFiles(message);
+      // メッセージ自身に「7月支払い」等の表記があればその月を採用する。
+      collectPdfFiles(message, detectPaymentMonthFromThreadTitle(message.text ?? "", tsToDate(message.ts)));
     }
 
-    // スレッドの返信の中に添付されたPDFも読む(#請求書は「1メッセージ+返信に請求書添付」の運用が
-    // あるため。conversations.history はチャンネル直下しか返さないので、返信のあるスレッドを
-    // conversations.replies で個別に取得する。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
+    // スレッドの返信の中に添付されたPDFも読む(#請求書は「7月支払い 請求書【月末払い】」のような
+    // 支払月ごとのスレッドに請求書PDFを集める運用のため。conversations.history はチャンネル直下しか
+    // 返さないので、返信のあるスレッドを conversations.replies で個別に取得し、返信のPDFには
+    // スレッド親の表記から求めた支払月を引き継ぐ。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
     const threadParents = (history.messages ?? [])
       .filter((m) => (m.reply_count ?? 0) > 0 && tsToDate(m.ts).getTime() >= cutoff)
       .slice(0, MAX_THREAD_FETCHES);
     for (const parent of threadParents) {
+      const parentPaymentMonth = detectPaymentMonthFromThreadTitle(parent.text ?? "", tsToDate(parent.ts));
       try {
         const replies = await slackGet<SlackHistoryResponse>(botToken, "conversations.replies", {
           channel: channelId,
@@ -418,7 +451,7 @@ export class SlackInvoiceSource implements InvoiceSource {
         });
         for (const message of replies.messages ?? []) {
           if (message.ts === parent.ts) continue; // 親は上で走査済み
-          collectPdfFiles(message);
+          collectPdfFiles(message, parentPaymentMonth);
         }
       } catch (error) {
         // 1スレッドの取得失敗で全体を落とさない(親メッセージ直下のPDFだけでも表示する)。
@@ -442,8 +475,8 @@ export class SlackInvoiceSource implements InvoiceSource {
       const chunk = accepted.slice(i, i + DOWNLOAD_CONCURRENCY);
       invoices.push(
         ...(await Promise.all(
-          chunk.map(({ message, file }) =>
-            this.buildInvoiceRecord(botToken, channelId, message, file, permalinkBase),
+          chunk.map(({ message, file, paymentMonth }) =>
+            this.buildInvoiceRecord(botToken, channelId, message, file, permalinkBase, paymentMonth),
           ),
         )),
       );

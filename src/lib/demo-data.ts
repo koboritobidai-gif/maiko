@@ -641,7 +641,9 @@ export const weeklyKpis: WeeklyKpiRecord[] = generateWeeklyKpis();
 // 2peace(Tさん) 1名/¥22,000(中島陽菜さんが唯一、先月登録・面談日未入力=登録日基準で先月扱い)。
 // ─────────────────────────────────────────────
 const lastMonthRef = new Date(year, month - 1, 1);
-const REFERRAL_INVOICE_TARGET_MONTH = `${lastMonthRef.getFullYear()}-${String(lastMonthRef.getMonth() + 1).padStart(2, "0")}`;
+// targetMonth は「支払月」: 先月分の請求書は今月末に支払う運用のため、今月の月キーを設定する
+// (getInvoiceChecks は支払月の前月=先月の費用計算値と突き合わせる)。
+const REFERRAL_INVOICE_TARGET_MONTH = `${year}-${String(month + 1).padStart(2, "0")}`;
 const REFERRAL_INVOICE_TARGET_MONTH_LABEL = `${lastMonthRef.getFullYear()}年${lastMonthRef.getMonth() + 1}月分`;
 
 /** 実際には投稿されていないデモ請求書への、Slackパーマリンク風のURL(見た目確認用)。 */

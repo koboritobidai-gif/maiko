@@ -382,9 +382,12 @@ export interface ReferralInvoice {
   vendorName?: string;
   /** 請求金額(円)。読み取れなければ undefined */
   amountYen?: number;
-  /** 対象月(YYYY-MM)。 */
+  /**
+   * 支払月(YYYY-MM)。#請求書の「7月支払い 請求書【月末払い】」スレッド表記を最優先し、
+   * 無ければPDF本文の対象月+1ヶ月(請求書は翌月末払いの運用)、それも無ければ投稿月で推定する。
+   */
   targetMonth: string;
-  /** 対象月がPDF記載ではなく投稿日からの推定の場合 true */
+  /** 支払月がスレッド表記・PDF記載ではなく投稿月からの推定の場合 true */
   targetMonthIsEstimated: boolean;
   fileName: string;
   /** Slackメッセージの投稿日時 */

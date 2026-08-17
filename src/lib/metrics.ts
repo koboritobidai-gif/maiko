@@ -800,9 +800,9 @@ export interface InvoiceCheckRow {
  * - 金額が完全一致すれば "match"、そうでなければ "mismatch"(diffYen = 請求額 − アプリ計算値)。
  * - 並びは投稿日の新しい順。
  */
-/** #請求書の対象月ごとの支出合計(全請求書。トップ画面の月次サマリ表示用)。 */
+/** #請求書の支払月ごとの支出合計(全請求書。トップ画面の月次サマリ表示用)。 */
 export interface InvoiceMonthTotal {
-  /** 対象月(YYYY-MM) */
+  /** 支払月(YYYY-MM) */
   month: string;
   /** 金額を読み取れた請求書の合計(円) */
   totalYen: number;
@@ -953,10 +953,15 @@ export function getInvoiceChecks(
       if (invoice.amountYen === undefined) {
         return { invoice, status: "unreadable" };
       }
+      // targetMonth は支払月。送客パートナーの請求は「前月の面談実施分を翌月に支払う」運用のため、
+      // 費用の対象月 = 支払月の前月として、アプリ計算値(面談実施月ベース)と突き合わせる。
+      const [payYear, payMonth] = invoice.targetMonth.split("-").map(Number);
+      const costRef = new Date(payYear, payMonth - 2, 15);
+      const costMonthKey = toMonthKey(costRef);
       const summaryList =
-        invoice.targetMonth === thisMonthKey
+        costMonthKey === thisMonthKey
           ? referralPartnersThisMonth
-          : invoice.targetMonth === lastMonthKey
+          : costMonthKey === lastMonthKey
             ? referralPartnersLastMonth
             : null;
       if (!summaryList) {

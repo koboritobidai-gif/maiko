@@ -277,7 +277,7 @@ caResults は全メンバー(CA: 今井/佐藤/富田 を含む)個別の今月�
 
 referralInvoiceChecks は Slack「#請求書」チャンネルの請求書PDF(送客パートナー以外の支払いも含む)を
 読み取った結果で、vendorName(請求元の会社名)・fileName も含まれます。「請求書の内訳は?」「◯月の支出は?」
-のような質問には、対象月(targetMonth)ごとに合計と「会社名 金額」の内訳を答えてください。
+のような質問には、支払月(targetMonth。「7月支払い」スレッドの月)ごとに合計と「会社名 金額」の内訳を答えてください。
 送客パートナー請求書PDFを自動照合した結果でもあり、
 経路(partnerChannel、特定できなければ null)・対象月(targetMonth、YYYY-MM形式)・請求額
 (invoiceAmountYen)・アプリの計算値(computedAmountYen)・差額(diffYen)・判定(status: match=一致/
@@ -491,7 +491,7 @@ function answerInvoiceBreakdown(invoiceChecks: InvoiceCheckRow[]): string {
       .map((inv) => `${inv.vendorName ?? inv.partnerChannel ?? inv.fileName} ${formatYenPlain(inv.amountYen ?? 0)}`)
       .join("、");
     const unreadableNote = m.unreadableCount > 0 ? `。ほか金額読取不可${m.unreadableCount}件` : "";
-    return `【${formatMonthKey(m.month)}分】合計${formatYenPlain(m.totalYen)}(${m.count}件): ${detail}${unreadableNote}`;
+    return `【${formatMonthKey(m.month)}支払い分】合計${formatYenPlain(m.totalYen)}(${m.count}件): ${detail}${unreadableNote}`;
   });
   return `Slack「#請求書」の月別支出まとめです。\n${lines.join("\n")}`;
 }

@@ -640,7 +640,7 @@ export default function DashboardView({
               {invoiceMonthlyTotals.map((m) => (
                 <div key={m.month} className="flex items-baseline justify-between py-2">
                   <span className="text-[12px] font-medium" style={{ color: "var(--color-navy)" }}>
-                    {formatMonthLabel(m.month)}分の支払い
+                    {formatMonthLabel(m.month)}の支払い(月末払い)
                   </span>
                   <span className="text-right">
                     <span className="text-[16px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
