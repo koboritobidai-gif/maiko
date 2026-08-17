@@ -419,6 +419,9 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   (`ReferralInvoice`)。
 - **取得**: `conversations.history`(直近100件、`SLACK_INVOICE_CHANNEL`)から、投稿日が直近75日
   以内でPDFファイル(`filetype === "pdf"` またはファイル名が `.pdf`)を含むメッセージを対象にする。
+  **スレッドの返信に添付されたPDFも対象**: 返信のあるスレッド(直近20スレッドまで)を
+  `conversations.replies` で取得して同様に走査する(#請求書は「1メッセージ+返信に請求書添付」の
+  運用があるため。1スレッドの取得失敗は警告ログのみでスキップ)。
   ダウンロードするPDFは API・転送量抑制のため最大15件までとし、超過分は件数のみカードの脚注に
   表示する(`skippedCount`)。各PDFは `url_private_download`(無ければ `url_private`)へ Bot Token
   付きでダウンロードする(サイズ上限8MB、超過はパース失敗扱い)。追加の Bot Token Scope

@@ -5,7 +5,8 @@
  * (fetch + Bearer SLACK_BOT_TOKEN、エラー時はSlack APIのerrorコードを含む日本語メッセージをthrow)
  * を踏襲する。
  * デモ段階は DemoInvoiceSource が demo-data.ts のデモ請求書を返す。
- * 実連携は SlackInvoiceSource が conversations.history でPDF付きメッセージを取得し、
+ * 実連携は SlackInvoiceSource が conversations.history でPDF付きメッセージを取得し
+ * (スレッドの返信に添付されたPDFも conversations.replies で取得する)、
  * 各PDFを url_private_download からダウンロード → unpdf でテキスト抽出 → 正規表現でパートナー名/
  * 対象月/金額を読み取る。
  */
@@ -80,6 +81,10 @@ interface SlackInvoiceMessage {
   text?: string;
   subtype?: string;
   files?: SlackFile[];
+  /** スレッド親メッセージの ts(返信・スレッド親のみ)。 */
+  thread_ts?: string;
+  /** スレッドの返信数(スレッド親のみ)。返信の中のPDFも読むかどうかの判定に使う。 */
+  reply_count?: number;
 }
 
 interface SlackHistoryResponse extends SlackApiResponseBase {
@@ -101,6 +106,8 @@ function isPdfFile(file: SlackFile): boolean {
 // 月4〜5件程度のため、75日・15件あれば直近2〜3ヶ月分は十分カバーできる)。
 const RECENT_WINDOW_MS = 75 * 24 * 60 * 60 * 1000;
 const MAX_PDF_DOWNLOADS = 15;
+/** 返信の中のPDFも読むスレッドの上限(API呼び出し数の抑制。#請求書は月数スレッド程度の運用想定)。 */
+const MAX_THREAD_FETCHES = 20;
 // PDFダウンロードのサイズ上限。超過分はパース失敗として扱う(転送量抑制・タイムアウト防止)。
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 
@@ -334,11 +341,37 @@ export class SlackInvoiceSource implements InvoiceSource {
 
     const cutoff = Date.now() - RECENT_WINDOW_MS;
     const pdfEntries: { message: SlackInvoiceMessage; file: SlackFile }[] = [];
-    for (const message of history.messages ?? []) {
-      if (!message.files || message.files.length === 0) continue;
-      if (tsToDate(message.ts).getTime() < cutoff) continue;
+    const collectPdfFiles = (message: SlackInvoiceMessage) => {
+      if (!message.files || message.files.length === 0) return;
+      if (tsToDate(message.ts).getTime() < cutoff) return;
       for (const file of message.files) {
         if (isPdfFile(file)) pdfEntries.push({ message, file });
+      }
+    };
+    for (const message of history.messages ?? []) {
+      collectPdfFiles(message);
+    }
+
+    // スレッドの返信の中に添付されたPDFも読む(#請求書は「1メッセージ+返信に請求書添付」の運用が
+    // あるため。conversations.history はチャンネル直下しか返さないので、返信のあるスレッドを
+    // conversations.replies で個別に取得する。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
+    const threadParents = (history.messages ?? [])
+      .filter((m) => (m.reply_count ?? 0) > 0 && tsToDate(m.ts).getTime() >= cutoff)
+      .slice(0, MAX_THREAD_FETCHES);
+    for (const parent of threadParents) {
+      try {
+        const replies = await slackGet<SlackHistoryResponse>(botToken, "conversations.replies", {
+          channel: channelId,
+          ts: parent.thread_ts ?? parent.ts,
+          limit: "100",
+        });
+        for (const message of replies.messages ?? []) {
+          if (message.ts === parent.ts) continue; // 親は上で走査済み
+          collectPdfFiles(message);
+        }
+      } catch (error) {
+        // 1スレッドの取得失敗で全体を落とさない(親メッセージ直下のPDFだけでも表示する)。
+        console.warn("[invoices] スレッド返信の取得に失敗しました(スキップ):", error);
       }
     }
 
