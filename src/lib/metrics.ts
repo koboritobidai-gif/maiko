@@ -648,25 +648,26 @@ export interface ReferralPartnerSummary {
   channel: string;
   /** 1人あたり単価(円) */
   unitCostYen: number;
-  /** 対象人数(月内、面談以降・辞退除く) */
+  /** 対象人数(月内に面談を実施した人数。面談後の辞退も含む) */
   count: number;
   /** 費用(円) = unitCostYen × count */
   costYen: number;
 }
 
-/** 送客パートナー費用の対象ステージ(面談以降。辞退・新規登録は対象外)。 */
-const REFERRAL_TARGET_STAGES: Stage[] = ["面談", "企業提案", "面接", "内定", "承諾", "入社"];
+/** 面談実施が確実とみなせるステージ(面談以降)。辞退は面談日の有無で個別判定する。 */
+const REFERRAL_INTERVIEWED_STAGES: Stage[] = ["面談", "企業提案", "面接", "内定", "承諾", "入社"];
 
 function normalizeChannelText(text: string): string {
   return text.trim().toLowerCase();
 }
 
 /**
- * 送客パートナー費用(成果報酬)のまとめ。単価マスタ(`referralRates`)の順に、count=0 の経路も含めて返す。
+ * 送客パートナー費用(面談実施で課金)のまとめ。単価マスタ(`referralRates`)の順に、count=0 の経路も含めて返す。
  * 対象人数のカウント規則:
  * 1. 求職者の流入経路(inflowChannel)が単価マスタの経路名と部分一致(trim・大文字小文字無視)
- * 2. ステージが面談以降(辞退は除外)
- * 3. 月内判定は registeredAt があればそれ、無ければ updatedAt で近似
+ * 2. 面談を実施している = ステージが面談以降、または辞退でも面談日(O列)が入っている
+ *    (面談前に辞退した人は課金対象外)
+ * 3. 月の帰属は面談実施月 = 面談日があればそれ、無ければ 登録日→更新日 で近似
  */
 export function getReferralPartnerSummary(
   candidates: Candidate[],
@@ -677,9 +678,11 @@ export function getReferralPartnerSummary(
     const normalizedChannel = normalizeChannelText(rate.channel);
     const count = candidates.filter((c) => {
       if (!c.inflowChannel) return false;
-      if (!REFERRAL_TARGET_STAGES.includes(c.stage)) return false;
+      const interviewed =
+        REFERRAL_INTERVIEWED_STAGES.includes(c.stage) || (c.stage === "辞退" && c.interviewedAt !== undefined);
+      if (!interviewed) return false;
       if (!normalizeChannelText(c.inflowChannel).includes(normalizedChannel)) return false;
-      const referenceDate = c.registeredAt ?? c.updatedAt;
+      const referenceDate = c.interviewedAt ?? c.registeredAt ?? c.updatedAt;
       return isSameMonth(referenceDate, now);
     }).length;
     return {

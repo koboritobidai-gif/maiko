@@ -180,8 +180,9 @@ LINE登録数/面談予約数/面談実施数/CTR/遷移率regRate/予約率rese
 costPerInterview)、sns(SNS運用の月額固定費用cost/再生数plays/プロフィール遷移profileVisits/LP閲覧lpViews/
 LINE登録lineRegs/面談interviews/LP遷移率lpRate/登録率regRate/登録単価cpa/面談単価costPerInterview)、
 referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー/foresma/2peace(Tさん)の4経路それぞれの
-channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。対象人数は流入経路が一致し
-面談以降のステージへ進んだ求職者〈辞退は除く〉で、月の判定は登録日〈未入力時は更新日〉基準です)、
+channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。**面談実施で課金**のため、
+対象人数は流入経路が一致し面談を実施した求職者〈面談以降のステージ、または辞退でも面談日あり。面談前の
+辞退は対象外〉で、月の帰属は面談日〈未入力時は登録日→更新日〉基準です)、
 referralTotalYen(送客パートナー費用の合計)、totalCost/totalLineRegs/totalReservations/totalInterviews
 (広告+SNS+送客パートナー合算。totalCost にのみ送客パートナー費用を含む)、transitionRates(遷移率まとめ)が
 含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
@@ -349,7 +350,7 @@ function answerReferralPartnersOverview(marketingSummary: MarketingSummary | nul
     .join("、");
   return (
     `今月の送客パートナー費用は合計${formatYenPlain(marketingSummary.referralTotalYen)}です(${lines})。` +
-    `対象人数は流入経路が一致し面談以降へ進んだ求職者(辞退除く)で、月の判定は登録日(未入力時は更新日)基準です。`
+    `面談実施で課金のため、対象人数は流入経路が一致し面談を実施した求職者(面談後の辞退も含む)で、月の判定は面談日(未入力時は登録日→更新日)基準です。`
   );
 }
 

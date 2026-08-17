@@ -379,7 +379,7 @@ export default function DashboardView({
             </tbody>
           </table>
           <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            対象人数 = 流入経路が一致し面談以降へ進んだ求職者(辞退除く)。月の判定は登録日(未入力時は更新日)。
+            対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。月の判定は面談日(未入力時は登録日→更新日)。
           </p>
         </div>
       </section>

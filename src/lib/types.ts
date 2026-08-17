@@ -60,8 +60,13 @@ export interface Candidate {
   expectedAnnualIncome: number;
   /** 更新日時 */
   updatedAt: Date;
-  /** 登録日(任意。求職者タブN列。無ければ月内判定は updatedAt で近似する) */
+  /** 登録日(任意。求職者タブN列) */
   registeredAt?: Date;
+  /**
+   * 面談日(任意。求職者タブO列)。送客パートナー費用は「面談実施で課金」のため、
+   * 費用集計の月内判定はこの日付を最優先に使う(無ければ 登録日→更新日 で近似)。
+   */
+  interviewedAt?: Date;
   /** 最新メモ */
   latestNote: string;
   /** 性別(任意。自由記述: 「男性」「女性」「その他/未回答」など) */

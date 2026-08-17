@@ -252,11 +252,11 @@ const TAB_WEEKLY_KPI = "週次KPI";
 /** 任意タブ。無い/読めない場合は DEFAULT_REFERRAL_RATES にフォールバックする(RANGES には含めない。下記参照)。 */
 const TAB_REFERRAL_RATES = "送客単価";
 
-// N列(登録日)を含める。既存シート(M列まで)でもエラーにならない(列自体が存在しないだけ)。
+// N列(登録日)・O列(面談日)を含める。既存シート(M列まで)でもエラーにならない(列自体が存在しないだけ)。
 const RANGES = [
   `${TAB_SETTINGS}!A:B`,
   `${TAB_MEMBERS}!A:D`,
-  `${TAB_CANDIDATES}!A:N`,
+  `${TAB_CANDIDATES}!A:O`,
   `${TAB_PLACEMENTS}!A:G`,
   `${TAB_PROJECTS}!A:G`,
   `${TAB_WEEKLY_KPI}!A:E`,
@@ -405,7 +405,7 @@ function requireDate(row: SheetRow, index: number, field: string, tabName: strin
 
 /**
  * 任意の日付列を Date | undefined として読む(空欄・列自体が無い・YYYY-MM-DD形式でない場合は undefined。
- * 求職者タブN列「登録日」用。エラーにはしない)。
+ * 求職者タブN列「登録日」・O列「面談日」用。エラーにはしない)。
  */
 function optionalDateOrUndefined(row: SheetRow, index: number): Date | undefined {
   const raw = cellToString(row[index]);
@@ -547,9 +547,11 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
     const inflowChannel = optionalStringOrUndefined(row, 10);
     const referredTo = optionalStringOrUndefined(row, 11);
     const interviewResult = optionalStringOrUndefined(row, 12);
-    // N列(任意): 登録日(YYYY-MM-DD)。送客パートナー費用集計の月内判定に使用。
-    // 空欄・列自体が無い場合は undefined(集計側は updatedAt で近似する)。
+    // N列(任意): 登録日(YYYY-MM-DD)。
+    // O列(任意): 面談日(YYYY-MM-DD)。送客パートナーは「面談実施で課金」のため、費用集計の
+    // 月内判定は 面談日 > 登録日 > 更新日 の優先順で使う。空欄・列自体が無い場合は undefined。
     const registeredAt = optionalDateOrUndefined(row, 13);
+    const interviewedAt = optionalDateOrUndefined(row, 14);
     result.push({
       id,
       name,
@@ -559,6 +561,7 @@ function parseCandidates(rows: SheetRow[]): Candidate[] {
       expectedAnnualIncome: Math.round(incomeMan * 10000),
       updatedAt,
       registeredAt,
+      interviewedAt,
       latestNote,
       gender,
       age,
