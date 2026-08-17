@@ -106,6 +106,13 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
     (純関数。送客パートナー費用を `totalCost` に合算する)。
     データソースは `src/lib/marketing-data.ts` の `loadMarketingData()`(5分メモリキャッシュ、
     live失敗時はデモへフォールバック。詳細は6.5参照)+ `DataBundle` の `candidates` / `settings.referralRates`
+  - **請求書チェック(#請求書)カード**: 送客パートナー小テーブルの直後に表示。経営者がSlack
+    「#請求書」チャンネルで受け取る各パートナーの請求書PDFを自動で読み取り(`InvoiceSource`、
+    6.6参照)、`getReferralPartnerSummary` によるアプリ側の自動計算値(今月・先月)と突き合わせる
+    (`metrics.ts` の `getInvoiceChecks`、純関数)。行ごとに経路名/対象月(推定の場合「(推定)」)/
+    請求額/アプリ計算額/判定バッジ(一致/差異〈±金額〉/金額読取不可/経路不明/対象月が範囲外)を表示し、
+    Slackパーマリンクがあれば「Slackで開く」リンクを添える。`SLACK_INVOICE_CHANNEL` 未設定時は
+    機能OFFとしてカード自体を非表示にする(デモモードではデモ請求書4件が入るため表示される)
 - 求職者ファネル(月内): PV数 → LINE登録 → 面談予約 → 面談 → 面接(1次〜最終前+最終) → 内定 → 採用決定 を横棒ファネル表示。
   LINE登録率・面談実行率・面談移行率をバッジ表示
 - 法人営業ファネル(月内): 名刺交換 → アポイント(主権/非主権/外部の内訳) → 商談(同内訳) → 契約(件数+金額)。
@@ -225,21 +232,25 @@ src/
   lib/
     types.ts                    # Candidate, CandidateThread(+Reply), Placement, Member, Project, SlackPost,
                                  # Stage, WeeklyKpiRecord, DataBundle, Settings, AdDailyRecord, SnsWeeklyRecord,
-                                 # MarketingData...
-    demo-data.ts                # デモデータ生成(実行日基準。週次KPIは直近8週分、求職者スレッドは8名分)
+                                 # MarketingData, ReferralInvoice...
+    demo-data.ts                # デモデータ生成(実行日基準。週次KPIは直近8週分、求職者スレッドは8名分、送客パートナー請求書は4件)
     metrics.ts                  # KPI集計ロジック(DataBundle/配列を引数に取る純関数。唯一の集計箇所。
-                                 # 集客・広告データの集計(getMarketingSummary)もここに含む)
+                                 # 集客・広告データの集計(getMarketingSummary)・請求書照合(getInvoiceChecks)もここに含む)
     data-bundle.ts              # loadDataBundle(): アダプタから DataBundle を構築(60秒メモリキャッシュ、live失敗時はデモへフォールバック)
     candidate-threads.ts        # loadCandidateThreads(): #求職者チャンネルのスレッド一覧を取得(5分メモリキャッシュ、同上のフォールバック方針)
     marketing-data.ts           # loadMarketingData(): 集客・広告データ(外部シート2つ)を取得(5分メモリキャッシュ、同上のフォールバック方針)
-    next-dynamic-usage-error.ts # isNextDynamicUsageError(): DYNAMIC_SERVER_USAGE の判定(data-bundle.ts / candidate-threads.ts / marketing-data.ts で共用)
-    source-status.ts            # SourceStatus → ソースバッジ文言のマッピング(クライアント安全。sheets/slack/marketingの3種)
+    invoice-data.ts             # loadReferralInvoices(): #請求書チャンネルの請求書PDF読取結果を取得(5分メモリキャッシュ。
+                                 # SLACK_INVOICE_CHANNEL未設定時は機能OFFとして空配列+status:"demo"を返す点が他と異なる)
+    next-dynamic-usage-error.ts # isNextDynamicUsageError(): DYNAMIC_SERVER_USAGE の判定(data-bundle.ts / candidate-threads.ts / marketing-data.ts / invoice-data.ts で共用)
+    source-status.ts            # SourceStatus → ソースバッジ文言のマッピング(クライアント安全。sheets/slack/marketing/invoicesの4種)
     adapters/spreadsheet.ts     # SpreadsheetSource IF + DemoSpreadsheetSource + GoogleSheetsSource(実装)
     adapters/messenger.ts       # MessengerSource IF(getRecentPosts/postMessage/getCandidateThreads) + DemoSlackSource + SlackSource(実装)
     adapters/marketing.ts       # MarketingSource IF(getMarketingData) + DemoMarketingSource + GoogleSheetsMarketingSource(実装。
                                  # adapters/spreadsheet.ts の認証・batchGet呼び出しを共用)
+    adapters/invoices.ts        # InvoiceSource IF(getReferralInvoices) + DemoInvoiceSource + SlackInvoiceSource(実装。
+                                 # PDFテキスト抽出に npm パッケージ unpdf を使用)
     ai/client.ts                # Claude API 呼び出し(キー無しならnull)
-    ai/ask-responder.ts         # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundle + CandidateThread[] + MarketingData を引数に取る)
+    ai/ask-responder.ts         # 「AIに聞く」スナップショット構築+ルールベース応答(DataBundle + CandidateThread[] + MarketingData + InvoiceCheckRow[] を引数に取る)
     ai/deliver-router.ts        # 「届ける」宛先ルーティング(DataBundleを引数に取る)
     ai/meeting-gen.ts           # 「面談AI」生成ロジック(DataBundleを引数に取る)
     ai/proposal-gen.ts          # 「提案書」生成ロジック(DataBundleを引数に取る)
@@ -254,10 +265,11 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 ### 6.1 データフロー
 
 `src/lib/data-bundle.ts` の `loadDataBundle()` が、求職者Slackスレッド(進捗データベース)・
-集客・広告データを除く全機能の唯一のデータ取得口になっている。求職者Slackスレッドは
-`src/lib/candidate-threads.ts` の `loadCandidateThreads()`、集客・広告データは
-`src/lib/marketing-data.ts` の `loadMarketingData()` がそれぞれ独立した取得口・キャッシュを持つ
-(4.1.1/4.1.2、6.3参照。集客・広告データは4.1/6.4参照)。
+集客・広告データ・送客パートナー請求書を除く全機能の唯一のデータ取得口になっている。求職者Slack
+スレッドは `src/lib/candidate-threads.ts` の `loadCandidateThreads()`、集客・広告データは
+`src/lib/marketing-data.ts` の `loadMarketingData()`、送客パートナー請求書は
+`src/lib/invoice-data.ts` の `loadReferralInvoices()` がそれぞれ独立した取得口・キャッシュを持つ
+(4.1.1/4.1.2、6.3参照。集客・広告データは4.1/6.4参照。送客パートナー請求書は4.1/6.6参照)。
 
 1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` と
    `loadMarketingData()` を並行して呼び、`metrics.ts` で集計した結果をクライアントコンポーネント
@@ -269,11 +281,12 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
    並行して呼び、それぞれ `CandidatesTabs` / `CandidateThreadDetailView` へ props で渡す。
 3. API Routes(`api/ask` `api/deliver` `api/meeting` `api/proposal`)はリクエストのたびに
    `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。`api/ask` はさらに `loadCandidateThreads()`・
-   `loadMarketingData()` も呼び、求職者Slackスレッド・集客広告データの情報をスナップショットに含める
-   (4.2 / 6.3 / 6.4参照)。
-4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` / `loadMarketingData()`
-   は5分キャッシュを持つため、同一プロセス内では Google Sheets / Slack / 集客・広告シートへの実際の
-   HTTP呼び出しはそれぞれ60秒・5分・5分に1回程度に抑えられる。
+   `loadMarketingData()`・`loadReferralInvoices()` も呼び、求職者Slackスレッド・集客広告データ・
+   送客パートナー請求書チェックの情報をスナップショットに含める(4.2 / 6.3 / 6.4 / 6.6参照)。
+4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` /
+   `loadMarketingData()` / `loadReferralInvoices()` は5分キャッシュを持つため、同一プロセス内では
+   Google Sheets / Slack / 集客・広告シート / #請求書チャンネルへの実際のHTTP呼び出しはそれぞれ
+   60秒・5分・5分・5分に1回程度に抑えられる。
 
 ### 6.2 Google Sheets(`GoogleSheetsSource`)
 
@@ -357,14 +370,55 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   ことを優先する任意タブのため)。
 - `DataBundle` は `sourceStatus`(Sheets)と `slackStatus`(Slack)をそれぞれ独立に持ち、
   `"live" | "demo" | "live-error"` の3値を取る。求職者データベース(`loadCandidateThreads()` の
-  戻り値の `status`)・集客・広告データ(`loadMarketingData()` の戻り値の `status`)も同じ
-  `SourceStatus` 型を再利用する、DataBundle とは独立した状態である。
+  戻り値の `status`)・集客・広告データ(`loadMarketingData()` の戻り値の `status`)・送客パートナー
+  請求書(`loadReferralInvoices()` の戻り値の `status`)も同じ `SourceStatus` 型を再利用する、
+  DataBundle とは独立した状態である。
   ソースバッジは `src/lib/source-status.ts` の `sourceBadgeLabel()` で以下のように出し分けられる。
-  - `live` → 「Sheets(連携中)」/「Slack(連携中)」/「集客データ(連携中)」
-  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」/「集客データ(デモ)」
-  - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」/「集客データ(接続エラー・デモ表示)」
+  - `live` → 「Sheets(連携中)」/「Slack(連携中)」/「集客データ(連携中)」/「請求書チェック(連携中)」
+  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」/「集客データ(デモ)」/「請求書チェック(デモ)」
+  - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」/
+    「集客データ(接続エラー・デモ表示)」/「請求書チェック(接続エラー・デモ表示)」
   - 求職者データベース(進捗データベースタブ・個別ページ)のバッジは `sourceBadgeLabel("slack", status)`
     をそのまま流用しているため、表示文言はダッシュボードの Slack バッジと共通(「Slack(連携中)」等)
+  - ただし送客パートナー請求書は、他の3種と異なり `SLACK_INVOICE_CHANNEL` 未設定時は
+    `live-error` ではなく `demo`(かつ請求書0件)を返す「機能OFF」の扱いになる(6.6参照)。
+
+### 6.6 送客パートナー請求書(`InvoiceSource`)
+
+- 経営者がSlack「#請求書」チャンネルで受け取る送客パートナー(4.1参照)の請求書PDFを読み取り、
+  アプリの自動計算値と突き合わせる。取得口・型定義は `src/lib/adapters/invoices.ts`
+  (`InvoiceSource` IF + `DemoInvoiceSource` + `SlackInvoiceSource`)、`src/lib/types.ts`
+  (`ReferralInvoice`)。
+- **取得**: `conversations.history`(直近100件、`SLACK_INVOICE_CHANNEL`)から、投稿日が直近75日
+  以内でPDFファイル(`filetype === "pdf"` またはファイル名が `.pdf`)を含むメッセージを対象にする。
+  ダウンロードするPDFは API・転送量抑制のため最大15件までとし、超過分は件数のみカードの脚注に
+  表示する(`skippedCount`)。各PDFは `url_private_download`(無ければ `url_private`)へ Bot Token
+  付きでダウンロードする(サイズ上限8MB、超過はパース失敗扱い)。追加の Bot Token Scope
+  `files:read` が必要(docs/SETUP.md 3章参照)。
+- **PDFテキスト抽出**: npm パッケージ `unpdf`(pdf.jsベースの純JS実装、Vercelサーバーレスでも動作)の
+  `extractText` を使用する。スキャン画像PDF等でテキストが取れない場合はエラーにせず、
+  `parseNote` にその旨を記録してパース失敗として扱う(1件の失敗でページ全体を落とさないため)。
+- **読み取りヒューリスティック**(いずれも正規表現ベース。`adapters/invoices.ts` に実装):
+  - パートナー名: PDFテキスト→ファイル名→Slackメッセージ本文の順に、単価マスタの経路名
+    (`DEFAULT_REFERRAL_RATES`)との部分一致(trim・大文字小文字無視。「2peace(Tさん)」は
+    括弧前の「2peace」でも一致)で探す。
+  - 対象月: 「2026年7月」「2026/07」「2026-07」「7月分」等のパターンを探す(年が無い表記は
+    投稿日の年で補完し、投稿日より未来の月になれば前年)。見つからなければ「投稿月の前月」を
+    推定値とし `targetMonthIsEstimated: true` を立てる(請求書は翌月に届く運用のため)。
+  - 請求金額: 「合計」「ご請求金額」「請求金額」「総額」の近く(同じ行または直後の行)にある
+    金額を優先し、無ければテキスト中の最大金額を採用する。
+- **照合**: `metrics.ts` の `getInvoiceChecks(invoices, referralPartnersThisMonth,
+  referralPartnersLastMonth, now)`(純関数)が、対象月に応じて今月・先月いずれかの
+  `ReferralPartnerSummary.costYen` と請求額を比較し、`match`/`mismatch`(差額付き)/
+  `unreadable`(金額読取不可)/`unknown-partner`(経路不明)/`out-of-range`(対象月が今月・先月
+  以外)のいずれかを判定する。
+- 取得口は `src/lib/invoice-data.ts` の `loadReferralInvoices()`。他の3種(6.5参照)と異なり、
+  `SLACK_INVOICE_CHANNEL` が未設定の間は live-error にせず「機能OFF」として請求書0件・
+  `status: "demo"` を返す(ダッシュボード側はこれを見てカード自体を非表示にする)。
+  `DATA_MODE=live` かつチャンネルID設定済みで取得に失敗した場合のみ、他と同様に
+  console.warn の上でデモ請求書(4件)へフォールバックし `status: "live-error"` を設定する。
+  5分のモジュールメモリキャッシュを持つ。
+- 環境変数: `SLACK_INVOICE_CHANNEL`(`SLACK_BOT_TOKEN` は既存のものを共用)。
 
 ## 7. ロードマップ(将来構想)
 

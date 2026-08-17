@@ -1,8 +1,9 @@
 import DashboardView from "@/components/DashboardView";
 import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
+import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
-import { getDashboardSummary, getMarketingSummary } from "@/lib/metrics";
+import { getDashboardSummary, getInvoiceChecks, getMarketingSummary } from "@/lib/metrics";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 // ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
@@ -11,10 +12,11 @@ export const dynamic = "force-dynamic";
 
 export default async function TodayDashboardPage() {
   const now = new Date();
-  const [bundle, marketingResult, threadsResult] = await Promise.all([
+  const [bundle, marketingResult, threadsResult, invoicesResult] = await Promise.all([
     loadDataBundle(),
     loadMarketingData(),
     loadCandidateThreads(),
+    loadReferralInvoices(),
   ]);
   const summary = getDashboardSummary(bundle, now);
   // Slack「#求職者」スレッドの「面談実施」報告から面談日を補完する(シートO列の手入力があれば優先)。
@@ -37,6 +39,13 @@ export default async function TodayDashboardPage() {
     bundle.settings.referralRates,
     lastMonth,
   );
+  // 送客パートナー請求書(Slack「#請求書」)の自動照合。
+  const invoiceChecks = getInvoiceChecks(
+    invoicesResult.invoices,
+    marketingSummary.referralPartners,
+    marketingSummaryLastMonth.referralPartners,
+    now,
+  );
 
   return (
     <DashboardView
@@ -51,6 +60,10 @@ export default async function TodayDashboardPage() {
       marketingSummaryLastMonth={marketingSummaryLastMonth}
       marketingStatus={marketingResult.status}
       marketingErrorMessage={marketingResult.errorMessage}
+      invoiceChecks={invoiceChecks}
+      invoiceSkippedCount={invoicesResult.skippedCount}
+      invoiceStatus={invoicesResult.status}
+      invoiceErrorMessage={invoicesResult.errorMessage}
     />
   );
 }

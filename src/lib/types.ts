@@ -367,3 +367,26 @@ export interface MarketingData {
   /** SNS運用の月額固定費用(円)。`MARKETING_SNS_MONTHLY_COST` 環境変数(未設定時 495,000円)。 */
   snsMonthlyCostYen: number;
 }
+
+// ─────────────────────────────────────────────
+// 送客パートナー請求書(Slack「#請求書」チャンネルのPDF読取)
+// ─────────────────────────────────────────────
+
+/** Slack「#請求書」から読み取った送客パートナー請求書1件。 */
+export interface ReferralInvoice {
+  /** 一致した経路名(単価マスタの表記)。特定できなければ undefined */
+  partnerChannel?: string;
+  /** 請求金額(円)。読み取れなければ undefined */
+  amountYen?: number;
+  /** 対象月(YYYY-MM)。 */
+  targetMonth: string;
+  /** 対象月がPDF記載ではなく投稿日からの推定の場合 true */
+  targetMonthIsEstimated: boolean;
+  fileName: string;
+  /** Slackメッセージの投稿日時 */
+  postedAt: Date;
+  /** Slackメッセージへのパーマリンク(chat.getPermalink。失敗時は省略) */
+  permalink?: string;
+  /** テキスト抽出や金額読取に失敗した場合の内容(画面表示用) */
+  parseNote?: string;
+}

@@ -16,6 +16,7 @@ import type {
   Member,
   Placement,
   Project,
+  ReferralInvoice,
   ReferralRate,
   SlackPost,
   SnsWeeklyRecord,
@@ -771,4 +772,64 @@ export function getMarketingSummary(
       snsPlayToLpRatePercent: sns.lpRate,
     },
   };
+}
+
+// ─────────────────────────────────────────────
+// 送客パートナー請求書(Slack「#請求書」)の自動照合
+// ─────────────────────────────────────────────
+
+export type InvoiceCheckStatus = "match" | "mismatch" | "unreadable" | "unknown-partner" | "out-of-range";
+
+export interface InvoiceCheckRow {
+  invoice: ReferralInvoice;
+  /** アプリ側の計算値(円)。対象月・経路が特定できない場合は undefined。 */
+  computedYen?: number;
+  /** 請求額 − アプリ計算値(円)。mismatch のときのみ。 */
+  diffYen?: number;
+  status: InvoiceCheckStatus;
+}
+
+/**
+ * Slack「#請求書」から読み取った送客パートナー請求書と、アプリ側の自動計算値(面談実施で課金、
+ * getReferralPartnerSummary 由来)を突き合わせる(純関数)。
+ * - パートナー名が特定できない請求書は "unknown-partner"、金額が読み取れない請求書は "unreadable"
+ *   とし、いずれもアプリ計算値との比較は行わない(computedYen なし)。
+ * - 対象月が今月・先月のいずれでもない請求書は "out-of-range"(誤って別の月の請求書を取り違えて
+ *   アップロードした場合に、的外れな差異アラートを出さないための安全弁)。
+ * - 金額が完全一致すれば "match"、そうでなければ "mismatch"(diffYen = 請求額 − アプリ計算値)。
+ * - 並びは投稿日の新しい順。
+ */
+export function getInvoiceChecks(
+  invoices: ReferralInvoice[],
+  referralPartnersThisMonth: ReferralPartnerSummary[],
+  referralPartnersLastMonth: ReferralPartnerSummary[],
+  now: Date = new Date(),
+): InvoiceCheckRow[] {
+  const thisMonthKey = toMonthKey(now);
+  const lastMonthKey = toMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+  return [...invoices]
+    .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
+    .map((invoice): InvoiceCheckRow => {
+      if (!invoice.partnerChannel) {
+        return { invoice, status: "unknown-partner" };
+      }
+      if (invoice.amountYen === undefined) {
+        return { invoice, status: "unreadable" };
+      }
+      const summaryList =
+        invoice.targetMonth === thisMonthKey
+          ? referralPartnersThisMonth
+          : invoice.targetMonth === lastMonthKey
+            ? referralPartnersLastMonth
+            : null;
+      if (!summaryList) {
+        return { invoice, status: "out-of-range" };
+      }
+      const computedYen = summaryList.find((r) => r.channel === invoice.partnerChannel)?.costYen ?? 0;
+      if (computedYen === invoice.amountYen) {
+        return { invoice, computedYen, status: "match" };
+      }
+      return { invoice, computedYen, diffYen: invoice.amountYen - computedYen, status: "mismatch" };
+    });
 }

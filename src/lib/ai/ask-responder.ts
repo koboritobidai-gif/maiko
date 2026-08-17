@@ -26,7 +26,7 @@ import {
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { MarketingSummary, ReferralPartnerSummary } from "@/lib/metrics";
+import type { InvoiceCheckRow, MarketingSummary, ReferralPartnerSummary } from "@/lib/metrics";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 import type {
   Candidate,
@@ -65,6 +65,7 @@ export function buildAskSnapshot(
   bundle: DataBundle,
   candidateThreads: CandidateThread[] = [],
   marketingData: MarketingData | null = null,
+  invoiceChecks: InvoiceCheckRow[] = [],
 ) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
@@ -161,6 +162,16 @@ export function buildAskSnapshot(
         text: r.text,
       })),
     })),
+    // 送客パートナー請求書(Slack「#請求書」)の自動照合結果。経路/対象月/請求額/アプリ計算/判定。
+    referralInvoiceChecks: invoiceChecks.map((row) => ({
+      partnerChannel: row.invoice.partnerChannel ?? null,
+      targetMonth: row.invoice.targetMonth,
+      targetMonthIsEstimated: row.invoice.targetMonthIsEstimated,
+      invoiceAmountYen: row.invoice.amountYen ?? null,
+      computedAmountYen: row.computedYen ?? null,
+      diffYen: row.diffYen ?? null,
+      status: row.status,
+    })),
   };
 }
 
@@ -207,6 +218,13 @@ caResults は全メンバー(CA: 今井/佐藤/富田 を含む)個別の今月�
 ステージ内訳(stageBreakdown)・今月の成約件数と手数料合計(monthPlacementCount/monthPlacementFeeAmountMan、
 万円単位)・週次KPIの入力担当分(monthlyKpiInput)が含まれます。「◯◯さんの結果は?」「◯◯さんの実績は?」
 のような質問には、該当メンバーの caResults を使って具体的に答えてください。
+
+referralInvoiceChecks は Slack「#請求書」チャンネルの送客パートナー請求書PDFを自動照合した結果で、
+経路(partnerChannel、特定できなければ null)・対象月(targetMonth、YYYY-MM形式)・請求額
+(invoiceAmountYen)・アプリの計算値(computedAmountYen)・差額(diffYen)・判定(status: match=一致/
+mismatch=差異あり/unreadable=金額読取不可/unknown-partner=経路不明/out-of-range=対象月が範囲外)が
+含まれます。「請求書は合っている?」「請求書の差異は?」のような質問には、mismatch のものを経路名・
+差額とともに具体的に答え、全件 match ならその旨を伝えてください。
 
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
@@ -376,6 +394,33 @@ function answerReferralPartnerChannel(r: ReferralPartnerSummary, marketingSummar
     `${r.channel}の今月実績は面談${r.count}名、単価${formatYenPlain(r.unitCostYen)}、費用は${formatYenPlain(r.costYen)}です。` +
     lastPart
   );
+}
+
+/** 「請求書」を含む質問への回答: 送客パートナー請求書の自動照合結果のまとめ。 */
+function answerInvoiceChecks(invoiceChecks: InvoiceCheckRow[]): string {
+  if (invoiceChecks.length === 0) {
+    return "Slack「#請求書」から読み取れた請求書がまだありません。";
+  }
+  const mismatches = invoiceChecks.filter((r) => r.status === "mismatch");
+  const unreadable = invoiceChecks.filter((r) => r.status === "unreadable");
+  const unknown = invoiceChecks.filter((r) => r.status === "unknown-partner");
+  if (mismatches.length === 0 && unreadable.length === 0 && unknown.length === 0) {
+    return `直近の送客パートナー請求書${invoiceChecks.length}件は、すべてアプリの計算値と一致しています。`;
+  }
+  const parts: string[] = [];
+  if (mismatches.length > 0) {
+    const detail = mismatches
+      .map((r) => {
+        const diff = r.diffYen ?? 0;
+        const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+        return `${r.invoice.partnerChannel}(${sign}${formatYenPlain(Math.abs(diff))})`;
+      })
+      .join("、");
+    parts.push(`差異あり: ${detail}`);
+  }
+  if (unreadable.length > 0) parts.push(`金額読取不可: ${unreadable.length}件`);
+  if (unknown.length > 0) parts.push(`経路不明: ${unknown.length}件`);
+  return `送客パートナー請求書のチェック結果です。${parts.join("。")}。内容をご確認のうえ、必要であれば先方にお問い合わせください。`;
 }
 
 /** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」のように、質問文が
@@ -635,6 +680,7 @@ export function answerWithRules(
   bundle: DataBundle,
   candidateThreads: CandidateThread[] = [],
   marketingData: MarketingData | null = null,
+  invoiceChecks: InvoiceCheckRow[] = [],
 ): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
@@ -705,6 +751,9 @@ export function answerWithRules(
   if (text.includes("ブロック率")) return answerBlockRateQuestion(bundle);
   if (text.includes("CPA") || text.includes("登録単価")) return answerCpa(marketingSummary);
   if (text.includes("広告費") || text.includes("広告金額")) return answerAdCost(marketingSummary);
+
+  // 4.55. 請求書チェック(Slack「#請求書」の自動照合)
+  if (text.includes("請求書")) return answerInvoiceChecks(invoiceChecks);
 
   // 4.6. 送客パートナー(成果報酬): 経路名(KANOA/マホガニー/foresma/2peace(Tさん)等)の個別質問を優先し、
   //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は4経路+合計で答える。

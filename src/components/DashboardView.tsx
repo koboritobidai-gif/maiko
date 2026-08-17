@@ -7,7 +7,7 @@ import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { getCandidatesByCa } from "@/lib/metrics";
-import type { DashboardSummary, MarketingSummary } from "@/lib/metrics";
+import type { DashboardSummary, InvoiceCheckRow, MarketingSummary } from "@/lib/metrics";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
@@ -160,6 +160,50 @@ function formatYenOrDash(amountYen: number | null): string {
   return amountYen === null ? "—" : formatYen(amountYen);
 }
 
+/** 請求書チェックの「対象月」表示。「2026年7月分」形式で、推定値には「(推定)」を付ける。 */
+function formatInvoiceTargetMonth(month: string, estimated: boolean): string {
+  return `${formatMonthLabel(month)}分${estimated ? "(推定)" : ""}`;
+}
+
+/** 請求書チェックの判定バッジの見た目(ラベル・文字色・背景色)。 */
+function invoiceStatusBadgeStyle(row: InvoiceCheckRow): { label: string; color: string; background: string } {
+  switch (row.status) {
+    case "match":
+      return {
+        label: "一致",
+        color: "var(--color-good)",
+        background: "color-mix(in srgb, var(--color-good) 14%, transparent)",
+      };
+    case "mismatch": {
+      const diff = row.diffYen ?? 0;
+      return {
+        label: `差異 ${diff > 0 ? "+" : "-"}${formatYen(Math.abs(diff))}`,
+        color: "var(--color-bad)",
+        background: "color-mix(in srgb, var(--color-bad) 14%, transparent)",
+      };
+    }
+    case "unreadable":
+      return { label: "金額読取不可", color: "var(--color-text-muted)", background: "var(--color-cream)" };
+    case "unknown-partner":
+      return { label: "経路不明", color: "var(--color-text-muted)", background: "var(--color-cream)" };
+    case "out-of-range":
+      return { label: "対象月が範囲外", color: "var(--color-text-muted)", background: "var(--color-cream)" };
+  }
+}
+
+/** 請求書チェック行の判定バッジ。 */
+function InvoiceStatusBadge({ row }: { row: InvoiceCheckRow }) {
+  const style = invoiceStatusBadgeStyle(row);
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap"
+      style={{ background: style.background, color: style.color }}
+    >
+      {style.label}
+    </span>
+  );
+}
+
 interface DashboardViewProps {
   summary: DashboardSummary;
   /** 先月分のサマリ(主要指標セクションの「先月」トグル用)。 */
@@ -174,6 +218,12 @@ interface DashboardViewProps {
   marketingSummaryLastMonth: MarketingSummary;
   marketingStatus: SourceStatus;
   marketingErrorMessage?: string;
+  /** 送客パートナー請求書(Slack「#請求書」)の自動照合結果。 */
+  invoiceChecks: InvoiceCheckRow[];
+  /** 直近15件の上限を超えたため点検対象外にしたPDFの件数。 */
+  invoiceSkippedCount: number;
+  invoiceStatus: SourceStatus;
+  invoiceErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -188,6 +238,10 @@ export default function DashboardView({
   marketingSummaryLastMonth,
   marketingStatus,
   marketingErrorMessage,
+  invoiceChecks,
+  invoiceSkippedCount,
+  invoiceStatus,
+  invoiceErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
   // 主要指標・集客/広告それぞれ独立して今月⇄先月を切り替えられる。
@@ -199,6 +253,10 @@ export default function DashboardView({
   const sheetsBadge = sourceBadgeLabel("sheets", sourceStatus);
   const slackBadge = sourceBadgeLabel("slack", slackStatus);
   const marketingBadge = sourceBadgeLabel("marketing", marketingStatus);
+  const invoiceBadge = sourceBadgeLabel("invoices", invoiceStatus);
+  // 請求書が1件も無く、かつ機能未設定(demo=SLACK_INVOICE_CHANNEL未設定 or デモモード)の場合は
+  // カード自体を非表示にする(機能OFF扱い。デモモードでは常にデモ請求書が入るため表示される)。
+  const showInvoiceCard = invoiceChecks.length > 0 || invoiceStatus !== "demo";
   // 集客・広告セクションの表示対象(今月/先月トグルで切替)。先月表示時、送客パートナー表の
   // 2組の列は「先月/先々月」になる。
   const mk = marketingPeriod === "this" ? marketingSummary : marketingSummaryLastMonth;
@@ -458,6 +516,95 @@ export default function DashboardView({
           </p>
         </div>
       </section>
+
+      {/* 1.6 請求書チェック(#請求書) */}
+      {showInvoiceCard && (
+        <section className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+              請求書チェック(#請求書)
+            </h2>
+            <SourceBadge label={invoiceBadge} />
+          </div>
+          {invoiceStatus === "live-error" && invoiceErrorMessage && (
+            <p
+              className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+              style={{
+                color: "var(--color-bad)",
+                borderColor: "var(--color-bad)",
+                background: "var(--color-card)",
+              }}
+            >
+              接続エラーの内容: {invoiceErrorMessage}
+            </p>
+          )}
+          <div className="card overflow-x-auto p-3.5">
+            <table className="w-full min-w-[680px] text-left text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--color-text-muted)" }}>
+                  <th className="pb-2 pr-2 font-medium">経路</th>
+                  <th className="pb-2 pr-2 font-medium">対象月</th>
+                  <th className="pb-2 pr-2 text-right font-medium">請求額</th>
+                  <th className="pb-2 pr-2 text-right font-medium">アプリ計算</th>
+                  <th className="pb-2 pr-2 font-medium">判定</th>
+                  <th className="pb-2 font-medium">Slack</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                {invoiceChecks.map((row, i) => (
+                  <tr key={i}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {row.invoice.partnerChannel ?? "経路不明"}
+                    </td>
+                    <td className="py-2 pr-2 whitespace-nowrap">
+                      {formatInvoiceTargetMonth(row.invoice.targetMonth, row.invoice.targetMonthIsEstimated)}
+                    </td>
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">
+                      {row.invoice.amountYen !== undefined ? formatYen(row.invoice.amountYen) : "—"}
+                    </td>
+                    <td className="py-2 pr-2 text-right whitespace-nowrap">
+                      {row.computedYen !== undefined ? formatYen(row.computedYen) : "—"}
+                    </td>
+                    <td className="py-2 pr-2">
+                      <InvoiceStatusBadge row={row} />
+                      {row.status === "unreadable" && row.invoice.parseNote && (
+                        <p className="mt-1 text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                          {row.invoice.parseNote}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-2 whitespace-nowrap">
+                      {row.invoice.permalink && (
+                        <a
+                          href={row.invoice.permalink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-semibold"
+                          style={{ color: "var(--color-gold)" }}
+                        >
+                          Slackで開く →
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {invoiceChecks.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                      Slack「#請求書」から読み取れた請求書はまだありません。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {invoiceSkippedCount > 0 && (
+              <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                他{invoiceSkippedCount}件のPDFは点検対象外(直近15件まで)。
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 2-3. 求職者ファネル・法人営業ファネル(lgでは左右2カラム) */}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">

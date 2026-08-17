@@ -11,7 +11,10 @@ import { ASK_SYSTEM_PROMPT, answerWithRules, buildAskSnapshot } from "@/lib/ai/a
 import type { AskRole } from "@/lib/ai/ask-responder";
 import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
+import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
+import { getInvoiceChecks, getMarketingSummary } from "@/lib/metrics";
+import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 interface AskRequestBody {
   question?: unknown;
@@ -37,12 +40,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const [bundle, threadsResult, marketingResult] = await Promise.all([
+  const [bundle, threadsResult, marketingResult, invoicesResult] = await Promise.all([
     loadDataBundle(),
     loadCandidateThreads(),
     loadMarketingData(),
+    loadReferralInvoices(),
   ]);
-  const snapshot = buildAskSnapshot(bundle, threadsResult.threads, marketingResult.data);
+
+  // 請求書チェック(送客パートナー請求書の自動照合)には今月・先月双方の送客パートナーサマリが
+  // 必要なため、ここで個別に算出する(buildAskSnapshot 内部で計算する今月分とは別に、先月分を用意する)。
+  const now = new Date();
+  const candidatesWithInterviews = fillInterviewDatesFromSlack(bundle.candidates, threadsResult.threads);
+  const marketingSummaryThisMonth = getMarketingSummary(
+    marketingResult.data,
+    bundle.weeklyKpis,
+    candidatesWithInterviews,
+    bundle.settings.referralRates,
+    now,
+  );
+  const lastMonthRef = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+  const marketingSummaryLastMonth = getMarketingSummary(
+    marketingResult.data,
+    bundle.weeklyKpis,
+    candidatesWithInterviews,
+    bundle.settings.referralRates,
+    lastMonthRef,
+  );
+  const invoiceChecks = getInvoiceChecks(
+    invoicesResult.invoices,
+    marketingSummaryThisMonth.referralPartners,
+    marketingSummaryLastMonth.referralPartners,
+    now,
+  );
+
+  const snapshot = buildAskSnapshot(bundle, threadsResult.threads, marketingResult.data, invoiceChecks);
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
 
@@ -55,7 +86,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const ruleAnswer = answerWithRules(question, role, bundle, threadsResult.threads, marketingResult.data);
+  const ruleAnswer = answerWithRules(
+    question,
+    role,
+    bundle,
+    threadsResult.threads,
+    marketingResult.data,
+    invoiceChecks,
+  );
   return NextResponse.json({
     answer: ruleAnswer,
     source: "rule" as const,

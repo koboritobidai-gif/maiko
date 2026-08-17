@@ -15,6 +15,7 @@ import type {
   Member,
   Placement,
   Project,
+  ReferralInvoice,
   SlackPost,
   Stage,
   WeeklyKpiRecord,
@@ -629,3 +630,67 @@ function generateWeeklyKpis(): WeeklyKpiRecord[] {
 }
 
 export const weeklyKpis: WeeklyKpiRecord[] = generateWeeklyKpis();
+
+// ─────────────────────────────────────────────
+// 送客パートナー請求書(Slack「#請求書」チャンネルのデモ)4件
+// 対象月は「先月」固定(請求書は翌月に届く運用のため)。金額は getReferralPartnerSummary を
+// 上記の求職者デモデータに先月基準(基準日=先月15日)で適用した実際の計算値と、意図的に
+// 一致/差異/読取不可の3パターンを見せるように組み合わせている。
+// 実際の先月計算値(上記求職者データより): KANOA 0名/¥0、マホガニー 0名/¥0、foresma 0名/¥0、
+// 2peace(Tさん) 1名/¥22,000(中島陽菜さんが唯一、先月登録・面談日未入力=登録日基準で先月扱い)。
+// ─────────────────────────────────────────────
+const lastMonthRef = new Date(year, month - 1, 1);
+const REFERRAL_INVOICE_TARGET_MONTH = `${lastMonthRef.getFullYear()}-${String(lastMonthRef.getMonth() + 1).padStart(2, "0")}`;
+const REFERRAL_INVOICE_TARGET_MONTH_LABEL = `${lastMonthRef.getFullYear()}年${lastMonthRef.getMonth() + 1}月分`;
+
+/** 実際には投稿されていないデモ請求書への、Slackパーマリンク風のURL(見た目確認用)。 */
+function demoInvoicePermalink(seq: number): string {
+  const channel = "C0INVOICE01";
+  const ts = pseudoTs(daysAgo(10 - seq), seq);
+  return `https://tobidai-hr.slack.com/archives/${channel}/p${ts.replace(".", "")}`;
+}
+
+export const referralInvoices: ReferralInvoice[] = [
+  {
+    // 差異あり: 請求は1名分(¥27,500)だが、アプリの先月計算は0名(¥0)。
+    // KANOA経由の登録・面談実施の計上漏れ、または先方の集計対象月ズレの可能性を示すデモ。
+    partnerChannel: "KANOA",
+    amountYen: 27_500,
+    targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
+    targetMonthIsEstimated: false,
+    fileName: `KANOA_請求書_${REFERRAL_INVOICE_TARGET_MONTH_LABEL}.pdf`,
+    postedAt: daysAgo(9, 10, 15),
+    permalink: demoInvoicePermalink(1),
+  },
+  {
+    // 読取不可: スキャン画像PDFを想定し、テキスト抽出に失敗したケース。
+    partnerChannel: "マホガニー",
+    amountYen: undefined,
+    targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
+    targetMonthIsEstimated: true,
+    fileName: "マホガニー請求書(スキャン).pdf",
+    postedAt: daysAgo(7, 14, 40),
+    permalink: demoInvoicePermalink(2),
+    parseNote: "PDFからテキストを抽出できませんでした(スキャン画像PDFの可能性があります)。",
+  },
+  {
+    // 一致: 先月の対象者なしのため、先方も¥0で確認請求(件数0件の確認書として送付)。
+    partnerChannel: "foresma",
+    amountYen: 0,
+    targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
+    targetMonthIsEstimated: true,
+    fileName: "foresma_月次請求確認書.pdf",
+    postedAt: daysAgo(5, 11, 0),
+    permalink: demoInvoicePermalink(3),
+  },
+  {
+    // 一致: 先月1名(中島陽菜さん)分の¥22,000で、アプリの計算値と完全一致。
+    partnerChannel: "2peace(Tさん)",
+    amountYen: 22_000,
+    targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
+    targetMonthIsEstimated: false,
+    fileName: `2peace_請求書_${REFERRAL_INVOICE_TARGET_MONTH_LABEL}.pdf`,
+    postedAt: daysAgo(3, 9, 50),
+    permalink: demoInvoicePermalink(4),
+  },
+];
