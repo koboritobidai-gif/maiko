@@ -27,6 +27,7 @@ import {
   getWithdrawnCount,
 } from "@/lib/metrics";
 import type { MarketingSummary, ReferralPartnerSummary } from "@/lib/metrics";
+import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 import type {
   Candidate,
   CandidateKpiKey,
@@ -104,8 +105,14 @@ export function buildAskSnapshot(
     weeklyTrendRecent5Weeks: weeklyTrend,
     // 集客・広告データ(アイドマ=広告運用シート/リズリアライズ=SNS運用シート)の今月サマリ。
     // marketingData が渡されなかった場合(呼び出し元が未取得)は null。
+    // 求職者の面談日は Slack スレッドの「面談実施」報告からも補完する(送客パートナー費用の集計用)。
     marketingThisMonth: marketingData
-      ? getMarketingSummary(marketingData, bundle.weeklyKpis, bundle.candidates, bundle.settings.referralRates)
+      ? getMarketingSummary(
+          marketingData,
+          bundle.weeklyKpis,
+          fillInterviewDatesFromSlack(bundle.candidates, candidateThreads),
+          bundle.settings.referralRates,
+        )
       : null,
     // ブロック率(Lステップのブロック数 ÷ LINE登録人数)。「ブロック数」は週次KPIの任意項目のため
     // hasAnyData が false の場合は未入力(ratePercent も null)。
@@ -182,7 +189,8 @@ LINE登録lineRegs/面談interviews/LP遷移率lpRate/登録率regRate/登録単
 referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー/foresma/2peace(Tさん)の4経路それぞれの
 channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。**面談実施で課金**のため、
 対象人数は流入経路が一致し面談を実施した求職者〈面談以降のステージ、または辞退でも面談日あり。面談前の
-辞退は対象外〉で、月の帰属は面談日〈未入力時は登録日→更新日〉基準です)、
+辞退は対象外〉で、月の帰属は面談日基準です〈面談日はシートO列の手入力を優先し、無ければSlack「#求職者」
+スレッドの「面談実施」報告から自動検出、それも無ければ登録日→更新日で近似〉)、
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
 (同じ課金ルールでの先月の4経路サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
 totalCost/totalLineRegs/totalReservations/totalInterviews
@@ -632,8 +640,14 @@ export function answerWithRules(
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
   const scope = resolveTimeScope(text);
+  // 面談日は Slack スレッドの「面談実施」報告からも補完する(シートO列の手入力があれば優先)。
   const marketingSummary = marketingData
-    ? getMarketingSummary(marketingData, bundle.weeklyKpis, bundle.candidates, bundle.settings.referralRates)
+    ? getMarketingSummary(
+        marketingData,
+        bundle.weeklyKpis,
+        fillInterviewDatesFromSlack(bundle.candidates, candidateThreads),
+        bundle.settings.referralRates,
+      )
     : null;
 
   const mentionedMember = findMemberBySurnameInText(text, members);

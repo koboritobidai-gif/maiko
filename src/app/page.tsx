@@ -1,7 +1,9 @@
 import DashboardView from "@/components/DashboardView";
+import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
 import { loadMarketingData } from "@/lib/marketing-data";
 import { getDashboardSummary, getMarketingSummary } from "@/lib/metrics";
+import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 // ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
 // loadDataBundle() / loadMarketingData() 自体もモジュールメモリキャッシュを持つため、二重に整合する。
@@ -9,12 +11,19 @@ export const dynamic = "force-dynamic";
 
 export default async function TodayDashboardPage() {
   const now = new Date();
-  const [bundle, marketingResult] = await Promise.all([loadDataBundle(), loadMarketingData()]);
+  const [bundle, marketingResult, threadsResult] = await Promise.all([
+    loadDataBundle(),
+    loadMarketingData(),
+    loadCandidateThreads(),
+  ]);
   const summary = getDashboardSummary(bundle, now);
+  // Slack「#求職者」スレッドの「面談実施」報告から面談日を補完する(シートO列の手入力があれば優先)。
+  // 送客パートナー費用の「面談実施で課金」集計を、Slackへの記載だけで回せるようにするため。
+  const candidates = fillInterviewDatesFromSlack(bundle.candidates, threadsResult.threads);
   const marketingSummary = getMarketingSummary(
     marketingResult.data,
     bundle.weeklyKpis,
-    bundle.candidates,
+    candidates,
     bundle.settings.referralRates,
     now,
   );
@@ -24,7 +33,7 @@ export default async function TodayDashboardPage() {
   const marketingSummaryLastMonth = getMarketingSummary(
     marketingResult.data,
     bundle.weeklyKpis,
-    bundle.candidates,
+    candidates,
     bundle.settings.referralRates,
     lastMonth,
   );
@@ -33,7 +42,7 @@ export default async function TodayDashboardPage() {
     <DashboardView
       summary={summary}
       summaryLastMonth={summaryLastMonth}
-      candidates={bundle.candidates}
+      candidates={candidates}
       sourceStatus={bundle.sourceStatus}
       sourceErrorMessage={bundle.sourceErrorMessage}
       slackStatus={bundle.slackStatus}
