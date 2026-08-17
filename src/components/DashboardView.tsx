@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
@@ -37,12 +38,12 @@ function formatMonthLabel(month: string): string {
   return `${y}年${m}月`;
 }
 
-/** 先月比の差分を「+n」「-n」「±0」の形式で表す。 */
+/** 前月比の差分を「+n」「-n」「±0」の形式で表す(先月表示時は先々月との比較になるため「前月比」表記)。 */
 function formatDiff(diff: number, unit = ""): string {
   const rounded = Math.round(diff);
-  if (rounded > 0) return `先月比 +${rounded}${unit}`;
-  if (rounded < 0) return `先月比 ${rounded}${unit}`;
-  return "先月比 ±0";
+  if (rounded > 0) return `前月比 +${rounded}${unit}`;
+  if (rounded < 0) return `前月比 ${rounded}${unit}`;
+  return "前月比 ±0";
 }
 
 function diffColor(diff: number): string {
@@ -57,6 +58,39 @@ function DiffCaption({ diff, unit }: { diff: number; unit?: string }) {
     <span className="text-[11px] font-medium" style={{ color: diffColor(diff) }}>
       {formatDiff(diff, unit)}
     </span>
+  );
+}
+
+type Period = "this" | "last";
+
+/** セクション見出し横の「今月/先月」切り替えトグル。 */
+function PeriodToggle({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
+  return (
+    <div
+      className="flex overflow-hidden rounded-full border text-[11px]"
+      style={{ borderColor: "var(--color-border)" }}
+    >
+      {(
+        [
+          ["this", "今月"],
+          ["last", "先月"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onChange(key)}
+          className="px-2.5 py-1 font-medium"
+          style={
+            period === key
+              ? { background: "var(--color-navy)", color: "#ffffff" }
+              : { background: "var(--color-card)", color: "var(--color-text-muted)" }
+          }
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -128,37 +162,50 @@ function formatYenOrDash(amountYen: number | null): string {
 
 interface DashboardViewProps {
   summary: DashboardSummary;
+  /** 先月分のサマリ(主要指標セクションの「先月」トグル用)。 */
+  summaryLastMonth: DashboardSummary;
   candidates: Candidate[];
   sourceStatus: SourceStatus;
   sourceErrorMessage?: string;
   slackStatus: SourceStatus;
   slackErrorMessage?: string;
   marketingSummary: MarketingSummary;
+  /** 先月分の集客・広告サマリ(「先月」トグル用)。 */
+  marketingSummaryLastMonth: MarketingSummary;
   marketingStatus: SourceStatus;
   marketingErrorMessage?: string;
 }
 
 export default function DashboardView({
   summary,
+  summaryLastMonth,
   candidates,
   sourceStatus,
   sourceErrorMessage,
   slackStatus,
   slackErrorMessage,
   marketingSummary,
+  marketingSummaryLastMonth,
   marketingStatus,
   marketingErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
+  // 主要指標・集客/広告それぞれ独立して今月⇄先月を切り替えられる。
+  const [primaryPeriod, setPrimaryPeriod] = useState<Period>("this");
+  const [marketingPeriod, setMarketingPeriod] = useState<Period>("this");
   if (!role) return null;
 
   const profile = getRoleProfile(role);
   const sheetsBadge = sourceBadgeLabel("sheets", sourceStatus);
   const slackBadge = sourceBadgeLabel("slack", slackStatus);
   const marketingBadge = sourceBadgeLabel("marketing", marketingStatus);
-  const googleAd = marketingSummary.channels.find((c) => c.channel === "Google広告");
-  const metaAd = marketingSummary.channels.find((c) => c.channel === "Meta広告");
-  const { transitionRates } = marketingSummary;
+  // 集客・広告セクションの表示対象(今月/先月トグルで切替)。先月表示時、送客パートナー表の
+  // 2組の列は「先月/先々月」になる。
+  const mk = marketingPeriod === "this" ? marketingSummary : marketingSummaryLastMonth;
+  const mkPeriodLabels: [string, string] = marketingPeriod === "this" ? ["今月", "先月"] : ["先月", "先々月"];
+  const googleAd = mk.channels.find((c) => c.channel === "Google広告");
+  const metaAd = mk.channels.find((c) => c.channel === "Meta広告");
+  const { transitionRates } = mk;
 
   // ca ロール(佐藤CA)は自分の担当求職者数を先頭に見せる。
   const isCa = role === "ca";
@@ -167,7 +214,9 @@ export default function DashboardView({
 
   const maxStageCount = Math.max(1, ...summary.pipeline.map((s) => s.count));
 
-  const { candidateFunnel, corporateFunnel, primary, weeklyTrend } = summary;
+  const { candidateFunnel, corporateFunnel, weeklyTrend } = summary;
+  // 主要指標カードの表示対象(今月/先月トグルで切替)。
+  const primary = primaryPeriod === "this" ? summary.primary : summaryLastMonth.primary;
   const candidateFunnelMax = Math.max(1, candidateFunnel.pv);
   const corporateFunnelMax = Math.max(
     1,
@@ -195,13 +244,16 @@ export default function DashboardView({
         </div>
       )}
 
-      {/* 1. 主要指標(今月) */}
+      {/* 1. 主要指標(今月/先月トグル) */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            主要指標(今月)
+            主要指標({primaryPeriod === "this" ? "今月" : "先月"})
           </h2>
-          <SourceBadge label={sheetsBadge} />
+          <div className="flex items-center gap-2">
+            <PeriodToggle period={primaryPeriod} onChange={setPrimaryPeriod} />
+            <SourceBadge label={sheetsBadge} />
+          </div>
         </div>
         {sourceStatus === "live-error" && sourceErrorMessage && (
           <p
@@ -241,13 +293,16 @@ export default function DashboardView({
         </div>
       </section>
 
-      {/* 1.5 集客・広告(月内) */}
+      {/* 1.5 集客・広告(今月/先月トグル) */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            集客・広告(月内)
+            集客・広告({marketingPeriod === "this" ? "今月" : "先月"})
           </h2>
-          <SourceBadge label={marketingBadge} />
+          <div className="flex items-center gap-2">
+            <PeriodToggle period={marketingPeriod} onChange={setMarketingPeriod} />
+            <SourceBadge label={marketingBadge} />
+          </div>
         </div>
         {marketingStatus === "live-error" && marketingErrorMessage && (
           <p
@@ -264,16 +319,16 @@ export default function DashboardView({
         <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5 lg:gap-4">
           <KpiCard
             label="広告費用合計"
-            value={formatYen(marketingSummary.totalCost)}
+            value={formatYen(mk.totalCost)}
             caption={`広告 ${formatYen(
-              marketingSummary.channels.reduce((sum, c) => sum + c.cost, 0),
-            )} + SNS ${formatYen(marketingSummary.sns.cost)} + 送客 ${formatYen(marketingSummary.referralTotalYen)}`}
+              mk.channels.reduce((sum, c) => sum + c.cost, 0),
+            )} + SNS ${formatYen(mk.sns.cost)} + 送客 ${formatYen(mk.referralTotalYen)}`}
             accent
           />
-          <KpiCard label="LINE登録合計" value={`${marketingSummary.totalLineRegs.toLocaleString("ja-JP")}人`} />
-          <KpiCard label="面談予約合計" value={`${marketingSummary.totalReservations.toLocaleString("ja-JP")}件`} />
-          <KpiCard label="面談実績合計" value={`${marketingSummary.totalInterviews.toLocaleString("ja-JP")}件`} />
-          <KpiCard label="面接回数" value={`${marketingSummary.interviewsCombined.toLocaleString("ja-JP")}件`} />
+          <KpiCard label="LINE登録合計" value={`${mk.totalLineRegs.toLocaleString("ja-JP")}人`} />
+          <KpiCard label="面談予約合計" value={`${mk.totalReservations.toLocaleString("ja-JP")}件`} />
+          <KpiCard label="面談実績合計" value={`${mk.totalInterviews.toLocaleString("ja-JP")}件`} />
+          <KpiCard label="面接回数" value={`${mk.interviewsCombined.toLocaleString("ja-JP")}件`} />
         </div>
         <div className="card overflow-x-auto p-3.5">
           <table className="w-full min-w-[560px] text-left text-[12px]">
@@ -315,12 +370,12 @@ export default function DashboardView({
                 <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
                   SNS運用(リズリアライズ)
                 </td>
-                <td className="py-2 pr-2 text-right">{formatYen(marketingSummary.sns.cost)}</td>
-                <td className="py-2 pr-2 text-right">{marketingSummary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                <td className="py-2 pr-2 text-right">{formatYen(mk.sns.cost)}</td>
+                <td className="py-2 pr-2 text-right">{mk.sns.lineRegs.toLocaleString("ja-JP")}人</td>
                 <td className="py-2 pr-2 text-right">—</td>
-                <td className="py-2 pr-2 text-right">{marketingSummary.sns.interviews.toLocaleString("ja-JP")}件</td>
-                <td className="py-2 pr-2 text-right">{formatYenOrDash(marketingSummary.sns.cpa)}</td>
-                <td className="py-2 text-right">{formatYenOrDash(marketingSummary.sns.costPerInterview)}</td>
+                <td className="py-2 pr-2 text-right">{mk.sns.interviews.toLocaleString("ja-JP")}件</td>
+                <td className="py-2 pr-2 text-right">{formatYenOrDash(mk.sns.cpa)}</td>
+                <td className="py-2 text-right">{formatYenOrDash(mk.sns.costPerInterview)}</td>
               </tr>
             </tbody>
           </table>
@@ -348,15 +403,15 @@ export default function DashboardView({
               <tr style={{ color: "var(--color-text-muted)" }}>
                 <th className="pb-2 pr-2 font-medium">経路</th>
                 <th className="pb-2 pr-2 text-right font-medium">単価</th>
-                <th className="pb-2 pr-2 text-right font-medium">面談(今月)</th>
-                <th className="pb-2 pr-2 text-right font-medium">費用(今月)</th>
-                <th className="pb-2 pr-2 text-right font-medium">面談(先月)</th>
-                <th className="pb-2 text-right font-medium">費用(先月)</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談({mkPeriodLabels[0]})</th>
+                <th className="pb-2 pr-2 text-right font-medium">費用({mkPeriodLabels[0]})</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談({mkPeriodLabels[1]})</th>
+                <th className="pb-2 text-right font-medium">費用({mkPeriodLabels[1]})</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-              {marketingSummary.referralPartners.map((r) => {
-                const last = marketingSummary.referralPartnersLastMonth.find((l) => l.channel === r.channel);
+              {mk.referralPartners.map((r) => {
+                const last = mk.referralPartnersLastMonth.find((l) => l.channel === r.channel);
                 return (
                   <tr key={r.channel}>
                     <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
@@ -380,20 +435,20 @@ export default function DashboardView({
                 </td>
                 <td className="py-2 pr-2 text-right">—</td>
                 <td className="py-2 pr-2 text-right">
-                  {marketingSummary.referralPartners
+                  {mk.referralPartners
                     .reduce((sum, r) => sum + r.count, 0)
                     .toLocaleString("ja-JP")}
                   名
                 </td>
-                <td className="py-2 pr-2 text-right">{formatYen(marketingSummary.referralTotalYen)}</td>
+                <td className="py-2 pr-2 text-right">{formatYen(mk.referralTotalYen)}</td>
                 <td className="py-2 pr-2 text-right" style={{ color: "var(--color-text-muted)" }}>
-                  {marketingSummary.referralPartnersLastMonth
+                  {mk.referralPartnersLastMonth
                     .reduce((sum, r) => sum + r.count, 0)
                     .toLocaleString("ja-JP")}
                   名
                 </td>
                 <td className="py-2 text-right" style={{ color: "var(--color-text-muted)" }}>
-                  {formatYen(marketingSummary.referralLastMonthTotalYen)}
+                  {formatYen(mk.referralLastMonthTotalYen)}
                 </td>
               </tr>
             </tbody>
