@@ -13,7 +13,8 @@ import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
 import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
-import { getInvoiceChecks, getMarketingSummary } from "@/lib/metrics";
+import { getInvoiceChecks, getMarketingSummary, getReferralProfit, getRevenueSummary } from "@/lib/metrics";
+import { loadRevenueRecords } from "@/lib/revenue-data";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 interface AskRequestBody {
@@ -40,11 +41,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const [bundle, threadsResult, marketingResult, invoicesResult] = await Promise.all([
+  const [bundle, threadsResult, marketingResult, invoicesResult, revenueResult] = await Promise.all([
     loadDataBundle(),
     loadCandidateThreads(),
     loadMarketingData(),
     loadReferralInvoices(),
+    loadRevenueRecords(),
   ]);
 
   // 請求書チェック(送客パートナー請求書の自動照合)には今月・先月双方の送客パートナーサマリが
@@ -72,8 +74,22 @@ export async function POST(request: Request) {
     marketingSummaryLastMonth.referralPartners,
     now,
   );
+  // 送客売上(翔び台が貰う金額)の今月・先月まとめ + 送客パートナー経由の利益(#請求書=払う金額とは逆方向)。
+  const revenueSummary = getRevenueSummary(revenueResult.records, now);
+  const revenueContext = {
+    thisMonth: revenueSummary.thisMonth,
+    lastMonth: revenueSummary.lastMonth,
+    profitThisMonth: getReferralProfit(revenueSummary.thisMonth, marketingSummaryThisMonth.referralPartners),
+    profitLastMonth: getReferralProfit(revenueSummary.lastMonth, marketingSummaryLastMonth.referralPartners),
+  };
 
-  const snapshot = buildAskSnapshot(bundle, threadsResult.threads, marketingResult.data, invoiceChecks);
+  const snapshot = buildAskSnapshot(
+    bundle,
+    threadsResult.threads,
+    marketingResult.data,
+    invoiceChecks,
+    revenueContext,
+  );
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
 
@@ -93,6 +109,7 @@ export async function POST(request: Request) {
     threadsResult.threads,
     marketingResult.data,
     invoiceChecks,
+    revenueContext,
   );
   return NextResponse.json({
     answer: ruleAnswer,

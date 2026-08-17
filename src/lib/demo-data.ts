@@ -16,6 +16,7 @@ import type {
   Placement,
   Project,
   ReferralInvoice,
+  RevenueRecord,
   SlackPost,
   Stage,
   WeeklyKpiRecord,
@@ -692,5 +693,83 @@ export const referralInvoices: ReferralInvoice[] = [
     fileName: `2peace_請求書_${REFERRAL_INVOICE_TARGET_MONTH_LABEL}.pdf`,
     postedAt: daysAgo(3, 9, 50),
     permalink: demoInvoicePermalink(4),
+  },
+];
+
+// ─────────────────────────────────────────────
+// 送客売上(翔び台が紹介先企業から「貰う」金額)デモ2ヶ月分
+// 実物の売上シート(月別タブ、列: 会社名/求職者/流入経路/金額)を模した内容。
+// 経路は送客パートナー4経路(KANOA/マホガニー/foresma/2peace(Tさん))に加え、それ以外の経路
+// (サンシャイン/インフルエンサー/12月転職博/マジパス/求人媒体/紹介)も混ぜる
+// (getReferralProfit の rows は送客パートナー4経路のみ対象、合計は全経路の売上を使うため)。
+// ─────────────────────────────────────────────
+const REVENUE_THIS_MONTH_KEY = `${year}-${String(month + 1).padStart(2, "0")}`;
+const REVENUE_LAST_MONTH_KEY = REFERRAL_INVOICE_TARGET_MONTH; // 先月(既存の lastMonthRef 基準と揃える)
+
+export const revenueRecords: RevenueRecord[] = [
+  // 今月分(4件)
+  {
+    month: REVENUE_THIS_MONTH_KEY,
+    inflowChannel: "KANOA",
+    company: "株式会社トライアングルシステムズ",
+    candidateName: "加藤 拓海",
+    amountYen: 450_000,
+  },
+  {
+    month: REVENUE_THIS_MONTH_KEY,
+    inflowChannel: "サンシャイン",
+    company: "北陸フーズ株式会社",
+    candidateName: "森田 千尋",
+    amountYen: 380_000,
+  },
+  {
+    month: REVENUE_THIS_MONTH_KEY,
+    inflowChannel: "インフルエンサー",
+    company: "株式会社サンライズリテール",
+    candidateName: "藤原 麻衣",
+    amountYen: 620_000,
+  },
+  {
+    month: REVENUE_THIS_MONTH_KEY,
+    inflowChannel: "求人媒体",
+    company: "中央オートパーツ株式会社",
+    candidateName: "竹内 亮太",
+    amountYen: 550_000,
+  },
+  // 先月分(5件)
+  {
+    month: REVENUE_LAST_MONTH_KEY,
+    inflowChannel: "2peace(Tさん)",
+    company: "株式会社クラウドゲート",
+    candidateName: "中島 陽菜",
+    amountYen: 320_000,
+  },
+  {
+    month: REVENUE_LAST_MONTH_KEY,
+    inflowChannel: "マホガニー",
+    company: "株式会社サンライズリテール",
+    candidateName: "岩崎 健太郎",
+    amountYen: 410_000,
+  },
+  {
+    month: REVENUE_LAST_MONTH_KEY,
+    inflowChannel: "紹介",
+    company: "みらいリハビリクリニック",
+    candidateName: "原田 由美",
+    amountYen: 300_000,
+  },
+  {
+    month: REVENUE_LAST_MONTH_KEY,
+    inflowChannel: "12月転職博",
+    company: "株式会社グロースフィールド",
+    candidateName: "山田 花子",
+    amountYen: 700_000,
+  },
+  {
+    month: REVENUE_LAST_MONTH_KEY,
+    inflowChannel: "マジパス",
+    company: "中央オートパーツ株式会社",
+    candidateName: "三浦 大和",
+    amountYen: 900_000,
   },
 ];

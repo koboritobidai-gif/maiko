@@ -20,13 +20,19 @@ import {
   getMonthlyKpiTotal,
   getPrimaryKpis,
   getRecentWeeklyKpiTrend,
+  getReferralProfit,
   getSortedProjects,
   getStagePipeline,
   getTodayPlacements,
   getWeeklyTrendRows,
   getWithdrawnCount,
 } from "@/lib/metrics";
-import type { InvoiceCheckRow, MarketingSummary, ReferralPartnerSummary } from "@/lib/metrics";
+import type {
+  InvoiceCheckRow,
+  MarketingSummary,
+  ReferralPartnerSummary,
+  RevenueMonthSummary,
+} from "@/lib/metrics";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 import type {
   Candidate,
@@ -61,11 +67,26 @@ function formatYenPlain(amountYen: number): string {
   return `¥${Math.round(amountYen).toLocaleString("ja-JP")}`;
 }
 
+/**
+ * 送客売上(翔び台が紹介先企業から「貰う」金額)の今月・先月まとめ+送客パートナー経由の利益。
+ * `#請求書`(送客パートナーへ「払う」費用)と対になるデータで、route.ts 側で
+ * `getRevenueSummary` / `getReferralProfit`(いずれも今月・先月の2回分)を使って組み立て、
+ * buildAskSnapshot / answerWithRules の両方にそのまま渡す(marketingSummary の先月分が
+ * route.ts でしか計算されていないため、ここでは計算済みの値を受け取るだけに留める)。
+ */
+export interface AskRevenueContext {
+  thisMonth: RevenueMonthSummary;
+  lastMonth: RevenueMonthSummary;
+  profitThisMonth: ReturnType<typeof getReferralProfit>;
+  profitLastMonth: ReturnType<typeof getReferralProfit>;
+}
+
 export function buildAskSnapshot(
   bundle: DataBundle,
   candidateThreads: CandidateThread[] = [],
   marketingData: MarketingData | null = null,
   invoiceChecks: InvoiceCheckRow[] = [],
+  revenueContext: AskRevenueContext | null = null,
 ) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
@@ -172,6 +193,37 @@ export function buildAskSnapshot(
       diffYen: row.diffYen ?? null,
       status: row.status,
     })),
+    // 送客売上(翔び台が紹介先企業から「貰う」金額)。referralInvoiceChecks(#請求書=払う金額)とは
+    // 対になる逆方向のお金の流れ。revenueContext が渡されなかった場合(未取得・未導入)は null。
+    referralRevenue: revenueContext
+      ? {
+          thisMonth: {
+            month: revenueContext.thisMonth.month,
+            totalYen: revenueContext.thisMonth.totalYen,
+            byChannel: revenueContext.thisMonth.byChannel,
+            companies: revenueContext.thisMonth.records.map((r) => ({
+              company: r.company,
+              candidateName: r.candidateName ?? null,
+              inflowChannel: r.inflowChannel,
+              amountYen: r.amountYen,
+            })),
+          },
+          lastMonth: {
+            month: revenueContext.lastMonth.month,
+            totalYen: revenueContext.lastMonth.totalYen,
+            byChannel: revenueContext.lastMonth.byChannel,
+            companies: revenueContext.lastMonth.records.map((r) => ({
+              company: r.company,
+              candidateName: r.candidateName ?? null,
+              inflowChannel: r.inflowChannel,
+              amountYen: r.amountYen,
+            })),
+          },
+          // 送客パートナー経由の利益(売上−費用)。rows は単価マスタ(referralPartners)順。
+          referralPartnerProfitThisMonth: revenueContext.profitThisMonth,
+          referralPartnerProfitLastMonth: revenueContext.profitLastMonth,
+        }
+      : null,
   };
 }
 
@@ -224,7 +276,20 @@ referralInvoiceChecks は Slack「#請求書」チャンネルの送客パート
 (invoiceAmountYen)・アプリの計算値(computedAmountYen)・差額(diffYen)・判定(status: match=一致/
 mismatch=差異あり/unreadable=金額読取不可/unknown-partner=経路不明/out-of-range=対象月が範囲外)が
 含まれます。「請求書は合っている?」「請求書の差異は?」のような質問には、mismatch のものを経路名・
-差額とともに具体的に答え、全件 match ならその旨を伝えてください。
+差額とともに具体的に答え、全件 match ならその旨を伝えてください。これは翔び台が送客パートナーへ
+「払う」費用の照合です。
+
+referralRevenue は、referralInvoiceChecks(払う金額)とは逆方向の、翔び台が紹介先企業から「貰う」
+送客売上です(経営者が別途運用する売上シートの月別タブから取得。null の場合は未取得・未導入)。
+thisMonth/lastMonth それぞれに、対象月(month)・合計金額(totalYen)・経路別内訳(byChannel、
+channel/amountYen/count)・企業別明細(companies、company/candidateName〈求職者名、無ければnull〉/
+inflowChannel/amountYen)が含まれます。referralPartnerProfitThisMonth/LastMonth には、送客パートナー
+(単価マスタの経路、KANOA/マホガニー/foresma/2peace(Tさん)等)ごとの売上(revenueYen)・費用
+(costYen)・利益(profitYen)の rows と、月全体の売上合計(totalRevenueYen)・送客費用合計
+(totalCostYen)・利益合計(totalProfitYen=売上−費用)が含まれます(rows は単価マスタに無い経路
+〈求人媒体・紹介など〉の売上は含みませんが、totalRevenueYen には含まれます)。「送客売上は?」
+「入金は?」「送客の利益は?」「収支は?」のような質問には、今月・先月の売上合計+経路別内訳+
+利益をまとめて答えてください。
 
 ルール:
 - 数値はスナップショットに存在する値のみを使うこと。スナップショットに無い情報は推測せず、「データ上は確認できません」のように正直に答える。
@@ -421,6 +486,33 @@ function answerInvoiceChecks(invoiceChecks: InvoiceCheckRow[]): string {
   if (unreadable.length > 0) parts.push(`金額読取不可: ${unreadable.length}件`);
   if (unknown.length > 0) parts.push(`経路不明: ${unknown.length}件`);
   return `送客パートナー請求書のチェック結果です。${parts.join("。")}。内容をご確認のうえ、必要であれば先方にお問い合わせください。`;
+}
+
+/** 経路別内訳(RevenueMonthSummary.byChannel)を「経路 金額(件数件)」の一覧文字列にする。 */
+function formatRevenueChannelList(byChannel: RevenueMonthSummary["byChannel"]): string {
+  if (byChannel.length === 0) return "内訳なし";
+  return byChannel.map((c) => `${c.channel} ${formatYenPlain(c.amountYen)}(${c.count}件)`).join("、");
+}
+
+/**
+ * 「送客売上」「入金」「貰う/もらう」「利益」「収支」を含む質問への回答: 今月・先月の送客売上合計・
+ * 経路別内訳・送客パートナー経由の利益(売上−送客費用)。#請求書(払う金額)とは逆方向のお金の流れ。
+ */
+function answerReferralRevenue(ctx: AskRevenueContext | null): string {
+  if (!ctx) {
+    return "送客売上データが取得できませんでした(REVENUE_SHEET_ID が未設定の可能性があります)。";
+  }
+  const { thisMonth, lastMonth, profitThisMonth } = ctx;
+  const profitLabel =
+    profitThisMonth.totalProfitYen >= 0
+      ? `黒字${formatYenPlain(profitThisMonth.totalProfitYen)}`
+      : `赤字${formatYenPlain(Math.abs(profitThisMonth.totalProfitYen))}`;
+  return (
+    `今月の送客売上(翔び台が貰う金額)は合計${formatYenPlain(thisMonth.totalYen)}です` +
+    `(${formatRevenueChannelList(thisMonth.byChannel)})。先月は合計${formatYenPlain(lastMonth.totalYen)}でした。` +
+    `送客パートナー経由の収支は、売上${formatYenPlain(profitThisMonth.totalRevenueYen)} − ` +
+    `送客費用${formatYenPlain(profitThisMonth.totalCostYen)} = ${profitLabel}です。`
+  );
 }
 
 /** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」のように、質問文が
@@ -681,6 +773,7 @@ export function answerWithRules(
   candidateThreads: CandidateThread[] = [],
   marketingData: MarketingData | null = null,
   invoiceChecks: InvoiceCheckRow[] = [],
+  revenueContext: AskRevenueContext | null = null,
 ): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
@@ -754,6 +847,19 @@ export function answerWithRules(
 
   // 4.55. 請求書チェック(Slack「#請求書」の自動照合)
   if (text.includes("請求書")) return answerInvoiceChecks(invoiceChecks);
+
+  // 4.56. 送客売上(翔び台が貰う金額)。「8. 売上見込み」など既存の「売上」判定より先に判定する
+  //       (「送客売上」「入金」「貰う/もらう」「利益」「収支」を含む質問はこちらを優先)。
+  if (
+    text.includes("送客売上") ||
+    text.includes("入金") ||
+    text.includes("貰う") ||
+    text.includes("もらう") ||
+    text.includes("利益") ||
+    text.includes("収支")
+  ) {
+    return answerReferralRevenue(revenueContext);
+  }
 
   // 4.6. 送客パートナー(成果報酬): 経路名(KANOA/マホガニー/foresma/2peace(Tさん)等)の個別質問を優先し、
   //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は4経路+合計で答える。

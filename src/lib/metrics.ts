@@ -18,6 +18,7 @@ import type {
   Project,
   ReferralInvoice,
   ReferralRate,
+  RevenueRecord,
   SlackPost,
   SnsWeeklyRecord,
   Stage,
@@ -832,4 +833,107 @@ export function getInvoiceChecks(
       }
       return { invoice, computedYen, diffYen: invoice.amountYen - computedYen, status: "mismatch" };
     });
+}
+
+// ─────────────────────────────────────────────
+// 送客売上(翔び台が紹介先企業から「貰う」金額)のまとめ
+// ─────────────────────────────────────────────
+
+/** 送客売上、経路別1件分。 */
+export interface RevenueChannelSummary {
+  channel: string;
+  amountYen: number;
+  count: number;
+}
+
+/** 送客売上、1ヶ月分のまとめ。 */
+export interface RevenueMonthSummary {
+  /** 対象月(YYYY-MM) */
+  month: string;
+  totalYen: number;
+  /** 経路別内訳(金額の大きい順) */
+  byChannel: RevenueChannelSummary[];
+  /** 企業別明細(金額の大きい順) */
+  records: RevenueRecord[];
+}
+
+function summarizeRevenueMonth(records: RevenueRecord[], month: string): RevenueMonthSummary {
+  const monthRecords = records.filter((r) => r.month === month);
+  const totalYen = monthRecords.reduce((sum, r) => sum + r.amountYen, 0);
+
+  const byChannelMap = new Map<string, { amountYen: number; count: number }>();
+  for (const r of monthRecords) {
+    const current = byChannelMap.get(r.inflowChannel) ?? { amountYen: 0, count: 0 };
+    current.amountYen += r.amountYen;
+    current.count += 1;
+    byChannelMap.set(r.inflowChannel, current);
+  }
+  const byChannel = [...byChannelMap.entries()]
+    .map(([channel, v]) => ({ channel, amountYen: v.amountYen, count: v.count }))
+    .sort((a, b) => b.amountYen - a.amountYen);
+
+  return {
+    month,
+    totalYen,
+    byChannel,
+    records: [...monthRecords].sort((a, b) => b.amountYen - a.amountYen),
+  };
+}
+
+/**
+ * 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。「今月」は now の暦月(YYYY-MM)と
+ * タブ月が一致するレコード、「先月」はその前月(基準日は先月15日、月初・月末の日数差の影響を受けない。
+ * getMarketingSummary の lastMonthReference と同じ考え方)。
+ */
+export function getRevenueSummary(
+  records: RevenueRecord[],
+  now: Date = new Date(),
+): { thisMonth: RevenueMonthSummary; lastMonth: RevenueMonthSummary } {
+  const thisMonthKey = toMonthKey(now);
+  const lastMonthKey = toMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 15));
+  return {
+    thisMonth: summarizeRevenueMonth(records, thisMonthKey),
+    lastMonth: summarizeRevenueMonth(records, lastMonthKey),
+  };
+}
+
+/** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」。 */
+function referralChannelCore(channel: string): string {
+  return channel.split("(")[0].trim();
+}
+
+/** 送客パートナー(成果報酬)1経路分の売上・費用・利益。 */
+export interface ReferralProfitRow {
+  channel: string;
+  revenueYen: number;
+  costYen: number;
+  profitYen: number;
+}
+
+/**
+ * 送客パートナー経由の利益(売上−費用)をまとめる(純関数)。rows は単価マスタ順
+ * (`referralPartners` の順)。売上側の経路名は部分一致(trim・大文字小文字無視。「KANOA紹介」→
+ * 「KANOA」に集約)で対応付ける。referralPartners に無い経路の売上(求人媒体・紹介など)は
+ * rows に含めないが、totalRevenueYen は月の売上全体(`revenueMonth.totalYen`)を使う。
+ * totalCostYen は referralPartners の費用合計、totalProfitYen = totalRevenueYen − totalCostYen。
+ */
+export function getReferralProfit(
+  revenueMonth: RevenueMonthSummary,
+  referralPartners: ReferralPartnerSummary[],
+): { rows: ReferralProfitRow[]; totalRevenueYen: number; totalCostYen: number; totalProfitYen: number } {
+  const rows: ReferralProfitRow[] = referralPartners.map((partner) => {
+    const normalizedCore = normalizeChannelText(referralChannelCore(partner.channel));
+    const revenueYen = revenueMonth.byChannel
+      .filter((c) => normalizeChannelText(c.channel).includes(normalizedCore))
+      .reduce((sum, c) => sum + c.amountYen, 0);
+    return {
+      channel: partner.channel,
+      revenueYen,
+      costYen: partner.costYen,
+      profitYen: revenueYen - partner.costYen,
+    };
+  });
+  const totalCostYen = referralPartners.reduce((sum, p) => sum + p.costYen, 0);
+  const totalRevenueYen = revenueMonth.totalYen;
+  return { rows, totalRevenueYen, totalCostYen, totalProfitYen: totalRevenueYen - totalCostYen };
 }

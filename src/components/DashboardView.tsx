@@ -6,8 +6,8 @@ import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { getCandidatesByCa } from "@/lib/metrics";
-import type { DashboardSummary, InvoiceCheckRow, MarketingSummary } from "@/lib/metrics";
+import { getCandidatesByCa, getReferralProfit } from "@/lib/metrics";
+import type { DashboardSummary, InvoiceCheckRow, MarketingSummary, RevenueMonthSummary } from "@/lib/metrics";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
@@ -224,6 +224,10 @@ interface DashboardViewProps {
   invoiceSkippedCount: number;
   invoiceStatus: SourceStatus;
   invoiceErrorMessage?: string;
+  /** 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。 */
+  revenueSummary: { thisMonth: RevenueMonthSummary; lastMonth: RevenueMonthSummary };
+  revenueStatus: SourceStatus;
+  revenueErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -242,11 +246,15 @@ export default function DashboardView({
   invoiceSkippedCount,
   invoiceStatus,
   invoiceErrorMessage,
+  revenueSummary,
+  revenueStatus,
+  revenueErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標・集客/広告それぞれ独立して今月⇄先月を切り替えられる。
+  // 主要指標・集客/広告・送客売上それぞれ独立して今月⇄先月を切り替えられる。
   const [primaryPeriod, setPrimaryPeriod] = useState<Period>("this");
   const [marketingPeriod, setMarketingPeriod] = useState<Period>("this");
+  const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   if (!role) return null;
 
   const profile = getRoleProfile(role);
@@ -257,6 +265,20 @@ export default function DashboardView({
   // 請求書が1件も無く、かつ機能未設定(demo=SLACK_INVOICE_CHANNEL未設定 or デモモード)の場合は
   // カード自体を非表示にする(機能OFF扱い。デモモードでは常にデモ請求書が入るため表示される)。
   const showInvoiceCard = invoiceChecks.length > 0 || invoiceStatus !== "demo";
+  const revenueBadge = sourceBadgeLabel("revenue", revenueStatus);
+  // 送客売上が1件も無く、かつ機能未設定(demo=REVENUE_SHEET_ID未設定 or デモモード)の場合は
+  // セクション自体を非表示にする(請求書チェックと同じ「機能OFF」扱い)。
+  const showRevenueSection =
+    revenueSummary.thisMonth.records.length > 0 || revenueSummary.lastMonth.records.length > 0 || revenueStatus !== "demo";
+  // 送客売上セクションの表示対象(今月/先月トグルで切替)。対応する送客パートナー費用(単価マスタ)は
+  // 今月なら marketingSummary、先月なら marketingSummaryLastMonth の referralPartners を使う。
+  const rv = revenuePeriod === "this" ? revenueSummary.thisMonth : revenueSummary.lastMonth;
+  const rvReferralPartners =
+    revenuePeriod === "this" ? marketingSummary.referralPartners : marketingSummaryLastMonth.referralPartners;
+  const referralProfit = getReferralProfit(rv, rvReferralPartners);
+  const REVENUE_DETAIL_LIMIT = 10;
+  const revenueDetailRows = rv.records.slice(0, REVENUE_DETAIL_LIMIT);
+  const revenueDetailHiddenCount = rv.records.length - revenueDetailRows.length;
   // 集客・広告セクションの表示対象(今月/先月トグルで切替)。先月表示時、送客パートナー表の
   // 2組の列は「先月/先々月」になる。
   const mk = marketingPeriod === "this" ? marketingSummary : marketingSummaryLastMonth;
@@ -602,6 +624,168 @@ export default function DashboardView({
                 他{invoiceSkippedCount}件のPDFは点検対象外(直近15件まで)。
               </p>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* 1.7 送客売上(貰う金額) */}
+      {showRevenueSection && (
+        <section className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+              送客売上(貰う金額)({revenuePeriod === "this" ? "今月" : "先月"})
+            </h2>
+            <div className="flex items-center gap-2">
+              <PeriodToggle period={revenuePeriod} onChange={setRevenuePeriod} />
+              <SourceBadge label={revenueBadge} />
+            </div>
+          </div>
+          {revenueStatus === "live-error" && revenueErrorMessage && (
+            <p
+              className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+              style={{
+                color: "var(--color-bad)",
+                borderColor: "var(--color-bad)",
+                background: "var(--color-card)",
+              }}
+            >
+              接続エラーの内容: {revenueErrorMessage}
+            </p>
+          )}
+
+          {/* 経路別テーブル */}
+          <div className="card overflow-x-auto p-3.5">
+            <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+              経路別
+            </p>
+            <table className="w-full min-w-[420px] text-left text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--color-text-muted)" }}>
+                  <th className="pb-2 pr-2 font-medium">経路</th>
+                  <th className="pb-2 pr-2 text-right font-medium">件数</th>
+                  <th className="pb-2 text-right font-medium">金額</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                {rv.byChannel.map((c) => (
+                  <tr key={c.channel}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {c.channel}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{c.count.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 text-right">{formatYen(c.amountYen)}</td>
+                  </tr>
+                ))}
+                {rv.byChannel.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                      対象期間の送客売上はまだありません。
+                    </td>
+                  </tr>
+                )}
+                <tr style={{ fontWeight: 700 }}>
+                  <td className="py-2 pr-2 whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    合計
+                  </td>
+                  <td className="py-2 pr-2 text-right">
+                    {rv.records.length.toLocaleString("ja-JP")}件
+                  </td>
+                  <td className="py-2 text-right">{formatYen(rv.totalYen)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 企業別明細テーブル */}
+          <div className="card overflow-x-auto p-3.5">
+            <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+              企業別明細
+            </p>
+            <table className="w-full min-w-[560px] text-left text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--color-text-muted)" }}>
+                  <th className="pb-2 pr-2 font-medium">企業</th>
+                  <th className="pb-2 pr-2 font-medium">求職者</th>
+                  <th className="pb-2 pr-2 font-medium">流入経路</th>
+                  <th className="pb-2 text-right font-medium">金額</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                {revenueDetailRows.map((r, i) => (
+                  <tr key={i}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {r.company}
+                    </td>
+                    <td className="py-2 pr-2 whitespace-nowrap">{r.candidateName ?? "—"}</td>
+                    <td className="py-2 pr-2 whitespace-nowrap">{r.inflowChannel}</td>
+                    <td className="py-2 text-right whitespace-nowrap">{formatYen(r.amountYen)}</td>
+                  </tr>
+                ))}
+                {revenueDetailRows.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                      対象期間の送客売上はまだありません。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {revenueDetailHiddenCount > 0 && (
+              <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                他{revenueDetailHiddenCount}件。
+              </p>
+            )}
+          </div>
+
+          {/* 送客パートナー収支 */}
+          <div className="card overflow-x-auto p-3.5">
+            <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+              送客パートナー収支({revenuePeriod === "this" ? "今月" : "先月"})
+            </p>
+            <table className="w-full min-w-[420px] text-left text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--color-text-muted)" }}>
+                  <th className="pb-2 pr-2 font-medium">経路</th>
+                  <th className="pb-2 pr-2 text-right font-medium">売上</th>
+                  <th className="pb-2 pr-2 text-right font-medium">費用</th>
+                  <th className="pb-2 text-right font-medium">利益</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                {referralProfit.rows.map((row) => (
+                  <tr key={row.channel}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {row.channel}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{formatYen(row.revenueYen)}</td>
+                    <td className="py-2 pr-2 text-right">{formatYen(row.costYen)}</td>
+                    <td
+                      className="py-2 text-right font-semibold"
+                      style={{ color: row.profitYen >= 0 ? "var(--color-good)" : "var(--color-bad)" }}
+                    >
+                      {formatYen(row.profitYen)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div
+              className="mt-2.5 flex items-center justify-between border-t pt-2.5 text-[12px]"
+              style={{ borderColor: "var(--color-border)" }}
+            >
+              <span style={{ color: "var(--color-text-muted)" }}>
+                売上合計 {formatYen(referralProfit.totalRevenueYen)} − 送客費用合計 {formatYen(referralProfit.totalCostYen)} = 利益
+              </span>
+              <span
+                className="font-bold"
+                style={{ color: referralProfit.totalProfitYen >= 0 ? "var(--color-good)" : "var(--color-bad)" }}
+              >
+                {formatYen(referralProfit.totalProfitYen)}
+              </span>
+            </div>
+            <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              タブ「YYYY年M月」=対象月。入金は翌月末。経路の対応付けは部分一致。
+            </p>
           </div>
         </section>
       )}

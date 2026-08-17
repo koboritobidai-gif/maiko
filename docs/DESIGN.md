@@ -113,6 +113,26 @@ Slack・スプレッドシート(デモ段階ではデモデータ)と連携し�
     請求額/アプリ計算額/判定バッジ(一致/差異〈±金額〉/金額読取不可/経路不明/対象月が範囲外)を表示し、
     Slackパーマリンクがあれば「Slackで開く」リンクを添える。`SLACK_INVOICE_CHANNEL` 未設定時は
     機能OFFとしてカード自体を非表示にする(デモモードではデモ請求書4件が入るため表示される)
+- **送客売上(貰う金額)セクション**: 請求書チェックカードの直後に表示。#請求書(送客パートナーへ
+  「払う」費用)とは逆方向の、経営者が別途運用する売上シート(`RevenueSource`、6.7参照)から取得した
+  「翔び台が紹介先企業から**貰う**」金額を表示する。見出し横に独立した今月/先月トグル+
+  SourceBadge(独自の`revenue`ステータス)。live-error 時は赤枠でエラー内容を表示する。
+  - カード1(経路別): 経路/件数/金額の表+合計行。送客売上シートの経路は流入経路そのまま
+    (KANOA/マホガニー/foresma/2peace(Tさん)等の送客パートナー4経路に加え、サンシャイン/
+    インフルエンサー/求人媒体/紹介等それ以外の経路も混在する)
+  - カード2(企業別明細): 企業/求職者/流入経路/金額の表(金額の大きい順、最大10行。超過分は
+    「他N件」脚注)
+  - カード3(送客パートナー収支): `getReferralProfit(revenueMonth, referralPartners)`(純関数、
+    metrics.ts)の結果を表示。rows は単価マスタ(送客パートナー4経路)順に経路/売上/費用/利益
+    (プラスは`--color-good`、マイナスは`--color-bad`)。下部に「売上合計 − 送客費用合計 = 利益」
+    (全経路ベースの月合計)を表示する。売上側の経路名は単価マスタの経路名(括弧書きを除いた本体)
+    との部分一致(trim・大文字小文字無視)で対応付け、単価マスタに無い経路(求人媒体・紹介等)の
+    売上は rows には含まないが、売上合計には含む
+  - 集計は `metrics.ts` の `getRevenueSummary(records, now)`(純関数、今月・先月を返す)。
+    データソースは `src/lib/revenue-data.ts` の `loadRevenueRecords()`(5分メモリキャッシュ、
+    live失敗時はデモへフォールバック。詳細は6.7参照)
+  - `REVENUE_SHEET_ID` 未設定時は機能OFFとしてセクション自体を非表示にする(請求書チェックカードと
+    同じパターン。デモモードではデモ売上〈今月4件・先月5件〉が入るため表示される)
 - 求職者ファネル(月内): PV数 → LINE登録 → 面談予約 → 面談 → 面接(1次〜最終前+最終) → 内定 → 採用決定 を横棒ファネル表示。
   LINE登録率・面談実行率・面談移行率をバッジ表示
 - 法人営業ファネル(月内): 名刺交換 → アポイント(主権/非主権/外部の内訳) → 商談(同内訳) → 契約(件数+金額)。
@@ -265,15 +285,18 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 ### 6.1 データフロー
 
 `src/lib/data-bundle.ts` の `loadDataBundle()` が、求職者Slackスレッド(進捗データベース)・
-集客・広告データ・送客パートナー請求書を除く全機能の唯一のデータ取得口になっている。求職者Slack
+集客・広告データ・送客パートナー請求書・送客売上を除く全機能の唯一のデータ取得口になっている。求職者Slack
 スレッドは `src/lib/candidate-threads.ts` の `loadCandidateThreads()`、集客・広告データは
 `src/lib/marketing-data.ts` の `loadMarketingData()`、送客パートナー請求書は
-`src/lib/invoice-data.ts` の `loadReferralInvoices()` がそれぞれ独立した取得口・キャッシュを持つ
-(4.1.1/4.1.2、6.3参照。集客・広告データは4.1/6.4参照。送客パートナー請求書は4.1/6.6参照)。
+`src/lib/invoice-data.ts` の `loadReferralInvoices()`、送客売上は `src/lib/revenue-data.ts` の
+`loadRevenueRecords()` がそれぞれ独立した取得口・キャッシュを持つ
+(4.1.1/4.1.2、6.3参照。集客・広告データは4.1/6.4参照。送客パートナー請求書は4.1/6.6参照。
+送客売上は4.1/6.7参照)。
 
-1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` と
-   `loadMarketingData()` を並行して呼び、`metrics.ts` で集計した結果をクライアントコンポーネント
-   (`DashboardView`)へ props で渡す(`export const dynamic = "force-dynamic"` によりリクエストの
+1. ダッシュボード(`src/app/page.tsx`)はサーバーコンポーネントとして `loadDataBundle()` ・
+   `loadMarketingData()` ・`loadCandidateThreads()` ・`loadReferralInvoices()` ・`loadRevenueRecords()`
+   を並行して呼び、`metrics.ts` で集計した結果をクライアントコンポーネント(`DashboardView`)へ
+   props で渡す(`export const dynamic = "force-dynamic"` によりリクエストの
    たびにライブデータを再取得する。各 `load*()` 自体のメモリキャッシュにより実際のHTTP呼び出し頻度は
    抑えられる)。
 2. 求職者一覧(`src/app/candidates/page.tsx`)・求職者個別ページ(`src/app/candidates/t/[threadTs]/page.tsx`)は
@@ -281,12 +304,13 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
    並行して呼び、それぞれ `CandidatesTabs` / `CandidateThreadDetailView` へ props で渡す。
 3. API Routes(`api/ask` `api/deliver` `api/meeting` `api/proposal`)はリクエストのたびに
    `loadDataBundle()` を呼び、`ai/*.ts` の各生成関数へ渡す。`api/ask` はさらに `loadCandidateThreads()`・
-   `loadMarketingData()`・`loadReferralInvoices()` も呼び、求職者Slackスレッド・集客広告データ・
-   送客パートナー請求書チェックの情報をスナップショットに含める(4.2 / 6.3 / 6.4 / 6.6参照)。
+   `loadMarketingData()`・`loadReferralInvoices()`・`loadRevenueRecords()` も呼び、求職者Slackスレッド・
+   集客広告データ・送客パートナー請求書チェック・送客売上の情報をスナップショットに含める
+   (4.2 / 6.3 / 6.4 / 6.6 / 6.7参照)。
 4. `loadDataBundle()` 自体もモジュールメモリに60秒キャッシュ、`loadCandidateThreads()` /
-   `loadMarketingData()` / `loadReferralInvoices()` は5分キャッシュを持つため、同一プロセス内では
-   Google Sheets / Slack / 集客・広告シート / #請求書チャンネルへの実際のHTTP呼び出しはそれぞれ
-   60秒・5分・5分・5分に1回程度に抑えられる。
+   `loadMarketingData()` / `loadReferralInvoices()` / `loadRevenueRecords()` は5分キャッシュを持つため、
+   同一プロセス内では Google Sheets / Slack / 集客・広告シート / #請求書チャンネル / 送客売上シートへの
+   実際のHTTP呼び出しはそれぞれ60秒・5分・5分・5分・5分に1回程度に抑えられる。
 
 ### 6.2 Google Sheets(`GoogleSheetsSource`)
 
@@ -371,17 +395,21 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
 - `DataBundle` は `sourceStatus`(Sheets)と `slackStatus`(Slack)をそれぞれ独立に持ち、
   `"live" | "demo" | "live-error"` の3値を取る。求職者データベース(`loadCandidateThreads()` の
   戻り値の `status`)・集客・広告データ(`loadMarketingData()` の戻り値の `status`)・送客パートナー
-  請求書(`loadReferralInvoices()` の戻り値の `status`)も同じ `SourceStatus` 型を再利用する、
-  DataBundle とは独立した状態である。
+  請求書(`loadReferralInvoices()` の戻り値の `status`)・送客売上(`loadRevenueRecords()` の
+  戻り値の `status`)も同じ `SourceStatus` 型を再利用する、DataBundle とは独立した状態である。
   ソースバッジは `src/lib/source-status.ts` の `sourceBadgeLabel()` で以下のように出し分けられる。
-  - `live` → 「Sheets(連携中)」/「Slack(連携中)」/「集客データ(連携中)」/「請求書チェック(連携中)」
-  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」/「集客データ(デモ)」/「請求書チェック(デモ)」
+  - `live` → 「Sheets(連携中)」/「Slack(連携中)」/「集客データ(連携中)」/「請求書チェック(連携中)」/
+    「送客売上(連携中)」
+  - `demo` → 「Sheets(デモ)」/「Slack(デモ)」/「集客データ(デモ)」/「請求書チェック(デモ)」/
+    「送客売上(デモ)」
   - `live-error` → 「Sheets(接続エラー・デモ表示)」/「Slack(接続エラー・デモ表示)」/
-    「集客データ(接続エラー・デモ表示)」/「請求書チェック(接続エラー・デモ表示)」
+    「集客データ(接続エラー・デモ表示)」/「請求書チェック(接続エラー・デモ表示)」/
+    「送客売上(接続エラー・デモ表示)」
   - 求職者データベース(進捗データベースタブ・個別ページ)のバッジは `sourceBadgeLabel("slack", status)`
     をそのまま流用しているため、表示文言はダッシュボードの Slack バッジと共通(「Slack(連携中)」等)
-  - ただし送客パートナー請求書は、他の3種と異なり `SLACK_INVOICE_CHANNEL` 未設定時は
-    `live-error` ではなく `demo`(かつ請求書0件)を返す「機能OFF」の扱いになる(6.6参照)。
+  - ただし送客パートナー請求書・送客売上は、他の3種と異なり `SLACK_INVOICE_CHANNEL` /
+    `REVENUE_SHEET_ID` 未設定時は `live-error` ではなく `demo`(かつ0件)を返す「機能OFF」の
+    扱いになる(6.6・6.7参照)。
 
 ### 6.6 送客パートナー請求書(`InvoiceSource`)
 
@@ -419,6 +447,51 @@ DATA_MODE を環境変数で切り替えることで、実データ連携とデ�
   console.warn の上でデモ請求書(4件)へフォールバックし `status: "live-error"` を設定する。
   5分のモジュールメモリキャッシュを持つ。
 - 環境変数: `SLACK_INVOICE_CHANNEL`(`SLACK_BOT_TOKEN` は既存のものを共用)。
+
+### 6.7 送客売上(`RevenueSource`)
+
+- 経営者が別途運用する送客売上シート(`REVENUE_SHEET_ID`)を読み取る。翔び台が紹介先企業から
+  「**貰う**」金額で、6.6の送客パートナー請求書(「**払う**」費用)とは逆方向のお金の流れ。
+  取得口・型定義は `src/lib/adapters/revenue.ts`(`RevenueSource` IF + `DemoRevenueSource` +
+  `GoogleSheetsRevenueSource`)、`src/lib/types.ts`(`RevenueRecord`)。認証・batchGet呼び出しは
+  `adapters/spreadsheet.ts` の実装(`getAccessToken` / `fetchSheetsValuesBatchGet` /
+  `fetchSheetTabTitles`)を再利用する(`adapters/marketing.ts` と同じ構成)。
+- **タブ構成**: 入金月ごとにタブを分ける運用で、タブ名は「2026年6月」形式(=対象月。入金は翌月末)。
+  `/^(\d{4})年(\d{1,2})月$/` に一致するタブのみを対象にし(「支払い」タブ等は対象外)、新しい月順に
+  最大6タブまで読む。
+- **見出し行の検出**: シートの1行目がタイトル(黄色セルの「7月末入金分」等)、2行目がスマートチップ
+  埋め込みセルのため、見出し行を決め打ちにせず、先頭5行の中から「金額」を含み、かつ「会社名(会社/
+  企業/送客先)」または「流入経路(経路)」を含む行を見出し行として探す。見つからない場合や、
+  見出し行から「会社名」「流入経路」「金額」のいずれかの列を特定できない場合は、どのタブの見出しに
+  何が並んでいたかを含む日本語エラーを投げる(live-errorとしてデモへフォールバックし、画面の赤枠で
+  自己診断できるようにする)。
+- **列**: 会社名(「会社名」「会社」「企業」「送客先」を含む列)・流入経路(「流入経路」「経路」を
+  含む列)・金額(「金額」「報酬」「売上」を含む列)を見出し文字列の部分一致で判定する。「求職者」を
+  含む列があれば `RevenueRecord.candidateName` として読み取る(無くてもエラーにしない)。
+  「担当者/請求書/分割/残回」等その他の列は読み取らない。
+- **データ行**: 見出し行より下で、会社名・金額の両方が入っている行のみ採用する(下端にプルダウンだけ
+  残った空行が多数あるための対策)。「合計」「小計」を会社名・流入経路セルに含む行は手元集計行と
+  みなしスキップする。金額セルは数値セルはそのまま、文字列セル(「¥385,000」形式)は
+  「¥」「￥」「円」「,」「空白」を除去し、全角数字は半角に変換してから `Number()` する。変換できない・
+  0以下の行はエラーにせずスキップする。
+- **分割払い**: 24回払いのような分割案件は、各月タブに「その月に請求する分」の金額がそのまま記載
+  される運用のため、アプリ側は特別な按分処理をせずタブごとに単純合計するだけで正しい月次売上になる。
+- **集計**: `metrics.ts` の `getRevenueSummary(records, now)`(純関数)が今月・先月それぞれの
+  合計・経路別内訳(`byChannel`)・企業別明細(`records`、金額の大きい順)をまとめる。経路は
+  送客パートナー4経路(KANOA/マホガニー/foresma/2peace(Tさん))以外(サンシャイン/インフルエンサー/
+  求人媒体/紹介等)も混在する。さらに `getReferralProfit(revenueMonth, referralPartners)`
+  (純関数)が、送客パートナー経由の売上・費用・利益(`rows`、単価マスタ順。売上側の経路名は
+  括弧書きを除いた本体との部分一致〈trim・大文字小文字無視〉で対応付け)と、月全体の
+  売上合計・送客費用合計・利益合計をまとめる(単価マスタに無い経路の売上は `rows` には含めないが
+  `totalRevenueYen` には含む)。
+- 取得口は `src/lib/revenue-data.ts` の `loadRevenueRecords()`。6.6の送客パートナー請求書と同じ
+  「機能OFF」パターンで、`REVENUE_SHEET_ID` が未設定の間は live-error にせず売上0件・
+  `status: "demo"` を返す(ダッシュボード側はこれを見てセクション自体を非表示にする)。
+  `DATA_MODE=live` かつシートID設定済みで取得に失敗した場合のみ、他と同様に console.warn の上で
+  デモ売上(今月4件・先月5件)へフォールバックし `status: "live-error"` を設定する。5分の
+  モジュールメモリキャッシュを持つ。
+- 環境変数: `REVENUE_SHEET_ID`(認証情報は `GOOGLE_SERVICE_ACCOUNT_FILE` / `GOOGLE_SERVICE_ACCOUNT_JSON`
+  を既存のものと共用)。
 
 ## 7. ロードマップ(将来構想)
 
