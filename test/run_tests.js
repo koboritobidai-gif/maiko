@@ -87,7 +87,7 @@ const sandbox = {
 vm.createContext(sandbox);
 
 const SRC = path.join(__dirname, '..', 'src');
-['00_Config.gs', '20_Aggregator.gs', '60_CsvImport.gs'].forEach((f) => {
+['00_Config.gs', '20_Aggregator.gs', '60_CsvImport.gs', '70_CalendarSync.gs'].forEach((f) => {
   vm.runInContext(fs.readFileSync(path.join(SRC, f), 'utf8'), sandbox, { filename: f });
 });
 
@@ -231,7 +231,68 @@ check('BOM付きCSVのヘッダー', Object.keys(bomRecords[0])[0], '友だち�
 check('文字化け検出（正常）', looksGarbled_('友だち登録日時,表示名'), false);
 check('文字化け検出（化けている）', looksGarbled_('�����,����'), true);
 
-// ── 5. 実KPI表の週列マップとの突き合わせ ────────────────────
+// ── 5. カレンダー判定（実データで検証） ─────────────────────
+// 下記は実際のカレンダーから取得したイベント名。
+// KPI表の手入力値は 7/20週=予約11/面談7、7/27週=予約7/面談4。
+const tallyCalendarEvents_ = sandbox.tallyCalendarEvents_;
+const classifyEvent_ = sandbox.classifyEvent_;
+const extractPersonName_ = sandbox.extractPersonName_;
+
+const realEvents = [
+  // 2026-07-20 週
+  ['2026-07-20T15:00', '面談済)岸本花梨様 担当A(Bもあります)'],
+  ['2026-07-20T18:00', ' 面談済)田中 友さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-21T12:00', ' 面談済）KANOA 橋本奈美さん: ☆株式会社翔び台　キャリア相談予約(KN)'],
+  ['2026-07-21T12:00', '面談済）田中 裕作さん: ◆Lリーチ経由（松永さん同席)'],
+  ['2026-07-21T14:00', '面談済）石井栞様 担当A※松永さん友人'],
+  ['2026-07-21T16:00', '連絡ありキャンセル）小泉 柚紀/コイズミ ユズキ様 担当A(Bもあります)'],
+  ['2026-07-21T19:00', '7/23にリスケ）高瀬 真奈さん: ◆Lリーチ経由🌈株式会社翔び台　キャリア相談予約'],
+  ['2026-07-22T19:00', ' 面談見送り：年齢条件に満たず）KANOA 布施加南美さん: ☆株式会社翔び台　キャリア相談予約(KN)'],
+  ['2026-07-23T13:00', '面談済）KANOA 広沢静花さん: ☆株式会社翔び台　キャリア相談予約(KN)'],
+  ['2026-07-23T19:00', '連絡有キャンセル）🌈高瀬 真奈さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-24T20:00', '7/27 20時へリスケ）清水宏生さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-25T10:00', '無断キャンセル)🌈佐藤美礼さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-25T13:00', ' 面談済）KANOA 絹田一聖さん: ☆株式会社翔び台　キャリア相談予約(KN)'],
+  ['2026-07-25T15:00', 'サービス利用不可の方）天神 玲香/テンジン レイカ様 担当A(Bもあります) お電話で相談'],
+  // 2026-07-27 週
+  ['2026-07-27T20:00', '面談済）🌈田原聖健さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-27T20:00', '面談済）清水 宏生さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-28T20:00', '面談済）🌈済陽優花さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-07-30T15:00', 'リスケ中）電話面談30分：小泉 柚紀様（昼職キャリア流入）'],
+  ['2026-07-31T12:00', '無断キャンセル）個別URL発行済・水口さん面談）🌈永田健太さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  ['2026-08-01T12:00', '面談済）佐藤美礼さん: ◆Lリーチ経由　株式会社翔び台　キャリア相談予約'],
+  // 拾ってはいけないもの（社内予定・企業側の面接）
+  ['2026-07-21T09:00', '朝礼'],
+  ['2026-07-23T12:00', '全体定例MTG'],
+  ['2026-07-20T10:30', '★浅野愛佳様×on the bakery様（営業職）オンライン一次面接'],
+  ['2026-07-22T17:00', '岡野留璃奈様×PLETECH様　オンライン一次面接']
+].map(([t, title]) => ({ title, start: new Date(t) }));
+
+const calTally = tallyCalendarEvents_(realEvents);
+
+check('7/20週 面談数がKPI表の手入力値と一致', calTally['2026-07-20'].held, 7);
+check('7/27週 面談数がKPI表の手入力値と一致', calTally['2026-07-27'].held, 4);
+check('7/20週 面談予約数がKPI表の手入力値と一致', calTally['2026-07-20'].reserved, 11);
+check('カレンダー由来にLINE登録人数は含まれない', calTally['2026-07-20'].registrations, null);
+
+check('社内予定は拾わない（朝礼）', classifyEvent_('朝礼'), null);
+check('企業側の一次面接は拾わない', classifyEvent_('★浅野愛佳様×on the bakery様（営業職）オンライン一次面接'), null);
+check('面談済は実施扱い', classifyEvent_('面談済）佐藤美礼さん: ◆Lリーチ経由　キャリア相談予約'), 'held');
+check('キャンセルは予約扱い', classifyEvent_('無断キャンセル)🌈佐藤美礼さん: ◆Lリーチ経由　キャリア相談予約'), 'reserved');
+check('面談見送りは除外', classifyEvent_(' 面談見送り：年齢条件に満たず）KANOA 布施加南美さん: ☆キャリア相談予約(KN)'), 'excluded');
+check('サービス利用不可は除外', classifyEvent_('サービス利用不可の方）天神 玲香様 担当A お電話で相談'), 'excluded');
+
+check('氏名抽出（状態ラベル付き）', extractPersonName_('面談済）🌈田原聖健さん: ◆Lリーチ経由　キャリア相談予約'), '田原聖健');
+check('氏名抽出（姓名スペース区切り）', extractPersonName_('面談済）清水 宏生さん: ◆Lリーチ経由　キャリア相談予約'), '清水宏生');
+check('氏名抽出（流入元プレフィックス付き）', extractPersonName_(' 面談済）KANOA 絹田一聖さん: ☆キャリア相談予約(KN)'), '絹田一聖');
+check('氏名抽出（様表記）', extractPersonName_('面談済）石井栞様 担当A※松永さん友人'), '石井栞');
+check('リスケ2件が同一人物として1件に畳まれる',
+  tallyCalendarEvents_([
+    { title: '7/23にリスケ）高瀬 真奈さん: ◆Lリーチ経由　キャリア相談予約', start: new Date('2026-07-21T19:00') },
+    { title: '連絡有キャンセル）🌈高瀬 真奈さん: ◆Lリーチ経由　キャリア相談予約', start: new Date('2026-07-23T19:00') }
+  ])['2026-07-20'].reserved, 1);
+
+// ── 6. 実KPI表の週列マップとの突き合わせ ────────────────────
 const fixturePath = path.join(__dirname, 'fixtures', 'weekmap.json');
 if (fs.existsSync(fixturePath)) {
   const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));

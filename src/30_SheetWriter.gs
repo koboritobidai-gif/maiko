@@ -60,6 +60,9 @@ function writeWeek_(sheet, colMap, weekKeyStr, counts, dryRun) {
   ];
 
   targets.forEach(function (t) {
+    // 値を持たない指標は担当外（例: カレンダー由来のデータにLINE登録人数は無い）
+    if (t.value === null || t.value === undefined) return;
+
     var cell = sheet.getRange(t.row, col);
     var current = cell.getValue();
     var isEmpty = (current === '' || current === null);
@@ -113,9 +116,14 @@ function appendRawRows_(weekly, dryRun) {
     var row = [start, end, c.registrations, c.reserved, c.held, now];
 
     if (index[key]) {
+      // 担当外の指標（null）は、他のルートが書いた既存値を消さないよう温存する
+      var existing = sh.getRange(index[key], 1, 1, row.length).getValues()[0];
+      for (var col = 2; col <= 4; col++) {
+        if (row[col] === null || row[col] === undefined) row[col] = existing[col];
+      }
       sh.getRange(index[key], 1, 1, row.length).setValues([row]);
     } else {
-      sh.appendRow(row);
+      sh.appendRow(row.map(function (v) { return (v === null || v === undefined) ? '' : v; }));
     }
   });
 }

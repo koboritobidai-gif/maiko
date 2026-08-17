@@ -27,12 +27,88 @@ function onOpen() {
     .addSeparator()
     .addItem('毎週月曜の自動実行をON', 'installWeeklyTriggerCsv');
 
+  var freeMenu = ui.createMenu('カレンダー＋LINE統計（費用ゼロ）')
+    .addItem('前週分を反映（面談予約数・面談数・LINE登録人数）', 'menuSyncLastWeekFree')
+    .addItem('期間を指定して反映…', 'menuBackfillFree')
+    .addSeparator()
+    .addItem('カレンダーの数字を表と照合（書き込みなし）', 'menuValidateCalendar')
+    .addItem('LINE統計の数字を表と照合（書き込みなし）', 'menuValidateLine')
+    .addItem('拾ったカレンダー予定を一覧表示', 'menuDiagnoseCalendar')
+    .addSeparator()
+    .addItem('毎週木曜の自動実行をON', 'installWeeklyTriggerFree');
+
   ui.createMenu('Lステップ同期')
+    .addSubMenu(freeMenu)
     .addSubMenu(apiMenu)
     .addSubMenu(csvMenu)
     .addSeparator()
     .addItem('自動実行をすべてOFF', 'removeTriggers')
     .addToUi();
+}
+
+// ── カレンダー＋LINE統計 ルート（費用ゼロ） ──────────────────
+
+/** 前週分を、カレンダーとLINE統計の両方から反映する */
+function syncLastWeekFree() {
+  var calendar = syncLastWeekFromCalendar();
+  var line;
+  try {
+    line = syncLastWeekFromLineInsight();
+  } catch (e) {
+    // LINE側だけ落ちても、カレンダー由来の面談数は残す
+    Logger.log('LINE統計の取得に失敗しました: %s', e.message);
+    line = { reports: [], error: e.message };
+  }
+  return { calendar: calendar, line: line };
+}
+
+function menuSyncLastWeekFree() {
+  runWithToast_('前週分を反映', function () {
+    var r = syncLastWeekFree();
+    var out = summarize_(r.calendar);
+    out += '\n\n【LINE登録人数】\n';
+    out += r.line.error ? '取得できませんでした: ' + r.line.error : summarize_(r.line);
+    return out;
+  });
+}
+
+function menuBackfillFree() {
+  var range = promptDateRange_();
+  if (!range) return;
+  runWithToast_('期間反映', function () {
+    var out = summarize_(backfillFromCalendar(range[0], range[1]));
+    try {
+      out += '\n\n【LINE登録人数】\n' + summarize_(backfillFromLineInsight(range[0], range[1]));
+    } catch (e) {
+      out += '\n\n【LINE登録人数】取得できませんでした: ' + e.message;
+    }
+    return out;
+  });
+}
+
+function menuValidateCalendar() {
+  var range = promptDateRange_();
+  if (!range) return;
+  runWithToast_('カレンダー照合', function () {
+    return validateAgainstSheet(range[0], range[1]);
+  });
+}
+
+function menuValidateLine() {
+  var range = promptDateRange_();
+  if (!range) return;
+  runWithToast_('LINE統計照合', function () {
+    return validateLineInsightAgainstSheet(range[0], range[1]);
+  });
+}
+
+function menuDiagnoseCalendar() {
+  var range = promptDateRange_();
+  if (!range) return;
+  runWithToast_('カレンダー診断', function () {
+    return diagnoseCalendar(range[0], range[1]) +
+      '\nApps Script エディタの「実行数 > ログ」で内訳を確認してください。';
+  });
 }
 
 // ── API ルート ──────────────────────────────────────────────
@@ -134,22 +210,37 @@ function summarize_(result) {
 
 // ── トリガー ────────────────────────────────────────────────
 
-var TRIGGER_HANDLERS = ['syncLastWeek', 'syncLastWeekFromCsv'];
+var TRIGGER_HANDLERS = ['syncLastWeek', 'syncLastWeekFromCsv', 'syncLastWeekFree'];
 
-function installWeeklyTriggerApi() { installWeeklyTrigger_('syncLastWeek', 'API連携'); }
-function installWeeklyTriggerCsv() { installWeeklyTrigger_('syncLastWeekFromCsv', 'CSV取り込み'); }
+function installWeeklyTriggerApi() {
+  installWeeklyTrigger_('syncLastWeek', 'API連携', CONFIG.TRIGGER.weekDay, CONFIG.TRIGGER.hour, '月曜');
+}
+function installWeeklyTriggerCsv() {
+  installWeeklyTrigger_('syncLastWeekFromCsv', 'CSV取り込み', CONFIG.TRIGGER.weekDay, CONFIG.TRIGGER.hour, '月曜');
+}
+/**
+ * カレンダー＋LINE統計は木曜に実行する。
+ * LINE統計の反映に最大3日かかるため、前週日曜分が揃うのを待つ必要があるのと、
+ * 定例MTG（木曜12:00）の直前に最新化できるため。
+ */
+function installWeeklyTriggerFree() {
+  installWeeklyTrigger_(
+    'syncLastWeekFree', 'カレンダー＋LINE統計',
+    CONFIG.TRIGGER.freeWeekDay, CONFIG.TRIGGER.freeHour, '木曜'
+  );
+}
 
-/** 毎週月曜の自動実行を登録（ルートが混ざらないよう既存を消してから作る） */
-function installWeeklyTrigger_(handler, label) {
+/** 週次の自動実行を登録（ルートが混ざらないよう既存を消してから作る） */
+function installWeeklyTrigger_(handler, label, weekDay, hour, weekDayLabel) {
   removeTriggers();
   ScriptApp.newTrigger(handler)
     .timeBased()
-    .onWeekDay(CONFIG.TRIGGER.weekDay)
-    .atHour(CONFIG.TRIGGER.hour)
+    .onWeekDay(weekDay)
+    .atHour(hour)
     .inTimezone(TZ)
     .create();
   SpreadsheetApp.getUi().alert(
-    label + 'ルートで、毎週月曜 ' + CONFIG.TRIGGER.hour + '時台に前週分を自動反映するよう設定しました。'
+    label + 'ルートで、毎週' + weekDayLabel + ' ' + hour + '時台に前週分を自動反映するよう設定しました。'
   );
 }
 
