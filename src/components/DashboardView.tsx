@@ -418,9 +418,9 @@ export default function DashboardView({
             <KpiCard
               label="出ていくお金(全体)"
               value={formatYen(moneyOutYen)}
-              caption={`広告+SNS+送客費用+その他の支払い${
+              caption={`広告費+SNS+#請求書のこの月の支払い全額${
                 pm.unreadableInvoiceCount > 0
-                  ? `(※#請求書に金額を読み取れないPDFが${pm.unreadableInvoiceCount}件あり、未反映)`
+                  ? `(※金額を読み取れないPDFが${pm.unreadableInvoiceCount}件あり、未反映)`
                   : ""
               }`}
             />

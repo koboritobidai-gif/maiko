@@ -890,9 +890,13 @@ export interface PrimaryMonthSnapshot {
   /** 表示ラベル(「今月(8月)」「7月」「2025年12月」など。年をまたいだら年も付ける) */
   label: string;
   primary: PrimaryKpis;
-  /** 貰うお金(送客売上シートの対象月合計、円) */
+  /** 貰うお金(送客売上シートの入金月合計、円) */
   moneyInYen: number;
-  /** 出ていくお金(広告+SNS+送客費用+その他の支払い、円) */
+  /**
+   * 出ていくお金(円)= 広告費(その月)+SNS固定+#請求書のその月支払い全額(パートナー請求書含む)。
+   * 「その月に実際に財布から出るお金」の現金ベースで、成功報酬(入金月ベース)と揃えている。
+   * 送客パートナーの面談実施ベースの計算値はここには使わない(送客パートナー表・請求書照合専用)。
+   */
   moneyOutYen: number;
   /** #請求書で金額を読み取れず支出合計に含められなかった件数 */
   unreadableInvoiceCount: number;
@@ -919,7 +923,10 @@ export function getPrimaryMonthSnapshots(
           ? `${ref.getMonth() + 1}月`
           : `${ref.getFullYear()}年${ref.getMonth() + 1}月`;
     const marketing = getMarketingSummary(marketingData, weeklyKpis, referralCandidates, referralRates, ref);
-    const other = getOtherInvoiceCostsForMonth(invoices, monthKey);
+    // #請求書のその月支払いの全請求書(パートナー請求書含む)。
+    const monthInvoices = invoices.filter((inv) => inv.targetMonth === monthKey);
+    const invoicePaidYen = monthInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);
+    const unreadableInvoiceCount = monthInvoices.filter((inv) => inv.amountYen === undefined).length;
     const moneyInYen = revenueRecords
       .filter((r) => r.month === monthKey)
       .reduce((sum, r) => sum + r.amountYen, 0);
@@ -928,8 +935,9 @@ export function getPrimaryMonthSnapshots(
       label,
       primary: getPrimaryKpis(weeklyKpis, ref),
       moneyInYen,
-      moneyOutYen: marketing.totalCost + other.totalYen,
-      unreadableInvoiceCount: other.unreadableCount,
+      // 広告費+SNS(totalCost から面談ベースの送客費用を除いたもの)+#請求書のその月支払い全額。
+      moneyOutYen: marketing.totalCost - marketing.referralTotalYen + invoicePaidYen,
+      unreadableInvoiceCount,
     });
   }
   return snapshots;
