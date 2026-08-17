@@ -11,11 +11,14 @@ import {
   getRevenueSummary,
 } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
-import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
+import { buildReferralCandidatesFromSlack, fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 // ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
 // loadDataBundle() / loadMarketingData() 自体もモジュールメモリキャッシュを持つため、二重に整合する。
 export const dynamic = "force-dynamic";
+// #請求書のPDFを最大50件ダウンロード・解析するため、初回読み込みが標準の実行時間上限(10秒)を
+// 超えることがある。Vercelの関数実行時間上限を60秒へ引き上げる(2回目以降は5分キャッシュで高速)。
+export const maxDuration = 60;
 
 export default async function TodayDashboardPage() {
   const now = new Date();
@@ -27,13 +30,19 @@ export default async function TodayDashboardPage() {
     loadRevenueRecords(),
   ]);
   const summary = getDashboardSummary(bundle, now);
-  // Slack「#求職者」スレッドの「面談実施」報告から面談日を補完する(シートO列の手入力があれば優先)。
-  // 送客パートナー費用の「面談実施で課金」集計を、Slackへの記載だけで回せるようにするため。
+  // 画面表示用: Slack「#求職者」スレッドの「面談実施」報告から面談日を補完(シートO列の手入力があれば優先)。
   const candidates = fillInterviewDatesFromSlack(bundle.candidates, threadsResult.threads);
+  // 費用集計用: 上記に加えて流入経路(「◯◯様流入」等)もSlackから検出し、シートに載っていない
+  // スレッドだけの求職者(面談実施済みのもの)も課金対象として組み込む。
+  const referralCandidates = buildReferralCandidatesFromSlack(
+    bundle.candidates,
+    threadsResult.threads,
+    bundle.settings.referralRates,
+  );
   const marketingSummary = getMarketingSummary(
     marketingResult.data,
     bundle.weeklyKpis,
-    candidates,
+    referralCandidates,
     bundle.settings.referralRates,
     now,
   );
@@ -43,7 +52,7 @@ export default async function TodayDashboardPage() {
   const marketingSummaryLastMonth = getMarketingSummary(
     marketingResult.data,
     bundle.weeklyKpis,
-    candidates,
+    referralCandidates,
     bundle.settings.referralRates,
     lastMonth,
   );

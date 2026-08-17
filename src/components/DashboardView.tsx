@@ -348,21 +348,26 @@ export default function DashboardView({
             value={`${primary.candidatePlacements.value}名`}
             caption={<DiffCaption diff={primary.candidatePlacements.diff} unit="名" />}
           />
-          <KpiCard
-            label="新規契約金額"
-            value={`${primary.contractAmountMan.value.toLocaleString("ja-JP")}万円`}
-            caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
-          />
-        </div>
-        {/* お金の出入り(入金=送客売上シート / 支出=広告+SNS+送客費用)。売上シート未導入の間は非表示。 */}
-        {showRevenueSection && (
-          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-4">
+          {showRevenueSection ? (
+            // 経営者の要望により、旧「新規契約金額」(週次KPIの法人契約金額)に代えて
+            // 「その月に貰えるお金」(翔び台請求書関係シートの対象月合計)を主要指標に置く。
             <KpiCard
-              label="入ってくるお金(送客売上)"
+              label="貰うお金(送客売上)"
               value={formatYen(moneyInYen)}
               caption="翔び台請求書関係シートの対象月合計"
               accent
             />
+          ) : (
+            <KpiCard
+              label="新規契約金額"
+              value={`${primary.contractAmountMan.value.toLocaleString("ja-JP")}万円`}
+              caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
+            />
+          )}
+        </div>
+        {/* お金の出入り(支出=広告+SNS+送客費用+その他の支払い)。売上シート未導入の間は非表示。 */}
+        {showRevenueSection && (
+          <div className="grid grid-cols-2 gap-2.5 lg:gap-4">
             <KpiCard
               label="出ていくお金(全体)"
               value={formatYen(moneyOutYen)}
@@ -549,7 +554,7 @@ export default function DashboardView({
             </tbody>
           </table>
           <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。今月・先月とも面談日(未入力時は登録日→更新日)の月で判定。
+            対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。今月・先月とも面談日(未入力時は登録日→更新日)の月で判定。流入経路・面談日はシートに加え、#求職者スレッドの「◯◯様流入」「面談実施」の記載からも自動検出。
           </p>
         </div>
       </section>
@@ -610,7 +615,7 @@ export default function DashboardView({
             )}
             <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
               内訳(請求月・会社・金額)は「AIに聞く」で「請求書の内訳は?」と質問すると見られます。
-              {invoiceSkippedCount > 0 ? ` 他${invoiceSkippedCount}件のPDFは対象外(直近15件まで)。` : ""}
+              {invoiceSkippedCount > 0 ? ` 他${invoiceSkippedCount}件のPDFは対象外(直近50件まで)。` : ""}
             </p>
           </div>
         </section>

@@ -19,7 +19,7 @@
  *   まで(messenger.ts 参照)。それより古いスレッドの求職者はシートのO列で補うか、
  *   ステージ(面談以降)+登録日による近似で集計される。
  */
-import type { Candidate, CandidateThread, CandidateThreadReply } from "./types";
+import type { Candidate, CandidateThread, CandidateThreadReply, ReferralRate } from "./types";
 
 /** 面談を「実施した」ことを表す表現。「面談日程…しました」のような日程調整文は間が長いため一致しない。 */
 const INTERVIEW_DONE_RE = /面談.{0,3}(実施|完了|終了)|面談済み|面談(を|は)?しました/;
@@ -87,4 +87,87 @@ export function fillInterviewDatesFromSlack(
     const fromSlack = byName.get(normalizeName(c.name));
     return fromSlack ? { ...c, interviewedAt: fromSlack } : c;
   });
+}
+
+/** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」。 */
+function referralChannelCore(channel: string): string {
+  return channel.split("(")[0].trim();
+}
+
+/**
+ * スレッド本文(親+返信)から流入経路を検出する。現場の運用ではスレッドに
+ * 「2peace様流入」「マホガニー経由」のように書かれるため、「流入」「経由」を含む行の中に
+ * 単価マスタの経路名(括弧前の本体、大文字小文字無視の部分一致)があればその経路とみなす。
+ */
+export function getSlackInflowChannelsByName(
+  threads: CandidateThread[],
+  referralRates: ReferralRate[],
+): Map<string, string> {
+  const byName = new Map<string, string>();
+  for (const thread of threads) {
+    const lines = [thread.parentText, ...thread.replies.map((r) => r.text)]
+      .flatMap((t) => t.split("\n"))
+      .filter((l) => l.includes("流入") || l.includes("経由"));
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      const hit = referralRates.find((rate) => lower.includes(referralChannelCore(rate.channel).toLowerCase()));
+      if (hit) {
+        byName.set(normalizeName(thread.name), hit.channel);
+        break;
+      }
+    }
+  }
+  return byName;
+}
+
+/**
+ * 送客パートナー費用集計用の求職者一覧を、シート台帳+Slackスレッドから組み立てる(純関数)。
+ * 実運用の求職者データベースはSlack「#求職者」のため、シートに載っていない求職者も
+ * スレッドの記載だけで課金対象に数えられるようにする:
+ * 1. シートの求職者は、面談日(O列優先)と流入経路(K列優先)をSlackの記載で補完する
+ * 2. シートに同名が無いスレッドは、「◯◯様流入」等の経路 と「面談実施」報告 の両方が
+ *    検出できた場合のみ、擬似的な求職者(ステージ=面談)として追加する(面談実施で課金のため、
+ *    面談報告が無いスレッドは追加しない)
+ * 注意: この結果は費用集計(getMarketingSummary)専用。パイプラインやCA別担当数には使わないこと
+ * (Slackだけの擬似求職者が混ざり、画面の求職者数が実態とズレるため)。
+ */
+export function buildReferralCandidatesFromSlack(
+  candidates: Candidate[],
+  threads: CandidateThread[],
+  referralRates: ReferralRate[],
+): Candidate[] {
+  const interviewDates = getSlackInterviewDatesByName(threads);
+  const inflowByName = getSlackInflowChannelsByName(threads, referralRates);
+  const sheetNames = new Set(candidates.map((c) => normalizeName(c.name)));
+
+  const enriched = candidates.map((c) => {
+    const key = normalizeName(c.name);
+    const interviewedAt = c.interviewedAt ?? interviewDates.get(key);
+    const inflowChannel = c.inflowChannel ?? inflowByName.get(key);
+    if (interviewedAt === c.interviewedAt && inflowChannel === c.inflowChannel) return c;
+    return { ...c, interviewedAt, inflowChannel };
+  });
+
+  const synthetic: Candidate[] = [];
+  for (const thread of threads) {
+    const key = normalizeName(thread.name);
+    if (sheetNames.has(key)) continue;
+    const inflowChannel = inflowByName.get(key);
+    const interviewedAt = interviewDates.get(key);
+    if (!inflowChannel || !interviewedAt) continue;
+    synthetic.push({
+      id: `slack-${thread.threadTs}`,
+      name: thread.name,
+      caId: "",
+      stage: "面談",
+      desiredRole: "",
+      expectedAnnualIncome: 0,
+      updatedAt: thread.updatedAt,
+      registeredAt: thread.registeredAt,
+      interviewedAt,
+      latestNote: thread.latestText,
+      inflowChannel,
+    });
+  }
+  return synthetic.length > 0 ? [...enriched, ...synthetic] : enriched;
 }

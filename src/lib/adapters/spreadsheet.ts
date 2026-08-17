@@ -306,10 +306,19 @@ export async function fetchSheetTabTitles(sheetId: string, accessToken: string):
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
     sheetId,
   )}?fields=sheets.properties.title`;
-  const res = await fetch(url, {
+  // Google側の一時的な障害(503 UNAVAILABLE 等)で画面がエラー表示にならないよう、
+  // 5xx のときだけ1秒おいて1回だけやり直す。
+  let res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
+  if (res.status >= 500) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(

@@ -101,11 +101,13 @@ function isPdfFile(file: SlackFile): boolean {
   return (file.name ?? "").toLowerCase().endsWith(".pdf");
 }
 
-// API呼び出し・転送量の抑制のため、投稿日が直近75日以内のものだけを対象にし、
-// ダウンロードするPDFは最大15件までとする(経営者が請求書チャンネルに貼る運用頻度なら
-// 月4〜5件程度のため、75日・15件あれば直近2〜3ヶ月分は十分カバーできる)。
-const RECENT_WINDOW_MS = 75 * 24 * 60 * 60 * 1000;
-const MAX_PDF_DOWNLOADS = 15;
+// 投稿日が直近95日以内のものだけを対象にし、ダウンロードするPDFは最大50件までとする
+// (実運用では月十数件の請求書が届くため、95日・50件で直近2〜3ヶ月分をカバーする。
+// 全件を並列ダウンロードするとサーバーレスの実行時間・メモリを圧迫するため、
+// DOWNLOAD_CONCURRENCY 件ずつに分けてダウンロードする)。
+const RECENT_WINDOW_MS = 95 * 24 * 60 * 60 * 1000;
+const MAX_PDF_DOWNLOADS = 50;
+const DOWNLOAD_CONCURRENCY = 6;
 /** 返信の中のPDFも読むスレッドの上限(API呼び出し数の抑制。#請求書は月数スレッド程度の運用想定)。 */
 const MAX_THREAD_FETCHES = 20;
 // PDFダウンロードのサイズ上限。超過分はパース失敗として扱う(転送量抑制・タイムアウト防止)。
@@ -406,13 +408,19 @@ export class SlackInvoiceSource implements InvoiceSource {
       }
     }
 
-    // API・転送量の抑制のため、直近15件までダウンロードし、超過分は件数のみ数える。
+    // API・転送量の抑制のため、直近 MAX_PDF_DOWNLOADS 件までダウンロードし、超過分は件数のみ数える。
     const accepted = pdfEntries.slice(0, MAX_PDF_DOWNLOADS);
     const skippedCount = pdfEntries.length - accepted.length;
 
-    const invoices = await Promise.all(
-      accepted.map(({ message, file }) => this.buildInvoiceRecord(botToken, channelId, message, file)),
-    );
+    const invoices: ReferralInvoice[] = [];
+    for (let i = 0; i < accepted.length; i += DOWNLOAD_CONCURRENCY) {
+      const chunk = accepted.slice(i, i + DOWNLOAD_CONCURRENCY);
+      invoices.push(
+        ...(await Promise.all(
+          chunk.map(({ message, file }) => this.buildInvoiceRecord(botToken, channelId, message, file)),
+        )),
+      );
+    }
 
     return {
       invoices: invoices.sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime()),

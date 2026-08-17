@@ -34,7 +34,7 @@ import type {
   ReferralPartnerSummary,
   RevenueMonthSummary,
 } from "@/lib/metrics";
-import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
+import { buildReferralCandidatesFromSlack } from "@/lib/slack-interviews";
 import type {
   Candidate,
   CandidateKpiKey,
@@ -128,12 +128,13 @@ export function buildAskSnapshot(
     weeklyTrendRecent5Weeks: weeklyTrend,
     // 集客・広告データ(アイドマ=広告運用シート/リズリアライズ=SNS運用シート)の今月サマリ。
     // marketingData が渡されなかった場合(呼び出し元が未取得)は null。
-    // 求職者の面談日は Slack スレッドの「面談実施」報告からも補完する(送客パートナー費用の集計用)。
+    // 求職者の面談日・流入経路は Slack スレッドの記載(「面談実施」「◯◯様流入」)からも補完する
+    // (送客パートナー費用の集計用。シートに無いスレッドだけの求職者も課金対象に含める)。
     marketingThisMonth: marketingData
       ? getMarketingSummary(
           marketingData,
           bundle.weeklyKpis,
-          fillInterviewDatesFromSlack(bundle.candidates, candidateThreads),
+          buildReferralCandidatesFromSlack(bundle.candidates, candidateThreads, bundle.settings.referralRates),
           bundle.settings.referralRates,
         )
       : null,
@@ -813,12 +814,13 @@ export function answerWithRules(
   if (!text) return FALLBACK_ANSWER;
   const members = bundle.members;
   const scope = resolveTimeScope(text);
-  // 面談日は Slack スレッドの「面談実施」報告からも補完する(シートO列の手入力があれば優先)。
+  // 面談日・流入経路は Slack スレッドの記載(「面談実施」「◯◯様流入」)からも補完する
+  // (シートの手入力があれば優先。シートに無いスレッドだけの求職者も課金対象に含める)。
   const marketingSummary = marketingData
     ? getMarketingSummary(
         marketingData,
         bundle.weeklyKpis,
-        fillInterviewDatesFromSlack(bundle.candidates, candidateThreads),
+        buildReferralCandidatesFromSlack(bundle.candidates, candidateThreads, bundle.settings.referralRates),
         bundle.settings.referralRates,
       )
     : null;
