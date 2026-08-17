@@ -69,6 +69,53 @@ function DiffCaption({ diff, unit }: { diff: number; unit?: string }) {
 
 type Period = "this" | "last";
 
+/** セクション見出し横の「直近6ヶ月」月選択チップ(スマホは横スクロール)。 */
+function MonthChips({
+  months,
+  value,
+  onChange,
+}: {
+  months: { monthKey: string; label: string }[];
+  value: number;
+  onChange: (index: number) => void;
+}) {
+  return (
+    <div className="flex max-w-[70vw] gap-1 overflow-x-auto lg:max-w-none">
+      {months.map((m, i) => (
+        <button
+          key={m.monthKey}
+          type="button"
+          onClick={() => onChange(i)}
+          className="whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium"
+          style={
+            i === value
+              ? { background: "var(--color-navy)", color: "#ffffff", borderColor: "var(--color-navy)" }
+              : {
+                  background: "var(--color-card)",
+                  color: "var(--color-text-muted)",
+                  borderColor: "var(--color-border)",
+                }
+          }
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 月キー(YYYY-MM)の前月キーを返す。 */
+function prevMonthKey(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  const d = new Date(y, m - 2, 15);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** 月キー(YYYY-MM)を「M月」の短い表示にする。 */
+function shortMonthLabel(monthKey: string): string {
+  return `${Number(monthKey.split("-")[1])}月`;
+}
+
 /** セクション見出し横の「今月/先月」切り替えトグル。 */
 function PeriodToggle({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
   return (
@@ -176,9 +223,8 @@ interface DashboardViewProps {
   sourceErrorMessage?: string;
   slackStatus: SourceStatus;
   slackErrorMessage?: string;
-  marketingSummary: MarketingSummary;
-  /** 先月分の集客・広告サマリ(「先月」トグル用)。 */
-  marketingSummaryLastMonth: MarketingSummary;
+  /** 集客・広告セクションの月選択用サマリ(直近6ヶ月、今月が先頭)。 */
+  marketingMonths: { monthKey: string; label: string; summary: MarketingSummary }[];
   marketingStatus: SourceStatus;
   marketingErrorMessage?: string;
   /** 送客パートナー請求書(Slack「#請求書」)の自動照合結果。 */
@@ -203,8 +249,7 @@ export default function DashboardView({
   sourceErrorMessage,
   slackStatus,
   slackErrorMessage,
-  marketingSummary,
-  marketingSummaryLastMonth,
+  marketingMonths,
   marketingStatus,
   marketingErrorMessage,
   invoiceChecks,
@@ -217,9 +262,9 @@ export default function DashboardView({
   primaryMonths,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標は直近6ヶ月から月を選択、集客/広告・送客売上・各ファネルは今月⇄先月を切り替えられる。
+  // 主要指標・集客/広告は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
   const [primaryMonthIdx, setPrimaryMonthIdx] = useState(0);
-  const [marketingPeriod, setMarketingPeriod] = useState<Period>("this");
+  const [marketingMonthIdx, setMarketingMonthIdx] = useState(0);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
@@ -236,6 +281,11 @@ export default function DashboardView({
   // 月ごとの支出合計(新しい月順)と、送客パートナー請求書の差異件数(警告表示用)。
   const invoiceMonthlyTotals = getInvoiceMonthlyTotals(invoiceChecks.map((row) => row.invoice));
   const invoiceMismatchCount = invoiceChecks.filter((row) => row.status === "mismatch").length;
+  // 金額を読み取れなかった請求書の一覧(理由と一緒に表示する。多すぎる場合は5件まで)。
+  const unreadableInvoices = invoiceChecks
+    .map((row) => row.invoice)
+    .filter((inv) => inv.amountYen === undefined);
+  const unreadableInvoicesShown = unreadableInvoices.slice(0, 5);
   const revenueBadge = sourceBadgeLabel("revenue", revenueStatus);
   // 送客売上が1件も無く、かつ機能未設定(demo=REVENUE_SHEET_ID未設定 or デモモード)の場合は
   // セクション自体を非表示にする(請求書チェックと同じ「機能OFF」扱い)。
@@ -250,16 +300,20 @@ export default function DashboardView({
   const moneyInYen = pm.moneyInYen;
   const moneyOutYen = pm.moneyOutYen;
   const moneyNetYen = moneyInYen - moneyOutYen;
-  const rvReferralPartners =
-    revenuePeriod === "this" ? marketingSummary.referralPartners : marketingSummaryLastMonth.referralPartners;
+  const rvReferralPartners = (revenuePeriod === "this" ? marketingMonths[0] : marketingMonths[1]).summary
+    .referralPartners;
   const referralProfit = getReferralProfit(rv, rvReferralPartners);
   const REVENUE_DETAIL_LIMIT = 10;
   const revenueDetailRows = rv.records.slice(0, REVENUE_DETAIL_LIMIT);
   const revenueDetailHiddenCount = rv.records.length - revenueDetailRows.length;
-  // 集客・広告セクションの表示対象(今月/先月トグルで切替)。先月表示時、送客パートナー表の
-  // 2組の列は「先月/先々月」になる。
-  const mk = marketingPeriod === "this" ? marketingSummary : marketingSummaryLastMonth;
-  const mkPeriodLabels: [string, string] = marketingPeriod === "this" ? ["今月", "先月"] : ["先月", "先々月"];
+  // 集客・広告セクションの表示対象(直近6ヶ月から月選択)。送客パートナー表の2組の列は
+  // 「選択月/その前月」になる(サマリは前月分も内包している)。
+  const mkEntry = marketingMonths[marketingMonthIdx] ?? marketingMonths[0];
+  const mk = mkEntry.summary;
+  const mkPeriodLabels: [string, string] = [
+    shortMonthLabel(mkEntry.monthKey),
+    shortMonthLabel(prevMonthKey(mkEntry.monthKey)),
+  ];
   const googleAd = mk.channels.find((c) => c.channel === "Google広告");
   const metaAd = mk.channels.find((c) => c.channel === "Meta広告");
   const { transitionRates } = mk;
@@ -312,27 +366,7 @@ export default function DashboardView({
             主要指標({formatMonthLabel(pm.monthKey)})
           </h2>
           <div className="flex items-center gap-2">
-            <div className="flex max-w-[70vw] gap-1 overflow-x-auto lg:max-w-none">
-              {primaryMonths.map((m, i) => (
-                <button
-                  key={m.monthKey}
-                  type="button"
-                  onClick={() => setPrimaryMonthIdx(i)}
-                  className="whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                  style={
-                    i === primaryMonthIdx
-                      ? { background: "var(--color-navy)", color: "#ffffff", borderColor: "var(--color-navy)" }
-                      : {
-                          background: "var(--color-card)",
-                          color: "var(--color-text-muted)",
-                          borderColor: "var(--color-border)",
-                        }
-                  }
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            <MonthChips months={primaryMonths} value={primaryMonthIdx} onChange={setPrimaryMonthIdx} />
             <SourceBadge label={sheetsBadge} />
           </div>
         </div>
@@ -366,22 +400,18 @@ export default function DashboardView({
             value={`${primary.candidatePlacements.value}名`}
             caption={<DiffCaption diff={primary.candidatePlacements.diff} unit="名" />}
           />
-          {showRevenueSection ? (
-            // 経営者の要望により、「成功報酬」は週次KPIの法人契約金額ではなく
-            // 翔び台請求書関係シート(売上シート)の対象月合計を表示する。
-            <KpiCard
-              label="成功報酬(貰うお金)"
-              value={formatYen(moneyInYen)}
-              caption="翔び台請求書関係シートの対象月合計"
-              accent
-            />
-          ) : (
-            <KpiCard
-              label="新規契約金額(KPI表)"
-              value={`${primary.contractAmountMan.value.toLocaleString("ja-JP")}万円`}
-              caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
-            />
-          )}
+          {/* 経営者の要望により、「成功報酬」は週次KPIの法人契約金額ではなく
+              翔び台請求書関係シート(売上シート)の入金月合計を表示する(未連携時は案内を表示)。 */}
+          <KpiCard
+            label="成功報酬(貰うお金)"
+            value={formatYen(moneyInYen)}
+            caption={
+              showRevenueSection
+                ? `${shortMonthLabel(pm.monthKey)}末入金分(翔び台請求書関係シート)`
+                : "未連携: Vercelに REVENUE_SHEET_ID を設定すると表示されます"
+            }
+            accent
+          />
         </div>
         {/* お金の出入り(支出=広告+SNS+送客費用+その他の支払い)。売上シート未導入の間は非表示。 */}
         {showRevenueSection && (
@@ -411,14 +441,14 @@ export default function DashboardView({
         )}
       </section>
 
-      {/* 1.5 集客・広告(今月/先月トグル) */}
+      {/* 1.5 集客・広告(直近6ヶ月の月選択) */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            集客・広告({marketingPeriod === "this" ? "今月" : "先月"})
+            集客・広告({formatMonthLabel(mkEntry.monthKey)})
           </h2>
           <div className="flex items-center gap-2">
-            <PeriodToggle period={marketingPeriod} onChange={setMarketingPeriod} />
+            <MonthChips months={marketingMonths} value={marketingMonthIdx} onChange={setMarketingMonthIdx} />
             <SourceBadge label={marketingBadge} />
           </div>
         </div>
@@ -623,6 +653,37 @@ export default function DashboardView({
                 </p>
               )}
             </div>
+            {unreadableInvoicesShown.length > 0 && (
+              <div
+                className="mt-2 flex flex-col gap-1 rounded-lg border px-3 py-2"
+                style={{ borderColor: "var(--color-border)" }}
+              >
+                <p className="text-[11px] font-semibold" style={{ color: "var(--color-navy)" }}>
+                  金額を読み取れなかったPDF({unreadableInvoices.length}件・合計に未反映)
+                </p>
+                {unreadableInvoicesShown.map((inv, i) => (
+                  <p key={i} className="text-[11px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
+                    ・{inv.fileName} — {inv.parseNote ?? "請求金額を読み取れませんでした。"}
+                    {inv.permalink && (
+                      <a
+                        href={inv.permalink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-1 font-semibold"
+                        style={{ color: "var(--color-gold)" }}
+                      >
+                        Slackで開く →
+                      </a>
+                    )}
+                  </p>
+                ))}
+                {unreadableInvoices.length > unreadableInvoicesShown.length && (
+                  <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                    他{unreadableInvoices.length - unreadableInvoicesShown.length}件。
+                  </p>
+                )}
+              </div>
+            )}
             {invoiceMismatchCount > 0 && (
               <p
                 className="mt-2 rounded-lg border px-3 py-2 text-[11px] font-medium"
@@ -795,7 +856,7 @@ export default function DashboardView({
               </span>
             </div>
             <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-              タブ「YYYY年M月」=対象月。入金は翌月末。経路の対応付けは部分一致。
+              入金月ベースで集計(タブ「YYYY年M月」の内容は翌月末入金のため、翌月分として表示)。経路の対応付けは部分一致。
             </p>
           </div>
         </section>

@@ -182,11 +182,25 @@ const MONTH_ONLY_RE = /(\d{1,2})\s*月\s*分/;
  * どの表記も見つからなければ、請求書は翌月に届く運用を踏まえて「投稿月の前月」を推定値として使う。
  */
 function detectTargetMonth(text: string, postedAt: Date): { month: string; estimated: boolean } {
+  // どの表記も見つからない・信頼できない場合の推定値(投稿月の前月。請求書は翌月に届く運用)。
+  const fallback = () => {
+    const estimated = new Date(postedAt.getFullYear(), postedAt.getMonth() - 1, 1);
+    return { month: monthKey(estimated.getFullYear(), estimated.getMonth() + 1), estimated: true };
+  };
+  // 妥当性チェック: 対象月が投稿日から大きく離れている(7ヶ月以上前 or 2ヶ月以上未来)場合は、
+  // 請求書内の別の日付(契約日・登録番号など)を対象月と誤認したとみなし、推定値に切り替える
+  // (例: PDF内の「2023年7月」を拾って「2023年7月分の支払い」と表示してしまう誤検出の防止)。
+  const validated = (year: number, month: number): { month: string; estimated: boolean } => {
+    const diff = (postedAt.getFullYear() * 12 + postedAt.getMonth()) - (year * 12 + (month - 1));
+    if (month < 1 || month > 12 || diff > 6 || diff < -1) return fallback();
+    return { month: monthKey(year, month), estimated: false };
+  };
+
   const kanji = YEAR_MONTH_KANJI_RE.exec(text);
-  if (kanji) return { month: monthKey(Number(kanji[1]), Number(kanji[2])), estimated: false };
+  if (kanji) return validated(Number(kanji[1]), Number(kanji[2]));
 
   const slash = YEAR_MONTH_SLASH_RE.exec(text);
-  if (slash) return { month: monthKey(Number(slash[1]), Number(slash[2])), estimated: false };
+  if (slash) return validated(Number(slash[1]), Number(slash[2]));
 
   const monthOnly = MONTH_ONLY_RE.exec(text);
   if (monthOnly) {
@@ -194,11 +208,10 @@ function detectTargetMonth(text: string, postedAt: Date): { month: string; estim
     let year = postedAt.getFullYear();
     const candidate = new Date(year, month - 1, 1);
     if (candidate.getTime() > postedAt.getTime()) year -= 1;
-    return { month: monthKey(year, month), estimated: false };
+    return validated(year, month);
   }
 
-  const estimated = new Date(postedAt.getFullYear(), postedAt.getMonth() - 1, 1);
-  return { month: monthKey(estimated.getFullYear(), estimated.getMonth() + 1), estimated: true };
+  return fallback();
 }
 
 const AMOUNT_KEYWORDS = ["合計", "ご請求金額", "請求金額", "総額"];

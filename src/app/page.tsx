@@ -75,6 +75,23 @@ export default async function TodayDashboardPage() {
     invoicesResult.invoices,
     now,
   );
+  // 集客・広告セクションの月選択(直近6ヶ月)。主要指標と同じ月の並び・ラベルを使う。
+  const marketingMonths = primaryMonths.map((m, i) => ({
+    monthKey: m.monthKey,
+    label: m.label,
+    summary:
+      i === 0
+        ? marketingSummary
+        : i === 1
+          ? marketingSummaryLastMonth
+          : getMarketingSummary(
+              marketingResult.data,
+              bundle.weeklyKpis,
+              referralCandidates,
+              bundle.settings.referralRates,
+              new Date(now.getFullYear(), now.getMonth() - i, 15),
+            ),
+  }));
 
   return (
     <DashboardView
@@ -85,8 +102,7 @@ export default async function TodayDashboardPage() {
       sourceErrorMessage={bundle.sourceErrorMessage}
       slackStatus={bundle.slackStatus}
       slackErrorMessage={bundle.slackErrorMessage}
-      marketingSummary={marketingSummary}
-      marketingSummaryLastMonth={marketingSummaryLastMonth}
+      marketingMonths={marketingMonths}
       marketingStatus={marketingResult.status}
       marketingErrorMessage={marketingResult.errorMessage}
       invoiceChecks={invoiceChecks}

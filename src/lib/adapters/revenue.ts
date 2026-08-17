@@ -220,7 +220,12 @@ export class GoogleSheetsRevenueSource implements RevenueSource {
 
     const records: RevenueRecord[] = [];
     monthTabs.forEach((tab, i) => {
-      records.push(...parseRevenueTab(allRows[i] ?? [], tab.title, monthKey(tab.year, tab.month)));
+      // 入金月ベースで集計する: タブ「2026年6月」の内容は7月末入金のため、month は「2026-07」
+      // (タブ名の翌月)とする。経営者は「7月末に入る187万」のように入金月で把握しているため。
+      const paidAt = new Date(tab.year, tab.month, 15); // tab.month は1始まりのため、そのまま渡すと翌月になる
+      records.push(
+        ...parseRevenueTab(allRows[i] ?? [], tab.title, monthKey(paidAt.getFullYear(), paidAt.getMonth() + 1)),
+      );
     });
     return records;
   }

@@ -402,7 +402,10 @@ export interface ReferralInvoice {
  * から読み取る。`ReferralInvoice`(#請求書=送客パートナーへ「払う」費用)とは対になる、逆方向のお金の流れ。
  */
 export interface RevenueRecord {
-  /** 対象月(YYYY-MM)。タブ名「2026年6月」由来。入金は翌月末の運用 */
+  /**
+   * 入金月(YYYY-MM)。タブ「2026年6月」(6月請求分)は7月末入金のため "2026-07" になる
+   * (経営者は「7月末に入る187万」のように入金月で把握しているため、入金月ベースで集計する)。
+   */
   month: string;
   /** 流入経路(送客パートナー名等) */
   inflowChannel: string;
