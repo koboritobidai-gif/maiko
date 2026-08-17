@@ -5,7 +5,6 @@ import { useState } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
-import StatusBadge from "@/components/StatusBadge";
 import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit } from "@/lib/metrics";
 import type {
   DashboardSummary,
@@ -1067,8 +1066,8 @@ export default function DashboardView({
       </section>
       </div>
 
-      {/* 5-6. 求職者パイプライン・プロジェクト進捗(lgでは左右2カラム) */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+      {/* 5. 求職者パイプライン(プロジェクト進捗セクションは経営者の指示で廃止) */}
+      <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1116,49 +1115,6 @@ export default function DashboardView({
         </div>
       </section>
 
-      {/* 6. プロジェクト進捗 */}
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            プロジェクト進捗
-          </h2>
-          <SourceBadge label={sheetsBadge} />
-        </div>
-        <div className="flex flex-col gap-2.5">
-          {summary.projects.map((p) => (
-            <div key={p.id} className="card flex flex-col gap-2 p-3.5">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[13px] font-semibold" style={{ color: "var(--color-navy)" }}>
-                  {p.name}
-                </span>
-                <StatusBadge status={p.status} />
-              </div>
-              <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                {p.department} ・ {p.owner}
-              </p>
-              <ProgressBar
-                percent={p.progressPercent}
-                color={
-                  p.status === "遅延"
-                    ? "var(--color-bad)"
-                    : p.status === "注意"
-                      ? "var(--color-warn)"
-                      : "var(--color-good)"
-                }
-              />
-              <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                進捗 {p.progressPercent}% ・ 期日 {formatDate(p.dueDate)}
-              </span>
-              <p
-                className="rounded-lg px-2.5 py-1.5 text-[12px]"
-                style={{ background: "var(--color-cream)", color: "var(--color-text)" }}
-              >
-                {p.latestComment}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
       </div>
 
       {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に) */}
