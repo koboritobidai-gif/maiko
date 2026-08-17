@@ -694,6 +694,17 @@ export const referralInvoices: ReferralInvoice[] = [
     postedAt: daysAgo(3, 9, 50),
     permalink: demoInvoicePermalink(4),
   },
+  {
+    // 送客パートナー以外の請求書(経路不明扱い)。「出ていくお金(全体)」の「その他の支払い」に
+    // 合算されるケースを見せるデモ(getOtherInvoiceCosts 参照)。
+    partnerChannel: undefined,
+    amountYen: 33_000,
+    targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
+    targetMonthIsEstimated: false,
+    fileName: `クラウド勤怠システム利用料_${REFERRAL_INVOICE_TARGET_MONTH_LABEL}.pdf`,
+    postedAt: daysAgo(2, 16, 20),
+    permalink: demoInvoicePermalink(5),
+  },
 ];
 
 // ─────────────────────────────────────────────

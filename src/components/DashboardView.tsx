@@ -7,7 +7,13 @@ import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
 import StatusBadge from "@/components/StatusBadge";
 import { getCandidatesByCa, getReferralProfit } from "@/lib/metrics";
-import type { DashboardSummary, InvoiceCheckRow, MarketingSummary, RevenueMonthSummary } from "@/lib/metrics";
+import type {
+  DashboardSummary,
+  InvoiceCheckRow,
+  MarketingSummary,
+  OtherInvoiceCosts,
+  RevenueMonthSummary,
+} from "@/lib/metrics";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
@@ -228,6 +234,8 @@ interface DashboardViewProps {
   revenueSummary: { thisMonth: RevenueMonthSummary; lastMonth: RevenueMonthSummary };
   revenueStatus: SourceStatus;
   revenueErrorMessage?: string;
+  /** #請求書のうち送客パートナー以外の請求書(その他の支払い)の月別合計。 */
+  otherInvoiceCosts: { thisMonth: OtherInvoiceCosts; lastMonth: OtherInvoiceCosts };
 }
 
 export default function DashboardView({
@@ -249,12 +257,15 @@ export default function DashboardView({
   revenueSummary,
   revenueStatus,
   revenueErrorMessage,
+  otherInvoiceCosts,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標・集客/広告・送客売上それぞれ独立して今月⇄先月を切り替えられる。
+  // 主要指標・集客/広告・送客売上・各ファネルそれぞれ独立して今月⇄先月を切り替えられる。
   const [primaryPeriod, setPrimaryPeriod] = useState<Period>("this");
   const [marketingPeriod, setMarketingPeriod] = useState<Period>("this");
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
+  const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
+  const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
   if (!role) return null;
 
   const profile = getRoleProfile(role);
@@ -273,6 +284,14 @@ export default function DashboardView({
   // 送客売上セクションの表示対象(今月/先月トグルで切替)。対応する送客パートナー費用(単価マスタ)は
   // 今月なら marketingSummary、先月なら marketingSummaryLastMonth の referralPartners を使う。
   const rv = revenuePeriod === "this" ? revenueSummary.thisMonth : revenueSummary.lastMonth;
+  // お金の出入りカード(主要指標セクション下段。主要指標の今月/先月トグルに連動する)。
+  // 入=送客売上シートの対象月合計 / 出=広告+SNS+送客パートナー費用(totalCost)+その他の支払い
+  // (#請求書のうち送客パートナー以外の請求書。パートナー分は計算値側で計上済みのため除外し二重計上を防ぐ)。
+  const moneyInYen = primaryPeriod === "this" ? revenueSummary.thisMonth.totalYen : revenueSummary.lastMonth.totalYen;
+  const moneyOtherCosts = primaryPeriod === "this" ? otherInvoiceCosts.thisMonth : otherInvoiceCosts.lastMonth;
+  const moneyOutYen =
+    (primaryPeriod === "this" ? marketingSummary : marketingSummaryLastMonth).totalCost + moneyOtherCosts.totalYen;
+  const moneyNetYen = moneyInYen - moneyOutYen;
   const rvReferralPartners =
     revenuePeriod === "this" ? marketingSummary.referralPartners : marketingSummaryLastMonth.referralPartners;
   const referralProfit = getReferralProfit(rv, rvReferralPartners);
@@ -294,9 +313,13 @@ export default function DashboardView({
 
   const maxStageCount = Math.max(1, ...summary.pipeline.map((s) => s.count));
 
-  const { candidateFunnel, corporateFunnel, weeklyTrend } = summary;
-  // 主要指標カードの表示対象(今月/先月トグルで切替)。
+  const { weeklyTrend } = summary;
+  // 主要指標カード・各ファネルの表示対象(今月/先月トグルで切替)。
   const primary = primaryPeriod === "this" ? summary.primary : summaryLastMonth.primary;
+  const candidateFunnel =
+    candidateFunnelPeriod === "this" ? summary.candidateFunnel : summaryLastMonth.candidateFunnel;
+  const corporateFunnel =
+    corporateFunnelPeriod === "this" ? summary.corporateFunnel : summaryLastMonth.corporateFunnel;
   const candidateFunnelMax = Math.max(1, candidateFunnel.pv);
   const corporateFunnelMax = Math.max(
     1,
@@ -371,6 +394,38 @@ export default function DashboardView({
             caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
           />
         </div>
+        {/* お金の出入り(入金=送客売上シート / 支出=広告+SNS+送客費用)。売上シート未導入の間は非表示。 */}
+        {showRevenueSection && (
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-4">
+            <KpiCard
+              label="入ってくるお金(送客売上)"
+              value={formatYen(moneyInYen)}
+              caption="翔び台請求書関係シートの対象月合計"
+              accent
+            />
+            <KpiCard
+              label="出ていくお金(全体)"
+              value={formatYen(moneyOutYen)}
+              caption={`広告+SNS+送客費用+その他の支払い${
+                moneyOtherCosts.unreadableCount > 0
+                  ? `(※#請求書に金額を読み取れないPDFが${moneyOtherCosts.unreadableCount}件あり、未反映)`
+                  : ""
+              }`}
+            />
+            <KpiCard
+              label="差引(売上−費用)"
+              value={`${moneyNetYen < 0 ? "-" : ""}${formatYen(Math.abs(moneyNetYen))}`}
+              caption={
+                <span
+                  className="text-[11px] font-medium"
+                  style={{ color: moneyNetYen >= 0 ? "var(--color-good)" : "var(--color-bad)" }}
+                >
+                  {moneyNetYen >= 0 ? "黒字" : "赤字"}
+                </span>
+              }
+            />
+          </div>
+        )}
       </section>
 
       {/* 1.5 集客・広告(今月/先月トグル) */}
@@ -795,9 +850,12 @@ export default function DashboardView({
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            求職者ファネル(月内)
+            求職者ファネル({candidateFunnelPeriod === "this" ? "今月" : "先月"})
           </h2>
-          <SourceBadge label={sheetsBadge} />
+          <div className="flex items-center gap-2">
+            <PeriodToggle period={candidateFunnelPeriod} onChange={setCandidateFunnelPeriod} />
+            <SourceBadge label={sheetsBadge} />
+          </div>
         </div>
         <div className="card flex flex-col gap-3 p-3.5">
           <div className="flex flex-col gap-2.5">
@@ -842,9 +900,12 @@ export default function DashboardView({
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            法人営業ファネル(月内)
+            法人営業ファネル({corporateFunnelPeriod === "this" ? "今月" : "先月"})
           </h2>
-          <SourceBadge label={sheetsBadge} />
+          <div className="flex items-center gap-2">
+            <PeriodToggle period={corporateFunnelPeriod} onChange={setCorporateFunnelPeriod} />
+            <SourceBadge label={sheetsBadge} />
+          </div>
         </div>
         <div className="card flex flex-col gap-2.5 p-3.5">
           <FunnelRow

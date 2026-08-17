@@ -3,7 +3,13 @@ import { loadCandidateThreads } from "@/lib/candidate-threads";
 import { loadDataBundle } from "@/lib/data-bundle";
 import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
-import { getDashboardSummary, getInvoiceChecks, getMarketingSummary, getRevenueSummary } from "@/lib/metrics";
+import {
+  getDashboardSummary,
+  getInvoiceChecks,
+  getMarketingSummary,
+  getOtherInvoiceCosts,
+  getRevenueSummary,
+} from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
@@ -50,6 +56,9 @@ export default async function TodayDashboardPage() {
   );
   // 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
+  // #請求書のうち送客パートナー以外の請求書(=広告費・送客費用に含まれないその他の支払い)。
+  // 「出ていくお金」の全体額に合算する。
+  const otherInvoiceCosts = getOtherInvoiceCosts(invoicesResult.invoices, now);
 
   return (
     <DashboardView
@@ -71,6 +80,7 @@ export default async function TodayDashboardPage() {
       revenueSummary={revenueSummary}
       revenueStatus={revenueResult.status}
       revenueErrorMessage={revenueResult.errorMessage}
+      otherInvoiceCosts={otherInvoiceCosts}
     />
   );
 }

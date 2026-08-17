@@ -800,6 +800,39 @@ export interface InvoiceCheckRow {
  * - 金額が完全一致すれば "match"、そうでなければ "mismatch"(diffYen = 請求額 − アプリ計算値)。
  * - 並びは投稿日の新しい順。
  */
+/** 対象月ごとの「その他の支払い」(#請求書のうち送客パートナー以外の請求書)の合計。 */
+export interface OtherInvoiceCosts {
+  totalYen: number;
+  /** 合計に含めた請求書の件数 */
+  count: number;
+  /** 金額を読み取れず合計に含められなかった件数(画面で注意書きを出すため) */
+  unreadableCount: number;
+}
+
+/**
+ * #請求書のうち送客パートナー以外の請求書(partnerChannel が特定できないもの)を、対象月ごとに合計する。
+ * 「出ていくお金」の全体額 = 広告+SNS+送客パートナー費用(面談ベースの計算値)+この「その他の支払い」。
+ * 送客パートナーの請求書は計算値側で既に費用計上しているため、ここに含めると二重計上になる(除外する)。
+ */
+export function getOtherInvoiceCosts(
+  invoices: ReferralInvoice[],
+  now: Date = new Date(),
+): { thisMonth: OtherInvoiceCosts; lastMonth: OtherInvoiceCosts } {
+  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const thisKey = key(now);
+  const lastKey = key(new Date(now.getFullYear(), now.getMonth() - 1, 15));
+  const summarize = (monthKey: string): OtherInvoiceCosts => {
+    const target = invoices.filter((inv) => !inv.partnerChannel && inv.targetMonth === monthKey);
+    const readable = target.filter((inv) => inv.amountYen !== undefined);
+    return {
+      totalYen: readable.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0),
+      count: readable.length,
+      unreadableCount: target.length - readable.length,
+    };
+  };
+  return { thisMonth: summarize(thisKey), lastMonth: summarize(lastKey) };
+}
+
 export function getInvoiceChecks(
   invoices: ReferralInvoice[],
   referralPartnersThisMonth: ReferralPartnerSummary[],
