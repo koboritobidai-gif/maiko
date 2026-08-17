@@ -477,6 +477,31 @@ export default function DashboardView({
           <KpiCard label="面談実績合計" value={`${mk.totalInterviews.toLocaleString("ja-JP")}件`} />
           <KpiCard label="面接回数" value={`${mk.interviewsCombined.toLocaleString("ja-JP")}件`} />
         </div>
+        {/* 面談単価カード: 全体 = 費用合計(広告+SNS+送客) ÷ 面談実績合計。
+            アイドマ = Google+Meta広告の費用 ÷ 面談数、リズリアライズ = SNSの費用 ÷ 面談数。 */}
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-4">
+          <KpiCard
+            label="面談単価(全体)"
+            value={formatYenOrDash(mk.totalInterviews > 0 ? mk.totalCost / mk.totalInterviews : null)}
+            caption="費用合計(広告+SNS+送客) ÷ 面談実績合計"
+            accent
+          />
+          <KpiCard
+            label="面談単価(アイドマ広告)"
+            value={formatYenOrDash(
+              (googleAd?.interviews ?? 0) + (metaAd?.interviews ?? 0) > 0
+                ? ((googleAd?.cost ?? 0) + (metaAd?.cost ?? 0)) /
+                    ((googleAd?.interviews ?? 0) + (metaAd?.interviews ?? 0))
+                : null,
+            )}
+            caption="Google+Meta広告の費用 ÷ 面談数"
+          />
+          <KpiCard
+            label="面談単価(リズリアライズ)"
+            value={formatYenOrDash(mk.sns.costPerInterview)}
+            caption="SNS運用の費用 ÷ 面談数"
+          />
+        </div>
         <div className="card overflow-x-auto p-3.5">
           <table className="w-full min-w-[560px] text-left text-[12px]">
             <thead>
