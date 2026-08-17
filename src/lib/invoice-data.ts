@@ -44,11 +44,34 @@ async function loadDemoInvoices(status: SourceStatus): Promise<InvoiceDataResult
   return { invoices, skippedCount, status };
 }
 
+/**
+ * 手動補正: 金額を読み取れないPDF(スキャン画像等)に、経営者確認済みの金額を割り当てる。
+ * 2026年7月支払いスレッドの読取不可2件は、いずれも¥16,500と確認済み(計¥33,000)。
+ * 対象月の読取不可PDFすべてに一律で適用されるため、その月に新たな読取不可PDFが増えた場合は
+ * この補正を見直すこと。
+ */
+const MANUAL_UNREADABLE_AMOUNTS: { month: string; amountYen: number }[] = [
+  { month: "2026-07", amountYen: 16_500 },
+];
+
+function applyManualInvoiceFixes(invoices: ReferralInvoice[]): ReferralInvoice[] {
+  return invoices.map((inv) => {
+    if (inv.amountYen !== undefined) return inv;
+    const fix = MANUAL_UNREADABLE_AMOUNTS.find((f) => f.month === inv.targetMonth);
+    if (!fix) return inv;
+    return {
+      ...inv,
+      amountYen: fix.amountYen,
+      parseNote: `金額を自動で読み取れないPDFのため、経営者確認の¥${fix.amountYen.toLocaleString("ja-JP")}を手動計上。`,
+    };
+  });
+}
+
 async function loadLive(): Promise<InvoiceDataResult> {
   try {
     const source = getInvoiceSource();
     const { invoices, skippedCount } = await source.getReferralInvoices();
-    return { invoices, skippedCount, status: "live" };
+    return { invoices: applyManualInvoiceFixes(invoices), skippedCount, status: "live" };
   } catch (error) {
     if (isNextDynamicUsageError(error)) throw error;
     console.warn(
