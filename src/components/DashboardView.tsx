@@ -343,26 +343,37 @@ export default function DashboardView({
           <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
             送客パートナー(成果報酬)
           </p>
-          <table className="w-full min-w-[420px] text-left text-[12px]">
+          <table className="w-full min-w-[560px] text-left text-[12px]">
             <thead>
               <tr style={{ color: "var(--color-text-muted)" }}>
                 <th className="pb-2 pr-2 font-medium">経路</th>
                 <th className="pb-2 pr-2 text-right font-medium">単価</th>
-                <th className="pb-2 pr-2 text-right font-medium">面談人数</th>
-                <th className="pb-2 text-right font-medium">費用(月内)</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談(今月)</th>
+                <th className="pb-2 pr-2 text-right font-medium">費用(今月)</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談(先月)</th>
+                <th className="pb-2 text-right font-medium">費用(先月)</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-              {marketingSummary.referralPartners.map((r) => (
-                <tr key={r.channel}>
-                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
-                    {r.channel}
-                  </td>
-                  <td className="py-2 pr-2 text-right">{formatYen(r.unitCostYen)}</td>
-                  <td className="py-2 pr-2 text-right">{r.count.toLocaleString("ja-JP")}名</td>
-                  <td className="py-2 text-right">{formatYen(r.costYen)}</td>
-                </tr>
-              ))}
+              {marketingSummary.referralPartners.map((r) => {
+                const last = marketingSummary.referralPartnersLastMonth.find((l) => l.channel === r.channel);
+                return (
+                  <tr key={r.channel}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {r.channel}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{formatYen(r.unitCostYen)}</td>
+                    <td className="py-2 pr-2 text-right">{r.count.toLocaleString("ja-JP")}名</td>
+                    <td className="py-2 pr-2 text-right">{formatYen(r.costYen)}</td>
+                    <td className="py-2 pr-2 text-right" style={{ color: "var(--color-text-muted)" }}>
+                      {(last?.count ?? 0).toLocaleString("ja-JP")}名
+                    </td>
+                    <td className="py-2 text-right" style={{ color: "var(--color-text-muted)" }}>
+                      {formatYen(last?.costYen ?? 0)}
+                    </td>
+                  </tr>
+                );
+              })}
               <tr style={{ fontWeight: 700 }}>
                 <td className="py-2 pr-2 whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
                   合計
@@ -374,12 +385,21 @@ export default function DashboardView({
                     .toLocaleString("ja-JP")}
                   名
                 </td>
-                <td className="py-2 text-right">{formatYen(marketingSummary.referralTotalYen)}</td>
+                <td className="py-2 pr-2 text-right">{formatYen(marketingSummary.referralTotalYen)}</td>
+                <td className="py-2 pr-2 text-right" style={{ color: "var(--color-text-muted)" }}>
+                  {marketingSummary.referralPartnersLastMonth
+                    .reduce((sum, r) => sum + r.count, 0)
+                    .toLocaleString("ja-JP")}
+                  名
+                </td>
+                <td className="py-2 text-right" style={{ color: "var(--color-text-muted)" }}>
+                  {formatYen(marketingSummary.referralLastMonthTotalYen)}
+                </td>
               </tr>
             </tbody>
           </table>
           <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。月の判定は面談日(未入力時は登録日→更新日)。
+            対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。今月・先月とも面談日(未入力時は登録日→更新日)の月で判定。
           </p>
         </div>
       </section>

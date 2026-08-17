@@ -714,6 +714,10 @@ export interface MarketingSummary {
   referralPartners: ReferralPartnerSummary[];
   /** 送客パートナー費用合計(円)。 */
   referralTotalYen: number;
+  /** 送客パートナーの先月サマリ(同じ課金ルールで先月に面談実施した人数・費用)。単価マスタ順。 */
+  referralPartnersLastMonth: ReferralPartnerSummary[];
+  /** 送客パートナー費用の先月合計(円)。 */
+  referralLastMonthTotalYen: number;
   /** 広告費用合計(Google広告+Meta広告)+SNS月額+送客パートナー費用。 */
   totalCost: number;
   totalLineRegs: number;
@@ -738,6 +742,10 @@ export function getMarketingSummary(
   const sns = summarizeSns(data.snsWeekly, data.snsMonthlyCostYen, now);
   const referralPartners = getReferralPartnerSummary(candidates, referralRates, now);
   const referralTotalYen = referralPartners.reduce((sum, r) => sum + r.costYen, 0);
+  // 先月分。基準日は先月15日(月初・月末の日数差の影響を受けない)。
+  const lastMonthReference = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+  const referralPartnersLastMonth = getReferralPartnerSummary(candidates, referralRates, lastMonthReference);
+  const referralLastMonthTotalYen = referralPartnersLastMonth.reduce((sum, r) => sum + r.costYen, 0);
 
   const adClicks = google.clicks + meta.clicks;
   const adLineRegs = google.lineRegs + meta.lineRegs;
@@ -749,6 +757,8 @@ export function getMarketingSummary(
     sns,
     referralPartners,
     referralTotalYen,
+    referralPartnersLastMonth,
+    referralLastMonthTotalYen,
     totalCost: google.cost + meta.cost + sns.cost + referralTotalYen,
     totalLineRegs: adLineRegs + sns.lineRegs,
     totalReservations: adReservations,

@@ -183,7 +183,9 @@ referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー
 channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。**面談実施で課金**のため、
 対象人数は流入経路が一致し面談を実施した求職者〈面談以降のステージ、または辞退でも面談日あり。面談前の
 辞退は対象外〉で、月の帰属は面談日〈未入力時は登録日→更新日〉基準です)、
-referralTotalYen(送客パートナー費用の合計)、totalCost/totalLineRegs/totalReservations/totalInterviews
+referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
+(同じ課金ルールでの先月の4経路サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
+totalCost/totalLineRegs/totalReservations/totalInterviews
 (広告+SNS+送客パートナー合算。totalCost にのみ送客パートナー費用を含む)、transitionRates(遷移率まとめ)が
 含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
 「送客費用は?」「送客パートナーは?」のような全体質問には4経路+合計を、「KANOAの費用/実績は?」
@@ -342,21 +344,30 @@ function answerCpa(marketingSummary: MarketingSummary | null): string {
   );
 }
 
-/** 「送客費用」「送客パートナー」への回答: 4経路の単価・人数・費用+合計。 */
+/** 「送客費用」「送客パートナー」への回答: 4経路の単価・人数・費用+合計(今月・先月)。 */
 function answerReferralPartnersOverview(marketingSummary: MarketingSummary | null): string {
   if (!marketingSummary) return "集客・広告データが取得できませんでした。";
   const lines = marketingSummary.referralPartners
     .map((r) => `${r.channel}(単価${formatYenPlain(r.unitCostYen)}) 面談${r.count}名・${formatYenPlain(r.costYen)}`)
     .join("、");
+  const lastLines = marketingSummary.referralPartnersLastMonth
+    .map((r) => `${r.channel} 面談${r.count}名・${formatYenPlain(r.costYen)}`)
+    .join("、");
   return (
     `今月の送客パートナー費用は合計${formatYenPlain(marketingSummary.referralTotalYen)}です(${lines})。` +
+    `先月は合計${formatYenPlain(marketingSummary.referralLastMonthTotalYen)}でした(${lastLines})。` +
     `面談実施で課金のため、対象人数は流入経路が一致し面談を実施した求職者(面談後の辞退も含む)で、月の判定は面談日(未入力時は登録日→更新日)基準です。`
   );
 }
 
-/** 「KANOAの費用/実績は?」「マホガニーは?」など、経路名を含む質問への個別回答。 */
-function answerReferralPartnerChannel(r: ReferralPartnerSummary): string {
-  return `${r.channel}の今月実績は面談${r.count}名、単価${formatYenPlain(r.unitCostYen)}、費用は${formatYenPlain(r.costYen)}です。`;
+/** 「KANOAの費用/実績は?」「マホガニーは?」など、経路名を含む質問への個別回答(今月+先月)。 */
+function answerReferralPartnerChannel(r: ReferralPartnerSummary, marketingSummary: MarketingSummary | null): string {
+  const last = marketingSummary?.referralPartnersLastMonth.find((l) => l.channel === r.channel);
+  const lastPart = last ? `先月は面談${last.count}名・${formatYenPlain(last.costYen)}でした。` : "";
+  return (
+    `${r.channel}の今月実績は面談${r.count}名、単価${formatYenPlain(r.unitCostYen)}、費用は${formatYenPlain(r.costYen)}です。` +
+    lastPart
+  );
 }
 
 /** 経路名の「本体」(括弧書き注記を除いた部分)。「2peace(Tさん)」→「2peace」のように、質問文が
@@ -684,7 +695,7 @@ export function answerWithRules(
   // 4.6. 送客パートナー(成果報酬): 経路名(KANOA/マホガニー/foresma/2peace(Tさん)等)の個別質問を優先し、
   //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は4経路+合計で答える。
   const referralPartnerMatch = findReferralPartnerInText(text, marketingSummary);
-  if (referralPartnerMatch) return answerReferralPartnerChannel(referralPartnerMatch);
+  if (referralPartnerMatch) return answerReferralPartnerChannel(referralPartnerMatch, marketingSummary);
   if (
     text.includes("送客費用") ||
     text.includes("送客パートナー") ||
