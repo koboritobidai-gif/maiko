@@ -403,14 +403,27 @@ function requireDate(row: SheetRow, index: number, field: string, tabName: strin
   return date;
 }
 
+/** 任意日付列で追加で受け付けるゆるい形式: 2026/7/22・2026-7-22 など(区切りは - か /、月日は1〜2桁)。 */
+const LOOSE_DATE_RE = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+
 /**
- * 任意の日付列を Date | undefined として読む(空欄・列自体が無い・YYYY-MM-DD形式でない場合は undefined。
+ * 任意の日付列を Date | undefined として読む(空欄・列自体が無い・解釈できない場合は undefined。
  * 求職者タブN列「登録日」・O列「面談日」用。エラーにはしない)。
+ * 手入力を想定し、次のどの形でも受け付ける:
+ * - 文字列 "2026-07-22" / "2026/7/22"(書式なしテキストのセル)
+ * - シリアル値(セルが日付書式のまま入力された場合。UNFORMATTED_VALUE では数値で返ってくる)
  */
 function optionalDateOrUndefined(row: SheetRow, index: number): Date | undefined {
-  const raw = cellToString(row[index]);
+  const cell = row[index];
+  // 日付書式セルのシリアル値(起点 1899-12-30)。1955〜2118年相当の範囲のみ日付とみなす。
+  if (typeof cell === "number" && cell >= 20000 && cell < 80000) {
+    const base = new Date(1899, 11, 30, 10, 0, 0, 0);
+    const date = new Date(base.getTime() + Math.round(cell) * 86400000);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+  const raw = cellToString(cell);
   if (!raw) return undefined;
-  const match = DATE_RE.exec(raw);
+  const match = LOOSE_DATE_RE.exec(raw);
   if (!match) return undefined;
   const [, y, mo, d] = match;
   const date = new Date(Number(y), Number(mo) - 1, Number(d), 10, 0, 0, 0);
