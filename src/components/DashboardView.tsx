@@ -367,7 +367,7 @@ export default function DashboardView({
             caption={<DiffCaption diff={primary.candidatePlacements.diff} unit="名" />}
           />
           {showRevenueSection ? (
-            // 経営者の要望により、旧「新規契約金額」(週次KPIの法人契約金額)に代えて
+            // 経営者の要望により、旧「成功報酬」(週次KPIの法人契約金額)に代えて
             // 「その月に貰えるお金」(翔び台請求書関係シートの対象月合計)を主要指標に置く。
             <KpiCard
               label="貰うお金(送客売上)"
@@ -377,7 +377,7 @@ export default function DashboardView({
             />
           ) : (
             <KpiCard
-              label="新規契約金額"
+              label="成功報酬"
               value={`${primary.contractAmountMan.value.toLocaleString("ja-JP")}万円`}
               caption={<DiffCaption diff={primary.contractAmountMan.diff} unit="万円" />}
             />
@@ -912,7 +912,7 @@ export default function DashboardView({
                 <th className="pb-2 pr-2 font-medium">週</th>
                 <th className="pb-2 pr-2 text-right font-medium">面談数</th>
                 <th className="pb-2 pr-2 text-right font-medium">内定者数</th>
-                <th className="pb-2 text-right font-medium">契約金額</th>
+                <th className="pb-2 text-right font-medium">成功報酬</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
@@ -955,7 +955,7 @@ export default function DashboardView({
                 <th className="pb-2 pr-1.5 text-right font-medium">面談数</th>
                 <th className="pb-2 pr-1.5 text-right font-medium">内定者数</th>
                 <th className="pb-2 pr-1.5 text-right font-medium">採用決定</th>
-                <th className="pb-2 pr-1.5 text-right font-medium">契約金額</th>
+                <th className="pb-2 pr-1.5 text-right font-medium">成功報酬</th>
                 <th className="pb-2 pr-1.5 text-right font-medium">PV数</th>
                 <th className="pb-2 text-right font-medium">LINE登録</th>
               </tr>
