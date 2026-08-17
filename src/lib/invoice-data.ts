@@ -46,11 +46,12 @@ async function loadDemoInvoices(status: SourceStatus): Promise<InvoiceDataResult
 
 /**
  * 手動補正: 金額を読み取れないPDF(スキャン画像等)に、経営者確認済みの金額を割り当てる。
- * 2026年7月支払いスレッドの読取不可2件は、いずれも¥16,500と確認済み(計¥33,000)。
+ * 2026年6月・7月支払いスレッドの読取不可各2件は、いずれも¥16,500と確認済み(各月計¥33,000)。
  * 対象月の読取不可PDFすべてに一律で適用されるため、その月に新たな読取不可PDFが増えた場合は
  * この補正を見直すこと。
  */
 const MANUAL_UNREADABLE_AMOUNTS: { month: string; amountYen: number }[] = [
+  { month: "2026-06", amountYen: 16_500 },
   { month: "2026-07", amountYen: 16_500 },
 ];
 
