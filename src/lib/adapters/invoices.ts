@@ -221,6 +221,12 @@ function detectPaymentMonthFromContent(text: string, postedAt: Date): { month: s
   return fallback();
 }
 
+/**
+ * 集計から除外するスレッド・メッセージの表記。「【STORY】7月支払い 請求書【月末払い】」のような
+ * STORY(別事業)の請求書スレッドは、翔び台本体の支払い合計に含めない(経営者の指示)。
+ */
+const EXCLUDE_MESSAGE_RE = /STORY/i;
+
 /** スレッド親メッセージの「7月支払い 請求書【月末払い】」のような表記から支払月を求める。 */
 const PAYMENT_MONTH_RE = /(\d{1,2})\s*月\s*(?:末)?\s*(?:支払|払い)/;
 
@@ -430,6 +436,8 @@ export class SlackInvoiceSource implements InvoiceSource {
       }
     };
     for (const message of history.messages ?? []) {
+      // STORY(別事業)の請求書メッセージは集計から除外する。
+      if (EXCLUDE_MESSAGE_RE.test(message.text ?? "")) continue;
       // メッセージ自身に「7月支払い」等の表記があればその月を採用する。
       collectPdfFiles(message, detectPaymentMonthFromThreadTitle(message.text ?? "", tsToDate(message.ts)));
     }
@@ -439,7 +447,13 @@ export class SlackInvoiceSource implements InvoiceSource {
     // 返さないので、返信のあるスレッドを conversations.replies で個別に取得し、返信のPDFには
     // スレッド親の表記から求めた支払月を引き継ぐ。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
     const threadParents = (history.messages ?? [])
-      .filter((m) => (m.reply_count ?? 0) > 0 && tsToDate(m.ts).getTime() >= cutoff)
+      .filter(
+        (m) =>
+          (m.reply_count ?? 0) > 0 &&
+          tsToDate(m.ts).getTime() >= cutoff &&
+          // STORY(別事業)のスレッドは返信内のPDFごと集計から除外する。
+          !EXCLUDE_MESSAGE_RE.test(m.text ?? ""),
+      )
       .slice(0, MAX_THREAD_FETCHES);
     for (const parent of threadParents) {
       const parentPaymentMonth = detectPaymentMonthFromThreadTitle(parent.text ?? "", tsToDate(parent.ts));
