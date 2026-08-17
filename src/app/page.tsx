@@ -7,7 +7,7 @@ import {
   getDashboardSummary,
   getInvoiceChecks,
   getMarketingSummary,
-  getOtherInvoiceCosts,
+  getPrimaryMonthSnapshots,
   getRevenueSummary,
 } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
@@ -65,9 +65,16 @@ export default async function TodayDashboardPage() {
   );
   // 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
-  // #請求書のうち送客パートナー以外の請求書(=広告費・送客費用に含まれないその他の支払い)。
-  // 「出ていくお金」の全体額に合算する。
-  const otherInvoiceCosts = getOtherInvoiceCosts(invoicesResult.invoices, now);
+  // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
+  const primaryMonths = getPrimaryMonthSnapshots(
+    bundle.weeklyKpis,
+    marketingResult.data,
+    referralCandidates,
+    bundle.settings.referralRates,
+    revenueResult.records,
+    invoicesResult.invoices,
+    now,
+  );
 
   return (
     <DashboardView
@@ -89,7 +96,7 @@ export default async function TodayDashboardPage() {
       revenueSummary={revenueSummary}
       revenueStatus={revenueResult.status}
       revenueErrorMessage={revenueResult.errorMessage}
-      otherInvoiceCosts={otherInvoiceCosts}
+      primaryMonths={primaryMonths}
     />
   );
 }

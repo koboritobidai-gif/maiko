@@ -11,7 +11,7 @@ import type {
   DashboardSummary,
   InvoiceCheckRow,
   MarketingSummary,
-  OtherInvoiceCosts,
+  PrimaryMonthSnapshot,
   RevenueMonthSummary,
 } from "@/lib/metrics";
 import { sourceBadgeLabel } from "@/lib/source-status";
@@ -191,8 +191,8 @@ interface DashboardViewProps {
   revenueSummary: { thisMonth: RevenueMonthSummary; lastMonth: RevenueMonthSummary };
   revenueStatus: SourceStatus;
   revenueErrorMessage?: string;
-  /** #請求書のうち送客パートナー以外の請求書(その他の支払い)の月別合計。 */
-  otherInvoiceCosts: { thisMonth: OtherInvoiceCosts; lastMonth: OtherInvoiceCosts };
+  /** 主要指標セクションの月選択用スナップショット(直近6ヶ月、今月が先頭)。 */
+  primaryMonths: PrimaryMonthSnapshot[];
 }
 
 export default function DashboardView({
@@ -214,11 +214,11 @@ export default function DashboardView({
   revenueSummary,
   revenueStatus,
   revenueErrorMessage,
-  otherInvoiceCosts,
+  primaryMonths,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標・集客/広告・送客売上・各ファネルそれぞれ独立して今月⇄先月を切り替えられる。
-  const [primaryPeriod, setPrimaryPeriod] = useState<Period>("this");
+  // 主要指標は直近6ヶ月から月を選択、集客/広告・送客売上・各ファネルは今月⇄先月を切り替えられる。
+  const [primaryMonthIdx, setPrimaryMonthIdx] = useState(0);
   const [marketingPeriod, setMarketingPeriod] = useState<Period>("this");
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
@@ -244,13 +244,11 @@ export default function DashboardView({
   // 送客売上セクションの表示対象(今月/先月トグルで切替)。対応する送客パートナー費用(単価マスタ)は
   // 今月なら marketingSummary、先月なら marketingSummaryLastMonth の referralPartners を使う。
   const rv = revenuePeriod === "this" ? revenueSummary.thisMonth : revenueSummary.lastMonth;
-  // お金の出入りカード(主要指標セクション下段。主要指標の今月/先月トグルに連動する)。
-  // 入=送客売上シートの対象月合計 / 出=広告+SNS+送客パートナー費用(totalCost)+その他の支払い
-  // (#請求書のうち送客パートナー以外の請求書。パートナー分は計算値側で計上済みのため除外し二重計上を防ぐ)。
-  const moneyInYen = primaryPeriod === "this" ? revenueSummary.thisMonth.totalYen : revenueSummary.lastMonth.totalYen;
-  const moneyOtherCosts = primaryPeriod === "this" ? otherInvoiceCosts.thisMonth : otherInvoiceCosts.lastMonth;
-  const moneyOutYen =
-    (primaryPeriod === "this" ? marketingSummary : marketingSummaryLastMonth).totalCost + moneyOtherCosts.totalYen;
+  // 主要指標セクションの表示対象月(直近6ヶ月から選択)。お金の出入り(入=送客売上/
+  // 出=広告+SNS+送客費用+その他の支払い)も選択月に連動する。
+  const pm = primaryMonths[primaryMonthIdx] ?? primaryMonths[0];
+  const moneyInYen = pm.moneyInYen;
+  const moneyOutYen = pm.moneyOutYen;
   const moneyNetYen = moneyInYen - moneyOutYen;
   const rvReferralPartners =
     revenuePeriod === "this" ? marketingSummary.referralPartners : marketingSummaryLastMonth.referralPartners;
@@ -274,8 +272,8 @@ export default function DashboardView({
   const maxStageCount = Math.max(1, ...summary.pipeline.map((s) => s.count));
 
   const { weeklyTrend } = summary;
-  // 主要指標カード・各ファネルの表示対象(今月/先月トグルで切替)。
-  const primary = primaryPeriod === "this" ? summary.primary : summaryLastMonth.primary;
+  // 主要指標カードは選択月のスナップショット、各ファネルは今月/先月トグルで切替。
+  const primary = pm.primary;
   const candidateFunnel =
     candidateFunnelPeriod === "this" ? summary.candidateFunnel : summaryLastMonth.candidateFunnel;
   const corporateFunnel =
@@ -307,14 +305,34 @@ export default function DashboardView({
         </div>
       )}
 
-      {/* 1. 主要指標(今月/先月トグル) */}
+      {/* 1. 主要指標(直近6ヶ月の月選択) */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            主要指標({primaryPeriod === "this" ? "今月" : "先月"})
+            主要指標({formatMonthLabel(pm.monthKey)})
           </h2>
           <div className="flex items-center gap-2">
-            <PeriodToggle period={primaryPeriod} onChange={setPrimaryPeriod} />
+            <div className="flex max-w-[70vw] gap-1 overflow-x-auto lg:max-w-none">
+              {primaryMonths.map((m, i) => (
+                <button
+                  key={m.monthKey}
+                  type="button"
+                  onClick={() => setPrimaryMonthIdx(i)}
+                  className="whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                  style={
+                    i === primaryMonthIdx
+                      ? { background: "var(--color-navy)", color: "#ffffff", borderColor: "var(--color-navy)" }
+                      : {
+                          background: "var(--color-card)",
+                          color: "var(--color-text-muted)",
+                          borderColor: "var(--color-border)",
+                        }
+                  }
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
             <SourceBadge label={sheetsBadge} />
           </div>
         </div>
@@ -372,8 +390,8 @@ export default function DashboardView({
               label="出ていくお金(全体)"
               value={formatYen(moneyOutYen)}
               caption={`広告+SNS+送客費用+その他の支払い${
-                moneyOtherCosts.unreadableCount > 0
-                  ? `(※#請求書に金額を読み取れないPDFが${moneyOtherCosts.unreadableCount}件あり、未反映)`
+                pm.unreadableInvoiceCount > 0
+                  ? `(※#請求書に金額を読み取れないPDFが${pm.unreadableInvoiceCount}件あり、未反映)`
                   : ""
               }`}
             />

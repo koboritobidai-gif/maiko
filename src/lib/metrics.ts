@@ -846,27 +846,93 @@ export interface OtherInvoiceCosts {
 }
 
 /**
- * #請求書のうち送客パートナー以外の請求書(partnerChannel が特定できないもの)を、対象月ごとに合計する。
+ * #請求書のうち送客パートナー以外の請求書(partnerChannel が特定できないもの)を、指定月分だけ合計する。
  * 「出ていくお金」の全体額 = 広告+SNS+送客パートナー費用(面談ベースの計算値)+この「その他の支払い」。
  * 送客パートナーの請求書は計算値側で既に費用計上しているため、ここに含めると二重計上になる(除外する)。
  */
+export function getOtherInvoiceCostsForMonth(
+  invoices: ReferralInvoice[],
+  monthKey: string,
+): OtherInvoiceCosts {
+  const target = invoices.filter((inv) => !inv.partnerChannel && inv.targetMonth === monthKey);
+  const readable = target.filter((inv) => inv.amountYen !== undefined);
+  return {
+    totalYen: readable.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0),
+    count: readable.length,
+    unreadableCount: target.length - readable.length,
+  };
+}
+
+/** YYYY-MM 形式の月キー。 */
+function monthKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** 今月・先月の「その他の支払い」合計(getOtherInvoiceCostsForMonth の2ヶ月版)。 */
 export function getOtherInvoiceCosts(
   invoices: ReferralInvoice[],
   now: Date = new Date(),
 ): { thisMonth: OtherInvoiceCosts; lastMonth: OtherInvoiceCosts } {
-  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  const thisKey = key(now);
-  const lastKey = key(new Date(now.getFullYear(), now.getMonth() - 1, 15));
-  const summarize = (monthKey: string): OtherInvoiceCosts => {
-    const target = invoices.filter((inv) => !inv.partnerChannel && inv.targetMonth === monthKey);
-    const readable = target.filter((inv) => inv.amountYen !== undefined);
-    return {
-      totalYen: readable.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0),
-      count: readable.length,
-      unreadableCount: target.length - readable.length,
-    };
+  return {
+    thisMonth: getOtherInvoiceCostsForMonth(invoices, monthKeyOf(now)),
+    lastMonth: getOtherInvoiceCostsForMonth(invoices, monthKeyOf(new Date(now.getFullYear(), now.getMonth() - 1, 15))),
   };
-  return { thisMonth: summarize(thisKey), lastMonth: summarize(lastKey) };
+}
+
+/**
+ * 主要指標セクションの「月選択」用スナップショット(直近nヶ月、今月が先頭)。
+ * 各月の主要KPI(前月比付き)と、お金の出入り(入=送客売上シートの対象月合計 /
+ * 出=広告+SNS+送客パートナー費用+その他の支払い)をまとめて返す。
+ */
+export interface PrimaryMonthSnapshot {
+  /** 対象月(YYYY-MM) */
+  monthKey: string;
+  /** 表示ラベル(「今月(8月)」「7月」「2025年12月」など。年をまたいだら年も付ける) */
+  label: string;
+  primary: PrimaryKpis;
+  /** 貰うお金(送客売上シートの対象月合計、円) */
+  moneyInYen: number;
+  /** 出ていくお金(広告+SNS+送客費用+その他の支払い、円) */
+  moneyOutYen: number;
+  /** #請求書で金額を読み取れず支出合計に含められなかった件数 */
+  unreadableInvoiceCount: number;
+}
+
+export function getPrimaryMonthSnapshots(
+  weeklyKpis: WeeklyKpiRecord[],
+  marketingData: MarketingData,
+  referralCandidates: Candidate[],
+  referralRates: ReferralRate[],
+  revenueRecords: RevenueRecord[],
+  invoices: ReferralInvoice[],
+  now: Date = new Date(),
+  months = 6,
+): PrimaryMonthSnapshot[] {
+  const snapshots: PrimaryMonthSnapshot[] = [];
+  for (let i = 0; i < months; i++) {
+    const ref = new Date(now.getFullYear(), now.getMonth() - i, 15);
+    const monthKey = monthKeyOf(ref);
+    const label =
+      i === 0
+        ? `今月(${ref.getMonth() + 1}月)`
+        : ref.getFullYear() === now.getFullYear()
+          ? `${ref.getMonth() + 1}月`
+          : `${ref.getFullYear()}年${ref.getMonth() + 1}月`;
+    const marketing = getMarketingSummary(marketingData, weeklyKpis, referralCandidates, referralRates, ref);
+    const other = getOtherInvoiceCostsForMonth(invoices, monthKey);
+    const moneyInYen = revenueRecords
+      .filter((r) => r.month === monthKey)
+      .reduce((sum, r) => sum + r.amountYen, 0);
+    snapshots.push({
+      monthKey,
+      label,
+      primary: getPrimaryKpis(weeklyKpis, ref),
+      moneyInYen,
+      moneyOutYen: marketing.totalCost + other.totalYen,
+      unreadableInvoiceCount: other.unreadableCount,
+    });
+  }
+  return snapshots;
 }
 
 export function getInvoiceChecks(
