@@ -137,7 +137,7 @@ export default function CandidateThreadDetailView({
               background: "var(--color-cream)",
             }}
           >
-            返信 {thread.replyCount}件(直近アクティブな30スレッドまでの取得制限により、この求職者の返信詳細は省略されています。一覧を最新化すると解消される場合があります)。
+            返信 {thread.replyCount}件(直近アクティブな100スレッドまでの取得制限により、この求職者の返信詳細は省略されています。一覧を最新化すると解消される場合があります)。
           </p>
         )}
 

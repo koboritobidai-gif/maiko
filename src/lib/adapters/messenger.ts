@@ -70,10 +70,20 @@ async function slackGet<T extends SlackApiResponseBase>(
   params: Record<string, string>,
 ): Promise<T> {
   const url = `${SLACK_API_BASE}/${method}?${new URLSearchParams(params).toString()}`;
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     headers: { Authorization: `Bearer ${botToken}` },
     cache: "no-store",
   });
+  // レート制限(429)のときは Retry-After 秒(最大10秒)待って1回だけやり直す。
+  // 求職者スレッドを最大100件読むようになり、瞬間的に制限へ達することがあるため。
+  if (res.status === 429) {
+    const retryAfter = Math.min(Number(res.headers.get("retry-after") ?? "1") || 1, 10);
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${botToken}` },
+      cache: "no-store",
+    });
+  }
   const json = (await res.json()) as T;
   if (!res.ok || !json.ok) {
     throw new Error(`Slack API ${method} 呼び出しに失敗しました: ${json.error ?? res.status}`);
@@ -122,7 +132,16 @@ interface SlackMessage {
   subtype?: string;
   /** 親メッセージのみに含まれる、スレッド内の返信数(conversations.history 経由)。 */
   reply_count?: number;
+  /** 親メッセージのみに含まれる、最新返信の ts。スレッド返信キャッシュの鮮度判定に使う。 */
+  latest_reply?: string;
 }
+
+/**
+ * スレッド返信のモジュールメモリキャッシュ。キーはスレッドの ts、cacheKey は「返信数:最新返信ts」。
+ * 求職者スレッドを最大100件読むため、変化のないスレッドの conversations.replies 再取得を省き、
+ * Slack API のレート制限(1分あたりの呼び出し数)に達しにくくする。
+ */
+const threadRepliesCache = new Map<string, { cacheKey: string; replies: CandidateThreadReply[] }>();
 
 interface SlackHistoryResponse extends SlackApiResponseBase {
   messages?: SlackMessage[];
@@ -267,10 +286,12 @@ export class SlackSource implements MessengerSource {
    * subtype付き(channel_joinなど)とボット投稿は除外、親テキストの1行目(20文字まで)を
    * name とする。
    *
-   * API呼び出し数を抑えるため、conversations.replies(返信取得)と chat.getPermalink
-   * (パーマリンク取得)は「直近アクティブな30スレッド」まで(=conversations.history が
-   * 新しい順で返す先頭30件)に限定する。超過分は返信取得をスキップし、親メッセージの
-   * 情報(氏名・登録日時・返信数)のみを返す。
+   * API呼び出し数を抑えるための工夫:
+   * - conversations.replies(返信取得)は「直近アクティブな100スレッド」まで。さらに
+   *   返信数・最新返信tsが前回から変わっていないスレッドはメモリキャッシュを使い再取得しない
+   * - パーマリンクは chat.getPermalink を先頭の1件だけに呼び、返ってきたURLからワークスペースの
+   *   ドメインを覚えて、残りは「https://◯◯.slack.com/archives/チャンネル/p<ts>」形式で組み立てる
+   * - 取得は10スレッドずつに分けて実行し、瞬間的なレート制限(429)を避ける
    */
   async getCandidateThreads(): Promise<CandidateThread[]> {
     const botToken = this.requireToken();
@@ -279,7 +300,8 @@ export class SlackSource implements MessengerSource {
       throw new Error("環境変数 SLACK_CANDIDATE_CHANNEL(#求職者のチャンネルID)を設定してください。");
     }
 
-    const REPLY_FETCH_LIMIT = 30;
+    const REPLY_FETCH_LIMIT = 100;
+    const THREAD_CONCURRENCY = 10;
 
     const history = await slackGet<SlackHistoryResponse>(botToken, "conversations.history", {
       channel: channelId,
@@ -288,39 +310,55 @@ export class SlackSource implements MessengerSource {
 
     const parents = (history.messages ?? []).filter((m) => !m.subtype && !m.bot_id && m.text);
 
-    const threads = await Promise.all(
-      parents.map(async (m, index) => {
-        const firstLine = (m.text ?? "").split("\n")[0]?.trim() ?? "";
-        const name = firstLine.slice(0, 20);
-        const registeredAt = new Date(Number(m.ts.split(".")[0]) * 1000);
-        const replyCount = m.reply_count ?? 0;
+    // パーマリンクの土台(https://◯◯.slack.com/archives/)を先頭1件のAPI呼び出しから求める。
+    let permalinkBase: string | undefined;
+    if (parents.length > 0) {
+      const first = await this.fetchPermalink(botToken, channelId, parents[0].ts);
+      const match = first?.match(/^(https:\/\/[^/]+\/archives\/)/);
+      permalinkBase = match?.[1];
+    }
+    const buildPermalink = (ts: string): string | undefined =>
+      permalinkBase ? `${permalinkBase}${channelId}/p${ts.replace(".", "")}` : undefined;
 
-        // 直近アクティブな30スレッドまでのみ、返信本文とパーマリンクを取得する(API呼び出し数抑制)。
-        const withinBudget = index < REPLY_FETCH_LIMIT;
+    const buildThread = async (m: SlackMessage, index: number): Promise<CandidateThread> => {
+      const firstLine = (m.text ?? "").split("\n")[0]?.trim() ?? "";
+      const name = firstLine.slice(0, 20);
+      const registeredAt = new Date(Number(m.ts.split(".")[0]) * 1000);
+      const replyCount = m.reply_count ?? 0;
+      const withinBudget = index < REPLY_FETCH_LIMIT;
 
-        const [replies, permalink] = await Promise.all([
-          replyCount > 0 && withinBudget
-            ? this.fetchThreadReplies(botToken, channelId, m.ts)
-            : Promise.resolve<CandidateThreadReply[]>([]),
-          withinBudget ? this.fetchPermalink(botToken, channelId, m.ts) : Promise.resolve(undefined),
-        ]);
+      let replies: CandidateThreadReply[] = [];
+      if (replyCount > 0 && withinBudget) {
+        const cacheKey = `${replyCount}:${m.latest_reply ?? ""}`;
+        const cached = threadRepliesCache.get(m.ts);
+        if (cached && cached.cacheKey === cacheKey) {
+          replies = cached.replies;
+        } else {
+          replies = await this.fetchThreadReplies(botToken, channelId, m.ts);
+          threadRepliesCache.set(m.ts, { cacheKey, replies });
+        }
+      }
 
-        const latest = replies[replies.length - 1];
+      const latest = replies[replies.length - 1];
+      return {
+        threadTs: m.ts,
+        name,
+        registeredAt,
+        updatedAt: latest ? latest.postedAt : registeredAt,
+        replyCount,
+        parentText: await this.formatMessageText(botToken, m.text ?? ""),
+        latestText: latest ? latest.text : "",
+        permalink: buildPermalink(m.ts),
+        replies,
+      };
+    };
 
-        const thread: CandidateThread = {
-          threadTs: m.ts,
-          name,
-          registeredAt,
-          updatedAt: latest ? latest.postedAt : registeredAt,
-          replyCount,
-          parentText: await this.formatMessageText(botToken, m.text ?? ""),
-          latestText: latest ? latest.text : "",
-          permalink,
-          replies,
-        };
-        return thread;
-      }),
-    );
+    // 10スレッドずつ順に処理する(100スレッドの一斉並列でレート制限に当たるのを避ける)。
+    const threads: CandidateThread[] = [];
+    for (let i = 0; i < parents.length; i += THREAD_CONCURRENCY) {
+      const chunk = parents.slice(i, i + THREAD_CONCURRENCY);
+      threads.push(...(await Promise.all(chunk.map((m, j) => buildThread(m, i + j)))));
+    }
 
     return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
