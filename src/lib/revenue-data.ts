@@ -24,6 +24,20 @@ export interface RevenueDataResult {
   errorMessage?: string;
 }
 
+/**
+ * 手動計上分: 売上シート(翔び台請求書関係)の運用開始(タブ「2026年6月」=7月末入金分)より前の
+ * 入金を補完する。2026年6月末入金分は経営者申告の¥1,320,000を固定で計上する
+ * (金額を変えたい場合はここを修正する。以後の月はシートの月別タブから自動取得)。
+ */
+const MANUAL_REVENUE_RECORDS: RevenueRecord[] = [
+  {
+    month: "2026-06",
+    inflowChannel: "その他(手動計上)",
+    company: "6月末入金分まとめ(シート運用開始前)",
+    amountYen: 1_320_000,
+  },
+];
+
 let cache: { result: RevenueDataResult; expiresAt: number } | null = null;
 
 function isDataModeLive(): boolean {
@@ -46,7 +60,9 @@ async function loadLive(): Promise<RevenueDataResult> {
   try {
     const source = getRevenueSource();
     const records = await source.getRevenueRecords();
-    return { records, status: "live" };
+    // シート運用開始前の手動計上分を追加する(実データ取得が成功したときのみ。
+    // デモ・フォールバック時に混ぜるとデモ数字が崩れるため)。
+    return { records: [...records, ...MANUAL_REVENUE_RECORDS], status: "live" };
   } catch (error) {
     if (isNextDynamicUsageError(error)) throw error;
     console.warn(
