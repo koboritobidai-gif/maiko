@@ -281,6 +281,8 @@ export const DEFAULT_REFERRAL_RATES: ReferralRate[] = [
   { channel: "マホガニー", unitCostYen: 22_000 },
   { channel: "foresma", unitCostYen: 27_500 },
   { channel: "2peace(Tさん)", unitCostYen: 22_000 },
+  { channel: "人事パートナーズ", unitCostYen: 22_000 },
+  { channel: "與儀", unitCostYen: 22_000 },
 ];
 
 /** システム設定(スプレッドシート「設定」タブ相当)。 */

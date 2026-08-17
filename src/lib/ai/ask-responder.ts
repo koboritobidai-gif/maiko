@@ -253,17 +253,17 @@ marketingThisMonth には広告運用(アイドマ)シート・SNS運用(リズ�
 LINE登録数/面談予約数/面談実施数/CTR/遷移率regRate/予約率reserveRate/面談実行率execRate/登録単価cpa/面談単価
 costPerInterview)、sns(SNS運用の月額固定費用cost/再生数plays/プロフィール遷移profileVisits/LP閲覧lpViews/
 LINE登録lineRegs/面談interviews/LP遷移率lpRate/登録率regRate/登録単価cpa/面談単価costPerInterview)、
-referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー/foresma/2peace(Tさん)の4経路それぞれの
+referralPartners(送客パートナー、成果報酬型。KANOA/マホガニー/foresma/2peace(Tさん)/人事パートナーズ/與儀の6経路それぞれの
 channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(費用)。**面談実施で課金**のため、
 対象人数は流入経路が一致し面談を実施した求職者〈面談以降のステージ、または辞退でも面談日あり。面談前の
 辞退は対象外〉で、月の帰属は面談日基準です〈面談日はシートO列の手入力を優先し、無ければSlack「#求職者」
 スレッドの「面談実施」報告から自動検出、それも無ければ登録日→更新日で近似〉)、
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
-(同じ課金ルールでの先月の4経路サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
+(同じ課金ルールでの先月の経路別サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
 totalCost/totalLineRegs/totalReservations/totalInterviews
 (広告+SNS+送客パートナー合算。totalCost にのみ送客パートナー費用を含む)、transitionRates(遷移率まとめ)が
 含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
-「送客費用は?」「送客パートナーは?」のような全体質問には4経路+合計を、「KANOAの費用/実績は?」
+「送客費用は?」「送客パートナーは?」のような全体質問には経路別+合計を、「KANOAの費用/実績は?」
 「マホガニーは?」のような経路名を含む質問にはその経路の単価・人数・費用を個別に答えてください。
 
 blockRateThisMonth は Lステップ(LINE公式アカウント)のブロック率(ブロック数 ÷ LINE登録人数)です。
@@ -442,7 +442,7 @@ function answerCpa(marketingSummary: MarketingSummary | null): string {
   );
 }
 
-/** 「送客費用」「送客パートナー」への回答: 4経路の単価・人数・費用+合計(今月・先月)。 */
+/** 「送客費用」「送客パートナー」への回答: 経路別の単価・人数・費用+合計(今月・先月)。 */
 function answerReferralPartnersOverview(marketingSummary: MarketingSummary | null): string {
   if (!marketingSummary) return "集客・広告データが取得できませんでした。";
   const lines = marketingSummary.referralPartners
@@ -904,7 +904,7 @@ export function answerWithRules(
   }
 
   // 4.6. 送客パートナー(成果報酬): 経路名(KANOA/マホガニー/foresma/2peace(Tさん)等)の個別質問を優先し、
-  //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は4経路+合計で答える。
+  //      経路名を含まない全体質問(「送客費用は?」「送客パートナーは?」)は経路別+合計で答える。
   const referralPartnerMatch = findReferralPartnerInText(text, marketingSummary);
   if (referralPartnerMatch) return answerReferralPartnerChannel(referralPartnerMatch, marketingSummary);
   if (

@@ -558,7 +558,13 @@ export default function DashboardView({
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-              {mk.referralPartners.map((r) => {
+              {mk.referralPartners
+                // 経営者の要望: 対象者0名の経路は行を出さない(選択月・前月とも0名なら非表示)。
+                .filter((r) => {
+                  const last = mk.referralPartnersLastMonth.find((l) => l.channel === r.channel);
+                  return r.count > 0 || (last?.count ?? 0) > 0;
+                })
+                .map((r) => {
                 const last = mk.referralPartnersLastMonth.find((l) => l.channel === r.channel);
                 return (
                   <tr key={r.channel}>
@@ -824,7 +830,10 @@ export default function DashboardView({
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-                {referralProfit.rows.map((row) => (
+                {referralProfit.rows
+                  // 売上・費用とも0円の経路は行を出さない(経路が増えても表が0行で埋まらないように)。
+                  .filter((row) => row.revenueYen > 0 || row.costYen > 0)
+                  .map((row) => (
                   <tr key={row.channel}>
                     <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
                       {row.channel}
