@@ -106,10 +106,10 @@ function isPdfFile(file: SlackFile): boolean {
 // 全件を並列ダウンロードするとサーバーレスの実行時間・メモリを圧迫するため、
 // DOWNLOAD_CONCURRENCY 件ずつに分けてダウンロードする)。
 const RECENT_WINDOW_MS = 95 * 24 * 60 * 60 * 1000;
-const MAX_PDF_DOWNLOADS = 50;
+const MAX_PDF_DOWNLOADS = 80;
 const DOWNLOAD_CONCURRENCY = 6;
-/** 返信の中のPDFも読むスレッドの上限(API呼び出し数の抑制。#請求書は月数スレッド程度の運用想定)。 */
-const MAX_THREAD_FETCHES = 20;
+/** 返信の中のPDFも読むスレッドの上限(実運用で月20枚前後の請求書がスレッドに分かれて届くため多めに取る)。 */
+const MAX_THREAD_FETCHES = 60;
 // PDFダウンロードのサイズ上限。超過分はパース失敗として扱う(転送量抑制・タイムアウト防止)。
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 
@@ -332,6 +332,7 @@ export class SlackInvoiceSource implements InvoiceSource {
     channelId: string,
     message: SlackInvoiceMessage,
     file: SlackFile,
+    permalinkBase?: string,
   ): Promise<ReferralInvoice> {
     const postedAt = tsToDate(message.ts);
     const fileName = file.name ?? "invoice.pdf";
@@ -358,7 +359,11 @@ export class SlackInvoiceSource implements InvoiceSource {
       parseNote = "請求金額を読み取れませんでした。";
     }
 
-    const permalink = await this.fetchPermalink(botToken, channelId, message.ts);
+    // パーマリンクはAPIを都度呼ばず、ワークスペースドメイン(permalinkBase)からURLを組み立てる
+    // (最大80件読むため、chat.getPermalink を件数分呼ぶとレート制限・実行時間を圧迫する)。
+    const permalink = permalinkBase
+      ? `${permalinkBase}${channelId}/p${message.ts.replace(".", "")}`
+      : await this.fetchPermalink(botToken, channelId, message.ts);
 
     return {
       partnerChannel,
@@ -382,7 +387,7 @@ export class SlackInvoiceSource implements InvoiceSource {
 
     const history = await slackGet<SlackHistoryResponse>(botToken, "conversations.history", {
       channel: channelId,
-      limit: "100",
+      limit: "200",
     });
 
     const cutoff = Date.now() - RECENT_WINDOW_MS;
@@ -425,12 +430,21 @@ export class SlackInvoiceSource implements InvoiceSource {
     const accepted = pdfEntries.slice(0, MAX_PDF_DOWNLOADS);
     const skippedCount = pdfEntries.length - accepted.length;
 
+    // パーマリンクの土台(https://◯◯.slack.com/archives/)を先頭1件のAPI呼び出しから求める。
+    let permalinkBase: string | undefined;
+    if (accepted.length > 0) {
+      const first = await this.fetchPermalink(botToken, channelId, accepted[0].message.ts);
+      permalinkBase = first?.match(/^(https:\/\/[^/]+\/archives\/)/)?.[1];
+    }
+
     const invoices: ReferralInvoice[] = [];
     for (let i = 0; i < accepted.length; i += DOWNLOAD_CONCURRENCY) {
       const chunk = accepted.slice(i, i + DOWNLOAD_CONCURRENCY);
       invoices.push(
         ...(await Promise.all(
-          chunk.map(({ message, file }) => this.buildInvoiceRecord(botToken, channelId, message, file)),
+          chunk.map(({ message, file }) =>
+            this.buildInvoiceRecord(botToken, channelId, message, file, permalinkBase),
+          ),
         )),
       );
     }
