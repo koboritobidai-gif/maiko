@@ -6,7 +6,7 @@ import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
 import StatusBadge from "@/components/StatusBadge";
-import { getCandidatesByCa, getReferralProfit } from "@/lib/metrics";
+import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit } from "@/lib/metrics";
 import type {
   DashboardSummary,
   InvoiceCheckRow,
@@ -166,49 +166,6 @@ function formatYenOrDash(amountYen: number | null): string {
   return amountYen === null ? "—" : formatYen(amountYen);
 }
 
-/** 請求書チェックの「対象月」表示。「2026年7月分」形式で、推定値には「(推定)」を付ける。 */
-function formatInvoiceTargetMonth(month: string, estimated: boolean): string {
-  return `${formatMonthLabel(month)}分${estimated ? "(推定)" : ""}`;
-}
-
-/** 請求書チェックの判定バッジの見た目(ラベル・文字色・背景色)。 */
-function invoiceStatusBadgeStyle(row: InvoiceCheckRow): { label: string; color: string; background: string } {
-  switch (row.status) {
-    case "match":
-      return {
-        label: "一致",
-        color: "var(--color-good)",
-        background: "color-mix(in srgb, var(--color-good) 14%, transparent)",
-      };
-    case "mismatch": {
-      const diff = row.diffYen ?? 0;
-      return {
-        label: `差異 ${diff > 0 ? "+" : "-"}${formatYen(Math.abs(diff))}`,
-        color: "var(--color-bad)",
-        background: "color-mix(in srgb, var(--color-bad) 14%, transparent)",
-      };
-    }
-    case "unreadable":
-      return { label: "金額読取不可", color: "var(--color-text-muted)", background: "var(--color-cream)" };
-    case "unknown-partner":
-      return { label: "経路不明", color: "var(--color-text-muted)", background: "var(--color-cream)" };
-    case "out-of-range":
-      return { label: "対象月が範囲外", color: "var(--color-text-muted)", background: "var(--color-cream)" };
-  }
-}
-
-/** 請求書チェック行の判定バッジ。 */
-function InvoiceStatusBadge({ row }: { row: InvoiceCheckRow }) {
-  const style = invoiceStatusBadgeStyle(row);
-  return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap"
-      style={{ background: style.background, color: style.color }}
-    >
-      {style.label}
-    </span>
-  );
-}
 
 interface DashboardViewProps {
   summary: DashboardSummary;
@@ -276,6 +233,9 @@ export default function DashboardView({
   // 請求書が1件も無く、かつ機能未設定(demo=SLACK_INVOICE_CHANNEL未設定 or デモモード)の場合は
   // カード自体を非表示にする(機能OFF扱い。デモモードでは常にデモ請求書が入るため表示される)。
   const showInvoiceCard = invoiceChecks.length > 0 || invoiceStatus !== "demo";
+  // 月ごとの支出合計(新しい月順)と、送客パートナー請求書の差異件数(警告表示用)。
+  const invoiceMonthlyTotals = getInvoiceMonthlyTotals(invoiceChecks.map((row) => row.invoice));
+  const invoiceMismatchCount = invoiceChecks.filter((row) => row.status === "mismatch").length;
   const revenueBadge = sourceBadgeLabel("revenue", revenueStatus);
   // 送客売上が1件も無く、かつ機能未設定(demo=REVENUE_SHEET_ID未設定 or デモモード)の場合は
   // セクション自体を非表示にする(請求書チェックと同じ「機能OFF」扱い)。
@@ -615,70 +575,43 @@ export default function DashboardView({
               接続エラーの内容: {invoiceErrorMessage}
             </p>
           )}
-          <div className="card overflow-x-auto p-3.5">
-            <table className="w-full min-w-[680px] text-left text-[12px]">
-              <thead>
-                <tr style={{ color: "var(--color-text-muted)" }}>
-                  <th className="pb-2 pr-2 font-medium">経路</th>
-                  <th className="pb-2 pr-2 font-medium">対象月</th>
-                  <th className="pb-2 pr-2 text-right font-medium">請求額</th>
-                  <th className="pb-2 pr-2 text-right font-medium">アプリ計算</th>
-                  <th className="pb-2 pr-2 font-medium">判定</th>
-                  <th className="pb-2 font-medium">Slack</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-                {invoiceChecks.map((row, i) => (
-                  <tr key={i}>
-                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
-                      {row.invoice.partnerChannel ?? "経路不明"}
-                    </td>
-                    <td className="py-2 pr-2 whitespace-nowrap">
-                      {formatInvoiceTargetMonth(row.invoice.targetMonth, row.invoice.targetMonthIsEstimated)}
-                    </td>
-                    <td className="py-2 pr-2 text-right whitespace-nowrap">
-                      {row.invoice.amountYen !== undefined ? formatYen(row.invoice.amountYen) : "—"}
-                    </td>
-                    <td className="py-2 pr-2 text-right whitespace-nowrap">
-                      {row.computedYen !== undefined ? formatYen(row.computedYen) : "—"}
-                    </td>
-                    <td className="py-2 pr-2">
-                      <InvoiceStatusBadge row={row} />
-                      {row.status === "unreadable" && row.invoice.parseNote && (
-                        <p className="mt-1 text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                          {row.invoice.parseNote}
-                        </p>
-                      )}
-                    </td>
-                    <td className="py-2 whitespace-nowrap">
-                      {row.invoice.permalink && (
-                        <a
-                          href={row.invoice.permalink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-semibold"
-                          style={{ color: "var(--color-gold)" }}
-                        >
-                          Slackで開く →
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {invoiceChecks.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
-                      Slack「#請求書」から読み取れた請求書はまだありません。
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            {invoiceSkippedCount > 0 && (
-              <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                他{invoiceSkippedCount}件のPDFは点検対象外(直近15件まで)。
+          {/* 月ごとの支出合計だけをシンプルに表示する(1件ずつの明細・照合結果は「AIに聞く」で回答)。 */}
+          <div className="card p-3.5">
+            <div className="flex flex-col divide-y" style={{ borderColor: "var(--color-border)" }}>
+              {invoiceMonthlyTotals.map((m) => (
+                <div key={m.month} className="flex items-baseline justify-between py-2">
+                  <span className="text-[12px] font-medium" style={{ color: "var(--color-navy)" }}>
+                    {formatMonthLabel(m.month)}分の支払い
+                  </span>
+                  <span className="text-right">
+                    <span className="text-[16px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
+                      {formatYen(m.totalYen)}
+                    </span>
+                    <span className="ml-1.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                      ({m.count.toLocaleString("ja-JP")}件
+                      {m.unreadableCount > 0 ? `+読取不可${m.unreadableCount}件` : ""})
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {invoiceMonthlyTotals.length === 0 && (
+                <p className="py-3 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+                  Slack「#請求書」から読み取れた請求書はまだありません。
+                </p>
+              )}
+            </div>
+            {invoiceMismatchCount > 0 && (
+              <p
+                className="mt-2 rounded-lg border px-3 py-2 text-[11px] font-medium"
+                style={{ color: "var(--color-bad)", borderColor: "var(--color-bad)" }}
+              >
+                ⚠️ 送客パートナーの請求書{invoiceMismatchCount}件でアプリ計算との差異があります。「AIに聞く」で「請求書は合ってる?」と質問すると詳細が見られます。
               </p>
             )}
+            <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              内訳(請求月・会社・金額)は「AIに聞く」で「請求書の内訳は?」と質問すると見られます。
+              {invoiceSkippedCount > 0 ? ` 他${invoiceSkippedCount}件のPDFは対象外(直近15件まで)。` : ""}
+            </p>
           </div>
         </section>
       )}

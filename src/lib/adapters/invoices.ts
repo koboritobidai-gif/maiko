@@ -141,6 +141,26 @@ function findPartnerChannel(...texts: string[]): string | undefined {
   return undefined;
 }
 
+/** 会社名らしい表記(前株・後株・合同/有限会社)。 */
+const VENDOR_NAME_RE = /(?:株式会社|合同会社|有限会社)[^\s、。,()()\n]{1,20}|[^\s、。,()()\n]{1,20}(?:株式会社|合同会社|有限会社)/g;
+/** 自社(請求書の宛先)を請求元と誤認しないための除外パターン。 */
+const SELF_COMPANY_RE = /翔び台|飛び台|トビダイ|tobidai/i;
+
+/**
+ * 請求元の会社名を、PDFテキスト → ファイル名 → Slackメッセージ本文の順にヒューリスティックに探す。
+ * 請求書の宛先である自社(翔び台)を最初に拾ってしまわないよう、自社名を含む候補は除外する。
+ */
+function findVendorName(...texts: string[]): string | undefined {
+  for (const text of texts) {
+    VENDOR_NAME_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = VENDOR_NAME_RE.exec(text))) {
+      if (!SELF_COMPANY_RE.test(m[0])) return m[0];
+    }
+  }
+  return undefined;
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -316,6 +336,7 @@ export class SlackInvoiceSource implements InvoiceSource {
     }
 
     const partnerChannel = findPartnerChannel(text, fileName, message.text ?? "");
+    const vendorName = findVendorName(text, fileName, message.text ?? "");
     const { month: targetMonth, estimated: targetMonthIsEstimated } = detectTargetMonth(text, postedAt);
     const amountYen = text ? findAmountYen(text) : undefined;
     if (amountYen === undefined && !parseNote) {
@@ -324,7 +345,17 @@ export class SlackInvoiceSource implements InvoiceSource {
 
     const permalink = await this.fetchPermalink(botToken, channelId, message.ts);
 
-    return { partnerChannel, amountYen, targetMonth, targetMonthIsEstimated, fileName, postedAt, permalink, parseNote };
+    return {
+      partnerChannel,
+      vendorName,
+      amountYen,
+      targetMonth,
+      targetMonthIsEstimated,
+      fileName,
+      postedAt,
+      permalink,
+      parseNote,
+    };
   }
 
   async getReferralInvoices(): Promise<InvoiceFetchResult> {

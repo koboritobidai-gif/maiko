@@ -376,6 +376,8 @@ export interface MarketingData {
 export interface ReferralInvoice {
   /** 一致した経路名(単価マスタの表記)。特定できなければ undefined */
   partnerChannel?: string;
+  /** 請求元の会社名(PDFテキストから「株式会社◯◯」等を自動抽出。翔び台自身は除外)。読み取れなければ undefined */
+  vendorName?: string;
   /** 請求金額(円)。読み取れなければ undefined */
   amountYen?: number;
   /** 対象月(YYYY-MM)。 */

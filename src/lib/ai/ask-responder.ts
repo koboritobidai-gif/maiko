@@ -13,6 +13,7 @@ import {
   getCandidatesByCa,
   getCorporateFunnel,
   getForecastRevenue,
+  getInvoiceMonthlyTotals,
   getKpiTotalsByOwner,
   getMarketingSummary,
   getMonthPlacements,
@@ -186,6 +187,8 @@ export function buildAskSnapshot(
     // 送客パートナー請求書(Slack「#請求書」)の自動照合結果。経路/対象月/請求額/アプリ計算/判定。
     referralInvoiceChecks: invoiceChecks.map((row) => ({
       partnerChannel: row.invoice.partnerChannel ?? null,
+      vendorName: row.invoice.vendorName ?? null,
+      fileName: row.invoice.fileName,
       targetMonth: row.invoice.targetMonth,
       targetMonthIsEstimated: row.invoice.targetMonthIsEstimated,
       invoiceAmountYen: row.invoice.amountYen ?? null,
@@ -271,7 +274,10 @@ caResults は全メンバー(CA: 今井/佐藤/富田 を含む)個別の今月�
 万円単位)・週次KPIの入力担当分(monthlyKpiInput)が含まれます。「◯◯さんの結果は?」「◯◯さんの実績は?」
 のような質問には、該当メンバーの caResults を使って具体的に答えてください。
 
-referralInvoiceChecks は Slack「#請求書」チャンネルの送客パートナー請求書PDFを自動照合した結果で、
+referralInvoiceChecks は Slack「#請求書」チャンネルの請求書PDF(送客パートナー以外の支払いも含む)を
+読み取った結果で、vendorName(請求元の会社名)・fileName も含まれます。「請求書の内訳は?」「◯月の支出は?」
+のような質問には、対象月(targetMonth)ごとに合計と「会社名 金額」の内訳を答えてください。
+送客パートナー請求書PDFを自動照合した結果でもあり、
 経路(partnerChannel、特定できなければ null)・対象月(targetMonth、YYYY-MM形式)・請求額
 (invoiceAmountYen)・アプリの計算値(computedAmountYen)・差額(diffYen)・判定(status: match=一致/
 mismatch=差異あり/unreadable=金額読取不可/unknown-partner=経路不明/out-of-range=対象月が範囲外)が
@@ -459,6 +465,34 @@ function answerReferralPartnerChannel(r: ReferralPartnerSummary, marketingSummar
     `${r.channel}の今月実績は面談${r.count}名、単価${formatYenPlain(r.unitCostYen)}、費用は${formatYenPlain(r.costYen)}です。` +
     lastPart
   );
+}
+
+/** 月キー(YYYY-MM)を「YYYY年M月」表示に変換する。 */
+function formatMonthKey(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return `${y}年${m}月`;
+}
+
+/**
+ * 「請求書の内訳は?」への回答: 月ごとの支出合計と、1件ずつの内訳(請求月・会社・金額)。
+ * トップ画面は月次合計だけのシンプル表示のため、明細はこの回答で提供する。
+ */
+function answerInvoiceBreakdown(invoiceChecks: InvoiceCheckRow[]): string {
+  if (invoiceChecks.length === 0) {
+    return "Slack「#請求書」から読み取れた請求書がまだありません。";
+  }
+  const invoices = invoiceChecks.map((r) => r.invoice);
+  const months = getInvoiceMonthlyTotals(invoices);
+  const lines = months.map((m) => {
+    const detail = invoices
+      .filter((inv) => inv.targetMonth === m.month && inv.amountYen !== undefined)
+      .sort((a, b) => (b.amountYen ?? 0) - (a.amountYen ?? 0))
+      .map((inv) => `${inv.vendorName ?? inv.partnerChannel ?? inv.fileName} ${formatYenPlain(inv.amountYen ?? 0)}`)
+      .join("、");
+    const unreadableNote = m.unreadableCount > 0 ? `。ほか金額読取不可${m.unreadableCount}件` : "";
+    return `【${formatMonthKey(m.month)}分】合計${formatYenPlain(m.totalYen)}(${m.count}件): ${detail}${unreadableNote}`;
+  });
+  return `Slack「#請求書」の月別支出まとめです。\n${lines.join("\n")}`;
 }
 
 /** 「請求書」を含む質問への回答: 送客パートナー請求書の自動照合結果のまとめ。 */
@@ -845,8 +879,14 @@ export function answerWithRules(
   if (text.includes("CPA") || text.includes("登録単価")) return answerCpa(marketingSummary);
   if (text.includes("広告費") || text.includes("広告金額")) return answerAdCost(marketingSummary);
 
-  // 4.55. 請求書チェック(Slack「#請求書」の自動照合)
-  if (text.includes("請求書")) return answerInvoiceChecks(invoiceChecks);
+  // 4.55. 請求書(Slack「#請求書」)。「内訳」「いくら」「支出/支払」を含む質問は月別内訳、
+  //       それ以外(「合ってる?」等)は送客パートナー請求書の照合結果を返す。
+  if (text.includes("請求書")) {
+    if (text.includes("内訳") || text.includes("いくら") || text.includes("支出") || text.includes("支払")) {
+      return answerInvoiceBreakdown(invoiceChecks);
+    }
+    return answerInvoiceChecks(invoiceChecks);
+  }
 
   // 4.56. 送客売上(翔び台が貰う金額)。「8. 売上見込み」など既存の「売上」判定より先に判定する
   //       (「送客売上」「入金」「貰う/もらう」「利益」「収支」を含む質問はこちらを優先)。

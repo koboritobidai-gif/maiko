@@ -656,6 +656,7 @@ export const referralInvoices: ReferralInvoice[] = [
     // 差異あり: 請求は1名分(¥27,500)だが、アプリの先月計算は0名(¥0)。
     // KANOA経由の登録・面談実施の計上漏れ、または先方の集計対象月ズレの可能性を示すデモ。
     partnerChannel: "KANOA",
+    vendorName: "株式会社KANOA",
     amountYen: 27_500,
     targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
     targetMonthIsEstimated: false,
@@ -666,6 +667,7 @@ export const referralInvoices: ReferralInvoice[] = [
   {
     // 読取不可: スキャン画像PDFを想定し、テキスト抽出に失敗したケース。
     partnerChannel: "マホガニー",
+    vendorName: "株式会社マホガニー",
     amountYen: undefined,
     targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
     targetMonthIsEstimated: true,
@@ -677,6 +679,7 @@ export const referralInvoices: ReferralInvoice[] = [
   {
     // 一致: 先月の対象者なしのため、先方も¥0で確認請求(件数0件の確認書として送付)。
     partnerChannel: "foresma",
+    vendorName: "foresma株式会社",
     amountYen: 0,
     targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
     targetMonthIsEstimated: true,
@@ -687,6 +690,7 @@ export const referralInvoices: ReferralInvoice[] = [
   {
     // 一致: 先月1名(中島陽菜さん)分の¥22,000で、アプリの計算値と完全一致。
     partnerChannel: "2peace(Tさん)",
+    vendorName: "株式会社2peace",
     amountYen: 22_000,
     targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
     targetMonthIsEstimated: false,
@@ -698,6 +702,7 @@ export const referralInvoices: ReferralInvoice[] = [
     // 送客パートナー以外の請求書(経路不明扱い)。「出ていくお金(全体)」の「その他の支払い」に
     // 合算されるケースを見せるデモ(getOtherInvoiceCosts 参照)。
     partnerChannel: undefined,
+    vendorName: "スマートワークス株式会社",
     amountYen: 33_000,
     targetMonth: REFERRAL_INVOICE_TARGET_MONTH,
     targetMonthIsEstimated: false,

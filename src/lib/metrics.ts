@@ -800,6 +800,42 @@ export interface InvoiceCheckRow {
  * - 金額が完全一致すれば "match"、そうでなければ "mismatch"(diffYen = 請求額 − アプリ計算値)。
  * - 並びは投稿日の新しい順。
  */
+/** #請求書の対象月ごとの支出合計(全請求書。トップ画面の月次サマリ表示用)。 */
+export interface InvoiceMonthTotal {
+  /** 対象月(YYYY-MM) */
+  month: string;
+  /** 金額を読み取れた請求書の合計(円) */
+  totalYen: number;
+  /** 金額を読み取れた請求書の件数 */
+  count: number;
+  /** 金額を読み取れなかった請求書の件数(合計に未反映。注意書き用) */
+  unreadableCount: number;
+}
+
+/**
+ * #請求書の全請求書を対象月ごとに合計する(新しい月順)。
+ * トップ画面では1件ずつの明細は出さず、この月次合計だけを表示する(内訳は「AIに聞く」で回答する)。
+ */
+export function getInvoiceMonthlyTotals(invoices: ReferralInvoice[]): InvoiceMonthTotal[] {
+  const byMonth = new Map<string, InvoiceMonthTotal>();
+  for (const inv of invoices) {
+    const entry = byMonth.get(inv.targetMonth) ?? {
+      month: inv.targetMonth,
+      totalYen: 0,
+      count: 0,
+      unreadableCount: 0,
+    };
+    if (inv.amountYen !== undefined) {
+      entry.totalYen += inv.amountYen;
+      entry.count += 1;
+    } else {
+      entry.unreadableCount += 1;
+    }
+    byMonth.set(inv.targetMonth, entry);
+  }
+  return [...byMonth.values()].sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0));
+}
+
 /** 対象月ごとの「その他の支払い」(#請求書のうち送客パートナー以外の請求書)の合計。 */
 export interface OtherInvoiceCosts {
   totalYen: number;
