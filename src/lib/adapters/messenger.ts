@@ -308,6 +308,12 @@ export class SlackSource implements MessengerSource {
     const THREAD_CONCURRENCY = 10;
     const HISTORY_LOOKBACK_DAYS = 120;
     const HISTORY_MAX_MESSAGES = 600;
+    // 返信の新規取得に使ってよい時間の上限。250スレッドを一度に読むとSlackのレート制限(429)で
+    // 待ち時間が積み重なり、Vercelの実行時間上限(60秒)を超えて画面自体が開けなくなった障害があった。
+    // 期限を超えたら残りは「前回読んだ内容(キャッシュ)があればそれ、無ければ返信なし」として先に
+    // 画面を返し、次回以降の読み込みで少しずつ埋める(キャッシュは読めた分だけ確実に貯まる)。
+    const REPLY_TIME_BUDGET_MS = 20_000;
+    const repliesDeadline = Date.now() + REPLY_TIME_BUDGET_MS;
 
     const oldest = String(Math.floor(Date.now() / 1000) - HISTORY_LOOKBACK_DAYS * 86400);
     const historyMessages: SlackMessage[] = [];
@@ -348,9 +354,12 @@ export class SlackSource implements MessengerSource {
         const cached = threadRepliesCache.get(m.ts);
         if (cached && cached.cacheKey === cacheKey) {
           replies = cached.replies;
-        } else {
+        } else if (Date.now() < repliesDeadline) {
           replies = await this.fetchThreadReplies(botToken, channelId, m.ts);
           threadRepliesCache.set(m.ts, { cacheKey, replies });
+        } else if (cached) {
+          // 時間切れ: 内容が少し古くても、返信なし扱いよりは前回読んだキャッシュの方が正確。
+          replies = cached.replies;
         }
       }
 
