@@ -909,9 +909,21 @@ export function getPrimaryMonthSnapshots(
   referralRates: ReferralRate[],
   revenueRecords: RevenueRecord[],
   invoices: ReferralInvoice[],
+  /**
+   * Slack「#求職者」から検出した面談実施の月別件数(YYYY-MM → 人数)。
+   * 週次KPIシートは週1回の手入力のため当月分が0のままになりがちで、経営者の要望により
+   * 面談数は「シート入力とSlack検出の多い方」を表示する(過去月のシート確定値は保ちつつ、
+   * 当月はSlackの面談メモが即反映される)。
+   */
+  slackInterviewCountsByMonth?: Map<string, number>,
   now: Date = new Date(),
   months = 6,
 ): PrimaryMonthSnapshot[] {
+  const interviewsForMonth = (ref: Date): number => {
+    const sheet = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談数", ref);
+    const slack = slackInterviewCountsByMonth?.get(monthKeyOf(ref)) ?? 0;
+    return Math.max(sheet, slack);
+  };
   const snapshots: PrimaryMonthSnapshot[] = [];
   for (let i = 0; i < months; i++) {
     const ref = new Date(now.getFullYear(), now.getMonth() - i, 15);
@@ -930,10 +942,19 @@ export function getPrimaryMonthSnapshots(
     const moneyInYen = revenueRecords
       .filter((r) => r.month === monthKey)
       .reduce((sum, r) => sum + r.amountYen, 0);
+    // 面談数だけはシート入力とSlack検出の多い方に差し替える(上記 slackInterviewCountsByMonth 参照)。
+    const primary = getPrimaryKpis(weeklyKpis, ref);
+    const interviews = interviewsForMonth(ref);
+    const previousInterviews = interviewsForMonth(new Date(ref.getFullYear(), ref.getMonth() - 1, 15));
+    primary.interviews = {
+      value: interviews,
+      previousValue: previousInterviews,
+      diff: interviews - previousInterviews,
+    };
     snapshots.push({
       monthKey,
       label,
-      primary: getPrimaryKpis(weeklyKpis, ref),
+      primary,
       moneyInYen,
       // 広告費+SNS(totalCost から面談ベースの送客費用を除いたもの)+#請求書のその月支払い全額。
       moneyOutYen: marketing.totalCost - marketing.referralTotalYen + invoicePaidYen,

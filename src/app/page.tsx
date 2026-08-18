@@ -14,7 +14,11 @@ import { loadRevenueRecords } from "@/lib/revenue-data";
 import { loadSalesReports } from "@/lib/sales-data";
 import { getSalesMonthlyStats } from "@/lib/sales-stats";
 import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
-import { buildReferralCandidatesFromSlack, fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
+import {
+  buildReferralCandidatesFromSlack,
+  fillInterviewDatesFromSlack,
+  getSlackInterviewMonthlyCounts,
+} from "@/lib/slack-interviews";
 
 // ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
 // loadDataBundle() / loadMarketingData() 自体もモジュールメモリキャッシュを持つため、二重に整合する。
@@ -76,6 +80,8 @@ export default async function TodayDashboardPage() {
   // 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月・今月が先頭。対象は SALES_NAMES 固定リスト)。
   const salesStats = getSalesMonthlyStats(salesResult.reports, salesResult.appointments, now);
   // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
+  // 面談数は週次KPIシートの手入力とSlack「#求職者」の面談メモ検出の多い方を表示する
+  // (シート入力前の当月もCA別実績と同じSlack集計が即反映されるように)。
   const primaryMonths = getPrimaryMonthSnapshots(
     bundle.weeklyKpis,
     marketingResult.data,
@@ -83,6 +89,7 @@ export default async function TodayDashboardPage() {
     bundle.settings.referralRates,
     revenueResult.records,
     invoicesResult.invoices,
+    getSlackInterviewMonthlyCounts(threadsResult.threads),
     now,
   );
   // 集客・広告セクションの月選択(直近6ヶ月)。主要指標と同じ月の並び・ラベルを使う。

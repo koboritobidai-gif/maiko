@@ -96,6 +96,20 @@ export function getSlackInterviewDatesByName(threads: CandidateThread[]): Map<st
 }
 
 /**
+ * Slackスレッドから検出した面談実施の「月別件数」(YYYY-MM → 人数)を返す(純関数)。
+ * 主要指標の面談数は週次KPIシートの手入力を待たずにSlackの面談メモから反映したいという
+ * 経営者の要望のため、CA別実績と同じ検出ルール(1スレッド=1人、最初の面談報告の日付の月)で数える。
+ */
+export function getSlackInterviewMonthlyCounts(threads: CandidateThread[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const date of getSlackInterviewDatesByName(threads).values()) {
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
  * シートの求職者台帳に、Slackスレッドから検出した面談日を補完して返す(純関数)。
  * `interviewedAt` が既にある(=シートO列に手入力がある)求職者はそのまま。
  */
