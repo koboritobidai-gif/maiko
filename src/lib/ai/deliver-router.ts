@@ -35,8 +35,11 @@ export interface DeliverSuggestion {
 
 export const ROLE_LABELS: Record<Role, string> = {
   代表: "代表",
+  社長: "社長",
   CA: "キャリアアドバイザー(CA)",
   RA: "法人営業(RA)",
+  法人営業: "法人営業",
+  サポート: "サポート",
 };
 
 const CATEGORY_HEADLINE: Record<DeliverCategory, string> = {

@@ -70,13 +70,18 @@ function hoursAgo(n: number): Date {
 // ─────────────────────────────────────────────
 // メンバー(代表1名・CA3名・RA2名 計6名)
 // ─────────────────────────────────────────────
+// 実在の体制(経営者申告)。小堀(経営者本人)は一覧に載せず、水口社長は一番下に表示する。
 export const members: Member[] = [
-  { id: "m1", name: "小堀", role: "代表", specialty: "経営・マーケティング(集客導線・LINEファネル全般)" },
-  { id: "m2", name: "今井", role: "CA", specialty: "求職者面談・カウンセリング" },
+  { id: "m2", name: "竹林", role: "CA", specialty: "求職者面談・カウンセリング" },
   { id: "m3", name: "佐藤", role: "CA", specialty: "選考対応・内定フォロー" },
-  { id: "m4", name: "富田", role: "CA", specialty: "求職者面談・面接対策" },
-  { id: "m5", name: "清本", role: "RA", specialty: "法人新規開拓・商談" },
-  { id: "m6", name: "江崎", role: "RA", specialty: "法人新規開拓・商談" },
+  { id: "m4", name: "別府", role: "CA", specialty: "求職者面談・面接対策" },
+  { id: "m5", name: "寺本", role: "CA", specialty: "求職者面談・カウンセリング" },
+  { id: "m6", name: "松永", role: "CA", specialty: "求職者面談・選考対応" },
+  { id: "m7", name: "清本", role: "法人営業", specialty: "法人新規開拓・商談" },
+  { id: "m8", name: "望月", role: "法人営業", specialty: "法人新規開拓・商談" },
+  { id: "m9", name: "畠山", role: "サポート", specialty: "業務サポート" },
+  { id: "m10", name: "福岡", role: "サポート", specialty: "業務サポート" },
+  { id: "m11", name: "水口", role: "社長", specialty: "経営" },
 ];
 
 // ログイン用デモ人格(設計書 4.0)

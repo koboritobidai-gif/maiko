@@ -450,7 +450,7 @@ function requireDateString(row: SheetRow, index: number, field: string, tabName:
   return raw;
 }
 
-const ROLE_VALUES = ["代表", "CA", "RA"] as const;
+const ROLE_VALUES = ["代表", "社長", "CA", "RA", "法人営業", "サポート"] as const;
 
 function requireRole(row: SheetRow, index: number, tabName: string, rowNumber: number): Member["role"] {
   const raw = requireString(row, index, "役割", tabName, rowNumber);
