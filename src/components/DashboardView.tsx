@@ -468,7 +468,7 @@ export default function DashboardView({
             value={formatYen(moneyInYen)}
             caption={
               showRevenueSection
-                ? `${shortMonthLabel(pm.monthKey)}末入金分(翔び台請求書関係シート)`
+                ? `${shortMonthLabel(pm.monthKey)}末入金分`
                 : "未連携: Vercelに REVENUE_SHEET_ID を設定すると表示されます"
             }
             accent
