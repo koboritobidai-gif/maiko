@@ -11,6 +11,7 @@ import {
   getRevenueSummary,
 } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
+import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
 import { buildReferralCandidatesFromSlack, fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 // ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
@@ -65,6 +66,8 @@ export default async function TodayDashboardPage() {
   );
   // 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
+  // CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES 固定リスト)。
+  const caStats = getCaMonthlyStatsFromThreads(threadsResult.threads, now);
   // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
   const primaryMonths = getPrimaryMonthSnapshots(
     bundle.weeklyKpis,
@@ -113,6 +116,7 @@ export default async function TodayDashboardPage() {
       revenueStatus={revenueResult.status}
       revenueErrorMessage={revenueResult.errorMessage}
       primaryMonths={primaryMonths}
+      caStats={caStats}
     />
   );
 }

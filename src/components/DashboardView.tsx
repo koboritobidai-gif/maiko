@@ -13,6 +13,7 @@ import type {
   PrimaryMonthSnapshot,
   RevenueMonthSummary,
 } from "@/lib/metrics";
+import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
@@ -207,6 +208,11 @@ function formatYen(amountYen: number): string {
   return `¥${Math.round(amountYen).toLocaleString("ja-JP")}`;
 }
 
+/** 率(%)を表示する。null(分母0で算出不可)は「—」。 */
+function formatPercentOrDash(percent: number | null): string {
+  return percent === null ? "—" : `${percent.toFixed(1)}%`;
+}
+
 /** 円額(単価等)を表示する。null(分母0で算出不可)は「—」。 */
 function formatYenOrDash(amountYen: number | null): string {
   return amountYen === null ? "—" : formatYen(amountYen);
@@ -238,6 +244,8 @@ interface DashboardViewProps {
   revenueErrorMessage?: string;
   /** 主要指標セクションの月選択用スナップショット(直近6ヶ月、今月が先頭)。 */
   primaryMonths: PrimaryMonthSnapshot[];
+  /** CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月、今月が先頭)。 */
+  caStats: CaMonthlyStats[];
 }
 
 export default function DashboardView({
@@ -259,11 +267,13 @@ export default function DashboardView({
   revenueStatus,
   revenueErrorMessage,
   primaryMonths,
+  caStats,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標・集客/広告は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
+  // 主要指標・集客/広告・CA別実績は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
   const [primaryMonthIdx, setPrimaryMonthIdx] = useState(0);
   const [marketingMonthIdx, setMarketingMonthIdx] = useState(0);
+  const [caMonthIdx, setCaMonthIdx] = useState(0);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
@@ -338,6 +348,28 @@ export default function DashboardView({
     corporateFunnel.appointments.total,
     corporateFunnel.meetings.total,
   );
+
+  // CA別実績セクションの月選択(直近6ヶ月)。primaryMonths と同じ月範囲・基準日で計算されているため、
+  // 見出し用のラベル(「今月(8月)」「7月」形式)はそのまま再利用する。
+  const caMonths = caStats.map((s, i) => ({
+    monthKey: s.monthKey,
+    label: primaryMonths[i]?.label ?? formatMonthLabel(s.monthKey),
+  }));
+  const caMonth = caStats[caMonthIdx] ?? caStats[0];
+  const caRows = caMonth?.rows ?? [];
+  const caTotal = caRows.reduce(
+    (sum, r) => ({
+      interviews: sum.interviews + r.interviews,
+      advancedToInterview: sum.advancedToInterview + r.advancedToInterview,
+      interviewEventCount: sum.interviewEventCount + r.interviewEventCount,
+      offers: sum.offers + r.offers,
+      withdrawn: sum.withdrawn + r.withdrawn,
+    }),
+    { interviews: 0, advancedToInterview: 0, interviewEventCount: 0, offers: 0, withdrawn: 0 },
+  );
+  const caTotalAdvanceRatePercent = caTotal.interviews > 0 ? (caTotal.advancedToInterview / caTotal.interviews) * 100 : null;
+  const caTotalOfferRatePercent = caTotal.interviews > 0 ? (caTotal.offers / caTotal.interviews) * 100 : null;
+  const caTotalWithdrawnRatePercent = caTotal.interviews > 0 ? (caTotal.withdrawn / caTotal.interviews) * 100 : null;
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 pt-4 lg:gap-8 lg:px-8 lg:pb-12 lg:pt-6">
@@ -989,6 +1021,81 @@ export default function DashboardView({
         </div>
       </section>
       </div>
+
+      {/* 3.5 CA別実績(#求職者) */}
+      <section className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+            CA別実績(#求職者)({formatMonthLabel(caMonth?.monthKey ?? caMonths[0]?.monthKey ?? "")})
+          </h2>
+          <div className="flex items-center gap-2">
+            <MonthChips months={caMonths} value={caMonthIdx} onChange={setCaMonthIdx} />
+            <SourceBadge label={slackBadge} />
+          </div>
+        </div>
+        <div className="card overflow-x-auto p-3.5">
+          <table className="w-full min-w-[560px] text-left text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-2 font-medium">CA</th>
+                <th className="pb-2 pr-2 text-right font-medium">面談</th>
+                <th className="pb-2 pr-2 text-right font-medium">面接(件数)</th>
+                <th className="pb-2 pr-2 text-right font-medium">面接移行率</th>
+                <th className="pb-2 pr-2 text-right font-medium">内定(率)</th>
+                <th className="pb-2 text-right font-medium">離脱(率)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+              {caRows.map((r) => (
+                <tr key={r.ca}>
+                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    {r.ca}
+                  </td>
+                  <td className="py-2 pr-2 text-right">{r.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-2 pr-2 text-right">
+                    {r.advancedToInterview.toLocaleString("ja-JP")}名({r.interviewEventCount.toLocaleString("ja-JP")}件)
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatPercentOrDash(r.advanceRatePercent)}</td>
+                  <td className="py-2 pr-2 text-right">
+                    {r.offers.toLocaleString("ja-JP")}名({formatPercentOrDash(r.offerRatePercent)})
+                  </td>
+                  <td className="py-2 text-right">
+                    {r.withdrawn.toLocaleString("ja-JP")}名({formatPercentOrDash(r.withdrawnRatePercent)})
+                  </td>
+                </tr>
+              ))}
+              {caRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                    この月の面談実施の記録がありません。
+                  </td>
+                </tr>
+              )}
+              {caRows.length > 0 && (
+                <tr style={{ fontWeight: 700 }}>
+                  <td className="py-2 pr-2 whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    合計
+                  </td>
+                  <td className="py-2 pr-2 text-right">{caTotal.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-2 pr-2 text-right">
+                    {caTotal.advancedToInterview.toLocaleString("ja-JP")}名({caTotal.interviewEventCount.toLocaleString("ja-JP")}件)
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatPercentOrDash(caTotalAdvanceRatePercent)}</td>
+                  <td className="py-2 pr-2 text-right">
+                    {caTotal.offers.toLocaleString("ja-JP")}名({formatPercentOrDash(caTotalOfferRatePercent)})
+                  </td>
+                  <td className="py-2 text-right">
+                    {caTotal.withdrawn.toLocaleString("ja-JP")}名({formatPercentOrDash(caTotalWithdrawnRatePercent)})
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            担当CA = 面談結果・面接結果を投稿した人(無ければ投稿数最多)。面談を実施した月ごとの集計で、面接・内定・離脱はその後の結果も面談月に含めて数える。面談実施・面接・内定・辞退はスレッドの記載から自動検出。
+          </p>
+        </div>
+      </section>
 
       {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム) */}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">

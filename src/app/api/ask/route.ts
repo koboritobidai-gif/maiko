@@ -15,6 +15,7 @@ import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
 import { getInvoiceChecks, getMarketingSummary, getReferralProfit, getRevenueSummary } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
+import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
 interface AskRequestBody {
@@ -83,12 +84,16 @@ export async function POST(request: Request) {
     profitLastMonth: getReferralProfit(revenueSummary.lastMonth, marketingSummaryLastMonth.referralPartners),
   };
 
+  // CA別の月次実績(Slack「#求職者」ベース。直近6ヶ月、今月が先頭。対象CAは CA_NAMES 固定リスト)。
+  const caStats = getCaMonthlyStatsFromThreads(threadsResult.threads, now);
+
   const snapshot = buildAskSnapshot(
     bundle,
     threadsResult.threads,
     marketingResult.data,
     invoiceChecks,
     revenueContext,
+    caStats,
   );
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
@@ -110,6 +115,7 @@ export async function POST(request: Request) {
     marketingResult.data,
     invoiceChecks,
     revenueContext,
+    caStats,
   );
   return NextResponse.json({
     answer: ruleAnswer,

@@ -34,6 +34,8 @@ import type {
   ReferralPartnerSummary,
   RevenueMonthSummary,
 } from "@/lib/metrics";
+import { CA_NAMES } from "@/lib/slack-ca-stats";
+import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { buildReferralCandidatesFromSlack } from "@/lib/slack-interviews";
 import type {
   Candidate,
@@ -88,6 +90,7 @@ export function buildAskSnapshot(
   marketingData: MarketingData | null = null,
   invoiceChecks: InvoiceCheckRow[] = [],
   revenueContext: AskRevenueContext | null = null,
+  caStats: CaMonthlyStats[] = [],
 ) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
@@ -228,6 +231,10 @@ export function buildAskSnapshot(
           referralPartnerProfitLastMonth: revenueContext.profitLastMonth,
         }
       : null,
+    // CA別の月次実績(Slack「#求職者」スレッドから自動集計。直近6ヶ月、今月が先頭)。
+    // caResults(シート台帳ベースの今月実績)とは別物で、こちらは月ごとの面談・面接・内定・離脱の
+    // 推移を見るためのもの。
+    caMonthlyStatsFromSlack: caStats,
   };
 }
 
@@ -274,6 +281,18 @@ caResults は全メンバー(CA: 今井/佐藤/富田 を含む)個別の今月�
 ステージ内訳(stageBreakdown)・今月の成約件数と手数料合計(monthPlacementCount/monthPlacementFeeAmountMan、
 万円単位)・週次KPIの入力担当分(monthlyKpiInput)が含まれます。「◯◯さんの結果は?」「◯◯さんの実績は?」
 のような質問には、該当メンバーの caResults を使って具体的に答えてください。
+
+caMonthlyStatsFromSlack は、Slack「#求職者」チャンネルの各スレッド(1求職者1スレッド)から、CAごと×月ごとに
+自動集計した実績です(caResults とは別物で、シート台帳ではなくSlackの記載を根拠にした月次の推移データです)。
+対象CAは実在のCA名簿(佐藤/竹林/別府/寺本/松永。caResults のメンバータブ〈今井/佐藤/富田〉とは異なる、
+経営者申告の固定リスト)です。配列の要素は月(直近6ヶ月、今月が先頭)ごとの monthKey(YYYY-MM)と
+rows(CA別の行、面談0のCAは含まない)で、各行に ca(CA名。どのCAにも紐付かない場合「その他」)・
+interviews(面談実施人数)・advancedToInterview(面接へ進んだ人数)・interviewEventCount(面接実施の延べ件数)・
+advanceRatePercent(面接への移行率%)・offers/offerRatePercent(内定人数・率)・withdrawn/withdrawnRatePercent
+(離脱人数・率、いずれも率は分母0だと null)が含まれます。担当CAはスレッドで最初に面談・面接の実施結果を
+報告した投稿者(無ければ返信数最多の人)から判定しています。「佐藤さんの7月の面談実績は?」「竹林さんの
+面接移行率は?」のような、CA名+月+実績系の質問には、この caMonthlyStatsFromSlack の該当月・該当CAの行を
+使って具体的に答えてください。
 
 referralInvoiceChecks は Slack「#請求書」チャンネルの請求書PDF(送客パートナー以外の支払いも含む)を
 読み取った結果で、vendorName(請求元の会社名)・fileName も含まれます。「請求書の内訳は?」「◯月の支出は?」
@@ -472,6 +491,48 @@ function answerReferralPartnerChannel(r: ReferralPartnerSummary, marketingSummar
 function formatMonthKey(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return `${y}年${m}月`;
+}
+
+/** 質問文にCA姓(CA_NAMES。slack-ca-stats.ts の固定リスト)が含まれるか探す。 */
+function findCaNameInText(text: string): string | undefined {
+  return CA_NAMES.find((name) => text.includes(name));
+}
+
+/** 質問文の「◯月」表記に対応する CaMonthlyStats を選ぶ(該当月が無ければ直近月=先頭)。 */
+function resolveCaStatsMonth(text: string, caStats: CaMonthlyStats[]): CaMonthlyStats | undefined {
+  const match = /(\d{1,2})月/.exec(text);
+  if (match) {
+    const monthNum = Number(match[1]);
+    const found = caStats.find((s) => Number(s.monthKey.split("-")[1]) === monthNum);
+    if (found) return found;
+  }
+  return caStats[0];
+}
+
+/** 率(%)を表示する。null(分母0で算出不可)は「—」。 */
+function formatCaRatePercent(percent: number | null): string {
+  return percent === null ? "—" : `${percent.toFixed(1)}%`;
+}
+
+/**
+ * 「◯◯さんの◯月の面談実績は?」等への回答: Slack「#求職者」ベースのCA別月次実績
+ * (caMonthlyStatsFromSlack。シート台帳ベースの caResults / answerMemberResults とは別物)。
+ */
+function answerCaMonthlyStat(caName: string, text: string, caStats: CaMonthlyStats[]): string {
+  const target = resolveCaStatsMonth(text, caStats);
+  if (!target) {
+    return `${caName}さんのSlack「#求職者」ベースの月次実績データがまだありません。`;
+  }
+  const monthLabel = formatMonthKey(target.monthKey);
+  const row = target.rows.find((r) => r.ca === caName);
+  if (!row) {
+    return `${monthLabel}は${caName}さんが担当した面談実施の記録がSlack「#求職者」から見つかりませんでした。`;
+  }
+  return (
+    `${monthLabel}の${caName}さんの実績です(Slack「#求職者」ベース)。面談${row.interviews}件のうち面接へ進んだのは` +
+    `${row.advancedToInterview}名(面接移行率${formatCaRatePercent(row.advanceRatePercent)}、面接実施${row.interviewEventCount}件)。` +
+    `内定${row.offers}名(${formatCaRatePercent(row.offerRatePercent)})、離脱${row.withdrawn}名(${formatCaRatePercent(row.withdrawnRatePercent)})です。`
+  );
 }
 
 /**
@@ -809,6 +870,7 @@ export function answerWithRules(
   marketingData: MarketingData | null = null,
   invoiceChecks: InvoiceCheckRow[] = [],
   revenueContext: AskRevenueContext | null = null,
+  caStats: CaMonthlyStats[] = [],
 ): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
@@ -836,6 +898,23 @@ export function answerWithRules(
     if (mentionedCandidate) parts.push(answerCandidateDetail(mentionedCandidate, bundle));
     if (mentionedThread) parts.push(answerCandidateThreadDetail(mentionedThread));
     return parts.join(" ");
+  }
+
+  // 0.5. CA別月次実績(Slack「#求職者」ベース)。CA姓(CA_NAMES固定リスト)+「面談/面接/実績/移行/
+  //      離脱/内定」を含む質問は、既存の「◯◯さんの結果は?」(シート台帳ベース、
+  //      findMemberBySurnameInText 使用箇所)より先に判定する(経営者の運用ルール:
+  //      面談結果・面接結果を投稿している人が担当)。
+  const mentionedCaName = findCaNameInText(text);
+  if (
+    mentionedCaName &&
+    (text.includes("面談") ||
+      text.includes("面接") ||
+      text.includes("実績") ||
+      text.includes("移行") ||
+      text.includes("離脱") ||
+      text.includes("内定"))
+  ) {
+    return answerCaMonthlyStat(mentionedCaName, text, caStats);
   }
 
   // 1. 特定メンバー名 + KPIキーワード(例: 「清本さんの商談数は?」)
