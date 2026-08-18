@@ -34,6 +34,8 @@ import type {
   ReferralPartnerSummary,
   RevenueMonthSummary,
 } from "@/lib/metrics";
+import { SALES_NAMES } from "@/lib/sales-stats";
+import type { SalesMonthlyStats } from "@/lib/sales-stats";
 import { CA_NAMES } from "@/lib/slack-ca-stats";
 import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { buildReferralCandidatesFromSlack } from "@/lib/slack-interviews";
@@ -91,6 +93,7 @@ export function buildAskSnapshot(
   invoiceChecks: InvoiceCheckRow[] = [],
   revenueContext: AskRevenueContext | null = null,
   caStats: CaMonthlyStats[] = [],
+  salesStats: SalesMonthlyStats[] = [],
 ) {
   const pipeline = getStagePipeline(bundle.candidates);
   const projectList = getSortedProjects(bundle.projects);
@@ -235,6 +238,9 @@ export function buildAskSnapshot(
     // caResults(シート台帳ベースの今月実績)とは別物で、こちらは月ごとの面談・面接・内定・離脱の
     // 推移を見るためのもの。
     caMonthlyStatsFromSlack: caStats,
+    // 営業実績(法人営業〈清本・望月〉の月次実績。Slack「#21_ra」「#22_アポイント報告」から自動集計。
+    // 直近6ヶ月、今月が先頭)。
+    salesMonthlyStatsFromSlack: salesStats,
   };
 }
 
@@ -293,6 +299,14 @@ advanceRatePercent(面接への移行率%)・offers/offerRatePercent(内定人�
 報告した投稿者(無ければ返信数最多の人)から判定しています。「佐藤さんの7月の面談実績は?」「竹林さんの
 面接移行率は?」のような、CA名+月+実績系の質問には、この caMonthlyStatsFromSlack の該当月・該当CAの行を
 使って具体的に答えてください。
+
+salesMonthlyStatsFromSlack は、Slack「#21_ra」(架電数報告・業務報告)「#22_アポイント報告」から、法人営業
+(清本・望月)ごと×月ごとに自動集計した実績です。配列の要素は月(直近6ヶ月、今月が先頭)ごとの
+monthKey(YYYY-MM)と rows(全項目0の行は含まない)で、各行に member(清本/望月。どちらにも紐付かない
+場合「その他」)・calls(架電数)・appointments(アポ獲得数、#22_アポイント報告の1投稿=1件)・
+appointmentRoutes(獲得経路の内訳、route/count、件数降順)・meetings(商談数)・contracts(契約数)が
+含まれます。「清本さんの架電数は?」「望月さんの◯月のアポ獲得は?」のような、清本・望月+月+実績系の
+質問には、この salesMonthlyStatsFromSlack の該当月・該当行を使って具体的に答えてください。
 
 referralInvoiceChecks は Slack「#請求書」チャンネルの請求書PDF(送客パートナー以外の支払いも含む)を
 読み取った結果で、vendorName(請求元の会社名)・fileName も含まれます。「請求書の内訳は?」「◯月の支出は?」
@@ -512,6 +526,46 @@ function resolveCaStatsMonth(text: string, caStats: CaMonthlyStats[]): CaMonthly
 /** 率(%)を表示する。null(分母0で算出不可)は「—」。 */
 function formatCaRatePercent(percent: number | null): string {
   return percent === null ? "—" : `${percent.toFixed(1)}%`;
+}
+
+/** 質問文に法人営業名(SALES_NAMES。sales-stats.ts の固定リスト)が含まれるか探す。 */
+function findSalesNameInText(text: string): string | undefined {
+  return SALES_NAMES.find((name) => text.includes(name));
+}
+
+/** 質問文の「◯月」表記に対応する SalesMonthlyStats を選ぶ(該当月が無ければ直近月=先頭)。 */
+function resolveSalesStatsMonth(text: string, salesStats: SalesMonthlyStats[]): SalesMonthlyStats | undefined {
+  const match = /(\d{1,2})月/.exec(text);
+  if (match) {
+    const monthNum = Number(match[1]);
+    const found = salesStats.find((s) => Number(s.monthKey.split("-")[1]) === monthNum);
+    if (found) return found;
+  }
+  return salesStats[0];
+}
+
+/**
+ * 「清本さんの◯月の実績は?」等への回答: Slack「#21_ra」「#22_アポイント報告」ベースの
+ * 法人営業別月次実績(salesMonthlyStatsFromSlack)。
+ */
+function answerSalesMonthlyStat(name: string, text: string, salesStats: SalesMonthlyStats[]): string {
+  const target = resolveSalesStatsMonth(text, salesStats);
+  if (!target) {
+    return `${name}さんのSlack「#21_ra」「#22_アポイント報告」ベースの月次実績データがまだありません。`;
+  }
+  const monthLabel = formatMonthKey(target.monthKey);
+  const row = target.rows.find((r) => r.member === name);
+  if (!row) {
+    return `${monthLabel}は${name}さんの#21_ra・#22_アポイント報告からの記録が見つかりませんでした。`;
+  }
+  const routeText =
+    row.appointmentRoutes.length > 0
+      ? `(内訳: ${row.appointmentRoutes.map((r) => `${r.route}${r.count}件`).join("、")})`
+      : "";
+  return (
+    `${monthLabel}の${name}さんの実績です(Slack「#21_ra」「#22_アポイント報告」ベース)。` +
+    `架電${row.calls}件、アポ獲得${row.appointments}件${routeText}、商談${row.meetings}件、契約${row.contracts}件です。`
+  );
 }
 
 /**
@@ -871,6 +925,7 @@ export function answerWithRules(
   invoiceChecks: InvoiceCheckRow[] = [],
   revenueContext: AskRevenueContext | null = null,
   caStats: CaMonthlyStats[] = [],
+  salesStats: SalesMonthlyStats[] = [],
 ): string {
   const text = question.trim();
   if (!text) return FALLBACK_ANSWER;
@@ -898,6 +953,21 @@ export function answerWithRules(
     if (mentionedCandidate) parts.push(answerCandidateDetail(mentionedCandidate, bundle));
     if (mentionedThread) parts.push(answerCandidateThreadDetail(mentionedThread));
     return parts.join(" ");
+  }
+
+  // 0.4. 法人営業別月次実績(Slack「#21_ra」「#22_アポイント報告」ベース)。清本・望月+「架電/アポ/
+  //      商談/契約/実績」を含む質問は、CA別実績の判定(0.5)より前に判定する(清本・望月は
+  //      CA_NAMESに含まれないため実質衝突しないが、順序を明確にしておく)。
+  const mentionedSalesName = findSalesNameInText(text);
+  if (
+    mentionedSalesName &&
+    (text.includes("架電") ||
+      text.includes("アポ") ||
+      text.includes("商談") ||
+      text.includes("契約") ||
+      text.includes("実績"))
+  ) {
+    return answerSalesMonthlyStat(mentionedSalesName, text, salesStats);
   }
 
   // 0.5. CA別月次実績(Slack「#求職者」ベース)。CA姓(CA_NAMES固定リスト)+「面談/面接/実績/移行/

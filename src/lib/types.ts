@@ -85,6 +85,34 @@ export interface Candidate {
   interviewResult?: string;
 }
 
+// ─────────────────────────────────────────────
+// 営業実績(Slack「#21_ra」「#22_アポイント報告」チャンネルから自動集計)
+// ─────────────────────────────────────────────
+
+/**
+ * #21_ra から読み取れた1レコード分(読み取れた項目のみ値が入る)。
+ * 実際のチャンネル運用では、架電数はワークフローbotの「架電数報告(12時/15時)」スレッドへの
+ * 返信を1日分合算したもの(calls のみ)、商談数・契約数は「業務報告)8/17」スレッドへの
+ * 返信から読み取ったもの(meetings/contracts のみ)というように、同じ日・同じ担当者でも
+ * calls と meetings/contracts が別レコードに分かれることがある(月次集計側で自然に合算される)。
+ */
+export interface SalesDailyReport {
+  date: Date;
+  /** 投稿者の表示名 */
+  authorName: string;
+  calls?: number;
+  meetings?: number;
+  contracts?: number;
+}
+
+/** #22_アポイント報告 の1投稿=アポ獲得1件。 */
+export interface AppointmentReport {
+  date: Date;
+  authorName: string;
+  /** 獲得経路(読み取れなければ「不明」) */
+  route: string;
+}
+
 /** 成約(内定承諾・入社が確定した紹介実績)。 */
 export interface Placement {
   id: string;

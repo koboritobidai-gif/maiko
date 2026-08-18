@@ -15,6 +15,8 @@ import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
 import { getInvoiceChecks, getMarketingSummary, getReferralProfit, getRevenueSummary } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
+import { loadSalesReports } from "@/lib/sales-data";
+import { getSalesMonthlyStats } from "@/lib/sales-stats";
 import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
 import { fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
@@ -42,12 +44,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "question は必須です。" }, { status: 400 });
   }
 
-  const [bundle, threadsResult, marketingResult, invoicesResult, revenueResult] = await Promise.all([
+  const [bundle, threadsResult, marketingResult, invoicesResult, revenueResult, salesResult] = await Promise.all([
     loadDataBundle(),
     loadCandidateThreads(),
     loadMarketingData(),
     loadReferralInvoices(),
     loadRevenueRecords(),
+    loadSalesReports(),
   ]);
 
   // 請求書チェック(送客パートナー請求書の自動照合)には今月・先月双方の送客パートナーサマリが
@@ -86,6 +89,8 @@ export async function POST(request: Request) {
 
   // CA別の月次実績(Slack「#求職者」ベース。直近6ヶ月、今月が先頭。対象CAは CA_NAMES 固定リスト)。
   const caStats = getCaMonthlyStatsFromThreads(threadsResult.threads, now);
+  // 営業実績(Slack「#21_ra」「#22_アポイント報告」ベース。直近6ヶ月、今月が先頭。対象は SALES_NAMES 固定リスト)。
+  const salesStats = getSalesMonthlyStats(salesResult.reports, salesResult.appointments, now);
 
   const snapshot = buildAskSnapshot(
     bundle,
@@ -94,6 +99,7 @@ export async function POST(request: Request) {
     invoiceChecks,
     revenueContext,
     caStats,
+    salesStats,
   );
 
   const userPrompt = `# 現在のデータスナップショット(JSON)\n${JSON.stringify(snapshot)}\n\n# ログイン中のロール\n${role ?? "不明"}\n\n# ユーザーの質問\n${question}`;
@@ -116,6 +122,7 @@ export async function POST(request: Request) {
     invoiceChecks,
     revenueContext,
     caStats,
+    salesStats,
   );
   return NextResponse.json({
     answer: ruleAnswer,

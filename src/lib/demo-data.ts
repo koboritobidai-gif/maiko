@@ -7,6 +7,7 @@
  * 実態: 拠点概念は無く、担当者個人単位で運用。KPIは週次入力(毎週月曜に前週分を入力)・月次集計。
  */
 import type {
+  AppointmentReport,
   Candidate,
   CandidateKpiKey,
   CandidateThread,
@@ -17,6 +18,7 @@ import type {
   Project,
   ReferralInvoice,
   RevenueRecord,
+  SalesDailyReport,
   SlackPost,
   Stage,
   WeeklyKpiRecord,
@@ -796,3 +798,77 @@ export const revenueRecords: RevenueRecord[] = [
     amountYen: 900_000,
   },
 ];
+
+// ─────────────────────────────────────────────
+// 営業実績(Slack「#21_ra」「#22_アポイント報告」チャンネルのデモ)
+// 法人営業(清本・望月)の今月・先月分を数日分ずつ用意する。
+// #21_ra は実運用上、架電数(架電数報告スレッドの返信合算)と商談数・契約数(業務報告スレッドの
+// 返信)が別レコードになりうるため、デモでも1日1レコードにまとめず日ごとに別々のオブジェクトを作る。
+// ─────────────────────────────────────────────
+interface SalesDailyReportSeed {
+  authorName: string;
+  date: Date;
+  calls?: number;
+  meetings?: number;
+  contracts?: number;
+}
+
+const salesDailyReportSeeds: SalesDailyReportSeed[] = [
+  // 清本(今月)
+  { authorName: "清本", date: daysAgoInMonth(1, 15, 5), calls: 42 },
+  { authorName: "清本", date: daysAgoInMonth(1, 18, 0), meetings: 1, contracts: 0 },
+  { authorName: "清本", date: daysAgoInMonth(4, 15, 10), calls: 55 },
+  { authorName: "清本", date: daysAgoInMonth(4, 18, 30), meetings: 2, contracts: 1 },
+  { authorName: "清本", date: daysAgoInMonth(7, 15, 0), calls: 38 },
+  { authorName: "清本", date: daysAgoInMonth(10, 15, 20), calls: 47 },
+  { authorName: "清本", date: daysAgoInMonth(10, 18, 0), meetings: 1, contracts: 0 },
+  // 望月(今月)
+  { authorName: "望月", date: daysAgoInMonth(2, 15, 5), calls: 33 },
+  { authorName: "望月", date: daysAgoInMonth(2, 18, 10), meetings: 1, contracts: 0 },
+  { authorName: "望月", date: daysAgoInMonth(5, 15, 15), calls: 60 },
+  { authorName: "望月", date: daysAgoInMonth(5, 18, 20), meetings: 2, contracts: 1 },
+  { authorName: "望月", date: daysAgoInMonth(9, 15, 0), calls: 41 },
+  // 清本(先月)
+  { authorName: "清本", date: lastMonthDay(3, 15, 5), calls: 50 },
+  { authorName: "清本", date: lastMonthDay(3, 18, 0), meetings: 1, contracts: 1 },
+  { authorName: "清本", date: lastMonthDay(12, 15, 10), calls: 44 },
+  { authorName: "清本", date: lastMonthDay(12, 18, 15), meetings: 2, contracts: 0 },
+  { authorName: "清本", date: lastMonthDay(20, 15, 0), calls: 36 },
+  // 望月(先月)
+  { authorName: "望月", date: lastMonthDay(6, 15, 5), calls: 48 },
+  { authorName: "望月", date: lastMonthDay(6, 18, 0), meetings: 1, contracts: 0 },
+  { authorName: "望月", date: lastMonthDay(15, 15, 10), calls: 52 },
+  { authorName: "望月", date: lastMonthDay(15, 18, 20), meetings: 2, contracts: 1 },
+  { authorName: "望月", date: lastMonthDay(24, 15, 0), calls: 30 },
+];
+
+export const salesDailyReports: SalesDailyReport[] = salesDailyReportSeeds.map((seed) => ({
+  date: seed.date,
+  authorName: seed.authorName,
+  calls: seed.calls,
+  meetings: seed.meetings,
+  contracts: seed.contracts,
+}));
+
+interface AppointmentReportSeed {
+  authorName: string;
+  date: Date;
+  route: string;
+}
+
+const appointmentReportSeeds: AppointmentReportSeed[] = [
+  { authorName: "清本", date: daysAgoInMonth(1, 17, 0), route: "テレアポ" },
+  { authorName: "清本", date: daysAgoInMonth(6, 11, 30), route: "紹介" },
+  { authorName: "望月", date: daysAgoInMonth(3, 16, 40), route: "テレアポ" },
+  { authorName: "望月", date: daysAgoInMonth(8, 10, 15), route: "反響" },
+  { authorName: "清本", date: lastMonthDay(9, 17, 0), route: "紹介" },
+  { authorName: "清本", date: lastMonthDay(18, 11, 45), route: "テレアポ" },
+  { authorName: "望月", date: lastMonthDay(11, 16, 20), route: "テレアポ" },
+  { authorName: "望月", date: lastMonthDay(22, 10, 30), route: "反響" },
+];
+
+export const appointmentReports: AppointmentReport[] = appointmentReportSeeds.map((seed) => ({
+  date: seed.date,
+  authorName: seed.authorName,
+  route: seed.route,
+}));

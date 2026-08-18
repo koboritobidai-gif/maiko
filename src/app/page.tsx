@@ -11,6 +11,8 @@ import {
   getRevenueSummary,
 } from "@/lib/metrics";
 import { loadRevenueRecords } from "@/lib/revenue-data";
+import { loadSalesReports } from "@/lib/sales-data";
+import { getSalesMonthlyStats } from "@/lib/sales-stats";
 import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
 import { buildReferralCandidatesFromSlack, fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
 
@@ -23,12 +25,13 @@ export const maxDuration = 60;
 
 export default async function TodayDashboardPage() {
   const now = new Date();
-  const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult] = await Promise.all([
+  const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult, salesResult] = await Promise.all([
     loadDataBundle(),
     loadMarketingData(),
     loadCandidateThreads(),
     loadReferralInvoices(),
     loadRevenueRecords(),
+    loadSalesReports(),
   ]);
   const summary = getDashboardSummary(bundle, now);
   // 画面表示用: Slack「#求職者」スレッドの「面談実施」報告から面談日を補完(シートO列の手入力があれば優先)。
@@ -68,6 +71,8 @@ export default async function TodayDashboardPage() {
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
   // CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES 固定リスト)。
   const caStats = getCaMonthlyStatsFromThreads(threadsResult.threads, now);
+  // 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月・今月が先頭。対象は SALES_NAMES 固定リスト)。
+  const salesStats = getSalesMonthlyStats(salesResult.reports, salesResult.appointments, now);
   // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
   const primaryMonths = getPrimaryMonthSnapshots(
     bundle.weeklyKpis,
@@ -117,6 +122,9 @@ export default async function TodayDashboardPage() {
       revenueErrorMessage={revenueResult.errorMessage}
       primaryMonths={primaryMonths}
       caStats={caStats}
+      salesStats={salesStats}
+      salesStatus={salesResult.status}
+      salesErrorMessage={salesResult.errorMessage}
     />
   );
 }

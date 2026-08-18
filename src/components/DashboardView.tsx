@@ -13,6 +13,7 @@ import type {
   PrimaryMonthSnapshot,
   RevenueMonthSummary,
 } from "@/lib/metrics";
+import type { SalesMonthlyStats } from "@/lib/sales-stats";
 import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
@@ -246,6 +247,10 @@ interface DashboardViewProps {
   primaryMonths: PrimaryMonthSnapshot[];
   /** CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月、今月が先頭)。 */
   caStats: CaMonthlyStats[];
+  /** 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月、今月が先頭)。 */
+  salesStats: SalesMonthlyStats[];
+  salesStatus: SourceStatus;
+  salesErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -268,12 +273,16 @@ export default function DashboardView({
   revenueErrorMessage,
   primaryMonths,
   caStats,
+  salesStats,
+  salesStatus,
+  salesErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
-  // 主要指標・集客/広告・CA別実績は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
+  // 主要指標・集客/広告・CA別実績・営業実績は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
   const [primaryMonthIdx, setPrimaryMonthIdx] = useState(0);
   const [marketingMonthIdx, setMarketingMonthIdx] = useState(0);
   const [caMonthIdx, setCaMonthIdx] = useState(0);
+  const [salesMonthIdx, setSalesMonthIdx] = useState(0);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
@@ -284,6 +293,7 @@ export default function DashboardView({
   const slackBadge = sourceBadgeLabel("slack", slackStatus);
   const marketingBadge = sourceBadgeLabel("marketing", marketingStatus);
   const invoiceBadge = sourceBadgeLabel("invoices", invoiceStatus);
+  const salesBadge = sourceBadgeLabel("sales", salesStatus);
   // 請求書が1件も無く、かつ機能未設定(demo=SLACK_INVOICE_CHANNEL未設定 or デモモード)の場合は
   // カード自体を非表示にする(機能OFF扱い。デモモードでは常にデモ請求書が入るため表示される)。
   const showInvoiceCard = invoiceChecks.length > 0 || invoiceStatus !== "demo";
@@ -370,6 +380,26 @@ export default function DashboardView({
   const caTotalAdvanceRatePercent = caTotal.interviews > 0 ? (caTotal.advancedToInterview / caTotal.interviews) * 100 : null;
   const caTotalOfferRatePercent = caTotal.interviews > 0 ? (caTotal.offers / caTotal.interviews) * 100 : null;
   const caTotalWithdrawnRatePercent = caTotal.interviews > 0 ? (caTotal.withdrawn / caTotal.interviews) * 100 : null;
+
+  // 営業実績セクションの月選択(直近6ヶ月)。primaryMonths と同じ月範囲・基準日で計算されているため、
+  // 見出し用のラベル(「今月(8月)」「7月」形式)はそのまま再利用する。
+  const salesMonths = salesStats.map((s, i) => ({
+    monthKey: s.monthKey,
+    label: primaryMonths[i]?.label ?? formatMonthLabel(s.monthKey),
+  }));
+  const salesMonth = salesStats[salesMonthIdx] ?? salesStats[0];
+  const salesRows = salesMonth?.rows ?? [];
+  const salesTotal = salesRows.reduce(
+    (sum, r) => ({
+      calls: sum.calls + r.calls,
+      appointments: sum.appointments + r.appointments,
+      meetings: sum.meetings + r.meetings,
+      contracts: sum.contracts + r.contracts,
+    }),
+    { calls: 0, appointments: 0, meetings: 0, contracts: 0 },
+  );
+  // 全月0件(=live未導入)ならセクション自体を非表示にする(請求書チェック等と同じパターン)。
+  const showSalesSection = salesStats.some((s) => s.rows.length > 0) || salesStatus !== "demo";
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 pt-4 lg:gap-8 lg:px-8 lg:pb-12 lg:pt-6">
@@ -1096,6 +1126,87 @@ export default function DashboardView({
           </p>
         </div>
       </section>
+
+      {/* 3.6 営業実績(#21_ra・アポイント報告) */}
+      {showSalesSection && (
+        <section className="flex flex-col gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+              営業実績(#ra・アポイント報告)({formatMonthLabel(salesMonth?.monthKey ?? salesMonths[0]?.monthKey ?? "")})
+            </h2>
+            <div className="flex items-center gap-2">
+              <MonthChips months={salesMonths} value={salesMonthIdx} onChange={setSalesMonthIdx} />
+              <SourceBadge label={salesBadge} />
+            </div>
+          </div>
+          {salesStatus === "live-error" && salesErrorMessage && (
+            <p
+              className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+              style={{
+                color: "var(--color-bad)",
+                borderColor: "var(--color-bad)",
+                background: "var(--color-card)",
+              }}
+            >
+              接続エラーの内容: {salesErrorMessage}
+            </p>
+          )}
+          <div className="card overflow-x-auto p-3.5">
+            <table className="w-full min-w-[560px] text-left text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--color-text-muted)" }}>
+                  <th className="pb-2 pr-2 font-medium">営業</th>
+                  <th className="pb-2 pr-2 text-right font-medium">架電数</th>
+                  <th className="pb-2 pr-2 text-right font-medium">アポ獲得</th>
+                  <th className="pb-2 pr-2 text-right font-medium">商談数</th>
+                  <th className="pb-2 text-right font-medium">契約数</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                {salesRows.map((r) => (
+                  <tr key={r.member}>
+                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      {r.member}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{r.calls.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 pr-2 text-right">
+                      {r.appointments.toLocaleString("ja-JP")}件
+                      {r.appointmentRoutes.length > 0 && (
+                        <div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                          {r.appointmentRoutes.map((rt) => `${rt.route}${rt.count}`).join("・")}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{r.meetings.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 text-right">{r.contracts.toLocaleString("ja-JP")}件</td>
+                  </tr>
+                ))}
+                {salesRows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                      この月の報告がありません。
+                    </td>
+                  </tr>
+                )}
+                {salesRows.length > 0 && (
+                  <tr style={{ fontWeight: 700 }}>
+                    <td className="py-2 pr-2 whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                      合計
+                    </td>
+                    <td className="py-2 pr-2 text-right">{salesTotal.calls.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 pr-2 text-right">{salesTotal.appointments.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 pr-2 text-right">{salesTotal.meetings.toLocaleString("ja-JP")}件</td>
+                    <td className="py-2 text-right">{salesTotal.contracts.toLocaleString("ja-JP")}件</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              架電数=#raの架電数報告スレッド(12時・15時)の返信を1日分合算。商談・契約=業務報告スレッドから。アポ獲得=#22_アポイント報告の1投稿=1件(業務予定報告は集計対象外)。
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム) */}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
