@@ -53,6 +53,8 @@ export default async function TodayDashboardPage() {
   // 先月分(主要指標・集客/広告の「先月」トグル用)。基準日は先月15日(月初・月末の日数差の影響を受けない)。
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
   const summaryLastMonth = getDashboardSummary(bundle, lastMonth);
+  // 先々月分(ファネルを「先月」表示にしたときの前月比の比較対象)。
+  const summaryTwoMonthsAgo = getDashboardSummary(bundle, new Date(now.getFullYear(), now.getMonth() - 2, 15));
   const marketingSummaryLastMonth = getMarketingSummary(
     marketingResult.data,
     bundle.weeklyKpis,
@@ -105,6 +107,7 @@ export default async function TodayDashboardPage() {
     <DashboardView
       summary={summary}
       summaryLastMonth={summaryLastMonth}
+      summaryTwoMonthsAgo={summaryTwoMonthsAgo}
       candidates={candidates}
       sourceStatus={bundle.sourceStatus}
       sourceErrorMessage={bundle.sourceErrorMessage}

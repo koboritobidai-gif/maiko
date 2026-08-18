@@ -5,7 +5,7 @@ import { useState } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
-import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit } from "@/lib/metrics";
+import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit, getStagePipeline } from "@/lib/metrics";
 import type {
   DashboardSummary,
   InvoiceCheckRow,
@@ -148,19 +148,22 @@ function PeriodToggle({ period, onChange }: { period: Period; onChange: (p: Peri
   );
 }
 
-/** 求職者・法人ファネル共通の横棒行。 */
+/** 求職者・法人ファネル共通の横棒行。diff を渡すと前月比バッジを下段に表示する。 */
 function FunnelRow({
   label,
   value,
   maxValue,
   unit = "",
   sub,
+  diff,
 }: {
   label: string;
   value: number;
   maxValue: number;
   unit?: string;
   sub?: string;
+  /** 前月比(選択月 − その前月)。undefined なら非表示 */
+  diff?: number;
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -181,8 +184,9 @@ function FunnelRow({
           {unit}
         </span>
       </div>
-      {sub && (
-        <span className="pl-[112px] text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+      {(sub || diff !== undefined) && (
+        <span className="flex flex-wrap gap-x-2 pl-[112px] text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+          {diff !== undefined && <DiffCaption diff={diff} unit={unit} />}
           {sub}
         </span>
       )}
@@ -222,8 +226,10 @@ function formatYenOrDash(amountYen: number | null): string {
 
 interface DashboardViewProps {
   summary: DashboardSummary;
-  /** 先月分のサマリ(主要指標セクションの「先月」トグル用)。 */
+  /** 先月分のサマリ(ファネルの「先月」トグル用)。 */
   summaryLastMonth: DashboardSummary;
+  /** 先々月分のサマリ(ファネルを「先月」表示にしたときの前月比の比較対象)。 */
+  summaryTwoMonthsAgo: DashboardSummary;
   candidates: Candidate[];
   sourceStatus: SourceStatus;
   sourceErrorMessage?: string;
@@ -256,6 +262,7 @@ interface DashboardViewProps {
 export default function DashboardView({
   summary,
   summaryLastMonth,
+  summaryTwoMonthsAgo,
   candidates,
   sourceStatus,
   sourceErrorMessage,
@@ -286,6 +293,7 @@ export default function DashboardView({
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
+  const [pipelineMonthIdx, setPipelineMonthIdx] = useState(0);
   if (!role) return null;
 
   const profile = getRoleProfile(role);
@@ -342,7 +350,17 @@ export default function DashboardView({
   const myCandidates = isCa ? getCandidatesByCa(candidates, profile.memberId) : [];
   const myActiveCandidates = myCandidates.filter((c) => c.stage !== "辞退");
 
-  const maxStageCount = Math.max(1, ...summary.pipeline.map((s) => s.count));
+  // 求職者パイプライン: 直近3ヶ月の月チップで、その月に登録した求職者(コホート)の現在ステージ分布を見る。
+  // 月の判定は 登録日 > 面談日 > 更新日 の優先順で近似する。
+  const pipelineMonths = primaryMonths.slice(0, 3);
+  const pipelineMonth = pipelineMonths[pipelineMonthIdx] ?? pipelineMonths[0];
+  const pipelineCandidates = candidates.filter((c) => {
+    const ref = c.registeredAt ?? c.interviewedAt ?? c.updatedAt;
+    return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, "0")}` === pipelineMonth?.monthKey;
+  });
+  const pipelineStages = getStagePipeline(pipelineCandidates);
+  const pipelineWithdrawnCount = pipelineCandidates.filter((c) => c.stage === "辞退").length;
+  const maxStageCount = Math.max(1, ...pipelineStages.map((s) => s.count));
 
   const { weeklyTrend } = summary;
   // 主要指標カードは選択月のスナップショット、各ファネルは今月/先月トグルで切替。
@@ -351,7 +369,11 @@ export default function DashboardView({
     candidateFunnelPeriod === "this" ? summary.candidateFunnel : summaryLastMonth.candidateFunnel;
   const corporateFunnel =
     corporateFunnelPeriod === "this" ? summary.corporateFunnel : summaryLastMonth.corporateFunnel;
-  const candidateFunnelMax = Math.max(1, candidateFunnel.pv);
+  // 営業ファネルの前月比の比較対象(今月表示→先月、先月表示→先々月)。
+  const corporateFunnelPrev =
+    corporateFunnelPeriod === "this" ? summaryLastMonth.corporateFunnel : summaryTwoMonthsAgo.corporateFunnel;
+  // PV数の行は非表示のため、横棒の基準はLINE登録数(表示中の最大値)とする。
+  const candidateFunnelMax = Math.max(1, candidateFunnel.lineRegistrations);
   const corporateFunnelMax = Math.max(
     1,
     corporateFunnel.businessCards,
@@ -457,14 +479,14 @@ export default function DashboardView({
             accent
           />
           <KpiCard
-            label="採用決定(求職者)"
+            label="採用決定"
             value={`${primary.candidatePlacements.value}名`}
             caption={<DiffCaption diff={primary.candidatePlacements.diff} unit="名" />}
           />
           {/* 経営者の要望により、「成功報酬」は週次KPIの法人契約金額ではなく
               翔び台請求書関係シート(売上シート)の入金月合計を表示する(未連携時は案内を表示)。 */}
           <KpiCard
-            label="成功報酬(貰うお金)"
+            label="成功報酬"
             value={formatYen(moneyInYen)}
             caption={
               showRevenueSection
@@ -478,9 +500,9 @@ export default function DashboardView({
         {showRevenueSection && (
           <div className="grid grid-cols-2 gap-2.5 lg:gap-4">
             <KpiCard
-              label="出ていくお金(全体)"
+              label="支出(全体)"
               value={formatYen(moneyOutYen)}
-              caption={`広告費+SNS+#請求書のこの月の支払い全額${
+              caption={`広告費+SNS+請求書${
                 pm.unreadableInvoiceCount > 0
                   ? `(※金額を読み取れないPDFが${pm.unreadableInvoiceCount}件あり、未反映)`
                   : ""
@@ -797,7 +819,7 @@ export default function DashboardView({
         <section className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-              送客売上(貰う金額)({revenuePeriod === "this" ? "今月" : "先月"})
+              送客売上({revenuePeriod === "this" ? "今月" : "先月"})
             </h2>
             <div className="flex items-center gap-2">
               <PeriodToggle period={revenuePeriod} onChange={setRevenuePeriod} />
@@ -962,7 +984,7 @@ export default function DashboardView({
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            求職者ファネル({candidateFunnelPeriod === "this" ? "今月" : "先月"})
+            求職者({candidateFunnelPeriod === "this" ? "今月" : "先月"})
           </h2>
           <div className="flex items-center gap-2">
             <PeriodToggle period={candidateFunnelPeriod} onChange={setCandidateFunnelPeriod} />
@@ -971,7 +993,6 @@ export default function DashboardView({
         </div>
         <div className="card flex flex-col gap-3 p-3.5">
           <div className="flex flex-col gap-2.5">
-            <FunnelRow label="PV数" value={candidateFunnel.pv} maxValue={candidateFunnelMax} unit="" />
             <FunnelRow
               label="LINE登録"
               value={candidateFunnel.lineRegistrations}
@@ -1012,7 +1033,7 @@ export default function DashboardView({
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            法人営業ファネル({corporateFunnelPeriod === "this" ? "今月" : "先月"})
+            営業({corporateFunnelPeriod === "this" ? "今月" : "先月"})
           </h2>
           <div className="flex items-center gap-2">
             <PeriodToggle period={corporateFunnelPeriod} onChange={setCorporateFunnelPeriod} />
@@ -1025,12 +1046,14 @@ export default function DashboardView({
             value={corporateFunnel.businessCards}
             maxValue={corporateFunnelMax}
             unit="件"
+            diff={corporateFunnel.businessCards - corporateFunnelPrev.businessCards}
           />
           <FunnelRow
             label="アポイント"
             value={corporateFunnel.appointments.total}
             maxValue={corporateFunnelMax}
             unit="件"
+            diff={corporateFunnel.appointments.total - corporateFunnelPrev.appointments.total}
             sub={`主権 ${corporateFunnel.appointments.sovereign}件 / 非主権 ${corporateFunnel.appointments.nonSovereign}件 / 外部 ${corporateFunnel.appointments.external}件`}
           />
           <FunnelRow
@@ -1038,14 +1061,21 @@ export default function DashboardView({
             value={corporateFunnel.meetings.total}
             maxValue={corporateFunnelMax}
             unit="件"
+            diff={corporateFunnel.meetings.total - corporateFunnelPrev.meetings.total}
             sub={`主権 ${corporateFunnel.meetings.sovereign}件 / 非主権 ${corporateFunnel.meetings.nonSovereign}件 / 外部 ${corporateFunnel.meetings.external}件`}
           />
           <div className="flex items-center justify-between border-t pt-2.5" style={{ borderColor: "var(--color-border)" }}>
             <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
               契約
             </span>
-            <span className="text-[13px] font-semibold" style={{ color: "var(--color-navy)" }}>
-              {corporateFunnel.contracts.count}件・{corporateFunnel.contracts.amountMan.toLocaleString("ja-JP")}万円
+            <span className="flex items-baseline gap-2">
+              <DiffCaption
+                diff={corporateFunnel.contracts.count - corporateFunnelPrev.contracts.count}
+                unit="件"
+              />
+              <span className="text-[13px] font-semibold" style={{ color: "var(--color-navy)" }}>
+                {corporateFunnel.contracts.count}件・{corporateFunnel.contracts.amountMan.toLocaleString("ja-JP")}万円
+              </span>
             </span>
           </div>
         </div>
@@ -1314,9 +1344,10 @@ export default function DashboardView({
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            求職者パイプライン(ステージ別)
+            求職者パイプライン({formatMonthLabel(pipelineMonth?.monthKey ?? "")})
           </h2>
           <div className="flex items-center gap-2">
+            <MonthChips months={pipelineMonths} value={pipelineMonthIdx} onChange={setPipelineMonthIdx} />
             <Link
               href="/candidates"
               className="text-[11px] font-semibold whitespace-nowrap"
@@ -1328,7 +1359,7 @@ export default function DashboardView({
           </div>
         </div>
         <div className="card flex flex-col gap-2.5 p-3.5">
-          {summary.pipeline.map((s) => (
+          {pipelineStages.map((s) => (
             <div key={s.stage} className="flex items-center gap-2.5">
               <span
                 className="w-[64px] shrink-0 text-[11px]"
@@ -1353,7 +1384,7 @@ export default function DashboardView({
             </div>
           ))}
           <p className="mt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            辞退・クローズ {summary.withdrawnCount}名(パイプライン外)
+            辞退・クローズ {pipelineWithdrawnCount}名(パイプライン外)。その月に登録した求職者(登録日、未入力時は面談日→更新日で近似)の現在ステージ。
           </p>
         </div>
       </section>
