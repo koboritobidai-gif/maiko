@@ -13,14 +13,21 @@
  *    一致する数が最多のCA(同数なら先に投稿した方)。
  * 3. どちらでも一致しなければ「その他」に集約する。
  *
- * 面談実施月(集計の基準月)は `slack-interviews.ts` の `getSlackInterviewDatesByName` を再利用し、
- * 面談日が検出できたスレッドのみを集計対象とする(面談実施月のコホートとして数え、面接・内定・離脱は
- * その後いつ起きても同じ月に帰属させる)。
+ * 集計は「発生月ベース」(週次KPI表と同じ「その月に実際に起きた件数」)。以前は面談実施月のコホートで
+ * 面接・内定・離脱もまとめて面談月に帰属させていたが、それだとKPI表の月別件数と一致せず(例: KPI表の
+ * 7月面接33件に対しCA別実績は面談コホートの都合で18件、8月面接は0件など)、経営者から齟齬を指摘された
+ * ため、各イベントを実際に起きた月に個別に帰属させる方式に変更した:
+ * - 面談: `slack-interviews.ts` の `getSlackInterviewDatesByName` が返す面談実施日の月。
+ * - 面接・内定・離脱: それぞれを報告した返信本文の行の日付(`slack-interviews.ts` の `dateFromLine`。
+ *   行内に「8/5」等の日付表記があればそれを、無ければ返信の投稿日を使う)の月。
+ * この方式では、面談日が検出できないスレッド(面談メモ未投稿など)でも、面接・内定・離脱の報告さえ
+ * あればその月のCA別実績に計上する(面談数には入れない)。また月をまたいでイベントが起きるため、
+ * 各種率(advanceRatePercent 等)がその月の interviews に対して100%を超えることがあり得るが仕様どおり。
  *
  * スレッド内イベント検出は返信本文の行単位で行い、「予定/日程/調整/予約/リスケ/キャンセル/延期」を
  * 含む行は未実施の言及として除外する(「来週面接予定」等の誤検出防止)。
  */
-import { getSlackInterviewDatesByName } from "./slack-interviews";
+import { dateFromLine, getSlackInterviewDatesByName } from "./slack-interviews";
 import type { CandidateThread } from "./types";
 
 /**
@@ -102,41 +109,46 @@ function determineResponsibleCaName(thread: CandidateThread): string | undefined
   )[0][0];
 }
 
-interface ThreadOutcome {
-  /** 面接実施の延べ件数(1次・最終など複数回あり得る) */
-  interviewEventCount: number;
-  /** 面接へ進んだか(interviewEventCount >= 1) */
-  advancedToInterview: boolean;
-  /** 内定の言及があるか(辞退・取り消し・見送りを伴わないもの) */
-  hasOffer: boolean;
-  /** 離脱(辞退・クローズ等)の言及があるか */
-  hasWithdrawn: boolean;
+/** スレッド1件分の、面接・内定・離脱イベントを「発生月」ごとに振り分けた結果。 */
+interface ThreadEventsByMonth {
+  /** 発生月(YYYY-MM) → その月の面接実施の延べ件数(1返信=1件、複数月にまたがり得る) */
+  interviewEventCountByMonth: Map<string, number>;
+  /** 内定を検出した行の発生月(辞退・取り消し・見送りを伴わない最初の行。1スレッド最大1件) */
+  offerMonth: string | undefined;
+  /** 離脱(辞退・クローズ等)を検出した行の発生月(最初の行。1スレッド最大1件) */
+  withdrawnMonth: string | undefined;
 }
 
-/** スレッド全文(返信)から面接・内定・離脱のイベントを検出する。 */
-function computeThreadOutcome(thread: CandidateThread): ThreadOutcome {
-  let interviewEventCount = 0;
-  let hasOffer = false;
-  let hasWithdrawn = false;
+/**
+ * スレッド全文(返信)から面接・内定・離脱のイベントを検出し、それぞれ実際に起きた月(行内の日付、
+ * 無ければ返信の投稿日。`dateFromLine` で判定)に振り分ける。
+ */
+function computeThreadEventsByMonth(thread: CandidateThread): ThreadEventsByMonth {
+  const interviewEventCountByMonth = new Map<string, number>();
+  let offerMonth: string | undefined;
+  let withdrawnMonth: string | undefined;
 
   for (const reply of thread.replies) {
     const lines = reply.text.split("\n").filter((line) => !NOT_DONE_RE.test(line));
-    // 面接実施は「返信の数」を数える(1返信内に複数行該当しても1件)。
-    if (lines.some((line) => INTERVIEW_EVENT_RE.test(line))) {
-      interviewEventCount += 1;
+
+    // 面接実施は「返信の数」を数える(1返信内に複数行該当しても1件)。月はマッチした最初の行の日付。
+    const interviewLine = lines.find((line) => INTERVIEW_EVENT_RE.test(line));
+    if (interviewLine) {
+      const month = monthKeyOf(dateFromLine(interviewLine, reply.postedAt));
+      interviewEventCountByMonth.set(month, (interviewEventCountByMonth.get(month) ?? 0) + 1);
     }
-    for (const line of lines) {
-      if (line.includes("内定") && !/辞退|取り消し|見送り/.test(line)) hasOffer = true;
-      if (/辞退|クローズ|離脱|お見送り/.test(line)) hasWithdrawn = true;
+
+    if (offerMonth === undefined) {
+      const offerLine = lines.find((line) => line.includes("内定") && !/辞退|取り消し|見送り/.test(line));
+      if (offerLine) offerMonth = monthKeyOf(dateFromLine(offerLine, reply.postedAt));
+    }
+    if (withdrawnMonth === undefined) {
+      const withdrawnLine = lines.find((line) => /辞退|クローズ|離脱|お見送り/.test(line));
+      if (withdrawnLine) withdrawnMonth = monthKeyOf(dateFromLine(withdrawnLine, reply.postedAt));
     }
   }
 
-  return {
-    interviewEventCount,
-    advancedToInterview: interviewEventCount > 0,
-    hasOffer,
-    hasWithdrawn,
-  };
+  return { interviewEventCountByMonth, offerMonth, withdrawnMonth };
 }
 
 /** CA名(CA_NAMES のいずれか)。どのCAにも紐付かない場合 "その他" */
@@ -168,7 +180,7 @@ export interface CaMonthlyStat {
 export interface CaMonthlyStats {
   /** 対象月(YYYY-MM) */
   monthKey: string;
-  /** 面談0のCAは含めない。CA名順(CA_NAMES の並び順→その他) */
+  /** 面談・面接・内定・離脱がすべて0のCAは含めない。CA名順(CA_NAMES の並び順→その他) */
   rows: CaMonthlyStat[];
 }
 
@@ -176,10 +188,23 @@ function monthKeyOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** 月別×CA別の集計行(内部作業用、率計算前)。 */
+interface MonthlyCaAccumulator {
+  ca: string;
+  order: number;
+  interviews: number;
+  advancedToInterview: number;
+  interviewEventCount: number;
+  offers: number;
+  withdrawn: number;
+}
+
 /**
  * CA別×月別の実績(直近nヶ月分、今月が先頭)を、Slack「#求職者」スレッドから集計する(純関数)。
  * 対象CAは `CA_NAMES`(固定リスト、経営者申告)で、`Member[]`(メンバータブ)は使わない。
- * 面談実施月のコホートで集計する(面接・内定・離脱はその後いつ起きても面談を実施した月に帰属させる)。
+ * 発生月ベースで集計する(面談・面接・内定・離脱それぞれを、実際にそのイベントが起きた月に個別に
+ * 帰属させる。モジュール先頭のコメント参照)。面談日が検出できないスレッドも、面接・内定・離脱の
+ * 報告があればその月のCA別実績に計上する。
  */
 export function getCaMonthlyStatsFromThreads(
   threads: CandidateThread[],
@@ -188,66 +213,71 @@ export function getCaMonthlyStatsFromThreads(
 ): CaMonthlyStats[] {
   const interviewDates = getSlackInterviewDatesByName(threads);
 
-  // スレッドごとの面談実施月・担当CA・イベント集計を先に1回だけ計算しておく(月ごとのループで使い回す)。
-  const threadStats = threads
-    .map((thread) => {
-      const interviewedAt = interviewDates.get(normalizeName(thread.name));
-      if (!interviewedAt) return null;
-      const caName = determineResponsibleCaName(thread);
-      return {
-        monthKey: monthKeyOf(interviewedAt),
-        caLabel: caName ?? OTHER_CA_LABEL,
-        // 表示順: CA_NAMES の並び順→その他。
-        caOrder: caName ? CA_NAMES.indexOf(caName) : CA_NAMES.length,
-        ...computeThreadOutcome(thread),
-      };
-    })
-    .filter((t): t is NonNullable<typeof t> => t !== null);
+  // monthKey → caLabel → 集計行。イベントが実際に発生した月ごとにCA行を作る(1度も加算されなければ
+  // 行自体を作らないため、全カウント0のCA行が出ることはない)。
+  const byMonth = new Map<string, Map<string, MonthlyCaAccumulator>>();
+
+  const getRow = (monthKey: string, caLabel: string, caOrder: number): MonthlyCaAccumulator => {
+    let monthMap = byMonth.get(monthKey);
+    if (!monthMap) {
+      monthMap = new Map();
+      byMonth.set(monthKey, monthMap);
+    }
+    let row = monthMap.get(caLabel);
+    if (!row) {
+      row = { ca: caLabel, order: caOrder, interviews: 0, advancedToInterview: 0, interviewEventCount: 0, offers: 0, withdrawn: 0 };
+      monthMap.set(caLabel, row);
+    }
+    return row;
+  };
+
+  for (const thread of threads) {
+    const caName = determineResponsibleCaName(thread);
+    const caLabel = caName ?? OTHER_CA_LABEL;
+    // 表示順: CA_NAMES の並び順→その他。
+    const caOrder = caName ? CA_NAMES.indexOf(caName) : CA_NAMES.length;
+
+    const interviewedAt = interviewDates.get(normalizeName(thread.name));
+    if (interviewedAt) {
+      getRow(monthKeyOf(interviewedAt), caLabel, caOrder).interviews += 1;
+    }
+
+    const events = computeThreadEventsByMonth(thread);
+    for (const [monthKey, count] of events.interviewEventCountByMonth) {
+      const row = getRow(monthKey, caLabel, caOrder);
+      row.interviewEventCount += count;
+      // その月に面接イベントが1件以上あれば、その月の面接人数として1人(スレッド単位でユニーク)。
+      row.advancedToInterview += 1;
+    }
+    if (events.offerMonth) {
+      getRow(events.offerMonth, caLabel, caOrder).offers += 1;
+    }
+    if (events.withdrawnMonth) {
+      getRow(events.withdrawnMonth, caLabel, caOrder).withdrawn += 1;
+    }
+  }
 
   const snapshots: CaMonthlyStats[] = [];
   for (let i = 0; i < months; i++) {
     const ref = new Date(now.getFullYear(), now.getMonth() - i, 15);
     const monthKey = monthKeyOf(ref);
+    const monthMap = byMonth.get(monthKey);
 
-    const rowsMap = new Map<
-      string,
-      { ca: string; order: number; interviews: number; advancedToInterview: number; interviewEventCount: number; offers: number; withdrawn: number }
-    >();
-    for (const t of threadStats) {
-      if (t.monthKey !== monthKey) continue;
-      let row = rowsMap.get(t.caLabel);
-      if (!row) {
-        row = {
-          ca: t.caLabel,
-          order: t.caOrder,
-          interviews: 0,
-          advancedToInterview: 0,
-          interviewEventCount: 0,
-          offers: 0,
-          withdrawn: 0,
-        };
-        rowsMap.set(t.caLabel, row);
-      }
-      row.interviews += 1;
-      row.interviewEventCount += t.interviewEventCount;
-      if (t.advancedToInterview) row.advancedToInterview += 1;
-      if (t.hasOffer) row.offers += 1;
-      if (t.hasWithdrawn) row.withdrawn += 1;
-    }
-
-    const rows: CaMonthlyStat[] = [...rowsMap.values()]
-      .sort((a, b) => a.order - b.order)
-      .map((row) => ({
-        ca: row.ca,
-        interviews: row.interviews,
-        advancedToInterview: row.advancedToInterview,
-        interviewEventCount: row.interviewEventCount,
-        advanceRatePercent: row.interviews > 0 ? (row.advancedToInterview / row.interviews) * 100 : null,
-        offers: row.offers,
-        offerRatePercent: row.interviews > 0 ? (row.offers / row.interviews) * 100 : null,
-        withdrawn: row.withdrawn,
-        withdrawnRatePercent: row.interviews > 0 ? (row.withdrawn / row.interviews) * 100 : null,
-      }));
+    const rows: CaMonthlyStat[] = monthMap
+      ? [...monthMap.values()]
+          .sort((a, b) => a.order - b.order)
+          .map((row) => ({
+            ca: row.ca,
+            interviews: row.interviews,
+            advancedToInterview: row.advancedToInterview,
+            interviewEventCount: row.interviewEventCount,
+            advanceRatePercent: row.interviews > 0 ? (row.advancedToInterview / row.interviews) * 100 : null,
+            offers: row.offers,
+            offerRatePercent: row.interviews > 0 ? (row.offers / row.interviews) * 100 : null,
+            withdrawn: row.withdrawn,
+            withdrawnRatePercent: row.interviews > 0 ? (row.withdrawn / row.interviews) * 100 : null,
+          }))
+      : [];
 
     snapshots.push({ monthKey, rows });
   }

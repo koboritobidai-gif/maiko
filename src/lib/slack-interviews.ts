@@ -43,8 +43,11 @@ function normalizeName(name: string): string {
  */
 const PROFILE_RE = /◇?\s*プロフィール/;
 
-/** 行内の日付表記から面談日を求める(行に日付が無ければ投稿日を10時起点で使う)。 */
-function dateFromLine(line: string, postedAt: Date): Date {
+/**
+ * 行内の日付表記から面談日を求める(行に日付が無ければ投稿日を10時起点で使う)。
+ * slack-ca-stats.ts の発生月判定(面接・内定・離脱をイベントが実際に起きた月に帰属させる処理)でも使う。
+ */
+export function dateFromLine(line: string, postedAt: Date): Date {
   const match = INLINE_DATE_RE.exec(line);
   if (match) {
     const month = Number(match[1]);
