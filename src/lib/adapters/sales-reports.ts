@@ -72,21 +72,30 @@ async function slackGet<T extends SlackApiResponseBase>(
   botToken: string,
   method: string,
   params: Record<string, string>,
+  /**
+   * 指定すると Next.js のデータキャッシュ(Vercelのサーバーインスタンスをまたいで永続)に
+   * この秒数だけ保存する(messenger.ts と同じパターン)。サーバーレスではモジュールメモリの
+   * キャッシュが再起動で消えるため、「同じURLなら結果が変わらない」呼び出し(鮮度キー付きの
+   * conversations.replies、ほぼ変わらない users.info)はこちらに保存して、コールドスタートでも
+   * Slackへの呼び出し数が積み上がらないようにする。未指定時は no-store(常に最新を取得)。
+   */
+  revalidateSeconds?: number,
 ): Promise<T> {
   const url = `${SLACK_API_BASE}/${method}?${new URLSearchParams(params).toString()}`;
-  let res = await fetch(url, {
-    headers: { Authorization: `Bearer ${botToken}` },
-    cache: "no-store",
-  });
+  const headers = { Authorization: `Bearer ${botToken}` };
+  let res = await fetch(
+    url,
+    revalidateSeconds
+      ? { headers, next: { revalidate: revalidateSeconds } }
+      : { headers, cache: "no-store" },
+  );
   // レート制限(429)のときは Retry-After 秒(最大10秒)待って1回だけやり直す(invoices.ts/
   // messenger.ts と同じパターン。スレッド返信を多数取得するため瞬間的に制限へ達することがある)。
+  // やり直しは常に no-store(失敗レスポンスがデータキャッシュに残るのを避ける)。
   if (res.status === 429) {
     const retryAfter = Math.min(Number(res.headers.get("retry-after") ?? "1") || 1, 10);
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-    res = await fetch(url, {
-      headers: { Authorization: `Bearer ${botToken}` },
-      cache: "no-store",
-    });
+    res = await fetch(url, { headers, cache: "no-store" });
   }
   const json = (await res.json()) as T;
   if (!res.ok || !json.ok) {
@@ -111,6 +120,8 @@ interface SlackSalesMessage {
   subtype?: string;
   /** 親メッセージのみに含まれる、スレッド内の返信数。 */
   reply_count?: number;
+  /** 親メッセージのみに含まれる、最新返信の ts。スレッド返信キャッシュの鮮度判定に使う。 */
+  latest_reply?: string;
   /** 返信メッセージのみに含まれる、親メッセージの ts。 */
   thread_ts?: string;
 }
@@ -267,7 +278,8 @@ export class SlackSalesSource implements SalesSource {
     const cached = this.userNameCache.get(userId);
     if (cached) return cached;
     try {
-      const res = await slackGet<SlackUserInfoResponse>(botToken, "users.info", { user: userId });
+      // 表示名はほぼ変わらないため、データキャッシュにも1日保存する(コールドスタート時の呼び出し削減)。
+      const res = await slackGet<SlackUserInfoResponse>(botToken, "users.info", { user: userId }, 24 * 60 * 60);
       const name =
         res.user?.profile?.real_name ||
         res.user?.profile?.display_name ||
@@ -289,6 +301,14 @@ export class SlackSalesSource implements SalesSource {
     botToken: string,
     channelId: string,
     threadTsList: string[],
+    /**
+     * スレッドts→鮮度キー(「返信数:最新返信ts」)のマップ。呼び出し元が親メッセージ
+     * (reply_count・latest_reply)から作成する。キーがあれば `_v` パラメータとしてURLに含め
+     * (Slackは未知のパラメータを無視する)、Next.jsのデータキャッシュに30日保存する。返信が
+     * 増えると reply_count/latest_reply が変わりURLも変わるため、キャッシュは自動的に取り直される。
+     * キーが作れない(reply_count 不明等)スレッドは従来どおり no-store で毎回取得する。
+     */
+    freshnessKeyByTs: Map<string, string>,
   ): Promise<Map<string, SlackSalesMessage[]>> {
     const result = new Map<string, SlackSalesMessage[]>();
     for (let i = 0; i < threadTsList.length; i += THREAD_FETCH_CONCURRENCY) {
@@ -296,11 +316,18 @@ export class SlackSalesSource implements SalesSource {
       await Promise.all(
         chunk.map(async (ts) => {
           try {
-            const res = await slackGet<SlackHistoryResponse>(botToken, "conversations.replies", {
-              channel: channelId,
-              ts,
-              limit: "100",
-            });
+            const freshnessKey = freshnessKeyByTs.get(ts);
+            const res = await slackGet<SlackHistoryResponse>(
+              botToken,
+              "conversations.replies",
+              {
+                channel: channelId,
+                ts,
+                limit: "100",
+                ...(freshnessKey ? { _v: freshnessKey } : {}),
+              },
+              freshnessKey ? 30 * 24 * 60 * 60 : undefined,
+            );
             const replies = (res.messages ?? []).filter(
               (m) => m.ts !== ts && (!m.subtype || m.subtype === "thread_broadcast") && m.text,
             );
@@ -350,7 +377,14 @@ export class SlackSalesSource implements SalesSource {
       .filter((c) => (c.kind === "call" || c.kind === "biz") && (c.message.reply_count ?? 0) > 0)
       .slice(0, MAX_RA_THREAD_FETCHES)
       .map((c) => c.message.ts);
-    const repliesByTs = await this.fetchRepliesForThreads(botToken, channelId, threadTargets);
+    // 親メッセージの reply_count/latest_reply から鮮度キーを作る(無いスレッドは no-store のまま)。
+    const freshnessKeyByTs = new Map<string, string>();
+    for (const { message } of classified) {
+      if (message.reply_count !== undefined) {
+        freshnessKeyByTs.set(message.ts, `${message.reply_count}:${message.latest_reply ?? ""}`);
+      }
+    }
+    const repliesByTs = await this.fetchRepliesForThreads(botToken, channelId, threadTargets, freshnessKeyByTs);
 
     const reports: SalesDailyReport[] = [];
     // 同一メンバー・同一日の架電数返信(12時分+15時分)を合算するための集計マップ。
@@ -476,7 +510,14 @@ export class SlackSalesSource implements SalesSource {
       .filter((m) => (m.reply_count ?? 0) > 0)
       .slice(0, MAX_APPOINTMENT_THREAD_FETCHES)
       .map((m) => m.ts);
-    const repliesByTs = await this.fetchRepliesForThreads(botToken, channelId, threadTargets);
+    // 親メッセージの reply_count/latest_reply から鮮度キーを作る(無いスレッドは no-store のまま)。
+    const freshnessKeyByTs = new Map<string, string>();
+    for (const m of parents) {
+      if (m.reply_count !== undefined) {
+        freshnessKeyByTs.set(m.ts, `${m.reply_count}:${m.latest_reply ?? ""}`);
+      }
+    }
+    const repliesByTs = await this.fetchRepliesForThreads(botToken, channelId, threadTargets, freshnessKeyByTs);
 
     const appointments: AppointmentReport[] = [];
     for (const m of parents) {

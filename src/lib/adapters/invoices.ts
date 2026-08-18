@@ -6,11 +6,13 @@
  * を踏襲する。
  * デモ段階は DemoInvoiceSource が demo-data.ts のデモ請求書を返す。
  * 実連携は SlackInvoiceSource が conversations.history でPDF付きメッセージを取得し
- * (スレッドの返信に添付されたPDFも conversations.replies で取得する)、
+ * (スレッドの返信に添付されたPDFも、鮮度キー付きの conversations.replies で取得・30日キャッシュする)、
  * 各PDFを url_private_download からダウンロード → unpdf でテキスト抽出 → 正規表現でパートナー名/
- * 対象月/金額を読み取る。
+ * 対象月/金額を読み取る。PDFは内容が不変なため、ダウンロード+抽出結果(テキストのみ)を
+ * unstable_cache で30日キャッシュし、コールドスタート時の再ダウンロード・再解析を避ける。
  */
 import { extractText, getDocumentProxy } from "unpdf";
+import { unstable_cache } from "next/cache";
 import type { ReferralInvoice } from "../types";
 import { DEFAULT_REFERRAL_RATES } from "../types";
 import { referralInvoices as demoReferralInvoices } from "../demo-data";
@@ -50,12 +52,31 @@ async function slackGet<T extends SlackApiResponseBase>(
   botToken: string,
   method: string,
   params: Record<string, string>,
+  /**
+   * 指定すると Next.js のデータキャッシュ(Vercelのサーバーインスタンスをまたいで永続)に
+   * この秒数だけ保存する(messenger.ts と同じパターン)。サーバーレスではモジュールメモリの
+   * キャッシュが再起動で消えるため、「同じURLなら結果が変わらない」呼び出し(鮮度キー付きの
+   * conversations.replies 等)はこちらに保存して、コールドスタートでもSlackへの呼び出し数が
+   * 積み上がらないようにする。未指定時は no-store(常に最新を取得)。
+   */
+  revalidateSeconds?: number,
 ): Promise<T> {
   const url = `${SLACK_API_BASE}/${method}?${new URLSearchParams(params).toString()}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${botToken}` },
-    cache: "no-store",
-  });
+  const headers = { Authorization: `Bearer ${botToken}` };
+  let res = await fetch(
+    url,
+    revalidateSeconds
+      ? { headers, next: { revalidate: revalidateSeconds } }
+      : { headers, cache: "no-store" },
+  );
+  // レート制限(429)のときは Retry-After 秒(最大10秒)待って1回だけやり直す(messenger.ts/
+  // sales-reports.ts と同じパターン。スレッド返信を多数取得するため瞬間的に制限へ達することがある)。
+  // やり直しは常に no-store(失敗レスポンスがデータキャッシュに残るのを避ける)。
+  if (res.status === 429) {
+    const retryAfter = Math.min(Number(res.headers.get("retry-after") ?? "1") || 1, 10);
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    res = await fetch(url, { headers, cache: "no-store" });
+  }
   const json = (await res.json()) as T;
   if (!res.ok || !json.ok) {
     throw new Error(`Slack API ${method} 呼び出しに失敗しました: ${json.error ?? res.status}`);
@@ -85,6 +106,8 @@ interface SlackInvoiceMessage {
   thread_ts?: string;
   /** スレッドの返信数(スレッド親のみ)。返信の中のPDFも読むかどうかの判定に使う。 */
   reply_count?: number;
+  /** スレッド親メッセージのみに含まれる、最新返信の ts。スレッド返信キャッシュの鮮度判定に使う。 */
+  latest_reply?: string;
 }
 
 interface SlackHistoryResponse extends SlackApiResponseBase {
@@ -332,28 +355,41 @@ export class SlackInvoiceSource implements InvoiceSource {
   }
 
   /**
-   * PDFをダウンロードする。`url_private_download`(無ければ `url_private`)へ Bot Token 付きで
-   * fetch する(Slackのファイルは通常のHTTPアクセスでは取得できず、Bot Tokenでの認証が必要)。
-   * サイズ上限(8MB)を超える場合はエラーを投げ、呼び出し元でパース失敗として扱う。
+   * PDFのダウンロード+テキスト抽出を、Next.jsのデータキャッシュ(`unstable_cache`)に30日保存する。
+   * SlackのPDFはファイルIDに対して内容が不変(同じファイルが差し替わることはない)なため、
+   * 一度読めたPDFはコールドスタートのたびに再ダウンロード・再パースする必要がない。
+   * バイナリそのものはキャッシュに入れず(データキャッシュの2MBサイズ制限があるため)、
+   * 抽出後のテキスト(小さいデータ)だけを保存する。
+   * キャッシュキーには `file.id`(無ければURL)のみを使い、Bot Token はこの関数のクロージャで
+   * 参照するだけでキャッシュ関数の引数には渡さない(unstable_cacheは引数もキーの一部にするため、
+   * 秘密情報をキャッシュキーに含めないための工夫)。
+   * ダウンロード・抽出に失敗した場合はエラーをそのまま投げ、キャッシュには保存しない
+   * (失敗結果が30日居座って再取得できなくなるのを避ける)。
    */
-  private async downloadPdf(file: SlackFile, botToken: string): Promise<ArrayBuffer> {
-    const url = file.url_private_download ?? file.url_private;
-    if (!url) throw new Error("ファイルのダウンロードURLが取得できませんでした。");
-    if (file.size && file.size > MAX_PDF_BYTES) {
-      throw new Error(`ファイルサイズが上限(8MB)を超えています(${file.size}バイト)。`);
-    }
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${botToken}` },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      throw new Error(`ファイルのダウンロードに失敗しました(status ${res.status})。`);
-    }
-    const buffer = await res.arrayBuffer();
-    if (buffer.byteLength > MAX_PDF_BYTES) {
-      throw new Error(`ファイルサイズが上限(8MB)を超えています(${buffer.byteLength}バイト)。`);
-    }
-    return buffer;
+  private getCachedPdfText(file: SlackFile, url: string, botToken: string): Promise<string | null> {
+    const fileKey = file.id ?? url;
+    const download = unstable_cache(
+      async (): Promise<string | null> => {
+        if (file.size && file.size > MAX_PDF_BYTES) {
+          throw new Error(`ファイルサイズが上限(8MB)を超えています(${file.size}バイト)。`);
+        }
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${botToken}` },
+          cache: "no-store", // ダウンロード自体はfetchキャッシュを使わず、抽出結果側をunstable_cacheで保存する
+        });
+        if (!res.ok) {
+          throw new Error(`ファイルのダウンロードに失敗しました(status ${res.status})。`);
+        }
+        const buffer = await res.arrayBuffer();
+        if (buffer.byteLength > MAX_PDF_BYTES) {
+          throw new Error(`ファイルサイズが上限(8MB)を超えています(${buffer.byteLength}バイト)。`);
+        }
+        return extractPdfText(buffer);
+      },
+      ["invoice-pdf-text", fileKey],
+      { revalidate: 30 * 24 * 60 * 60 },
+    );
+    return download();
   }
 
   /** 1件のPDFファイルを ReferralInvoice に変換する。ダウンロード・解析に失敗してもエラーにせず、
@@ -372,8 +408,9 @@ export class SlackInvoiceSource implements InvoiceSource {
     let text = "";
     let parseNote: string | undefined;
     try {
-      const buffer = await this.downloadPdf(file, botToken);
-      const extracted = await extractPdfText(buffer);
+      const url = file.url_private_download ?? file.url_private;
+      if (!url) throw new Error("ファイルのダウンロードURLが取得できませんでした。");
+      const extracted = await this.getCachedPdfText(file, url, botToken);
       if (extracted) {
         text = extracted;
       } else {
@@ -457,12 +494,24 @@ export class SlackInvoiceSource implements InvoiceSource {
       .slice(0, MAX_THREAD_FETCHES);
     for (const parent of threadParents) {
       const parentPaymentMonth = detectPaymentMonthFromThreadTitle(parent.text ?? "", tsToDate(parent.ts));
+      // 親の reply_count/latest_reply から鮮度キーを作る(sales-reports.ts と同じ方式)。キーが
+      // あれば `_v` パラメータとしてURLに含め、Next.jsのデータキャッシュに30日保存する
+      // (Slackは未知のパラメータを無視する。返信が増えるとキーが変わり自動的に取り直される)。
+      // キーが作れない(reply_count 不明)場合は従来どおり no-store。
+      const freshnessKey =
+        parent.reply_count !== undefined ? `${parent.reply_count}:${parent.latest_reply ?? ""}` : undefined;
       try {
-        const replies = await slackGet<SlackHistoryResponse>(botToken, "conversations.replies", {
-          channel: channelId,
-          ts: parent.thread_ts ?? parent.ts,
-          limit: "100",
-        });
+        const replies = await slackGet<SlackHistoryResponse>(
+          botToken,
+          "conversations.replies",
+          {
+            channel: channelId,
+            ts: parent.thread_ts ?? parent.ts,
+            limit: "100",
+            ...(freshnessKey ? { _v: freshnessKey } : {}),
+          },
+          freshnessKey ? 30 * 24 * 60 * 60 : undefined,
+        );
         for (const message of replies.messages ?? []) {
           if (message.ts === parent.ts) continue; // 親は上で走査済み
           collectPdfFiles(message, parentPaymentMonth);
