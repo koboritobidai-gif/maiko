@@ -76,10 +76,15 @@ async function fetchSpreadsheetTitle(sheetId: string, accessToken: string): Prom
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
     sheetId,
   )}?fields=properties.title`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  // シートのタイトルはめったに変わらないため、データキャッシュに1時間保存して読み取り回数を節約する
+  // (Googleの読み取りクォータは60回/分/ユーザーで、ダッシュボードの他のシート読み込みと共有のため)。
+  // 429(クォータ超過)・5xx は2秒おいて1回だけ no-store でやり直す。
+  let res = await fetch(url, { headers, next: { revalidate: 60 * 60 } });
+  if (res.status === 429 || res.status >= 500) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    res = await fetch(url, { headers, cache: "no-store" });
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
@@ -567,35 +572,42 @@ interface GridCellInfo {
 }
 
 /**
- * マトリックス形式タブの gridData を取得する。取り消し線(=募集終了)の判定は Values API では
- * できないため、`spreadsheets.get` の gridData(effectiveFormat / textFormatRuns)を使う。
- * セル全体に取り消し線が設定されている場合、または先頭のテキストラン(会社名部分)に
- * 取り消し線が設定されている場合のいずれかを「募集終了」とみなす(判定は寛容にする)。
+ * 全対象タブの gridData(表示文字列+取り消し線)を **1回のAPI呼び出しでまとめて** 取得する。
+ * 取り消し線(=募集終了)の判定は Values API ではできないため `spreadsheets.get` の gridData
+ * (effectiveFormat / textFormatRuns)を使う。以前はタブごとに1回ずつ呼んでいたが、タブ数×読み取りで
+ * Googleの読み取りクォータ(60回/分/ユーザー)を超えて 429 になった実障害があるため、`ranges` を
+ * 複数並べて1リクエストに集約し、さらに結果をデータキャッシュに5分保存する(マトリックスは
+ * 閲覧専用のため5分の遅れは許容できる)。範囲は各タブ A1:Z300 に制限してレスポンス肥大を防ぐ。
+ * セル全体に取り消し線、または先頭のテキストラン(会社名部分)に取り消し線があれば「募集終了」とみなす。
  */
-async function fetchGridDataWithStrikethrough(
+async function fetchGridDataForTabs(
   sheetId: string,
-  tab: string,
+  tabs: string[],
   accessToken: string,
-): Promise<GridCellInfo[][]> {
+): Promise<Map<string, GridCellInfo[][]>> {
   const params = new URLSearchParams();
-  params.append("ranges", tab);
+  for (const tab of tabs) params.append("ranges", `${quoteSheetTitle(tab)}!A1:Z300`);
   params.append(
     "fields",
     "sheets(properties(title),data(rowData(values(formattedValue,effectiveFormat(textFormat(strikethrough)),textFormatRuns(format(strikethrough))))))",
   );
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  // 429(クォータ超過)・5xx は2秒おいて1回だけ no-store でやり直す(失敗をキャッシュに残さない)。
+  let res = await fetch(url, { headers, next: { revalidate: 300 } });
+  if (res.status === 429 || res.status >= 500) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    res = await fetch(url, { headers, cache: "no-store" });
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `Google Sheets API(タブ「${tab}」の書式取得)に失敗しました(status ${res.status}): ${text.slice(0, 300)}`,
+      `Google Sheets API(求人マトリックスの書式一括取得)に失敗しました(status ${res.status}): ${text.slice(0, 300)}`,
     );
   }
   const json = (await res.json()) as {
     sheets?: {
+      properties?: { title?: string };
       data?: {
         rowData?: {
           values?: {
@@ -607,14 +619,22 @@ async function fetchGridDataWithStrikethrough(
       }[];
     }[];
   };
-  const rowData = json.sheets?.[0]?.data?.[0]?.rowData ?? [];
-  return rowData.map((r) =>
-    (r.values ?? []).map((v) => {
-      const wholeCellStrike = v.effectiveFormat?.textFormat?.strikethrough === true;
-      const firstRunStrike = v.textFormatRuns?.[0]?.format?.strikethrough === true;
-      return { formattedValue: v.formattedValue ?? "", strikethrough: wholeCellStrike || firstRunStrike };
-    }),
-  );
+  const byTab = new Map<string, GridCellInfo[][]>();
+  for (const sheet of json.sheets ?? []) {
+    const title = sheet.properties?.title ?? "";
+    const rowData = sheet.data?.[0]?.rowData ?? [];
+    byTab.set(
+      title,
+      rowData.map((r) =>
+        (r.values ?? []).map((v) => {
+          const wholeCellStrike = v.effectiveFormat?.textFormat?.strikethrough === true;
+          const firstRunStrike = v.textFormatRuns?.[0]?.format?.strikethrough === true;
+          return { formattedValue: v.formattedValue ?? "", strikethrough: wholeCellStrike || firstRunStrike };
+        }),
+      ),
+    );
+  }
+  return byTab;
 }
 
 /** セル1行目の先頭にある「◆」等の記号・絵文字装飾を除去して会社名だけを取り出す。 */
@@ -676,34 +696,29 @@ function parseMatrixTab(cells: GridCellInfo[][], tab: string): JobMatrixCell[] {
 
 /**
  * 求人マトリックスを取得する(読み取り専用)。タブ名「求人検索」は検索ツール画面のため除外する。
- * 各タブは先頭3行に「求人名」を含むヘッダー行があれば表形式(1行=1求人)、無ければマトリックス形式
- * (取り消し線=募集終了。gridData での追加取得が必要)として扱う。
+ * 全対象タブの内容(表示文字列+取り消し線)を gridData の一括取得1回で読み(fetchGridDataForTabs 参照)、
+ * 先頭3行に「求人名」を含むヘッダー行があれば表形式(1行=1求人)、無ければマトリックス形式
+ * (取り消し線=募集終了)としてパースする。API読み取りは タブ一覧1回+一括取得1回 の計2回に抑える。
  */
 export async function fetchJobMatrixData(accessToken: string, sheetId: string): Promise<JobMatrixEntry[]> {
-  const allTitles = await fetchSheetTabTitles(sheetId, accessToken);
+  // タブ一覧はめったに変わらないため5分キャッシュ(クォータ節約。spreadsheet.ts 参照)。
+  const allTitles = await fetchSheetTabTitles(sheetId, accessToken, 300);
   const targetTabs = allTitles.filter((t) => !t.includes("求人検索"));
   if (targetTabs.length === 0) return [];
 
-  const ranges = targetTabs.map((t) => `${quoteSheetTitle(t)}!A:Z`);
-  const allRows = await fetchSheetsValuesBatchGet(sheetId, ranges, accessToken);
+  const gridByTab = await fetchGridDataForTabs(sheetId, targetTabs, accessToken);
 
   const entries: JobMatrixEntry[] = [];
-  const matrixTabs: string[] = [];
-
-  targetTabs.forEach((tab, i) => {
-    const rows = allRows[i] ?? [];
+  for (const tab of targetTabs) {
+    const cells = gridByTab.get(tab) ?? [];
+    // 表形式タブの判定・パースは表示文字列だけで足りるため、gridData から文字列の行列を作って流用する。
+    const rows: SheetValuesRow[] = cells.map((r) => r.map((c) => c.formattedValue));
     const headerRowIndex = findListingHeaderRowIndex(rows);
     if (headerRowIndex >= 0) {
       entries.push(...parseListingTab(rows, headerRowIndex, tab));
     } else {
-      matrixTabs.push(tab);
+      entries.push(...parseMatrixTab(cells, tab));
     }
-  });
-
-  // マトリックス形式タブは取り消し線(募集終了)判定のため gridData を個別に取得する。
-  for (const tab of matrixTabs) {
-    const cells = await fetchGridDataWithStrikethrough(sheetId, tab, accessToken);
-    entries.push(...parseMatrixTab(cells, tab));
   }
 
   return entries;

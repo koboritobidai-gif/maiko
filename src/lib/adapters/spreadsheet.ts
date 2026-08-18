@@ -305,22 +305,29 @@ export async function fetchSheetsValuesBatchGet(
  * 集客・広告シートはタブ名の末尾に半角スペースが付いている・同名タブが複数存在する等の
  * 揺れがあるため、実際のタブ名一覧をメタデータAPIで確認したうえで trim 一致で解決する。
  */
-export async function fetchSheetTabTitles(sheetId: string, accessToken: string): Promise<string[]> {
+export async function fetchSheetTabTitles(
+  sheetId: string,
+  accessToken: string,
+  /**
+   * 指定すると Next.js のデータキャッシュにこの秒数だけ保存する。タブ一覧はめったに変わらないため、
+   * 読み取り頻度の高い呼び出し元(企業・求人ページ等)がGoogleの「1分あたりの読み取り回数」制限
+   * (60回/分/ユーザー)に達しないようにするための対策。未指定時は従来どおり毎回取得。
+   */
+  revalidateSeconds?: number,
+): Promise<string[]> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
     sheetId,
   )}?fields=sheets.properties.title`;
-  // Google側の一時的な障害(503 UNAVAILABLE 等)で画面がエラー表示にならないよう、
-  // 5xx のときだけ1秒おいて1回だけやり直す。
-  let res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
-  if (res.status >= 500) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    });
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  // Google側の一時的な障害(503等)やクォータ超過(429)で画面がエラー表示にならないよう、
+  // 1〜2秒おいて1回だけやり直す(やり直しは no-store。失敗レスポンスをキャッシュに残さない)。
+  let res = await fetch(
+    url,
+    revalidateSeconds ? { headers, next: { revalidate: revalidateSeconds } } : { headers, cache: "no-store" },
+  );
+  if (res.status === 429 || res.status >= 500) {
+    await new Promise((resolve) => setTimeout(resolve, res.status === 429 ? 2000 : 1000));
+    res = await fetch(url, { headers, cache: "no-store" });
   }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
