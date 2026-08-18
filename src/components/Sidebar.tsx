@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import {
   IconCandidates,
   IconChat,
+  IconCompany,
   IconDashboard,
   IconDeliver,
   IconDocument,
@@ -18,6 +19,7 @@ import {
 const NAV_ITEMS = [
   { href: "/", label: "今日の経営", icon: IconDashboard },
   { href: "/candidates", label: "求職者一覧", icon: IconCandidates },
+  { href: "/companies", label: "企業・求人", icon: IconCompany },
   { href: "/ask", label: "AIに聞く", icon: IconChat },
   { href: "/deliver", label: "届ける", icon: IconDeliver },
   { href: "/meeting", label: "面談AI", icon: IconMic },

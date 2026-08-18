@@ -186,7 +186,10 @@ function buildSignedJwt(key: GoogleServiceAccountKey): string {
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
     iss: key.clientEmail,
-    scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
+    // 企業・求人ページ(送客可能企業リスト)の状態更新・行追加をアプリから書き込むため、読み取り専用
+    // scope(spreadsheets.readonly)から書き込み可能な scope に変更している。閲覧者権限しか無い
+    // シート(求人マトリックス等、読み取り専用のシート)への読み取りは従来どおり可能。
+    scope: "https://www.googleapis.com/auth/spreadsheets",
     aud: "https://oauth2.googleapis.com/token",
     iat: nowSec,
     exp: nowSec + 3600,

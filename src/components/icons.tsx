@@ -75,6 +75,18 @@ export function IconCandidates(props: IconProps) {
   );
 }
 
+export function IconCompany(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 20V6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14" />
+      <path d="M13 20v-8a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v8" />
+      <path d="M3 20h18" />
+      <path d="M7 8.5h1M7 12h1M7 15.5h1M9.5 8.5h1M9.5 12h1M9.5 15.5h1" />
+      <path d="M16 13.5h1M16 16.5h1" />
+    </svg>
+  );
+}
+
 export function IconChevronDown(props: IconProps) {
   return (
     <svg {...base} strokeWidth={2} {...props}>

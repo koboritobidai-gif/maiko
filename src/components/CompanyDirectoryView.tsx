@@ -1,0 +1,829 @@
+"use client";
+
+/**
+ * 「企業・求人」ページ。CAが管理する2つのGoogleスプレッドシート
+ * (送客可能企業リスト・求人マトリックス)を一元的に検索・閲覧できるようにする。
+ * 編集可能なのは送客可能企業リストの「状態」変更と「新規企業の追加」のみ(それ以外は閲覧専用)。
+ */
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useMemo, useState } from "react";
+import type {
+  JobMatrixCell,
+  JobMatrixEntry,
+  ReferralCompanyGroup,
+  ReferralCompanyJob,
+} from "@/lib/adapters/company-directory";
+import type { CompanyDataStatus } from "@/lib/company-data";
+
+type ReferralStatusFilter = "全て" | "募集中" | "募集停止" | "未設定";
+type MainTab = "referral" | "matrix";
+
+interface CompanyDirectoryViewProps {
+  referralGroups: ReferralCompanyGroup[];
+  jobMatrix: JobMatrixEntry[];
+  status: CompanyDataStatus;
+  errorMessage?: string;
+}
+
+function statusBadgeLabel(status: CompanyDataStatus): string {
+  if (status === "live") return "Sheets(連携中)";
+  if (status === "live-error") return "Sheets(接続エラー)";
+  return "Sheets(未設定)";
+}
+
+/** 送客可能企業リストの「状態」セレクトの配色(募集中=良い/募集停止=中立グレー/空欄=注意)。 */
+function statusStyle(status: string): { bg: string; fg: string; border: string } {
+  if (status === "募集中") {
+    return {
+      bg: "color-mix(in srgb, var(--color-good) 14%, transparent)",
+      fg: "var(--color-good)",
+      border: "color-mix(in srgb, var(--color-good) 45%, transparent)",
+    };
+  }
+  if (status === "募集停止") {
+    return {
+      bg: "color-mix(in srgb, var(--color-text-muted) 16%, transparent)",
+      fg: "var(--color-text-muted)",
+      border: "color-mix(in srgb, var(--color-text-muted) 40%, transparent)",
+    };
+  }
+  return {
+    bg: "color-mix(in srgb, var(--color-warn) 16%, transparent)",
+    fg: "var(--color-warn)",
+    border: "color-mix(in srgb, var(--color-warn) 45%, transparent)",
+  };
+}
+
+function uniqueSorted(values: (string | undefined)[]): string[] {
+  const set = new Set(values.filter((v): v is string => Boolean(v && v.trim())));
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+/** 検索対象文字列に部分一致するか(企業名・職種・業界・勤務地・メモ等)。 */
+function matchesReferralQuery(job: ReferralCompanyJob, query: string): boolean {
+  if (!query) return true;
+  const haystack = [
+    job.companyName,
+    job.jobType,
+    job.industry,
+    job.location,
+    job.memo,
+    job.hypothesis,
+    job.ra,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return haystack.includes(query);
+}
+
+// ─────────────────────────────────────────────
+// セットアップ手順(status: "unconfigured" 用)
+// ─────────────────────────────────────────────
+
+function SetupInstructions() {
+  return (
+    <div
+      className="card flex flex-col gap-2.5 p-4 text-[12px] leading-relaxed"
+      style={{ color: "var(--color-text)" }}
+    >
+      <p className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+        企業・求人ページはまだ設定されていません
+      </p>
+      <p style={{ color: "var(--color-text-muted)" }}>
+        以下の手順で有効化してください(反映には環境変数の再設定後、アプリの再起動が必要です)。
+      </p>
+      <ol className="flex flex-col gap-1.5 pl-4" style={{ listStyleType: "decimal" }}>
+        <li>
+          環境変数 <code className="rounded bg-[var(--color-cream)] px-1 py-0.5">JOB_MATRIX_SHEET_ID</code>
+          (求人マトリックスのスプレッドシートID)を設定する。
+        </li>
+        <li>
+          環境変数{" "}
+          <code className="rounded bg-[var(--color-cream)] px-1 py-0.5">REFERRAL_COMPANY_SHEET_ID</code>
+          (送客可能企業リストのスプレッドシートID)を設定する。
+        </li>
+        <li>
+          両方のスプレッドシートを、サービスアカウント(<code className="rounded bg-[var(--color-cream)] px-1 py-0.5">GOOGLE_SERVICE_ACCOUNT_FILE</code> /{" "}
+          <code className="rounded bg-[var(--color-cream)] px-1 py-0.5">GOOGLE_SERVICE_ACCOUNT_JSON</code> のメールアドレス)に
+          <strong>「編集者」権限</strong>で共有する。状態変更・企業追加をアプリから書き込むため、
+          閲覧者権限だけでは書き込みに失敗します(求人マトリックス側は読み取り専用のため閲覧者権限のみで問題ありません)。
+        </li>
+        <li>
+          環境変数 <code className="rounded bg-[var(--color-cream)] px-1 py-0.5">DATA_MODE=live</code> を設定する。
+        </li>
+      </ol>
+      <p style={{ color: "var(--color-text-muted)" }}>
+        ※ 2つのIDが入れ違いに設定されていても、シートのタイトルから自動判別するため問題ありません。
+      </p>
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <p
+      className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
+      style={{ color: "var(--color-bad)", borderColor: "var(--color-bad)", background: "var(--color-card)" }}
+    >
+      接続エラーの内容: {message}
+    </p>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 送客可能企業リスト
+// ─────────────────────────────────────────────
+
+const REFERRAL_DETAIL_ROWS: { label: string; key: keyof ReferralCompanyJob }[] = [
+  { label: "打ち合わせ議事録", key: "meetingMinutes" },
+  { label: "企業ツール", key: "companyTool" },
+  { label: "送客ツールメモ", key: "referralToolMemo" },
+  { label: "担当者連絡先", key: "contact" },
+  { label: "経験有無", key: "experience" },
+  { label: "年齢(上限)", key: "ageLimit" },
+  { label: "年齢条件 備考", key: "ageNote" },
+  { label: "運転免許", key: "license" },
+  { label: "休日", key: "holiday" },
+  { label: "条件付き休日", key: "conditionalHoliday" },
+  { label: "年間休日", key: "annualHoliday" },
+  { label: "外国人受入有無", key: "foreignerAccept" },
+  { label: "インセンティブ", key: "incentive" },
+  { label: "転勤有無", key: "transfer" },
+  { label: "住宅補助/社宅有無", key: "housingSupport" },
+  { label: "資格/スキル(あるといい)", key: "skills" },
+  { label: "みなし残業", key: "deemedOvertime" },
+  { label: "仮説すり合わせ・企業説明用", key: "hypothesis" },
+];
+
+function ReferralStatusSelect({
+  job,
+  onChange,
+  disabled,
+}: {
+  job: ReferralCompanyJob;
+  onChange: (job: ReferralCompanyJob, next: string) => void;
+  disabled: boolean;
+}) {
+  const style = statusStyle(job.status);
+  return (
+    <select
+      value={job.status || ""}
+      disabled={disabled}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(job, e.target.value)}
+      className="shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold outline-none"
+      style={{ background: style.bg, color: style.fg, borderColor: style.border }}
+    >
+      <option value="募集中">募集中</option>
+      <option value="募集停止">募集停止</option>
+      {!job.status && <option value="">(未設定)</option>}
+    </select>
+  );
+}
+
+function ReferralJobRow({
+  job,
+  onChangeStatus,
+  updating,
+}: {
+  job: ReferralCompanyJob;
+  onChangeStatus: (job: ReferralCompanyJob, next: string) => void;
+  updating: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const summary = [job.jobType, job.workStyle, job.experience && `経験:${job.experience}`, job.holiday]
+    .filter(Boolean)
+    .join(" ・ ");
+
+  return (
+    <div className="flex flex-col border-t first:border-t-0" style={{ borderColor: "var(--color-border)" }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full flex-col gap-1.5 px-3 py-2.5 text-left sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+      >
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[12.5px] font-semibold" style={{ color: "var(--color-text)" }}>
+            {job.jobType || "(職種未設定)"}
+          </span>
+          {summary && (
+            <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              {summary}
+            </span>
+          )}
+          <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+            {job.minIncome ? `下限年収 ${job.minIncome}` : "下限年収 未設定"}
+            {job.ageLimit ? ` ・ 年齢上限 ${job.ageLimit}` : ""}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <ReferralStatusSelect job={job} onChange={onChangeStatus} disabled={updating} />
+          <span className="text-[11px]" style={{ color: "var(--color-gold)" }}>
+            {expanded ? "閉じる ▲" : "詳細 ▼"}
+          </span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="flex flex-col gap-2 px-3 pb-3 text-[12px] leading-relaxed">
+          {job.hp && (
+            <p>
+              <span style={{ color: "var(--color-text-muted)" }}>HP: </span>
+              <a
+                href={job.hp.startsWith("http") ? job.hp : `https://${job.hp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+                style={{ color: "var(--color-gold)" }}
+              >
+                {job.hp}
+              </a>
+            </p>
+          )}
+          {job.memo && (
+            <p
+              className="rounded-lg px-2.5 py-1.5"
+              style={{ background: "var(--color-cream)", color: "var(--color-text)" }}
+            >
+              {job.memo}
+            </p>
+          )}
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+            {REFERRAL_DETAIL_ROWS.filter((row) => job[row.key]).map((row) => (
+              <p key={row.label}>
+                <span style={{ color: "var(--color-text-muted)" }}>{row.label}: </span>
+                <span style={{ color: "var(--color-text)" }}>{String(job[row.key])}</span>
+              </p>
+            ))}
+          </div>
+          <p className="text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+            No.{job.no || "-"} ・ RA: {job.ra || "-"} ・ 業界: {job.industry || "-"} ・ 勤務地: {job.location || "-"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface AddCompanyForm {
+  companyName: string;
+  status: string;
+  ra: string;
+  region: string;
+  industry: string;
+  jobType: string;
+  memo: string;
+}
+
+const EMPTY_ADD_FORM: AddCompanyForm = {
+  companyName: "",
+  status: "募集中",
+  ra: "",
+  region: "",
+  industry: "",
+  jobType: "",
+  memo: "",
+};
+
+function AddCompanyForm({ onDone }: { onDone: () => void }) {
+  const router = useRouter();
+  const [form, setForm] = useState<AddCompanyForm>(EMPTY_ADD_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = (key: keyof AddCompanyForm, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!form.companyName.trim()) {
+      setError("企業名は必須です。");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "append", ...form }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "追加に失敗しました。");
+      }
+      setForm(EMPTY_ADD_FORM);
+      onDone();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "追加に失敗しました。");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const inputStyle = {
+    background: "var(--color-card)",
+    border: "1px solid var(--color-border)",
+    color: "var(--color-text)",
+  } as const;
+
+  return (
+    <form onSubmit={handleSubmit} className="card flex flex-col gap-2.5 p-3.5">
+      <p className="text-[12.5px] font-bold" style={{ color: "var(--color-navy)" }}>
+        企業を追加
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          企業名 ※必須
+          <input
+            required
+            value={form.companyName}
+            onChange={(e) => update("companyName", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          状態
+          <select
+            value={form.status}
+            onChange={(e) => update("status", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          >
+            <option value="募集中">募集中</option>
+            <option value="募集停止">募集停止</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          RA
+          <input
+            value={form.ra}
+            onChange={(e) => update("ra", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          勤務地
+          <input
+            value={form.region}
+            onChange={(e) => update("region", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          業界
+          <input
+            value={form.industry}
+            onChange={(e) => update("industry", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+          職種
+          <input
+            value={form.jobType}
+            onChange={(e) => update("jobType", e.target.value)}
+            className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+            style={inputStyle}
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+        メモ
+        <textarea
+          value={form.memo}
+          onChange={(e) => update("memo", e.target.value)}
+          rows={2}
+          className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+          style={inputStyle}
+        />
+      </label>
+      {error && (
+        <p className="text-[11px]" style={{ color: "var(--color-bad)" }}>
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-full px-3.5 py-1.5 text-[12px] font-semibold"
+          style={{ color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}
+        >
+          キャンセル
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-full px-3.5 py-1.5 text-[12px] font-semibold"
+          style={{ background: "var(--color-navy)", color: "#ffffff", opacity: submitting ? 0.6 : 1 }}
+        >
+          {submitting ? "追加中…" : "追加する"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ReferralCompanyTab({ groups: initialGroups }: { groups: ReferralCompanyGroup[] }) {
+  const [groups, setGroups] = useState(initialGroups);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ReferralStatusFilter>("全て");
+  const [locationFilter, setLocationFilter] = useState("全て");
+  const [industryFilter, setIndustryFilter] = useState("全て");
+  const [jobTypeFilter, setJobTypeFilter] = useState("全て");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [updatingRow, setUpdatingRow] = useState<number | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+
+  const allJobs = useMemo(() => groups.flatMap((g) => g.jobs), [groups]);
+  const locations = useMemo(() => uniqueSorted(allJobs.map((j) => j.location)), [allJobs]);
+  const industries = useMemo(() => uniqueSorted(allJobs.map((j) => j.industry)), [allJobs]);
+  const jobTypes = useMemo(() => uniqueSorted(allJobs.map((j) => j.jobType)), [allJobs]);
+
+  const filteredGroups = useMemo(() => {
+    const q = query.trim();
+    return groups
+      .map((group) => {
+        const jobs = group.jobs.filter((job) => {
+          if (statusFilter === "未設定" && job.status) return false;
+          if (statusFilter !== "全て" && statusFilter !== "未設定" && job.status !== statusFilter) return false;
+          if (locationFilter !== "全て" && job.location !== locationFilter) return false;
+          if (industryFilter !== "全て" && job.industry !== industryFilter) return false;
+          if (jobTypeFilter !== "全て" && job.jobType !== jobTypeFilter) return false;
+          if (!matchesReferralQuery(job, q) && !group.companyName.includes(q)) return false;
+          return true;
+        });
+        return { companyName: group.companyName, jobs };
+      })
+      .filter((g) => g.jobs.length > 0);
+  }, [groups, query, statusFilter, locationFilter, industryFilter, jobTypeFilter]);
+
+  async function handleStatusChange(job: ReferralCompanyJob, nextStatus: string) {
+    const prevStatus = job.status;
+    setStatusError(null);
+    setUpdatingRow(job.rowNumber);
+    setGroups((gs) =>
+      gs.map((g) => ({
+        ...g,
+        jobs: g.jobs.map((j) => (j.rowNumber === job.rowNumber ? { ...j, status: nextStatus } : j)),
+      })),
+    );
+    try {
+      const res = await fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateStatus",
+          rowNumber: job.rowNumber,
+          expectedCompanyName: job.companyName,
+          status: nextStatus,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok || json.error) {
+        throw new Error(json.error || "更新に失敗しました。");
+      }
+    } catch (err) {
+      // 失敗時は元の状態に戻す(optimistic更新の巻き戻し)
+      setGroups((gs) =>
+        gs.map((g) => ({
+          ...g,
+          jobs: g.jobs.map((j) => (j.rowNumber === job.rowNumber ? { ...j, status: prevStatus } : j)),
+        })),
+      );
+      setStatusError(err instanceof Error ? err.message : "更新に失敗しました。");
+    } finally {
+      setUpdatingRow(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="企業名・職種・メモ等で検索"
+        className="rounded-full px-4 py-2.5 text-[13px] outline-none"
+        style={{ background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+      />
+
+      <div className="flex flex-wrap gap-2">
+        <FilterSelect
+          label="状態"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as ReferralStatusFilter)}
+          options={["全て", "募集中", "募集停止", "未設定"]}
+        />
+        <FilterSelect label="勤務地" value={locationFilter} onChange={setLocationFilter} options={["全て", ...locations]} />
+        <FilterSelect label="業界" value={industryFilter} onChange={setIndustryFilter} options={["全て", ...industries]} />
+        <FilterSelect label="職種" value={jobTypeFilter} onChange={setJobTypeFilter} options={["全て", ...jobTypes]} />
+        <button
+          type="button"
+          onClick={() => setShowAddForm((v) => !v)}
+          className="ml-auto rounded-full px-3.5 py-1.5 text-[12px] font-semibold"
+          style={{ background: "var(--color-navy)", color: "#ffffff" }}
+        >
+          ＋ 企業を追加
+        </button>
+      </div>
+
+      {statusError && (
+        <p className="text-[11px]" style={{ color: "var(--color-bad)" }}>
+          {statusError}
+        </p>
+      )}
+      {showAddForm && <AddCompanyForm onDone={() => setShowAddForm(false)} />}
+
+      {filteredGroups.length === 0 && (
+        <p className="py-8 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+          該当する企業が見つかりませんでした。
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2.5">
+        {filteredGroups.map((group) => (
+          <div key={group.companyName} className="card overflow-hidden">
+            <div className="flex items-center justify-between px-3.5 py-2.5" style={{ background: "var(--color-cream)" }}>
+              <span className="text-[13.5px] font-bold" style={{ color: "var(--color-navy)" }}>
+                {group.companyName}
+              </span>
+              <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                求人 {group.jobs.length}件
+              </span>
+            </div>
+            <div>
+              {group.jobs.map((job) => (
+                <ReferralJobRow
+                  key={job.rowNumber}
+                  job={job}
+                  onChangeStatus={handleStatusChange}
+                  updating={updatingRow === job.rowNumber}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 求人マトリックス(読み取り専用)
+// ─────────────────────────────────────────────
+
+function isListing(entry: JobMatrixEntry): entry is Extract<JobMatrixEntry, { kind: "listing" }> {
+  return entry.kind === "listing";
+}
+function isMatrixCell(entry: JobMatrixEntry): entry is JobMatrixCell {
+  return entry.kind === "matrix";
+}
+
+function matchesMatrixQuery(entry: JobMatrixEntry, query: string): boolean {
+  if (!query) return true;
+  const haystack = isListing(entry)
+    ? [entry.jobName, entry.jobCategory, entry.area, entry.location, entry.requirements, entry.tab]
+    : [entry.company, entry.category, entry.orientation, entry.detail, entry.tab];
+  return haystack.filter(Boolean).join(" ").includes(query);
+}
+
+function JobMatrixTab({ entries }: { entries: JobMatrixEntry[] }) {
+  const [query, setQuery] = useState("");
+  const [tabFilter, setTabFilter] = useState("全て");
+  const [hideClosed, setHideClosed] = useState(true);
+
+  const tabs = useMemo(() => uniqueSorted(entries.map((e) => e.tab)), [entries]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    return entries.filter((entry) => {
+      if (tabFilter !== "全て" && entry.tab !== tabFilter) return false;
+      if (hideClosed && isMatrixCell(entry) && entry.closed) return false;
+      if (!matchesMatrixQuery(entry, q)) return false;
+      return true;
+    });
+  }, [entries, query, tabFilter, hideClosed]);
+
+  const listings = filtered.filter(isListing);
+  const matrixCells = filtered.filter(isMatrixCell);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="会社名・求人名・条件等で検索"
+        className="rounded-full px-4 py-2.5 text-[13px] outline-none"
+        style={{ background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterSelect label="元タブ" value={tabFilter} onChange={setTabFilter} options={["全て", ...tabs]} />
+        <label className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--color-text)" }}>
+          <input type="checkbox" checked={hideClosed} onChange={(e) => setHideClosed(e.target.checked)} />
+          募集終了を隠す
+        </label>
+        <span className="ml-auto text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+          閲覧専用(このタブからは編集できません)
+        </span>
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="py-8 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+          該当する求人が見つかりませんでした。
+        </p>
+      )}
+
+      {listings.length > 0 && (
+        <div className="card overflow-x-auto p-3.5">
+          <table className="w-full min-w-[640px] text-left text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-2 font-medium">求人名</th>
+                <th className="pb-2 pr-2 font-medium">職種</th>
+                <th className="pb-2 pr-2 font-medium">勤務地エリア</th>
+                <th className="pb-2 pr-2 font-medium">勤務地</th>
+                <th className="pb-2 pr-2 font-medium">必須条件</th>
+                <th className="pb-2 pr-2 font-medium">元タブ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {listings.map((entry, i) => (
+                <tr key={`${entry.tab}-${entry.jobName}-${i}`} className="border-t" style={{ borderColor: "var(--color-border)" }}>
+                  <td className="py-1.5 pr-2 font-semibold" style={{ color: "var(--color-navy)" }}>
+                    {entry.isNew && (
+                      <span
+                        className="mr-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                        style={{ background: "var(--color-gold)", color: "#ffffff" }}
+                      >
+                        新着
+                      </span>
+                    )}
+                    {entry.jobName}
+                  </td>
+                  <td className="py-1.5 pr-2">{entry.jobCategory || "-"}</td>
+                  <td className="py-1.5 pr-2">{entry.area || "-"}</td>
+                  <td className="py-1.5 pr-2">{entry.location || "-"}</td>
+                  <td className="py-1.5 pr-2">{entry.requirements || "-"}</td>
+                  <td className="py-1.5 pr-2" style={{ color: "var(--color-text-muted)" }}>
+                    {entry.tab}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {matrixCells.length > 0 && (
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {matrixCells.map((entry, i) => (
+            <div
+              key={`${entry.tab}-${entry.company}-${i}`}
+              className="card flex flex-col gap-1.5 p-3.5"
+              style={entry.closed ? { opacity: 0.6 } : undefined}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className="text-[13px] font-bold"
+                  style={{
+                    color: "var(--color-navy)",
+                    textDecorationLine: entry.closed ? "line-through" : undefined,
+                  }}
+                >
+                  {entry.company}
+                </span>
+                {entry.closed && (
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{
+                      background: "color-mix(in srgb, var(--color-bad) 14%, transparent)",
+                      color: "var(--color-bad)",
+                      border: "1px solid color-mix(in srgb, var(--color-bad) 40%, transparent)",
+                    }}
+                  >
+                    募集終了
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                {entry.orientation || "-"} ・ {entry.category || "-"}
+              </p>
+              {entry.detail && (
+                <p className="whitespace-pre-line text-[11.5px] leading-relaxed" style={{ color: "var(--color-text)" }}>
+                  {entry.detail}
+                </p>
+              )}
+              <p className="text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+                元タブ: {entry.tab}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 共通UI
+// ─────────────────────────────────────────────
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+      {label}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-full border px-2.5 py-1 text-[12px] outline-none"
+        style={{ background: "var(--color-card)", borderColor: "var(--color-border)", color: "var(--color-text)" }}
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export default function CompanyDirectoryView({
+  referralGroups,
+  jobMatrix,
+  status,
+  errorMessage,
+}: CompanyDirectoryViewProps) {
+  const [mainTab, setMainTab] = useState<MainTab>("referral");
+
+  return (
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3.5 px-4 pb-4 pt-4 lg:gap-5 lg:px-8 lg:pb-10 lg:pt-6">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <Link href="/" className="text-[12px] font-semibold" style={{ color: "var(--color-gold)" }}>
+            ← 今日の経営へ戻る
+          </Link>
+          <h1 className="text-[17px] font-bold" style={{ color: "var(--color-navy)" }}>
+            企業・求人
+          </h1>
+        </div>
+        <span className="source-badge">{statusBadgeLabel(status)}</span>
+      </div>
+
+      {status === "live-error" && errorMessage && <ErrorBanner message={errorMessage} />}
+      {status === "unconfigured" && <SetupInstructions />}
+
+      {status !== "unconfigured" && (
+        <>
+          <div className="flex overflow-hidden rounded-full border text-[12px]" style={{ borderColor: "var(--color-border)", width: "fit-content" }}>
+            {(
+              [
+                ["referral", "送客可能企業"],
+                ["matrix", "求人マトリックス"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMainTab(key)}
+                className="px-4 py-1.5 font-semibold"
+                style={
+                  mainTab === key
+                    ? { background: "var(--color-navy)", color: "#ffffff" }
+                    : { background: "var(--color-card)", color: "var(--color-text-muted)" }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {mainTab === "referral" ? (
+            <ReferralCompanyTab groups={referralGroups} />
+          ) : (
+            <JobMatrixTab entries={jobMatrix} />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
