@@ -50,6 +50,13 @@ function normalizeName(name: string): string {
   return name.replace(/[\s　]/g, "");
 }
 
+/**
+ * 面談メモ形式の投稿(キーワードなし)の目印。「8/10(月)13:00〜 / ◯◯様流入 / ◇プロフィール / …」の
+ * 構成で面談内容を投稿する運用があるため、「プロフィール」を含む返信も面談結果の報告とみなす
+ * (slack-interviews.ts の PROFILE_RE と同じ検出ルール)。
+ */
+const PROFILE_RE = /◇?\s*プロフィール/;
+
 /** 行が「面談実施」または「面接実施」の報告か(未実施を示す語を含む行は除外)。 */
 function isInterviewOrInterviewEventLine(line: string): boolean {
   if (NOT_DONE_RE.test(line)) return false;
@@ -69,9 +76,9 @@ function findCaNameByAuthor(author: string): string | undefined {
  * 3. どちらでも一致しなければ undefined(呼び出し側で「その他」に分類する)
  */
 function determineResponsibleCaName(thread: CandidateThread): string | undefined {
-  // 1. 面談実施・面接実施の報告をした最初の返信の投稿者(replies は古い順)。
+  // 1. 面談実施・面接実施の報告(プロフィール形式の面談メモを含む)をした最初の返信の投稿者(replies は古い順)。
   for (const reply of thread.replies) {
-    const isReport = reply.text.split("\n").some(isInterviewOrInterviewEventLine);
+    const isReport = reply.text.split("\n").some(isInterviewOrInterviewEventLine) || PROFILE_RE.test(reply.text);
     if (!isReport) continue;
     const ca = findCaNameByAuthor(reply.author);
     if (ca) return ca;

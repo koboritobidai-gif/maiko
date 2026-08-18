@@ -137,6 +137,10 @@ const THREAD_FETCH_CONCURRENCY = 6;
 // ─────────────────────────────────────────────
 
 const CALL_RE = /(?:架電|荷電)\s*(?:数)?\s*[::]?\s*(\d+)/;
+const MAIL_RE = /(?:メール|mail)\s*(?:数)?\s*[::]?\s*(\d+)/i;
+const LINE_RE = /(?:LINE|ライン)\s*(?:数)?\s*[::]?\s*(\d+)/i;
+const CONNECT_RE = /本通\s*(?:数)?\s*[::]?\s*(\d+)/;
+const RECEIVED_RE = /受電\s*(?:数)?\s*[::]?\s*(\d+)/;
 const MEETING_RE = /商談\s*(?:数)?\s*[::]?\s*(\d+)/;
 const CONTRACT_RE = /契約\s*(?:数)?\s*[::]?\s*(\d+)/;
 const ANY_NUMBER_RE = /(\d+)/;
@@ -297,7 +301,9 @@ export class SlackSalesSource implements SalesSource {
               ts,
               limit: "100",
             });
-            const replies = (res.messages ?? []).filter((m) => m.ts !== ts && !m.subtype && m.text);
+            const replies = (res.messages ?? []).filter(
+              (m) => m.ts !== ts && (!m.subtype || m.subtype === "thread_broadcast") && m.text,
+            );
             result.set(ts, replies);
           } catch (error) {
             console.warn(`[sales-reports] スレッド返信の取得に失敗しました(スキップ・ts=${ts}):`, error);
@@ -325,10 +331,14 @@ export class SlackSalesSource implements SalesSource {
     });
 
     const cutoff = Date.now() - RECENT_WINDOW_MS;
-    // 架電数報告の親メッセージはワークフローbot投稿のため、bot_id を理由に親を除外しない
-    // (system メッセージ〈subtype付き〉のみ除外する)。
+    // 架電数報告の親メッセージはワークフローbot投稿で、subtype が "bot_message" になる。
+    // subtype を一律除外すると架電数報告スレッドごと消えてしまう(実際に架電数0の原因になった)ため、
+    // bot_message は許可し、channel_join 等のシステムメッセージだけを除外する。
     const parents = (history.messages ?? []).filter(
-      (m) => !m.subtype && m.text && tsToDate(m.ts).getTime() >= cutoff,
+      (m) =>
+        (!m.subtype || m.subtype === "bot_message" || m.subtype === "thread_broadcast") &&
+        m.text &&
+        tsToDate(m.ts).getTime() >= cutoff,
     );
 
     const classified = parents
@@ -344,7 +354,10 @@ export class SlackSalesSource implements SalesSource {
 
     const reports: SalesDailyReport[] = [];
     // 同一メンバー・同一日の架電数返信(12時分+15時分)を合算するための集計マップ。
-    const callAgg = new Map<string, { authorName: string; date: Date; calls: number }>();
+    const callAgg = new Map<
+      string,
+      { authorName: string; date: Date; calls: number; mails: number; lineCount: number; connects: number; received: number }
+    >();
 
     for (const { message, kind } of classified) {
       if (kind === "call") {
@@ -352,15 +365,41 @@ export class SlackSalesSource implements SalesSource {
         for (const reply of replies) {
           if (reply.bot_id) continue; // 返信内のbot投稿は除外
           const calls = extractCallsFromReply(reply.text ?? "");
-          if (calls === undefined) continue;
+          const lines = (reply.text ?? "").split("\n");
+          // 架電のほか、報告に書かれていればメール・LINE・本通・受電も読み取る(無ければ0扱い)。
+          const mails = extractFirstNumber(lines, MAIL_RE);
+          const lineCount = extractFirstNumber(lines, LINE_RE);
+          const connects = extractFirstNumber(lines, CONNECT_RE);
+          const received = extractFirstNumber(lines, RECEIVED_RE);
+          if (
+            calls === undefined &&
+            mails === undefined &&
+            lineCount === undefined &&
+            connects === undefined &&
+            received === undefined
+          ) {
+            continue;
+          }
           const authorName = reply.user ? await this.resolveUserName(botToken, reply.user) : "Slack Bot";
           const postedAt = tsToDate(reply.ts);
           const key = `${authorName}|${dayKey(postedAt)}`;
           const existing = callAgg.get(key);
           if (existing) {
-            existing.calls += calls;
+            existing.calls += calls ?? 0;
+            existing.mails += mails ?? 0;
+            existing.lineCount += lineCount ?? 0;
+            existing.connects += connects ?? 0;
+            existing.received += received ?? 0;
           } else {
-            callAgg.set(key, { authorName, date: postedAt, calls });
+            callAgg.set(key, {
+              authorName,
+              date: postedAt,
+              calls: calls ?? 0,
+              mails: mails ?? 0,
+              lineCount: lineCount ?? 0,
+              connects: connects ?? 0,
+              received: received ?? 0,
+            });
           }
         }
         continue;
@@ -393,7 +432,15 @@ export class SlackSalesSource implements SalesSource {
     }
 
     for (const agg of callAgg.values()) {
-      reports.push({ date: agg.date, authorName: agg.authorName, calls: agg.calls });
+      reports.push({
+        date: agg.date,
+        authorName: agg.authorName,
+        calls: agg.calls,
+        mails: agg.mails,
+        lineCount: agg.lineCount,
+        connects: agg.connects,
+        received: agg.received,
+      });
     }
 
     return reports;

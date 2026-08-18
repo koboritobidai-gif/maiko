@@ -414,12 +414,23 @@ export default function DashboardView({
   const salesTotal = salesRows.reduce(
     (sum, r) => ({
       calls: sum.calls + r.calls,
+      mails: sum.mails + r.mails,
+      lineCount: sum.lineCount + r.lineCount,
+      connects: sum.connects + r.connects,
+      received: sum.received + r.received,
       appointments: sum.appointments + r.appointments,
       meetings: sum.meetings + r.meetings,
       contracts: sum.contracts + r.contracts,
     }),
-    { calls: 0, appointments: 0, meetings: 0, contracts: 0 },
+    { calls: 0, mails: 0, lineCount: 0, connects: 0, received: 0, appointments: 0, meetings: 0, contracts: 0 },
   );
+  // メール/LINE/本通/受電の列は、その月の報告に1件でも数字があるときだけ表示する(空列で表を広げない)。
+  const salesOptionalCols = [
+    { key: "mails" as const, label: "メール", show: salesTotal.mails > 0 },
+    { key: "lineCount" as const, label: "LINE", show: salesTotal.lineCount > 0 },
+    { key: "connects" as const, label: "本通", show: salesTotal.connects > 0 },
+    { key: "received" as const, label: "受電", show: salesTotal.received > 0 },
+  ].filter((c) => c.show);
   // 全月0件(=live未導入)ならセクション自体を非表示にする(請求書チェック等と同じパターン)。
   const showSalesSection = salesStats.some((s) => s.rows.length > 0) || salesStatus !== "demo";
 
@@ -1187,6 +1198,11 @@ export default function DashboardView({
                 <tr style={{ color: "var(--color-text-muted)" }}>
                   <th className="pb-2 pr-2 font-medium">営業</th>
                   <th className="pb-2 pr-2 text-right font-medium">架電数</th>
+                  {salesOptionalCols.map((c) => (
+                    <th key={c.key} className="pb-2 pr-2 text-right font-medium">
+                      {c.label}
+                    </th>
+                  ))}
                   <th className="pb-2 pr-2 text-right font-medium">アポ獲得</th>
                   <th className="pb-2 pr-2 text-right font-medium">商談数</th>
                   <th className="pb-2 text-right font-medium">契約数</th>
@@ -1199,6 +1215,11 @@ export default function DashboardView({
                       {r.member}
                     </td>
                     <td className="py-2 pr-2 text-right">{r.calls.toLocaleString("ja-JP")}件</td>
+                    {salesOptionalCols.map((c) => (
+                      <td key={c.key} className="py-2 pr-2 text-right">
+                        {r[c.key].toLocaleString("ja-JP")}件
+                      </td>
+                    ))}
                     <td className="py-2 pr-2 text-right">
                       {r.appointments.toLocaleString("ja-JP")}件
                       {r.appointmentRoutes.length > 0 && (
@@ -1213,7 +1234,11 @@ export default function DashboardView({
                 ))}
                 {salesRows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-3 text-center" style={{ color: "var(--color-text-muted)" }}>
+                    <td
+                      colSpan={5 + salesOptionalCols.length}
+                      className="py-3 text-center"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
                       この月の報告がありません。
                     </td>
                   </tr>
@@ -1224,6 +1249,11 @@ export default function DashboardView({
                       合計
                     </td>
                     <td className="py-2 pr-2 text-right">{salesTotal.calls.toLocaleString("ja-JP")}件</td>
+                    {salesOptionalCols.map((c) => (
+                      <td key={c.key} className="py-2 pr-2 text-right">
+                        {salesTotal[c.key].toLocaleString("ja-JP")}件
+                      </td>
+                    ))}
                     <td className="py-2 pr-2 text-right">{salesTotal.appointments.toLocaleString("ja-JP")}件</td>
                     <td className="py-2 pr-2 text-right">{salesTotal.meetings.toLocaleString("ja-JP")}件</td>
                     <td className="py-2 text-right">{salesTotal.contracts.toLocaleString("ja-JP")}件</td>
@@ -1232,7 +1262,7 @@ export default function DashboardView({
               </tbody>
             </table>
             <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-              架電数=#raの架電数報告スレッド(12時・15時)の返信を1日分合算。商談・契約=業務報告スレッドから。アポ獲得=#22_アポイント報告の1投稿=1件(業務予定報告は集計対象外)。
+              架電数・メール・LINE・本通・受電=#raの架電数報告スレッド(12時・15時)の返信を1日分合算(報告に書かれた項目のみ列に表示)。商談・契約=業務報告スレッドから。アポ獲得=#22_アポイント報告の1投稿=1件(業務予定報告は集計対象外)。
             </p>
           </div>
         </section>

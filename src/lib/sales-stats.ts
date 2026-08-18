@@ -18,6 +18,14 @@ export interface SalesMonthlyRow {
   member: string;
   /** 架電数(#21_ra) */
   calls: number;
+  /** メール送信数(#21_ra。報告に書かれている場合のみ加算) */
+  mails: number;
+  /** LINE送信数(#21_ra。同上) */
+  lineCount: number;
+  /** 本通数(本人通電。#21_ra。同上) */
+  connects: number;
+  /** 受電数(#21_ra。同上) */
+  received: number;
   /** アポ獲得数(#22_アポイント報告、1投稿=1件) */
   appointments: number;
   /** 獲得経路の内訳(件数降順) */
@@ -50,6 +58,10 @@ interface RowAccumulator {
   member: string;
   order: number;
   calls: number;
+  mails: number;
+  lineCount: number;
+  connects: number;
+  received: number;
   meetings: number;
   contracts: number;
   routeCounts: Map<string, number>;
@@ -76,7 +88,18 @@ export function getSalesMonthlyStats(
     const ensureRow = (label: string, order: number): RowAccumulator => {
       let row = rowsMap.get(label);
       if (!row) {
-        row = { member: label, order, calls: 0, meetings: 0, contracts: 0, routeCounts: new Map() };
+        row = {
+          member: label,
+          order,
+          calls: 0,
+          mails: 0,
+          lineCount: 0,
+          connects: 0,
+          received: 0,
+          meetings: 0,
+          contracts: 0,
+          routeCounts: new Map(),
+        };
         rowsMap.set(label, row);
       }
       return row;
@@ -87,6 +110,10 @@ export function getSalesMonthlyStats(
       const name = findSalesNameByAuthor(r.authorName);
       const row = ensureRow(name ?? OTHER_LABEL, name ? SALES_NAMES.indexOf(name) : SALES_NAMES.length);
       row.calls += r.calls ?? 0;
+      row.mails += r.mails ?? 0;
+      row.lineCount += r.lineCount ?? 0;
+      row.connects += r.connects ?? 0;
+      row.received += r.received ?? 0;
       row.meetings += r.meetings ?? 0;
       row.contracts += r.contracts ?? 0;
     }
@@ -109,6 +136,10 @@ export function getSalesMonthlyStats(
           row: {
             member: row.member,
             calls: row.calls,
+            mails: row.mails,
+            lineCount: row.lineCount,
+            connects: row.connects,
+            received: row.received,
             appointments: appointmentsTotal,
             appointmentRoutes,
             meetings: row.meetings,
@@ -118,7 +149,15 @@ export function getSalesMonthlyStats(
       })
       // 全項目0の行は含めない。
       .filter(
-        (w) => w.row.calls > 0 || w.row.appointments > 0 || w.row.meetings > 0 || w.row.contracts > 0,
+        (w) =>
+          w.row.calls > 0 ||
+          w.row.mails > 0 ||
+          w.row.lineCount > 0 ||
+          w.row.connects > 0 ||
+          w.row.received > 0 ||
+          w.row.appointments > 0 ||
+          w.row.meetings > 0 ||
+          w.row.contracts > 0,
       )
       .sort((a, b) => a.order - b.order)
       .map((w) => w.row);

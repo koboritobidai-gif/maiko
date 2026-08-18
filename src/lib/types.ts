@@ -101,6 +101,14 @@ export interface SalesDailyReport {
   /** 投稿者の表示名 */
   authorName: string;
   calls?: number;
+  /** メール送信数(報告に書かれている場合のみ) */
+  mails?: number;
+  /** LINE送信数(報告に書かれている場合のみ) */
+  lineCount?: number;
+  /** 本通数(本人通電。報告に書かれている場合のみ) */
+  connects?: number;
+  /** 受電数(報告に書かれている場合のみ) */
+  received?: number;
   meetings?: number;
   contracts?: number;
 }

@@ -36,28 +36,48 @@ function normalizeName(name: string): string {
   return name.replace(/[\s　]/g, "");
 }
 
-/** 返信本文から面談実施日を求める(面談実施の報告でなければ undefined)。 */
-function interviewDateFromReply(reply: CandidateThreadReply): Date | undefined {
-  const line = reply.text
-    .split("\n")
-    .find((l) => INTERVIEW_DONE_RE.test(l) && !NOT_DONE_RE.test(l));
-  if (!line) return undefined;
+/**
+ * 面談メモ形式の投稿(キーワードなし)を検出するための目印。現場では
+ * 「8/10(月)13:00〜 / 2peace様流入 / ◇プロフィール / …」のように、日付+流入元+プロフィールの
+ * 構成で面談内容を投稿する運用があるため、「プロフィール」を含む返信も面談実施の報告とみなす。
+ */
+const PROFILE_RE = /◇?\s*プロフィール/;
 
+/** 行内の日付表記から面談日を求める(行に日付が無ければ投稿日を10時起点で使う)。 */
+function dateFromLine(line: string, postedAt: Date): Date {
   const match = INLINE_DATE_RE.exec(line);
   if (match) {
     const month = Number(match[1]);
     const day = Number(match[2]);
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      let date = new Date(reply.postedAt.getFullYear(), month - 1, day, 10, 0, 0, 0);
-      if (date.getTime() > reply.postedAt.getTime() + 2 * 86400000) {
-        date = new Date(reply.postedAt.getFullYear() - 1, month - 1, day, 10, 0, 0, 0);
+      let date = new Date(postedAt.getFullYear(), month - 1, day, 10, 0, 0, 0);
+      if (date.getTime() > postedAt.getTime() + 2 * 86400000) {
+        date = new Date(postedAt.getFullYear() - 1, month - 1, day, 10, 0, 0, 0);
       }
       return date;
     }
   }
-  const posted = new Date(reply.postedAt);
+  const posted = new Date(postedAt);
   posted.setHours(10, 0, 0, 0);
   return posted;
+}
+
+/** 返信本文から面談実施日を求める(面談実施の報告でなければ undefined)。 */
+function interviewDateFromReply(reply: CandidateThreadReply): Date | undefined {
+  const lines = reply.text.split("\n");
+
+  // 1. キーワード(面談実施/面談結果 等)を含む行があればその行の日付を使う。
+  const keywordLine = lines.find((l) => INTERVIEW_DONE_RE.test(l) && !NOT_DONE_RE.test(l));
+  if (keywordLine) return dateFromLine(keywordLine, reply.postedAt);
+
+  // 2. キーワードが無くても「プロフィール」を含む面談メモ形式なら面談実施とみなし、
+  //    冒頭に近い日付行(「8/10(月)13:00〜」等。予定・キャンセル等の行は除く)を面談日として使う。
+  if (PROFILE_RE.test(reply.text)) {
+    const dateLine = lines.find((l) => INLINE_DATE_RE.test(l) && !NOT_DONE_RE.test(l));
+    return dateFromLine(dateLine ?? "", reply.postedAt);
+  }
+
+  return undefined;
 }
 
 /** スレッド一覧から「正規化した氏名 → 面談実施日」の対応表を作る(スレッドごとに最初の報告を採用)。 */
