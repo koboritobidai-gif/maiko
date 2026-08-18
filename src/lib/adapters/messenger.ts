@@ -75,7 +75,7 @@ async function slackGet<T extends SlackApiResponseBase>(
     cache: "no-store",
   });
   // レート制限(429)のときは Retry-After 秒(最大10秒)待って1回だけやり直す。
-  // 求職者スレッドを最大100件読むようになり、瞬間的に制限へ達することがあるため。
+  // 求職者スレッドを最大250件読むようになり、瞬間的に制限へ達することがあるため。
   if (res.status === 429) {
     const retryAfter = Math.min(Number(res.headers.get("retry-after") ?? "1") || 1, 10);
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
@@ -145,6 +145,7 @@ const threadRepliesCache = new Map<string, { cacheKey: string; replies: Candidat
 
 interface SlackHistoryResponse extends SlackApiResponseBase {
   messages?: SlackMessage[];
+  response_metadata?: { next_cursor?: string };
 }
 
 interface SlackRepliesResponse extends SlackApiResponseBase {
@@ -287,7 +288,7 @@ export class SlackSource implements MessengerSource {
    * name とする。
    *
    * API呼び出し数を抑えるための工夫:
-   * - conversations.replies(返信取得)は「直近アクティブな100スレッド」まで。さらに
+   * - conversations.replies(返信取得)は「直近アクティブな250スレッド」まで。さらに
    *   返信数・最新返信tsが前回から変わっていないスレッドはメモリキャッシュを使い再取得しない
    * - パーマリンクは chat.getPermalink を先頭の1件だけに呼び、返ってきたURLからワークスペースの
    *   ドメインを覚えて、残りは「https://◯◯.slack.com/archives/チャンネル/p<ts>」形式で組み立てる
@@ -300,15 +301,29 @@ export class SlackSource implements MessengerSource {
       throw new Error("環境変数 SLACK_CANDIDATE_CHANNEL(#求職者のチャンネルID)を設定してください。");
     }
 
-    const REPLY_FETCH_LIMIT = 100;
+    // CA別実績で6月分まで表示したいという経営者の要望のため、履歴は約4ヶ月(120日)前まで
+    // カーソルページングで遡る(以前は直近100メッセージのみで、古い月のスレッドが範囲外に落ちていた)。
+    // 返信取得の上限も同じ理由で250スレッドまで拡大(返信キャッシュにより2回目以降の取得は差分のみ)。
+    const REPLY_FETCH_LIMIT = 250;
     const THREAD_CONCURRENCY = 10;
+    const HISTORY_LOOKBACK_DAYS = 120;
+    const HISTORY_MAX_MESSAGES = 600;
 
-    const history = await slackGet<SlackHistoryResponse>(botToken, "conversations.history", {
-      channel: channelId,
-      limit: "100",
-    });
+    const oldest = String(Math.floor(Date.now() / 1000) - HISTORY_LOOKBACK_DAYS * 86400);
+    const historyMessages: SlackMessage[] = [];
+    let cursor: string | undefined;
+    do {
+      const history = await slackGet<SlackHistoryResponse>(botToken, "conversations.history", {
+        channel: channelId,
+        limit: "200",
+        oldest,
+        ...(cursor ? { cursor } : {}),
+      });
+      historyMessages.push(...(history.messages ?? []));
+      cursor = history.response_metadata?.next_cursor || undefined;
+    } while (cursor && historyMessages.length < HISTORY_MAX_MESSAGES);
 
-    const parents = (history.messages ?? []).filter((m) => !m.subtype && !m.bot_id && m.text);
+    const parents = historyMessages.filter((m) => !m.subtype && !m.bot_id && m.text);
 
     // パーマリンクの土台(https://◯◯.slack.com/archives/)を先頭1件のAPI呼び出しから求める。
     let permalinkBase: string | undefined;
@@ -353,7 +368,7 @@ export class SlackSource implements MessengerSource {
       };
     };
 
-    // 10スレッドずつ順に処理する(100スレッドの一斉並列でレート制限に当たるのを避ける)。
+    // 10スレッドずつ順に処理する(多数スレッドの一斉並列でレート制限に当たるのを避ける)。
     const threads: CandidateThread[] = [];
     for (let i = 0; i < parents.length; i += THREAD_CONCURRENCY) {
       const chunk = parents.slice(i, i + THREAD_CONCURRENCY);
