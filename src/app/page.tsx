@@ -20,9 +20,11 @@ import {
   getSlackInterviewMonthlyCounts,
 } from "@/lib/slack-interviews";
 
-// ライブデータ(Google Sheets / Slack / 集客・広告シート)を60秒おきに再取得して反映する。
-// loadDataBundle() / loadMarketingData() 自体もモジュールメモリキャッシュを持つため、二重に整合する。
-export const dynamic = "force-dynamic";
+// 毎リクエスト動的レンダリング(ライブデータ表示)。`force-dynamic` は使わないこと:
+// Next.js 16 では force-dynamic が全 fetch を強制 no-store に上書きするため、messenger.ts が
+// Slackスレッド返信を保存しているデータキャッシュ(next.revalidate 指定)まで無効化されてしまう。
+// `revalidate = 0` なら動的レンダリングのまま、fetch 個別の revalidate 指定は尊重される。
+export const revalidate = 0;
 // #請求書のPDFを最大50件ダウンロード・解析するため、初回読み込みが標準の実行時間上限(10秒)を
 // 超えることがある。Vercelの関数実行時間上限を60秒へ引き上げる(2回目以降は5分キャッシュで高速)。
 export const maxDuration = 60;

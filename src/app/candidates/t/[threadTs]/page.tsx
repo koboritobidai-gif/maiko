@@ -2,8 +2,8 @@ import Link from "next/link";
 import CandidateThreadDetailView from "@/components/CandidateThreadDetailView";
 import { loadCandidateThreads } from "@/lib/candidate-threads";
 
-// 一覧ページと同様、常に最新の Slack スレッド状態を反映する。
-export const dynamic = "force-dynamic";
+// 一覧ページと同様、毎リクエスト動的レンダリング(force-dynamic を使わない理由は app/page.tsx 参照)。
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ threadTs: string }>;
