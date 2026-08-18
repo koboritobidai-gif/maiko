@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
-import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit, getStagePipeline } from "@/lib/metrics";
+import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit } from "@/lib/metrics";
 import type {
   DashboardSummary,
   InvoiceCheckRow,
@@ -318,7 +317,6 @@ export default function DashboardView({
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
-  const [pipelineMonthIdx, setPipelineMonthIdx] = useState(0);
   // カテゴリタブ(全体/マーケティング/CA/RA)。データ再取得は行わず、表示するセクションだけを切り替える。
   const [group, setGroup] = useState<"全体" | "マーケティング" | "CA" | "RA">("全体");
   if (!role) return null;
@@ -376,18 +374,6 @@ export default function DashboardView({
   const isCa = role === "ca";
   const myCandidates = isCa ? getCandidatesByCa(candidates, profile.memberId) : [];
   const myActiveCandidates = myCandidates.filter((c) => c.stage !== "辞退");
-
-  // 求職者パイプライン: 直近3ヶ月の月チップで、その月に登録した求職者(コホート)の現在ステージ分布を見る。
-  // 月の判定は 登録日 > 面談日 > 更新日 の優先順で近似する。
-  const pipelineMonths = primaryMonths.slice(0, 3);
-  const pipelineMonth = pipelineMonths[pipelineMonthIdx] ?? pipelineMonths[0];
-  const pipelineCandidates = candidates.filter((c) => {
-    const ref = c.registeredAt ?? c.interviewedAt ?? c.updatedAt;
-    return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, "0")}` === pipelineMonth?.monthKey;
-  });
-  const pipelineStages = getStagePipeline(pipelineCandidates);
-  const pipelineWithdrawnCount = pipelineCandidates.filter((c) => c.stage === "辞退").length;
-  const maxStageCount = Math.max(1, ...pipelineStages.map((s) => s.count));
 
   const { weeklyTrend } = summary;
   // 主要指標カードは選択月のスナップショット、各ファネルは今月/先月トグルで切替。
@@ -1214,9 +1200,6 @@ export default function DashboardView({
               )}
             </tbody>
           </table>
-          <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            担当CA = 面談結果・面接結果を投稿した人(無ければ投稿数最多)。面談を実施した月ごとの集計で、面接・内定・離脱はその後の結果も面談月に含めて数える。面談実施・面接・内定・辞退はスレッドの記載から自動検出。
-          </p>
         </div>
       </section>
       )}
@@ -1424,59 +1407,7 @@ export default function DashboardView({
       </div>
       )}
 
-      {/* 5. 求職者パイプライン(プロジェクト進捗セクションは経営者の指示で廃止)【CA】 */}
-      {group === "CA" && (
-      <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            求職者パイプライン({formatMonthLabel(pipelineMonth?.monthKey ?? "")})
-          </h2>
-          <div className="flex items-center gap-2">
-            <MonthChips months={pipelineMonths} value={pipelineMonthIdx} onChange={setPipelineMonthIdx} />
-            <Link
-              href="/candidates"
-              className="text-[11px] font-semibold whitespace-nowrap"
-              style={{ color: "var(--color-gold)" }}
-            >
-              一覧を見る →
-            </Link>
-            <SourceBadge label={sheetsBadge} />
-          </div>
-        </div>
-        <div className="card flex flex-col gap-2.5 p-3.5">
-          {pipelineStages.map((s) => (
-            <div key={s.stage} className="flex items-center gap-2.5">
-              <span
-                className="w-[64px] shrink-0 text-[11px]"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                {s.stage}
-              </span>
-              <div className="flex-1">
-                <ProgressBar
-                  percent={(s.count / maxStageCount) * 100}
-                  color="var(--color-navy)"
-                  trackColor="var(--color-border)"
-                  height={10}
-                />
-              </div>
-              <span
-                className="w-[28px] shrink-0 text-right text-[12px] font-semibold"
-                style={{ color: "var(--color-navy)" }}
-              >
-                {s.count}
-              </span>
-            </div>
-          ))}
-          <p className="mt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            辞退・クローズ {pipelineWithdrawnCount}名(パイプライン外)。その月に登録した求職者(登録日、未入力時は面談日→更新日で近似)の現在ステージ。
-          </p>
-        </div>
-      </section>
-
-      </div>
-      )}
+      {/* 求職者パイプラインのセクションは経営者の指示で廃止(求職者一覧はサイドバーから) */}
 
       {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に)【全体】 */}
       {group === "全体" && (
