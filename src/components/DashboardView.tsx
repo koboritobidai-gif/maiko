@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
@@ -223,6 +223,31 @@ function formatYenOrDash(amountYen: number | null): string {
   return amountYen === null ? "—" : formatYen(amountYen);
 }
 
+/** デフォルト非表示の折りたたみ。ヘッダーの「＋/−」ボタンで開閉する。 */
+function Collapsible({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card p-3.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <span className="text-sm font-semibold" style={{ color: "var(--color-navy)" }}>
+          {title}
+        </span>
+        <span
+          aria-hidden
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-base leading-none"
+          style={{ borderColor: "var(--color-border)", color: "var(--color-navy)" }}
+        >
+          {open ? "−" : "＋"}
+        </span>
+      </button>
+      {open ? <div className="mt-3 overflow-x-auto">{children}</div> : null}
+    </div>
+  );
+}
 
 interface DashboardViewProps {
   summary: DashboardSummary;
@@ -294,6 +319,8 @@ export default function DashboardView({
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
   const [pipelineMonthIdx, setPipelineMonthIdx] = useState(0);
+  // カテゴリタブ(全体/マーケティング/CA/RA)。データ再取得は行わず、表示するセクションだけを切り替える。
+  const [group, setGroup] = useState<"全体" | "マーケティング" | "CA" | "RA">("全体");
   if (!role) return null;
 
   const profile = getRoleProfile(role);
@@ -453,7 +480,31 @@ export default function DashboardView({
         </div>
       )}
 
-      {/* 1. 主要指標(直近6ヶ月の月選択) */}
+      {/* カテゴリタブ: 全体/マーケティング/CA/RA でセクション表示を絞り込む(データ再取得なし)。 */}
+      <div className="flex flex-wrap gap-1.5">
+        {(["全体", "マーケティング", "CA", "RA"] as const).map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setGroup(g)}
+            className="rounded-full border px-3.5 py-1.5 text-[12px] font-semibold"
+            style={
+              group === g
+                ? { background: "var(--color-navy)", color: "#ffffff", borderColor: "var(--color-navy)" }
+                : {
+                    background: "var(--color-card)",
+                    color: "var(--color-text-muted)",
+                    borderColor: "var(--color-border)",
+                  }
+            }
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+
+      {/* 1. 主要指標(直近6ヶ月の月選択)【全体】 */}
+      {group === "全体" && (
       <section className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -534,8 +585,10 @@ export default function DashboardView({
           </div>
         )}
       </section>
+      )}
 
-      {/* 1.5 集客・広告(直近6ヶ月の月選択) */}
+      {/* 1.5 集客・広告(直近6ヶ月の月選択)【マーケティング】 */}
+      {group === "マーケティング" && (
       <section className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -597,7 +650,7 @@ export default function DashboardView({
             caption="SNS運用の費用 ÷ 面談数"
           />
         </div>
-        <div className="card overflow-x-auto p-3.5">
+        <Collapsible title="媒体別">
           <table className="w-full min-w-[560px] text-left text-[12px]">
             <thead>
               <tr style={{ color: "var(--color-text-muted)" }}>
@@ -646,7 +699,7 @@ export default function DashboardView({
               </tr>
             </tbody>
           </table>
-        </div>
+        </Collapsible>
         <div className="flex flex-wrap gap-1.5">
           {transitionRates.clickToLineRegRatePercent !== null && (
             <RateBadge label="クリック→LINE登録率" value={transitionRates.clickToLineRegRatePercent} />
@@ -661,10 +714,7 @@ export default function DashboardView({
             <RateBadge label="SNS再生→LP率" value={transitionRates.snsPlayToLpRatePercent} />
           )}
         </div>
-        <div className="card overflow-x-auto p-3.5">
-          <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
-            送客パートナー(成果報酬)
-          </p>
+        <Collapsible title="送客パートナー(成果報酬)">
           <table className="w-full min-w-[560px] text-left text-[12px]">
             <thead>
               <tr style={{ color: "var(--color-text-muted)" }}>
@@ -729,11 +779,12 @@ export default function DashboardView({
           <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
             対象人数 = 流入経路が一致し面談を実施した求職者(面談後の辞退も含む)。今月・先月とも面談日(未入力時は登録日→更新日)の月で判定。流入経路・面談日はシートに加え、#求職者スレッドの「◯◯様流入」「面談実施」の記載からも自動検出。
           </p>
-        </div>
+        </Collapsible>
       </section>
+      )}
 
-      {/* 1.6 請求書チェック(#請求書) */}
-      {showInvoiceCard && (
+      {/* 1.6 請求書チェック(#請求書)【全体】 */}
+      {group === "全体" && showInvoiceCard && (
         <section className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -825,8 +876,8 @@ export default function DashboardView({
         </section>
       )}
 
-      {/* 1.7 送客売上(貰う金額) */}
-      {showRevenueSection && (
+      {/* 1.7 送客売上(貰う金額)【マーケティング】 */}
+      {group === "マーケティング" && showRevenueSection && (
         <section className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -894,10 +945,7 @@ export default function DashboardView({
           </div>
 
           {/* 企業別明細テーブル */}
-          <div className="card overflow-x-auto p-3.5">
-            <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
-              企業別明細
-            </p>
+          <Collapsible title="企業別明細">
             <table className="w-full min-w-[560px] text-left text-[12px]">
               <thead>
                 <tr style={{ color: "var(--color-text-muted)" }}>
@@ -932,13 +980,10 @@ export default function DashboardView({
                 他{revenueDetailHiddenCount}件。
               </p>
             )}
-          </div>
+          </Collapsible>
 
           {/* 送客パートナー収支 */}
-          <div className="card overflow-x-auto p-3.5">
-            <p className="mb-2 text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
-              送客パートナー収支({revenuePeriod === "this" ? "今月" : "先月"})
-            </p>
+          <Collapsible title={`送客パートナー収支(${revenuePeriod === "this" ? "今月" : "先月"})`}>
             <table className="w-full min-w-[420px] text-left text-[12px]">
               <thead>
                 <tr style={{ color: "var(--color-text-muted)" }}>
@@ -986,12 +1031,13 @@ export default function DashboardView({
             <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
               入金月ベースで集計(タブ「YYYY年M月」の内容は翌月末入金のため、翌月分として表示)。経路の対応付けは部分一致。
             </p>
-          </div>
+          </Collapsible>
         </section>
       )}
 
-      {/* 2-3. 求職者ファネル・法人営業ファネル(lgでは左右2カラム) */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+      {/* 2. 求職者ファネル(月内)【CA】。営業ファネルとは行き先タブが異なるためグリッドを解体し独立させる。 */}
+      {group === "CA" && (
+      <div className="max-w-[640px]">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1039,8 +1085,12 @@ export default function DashboardView({
           </div>
         </div>
       </section>
+      </div>
+      )}
 
-      {/* 3. 法人営業ファネル(月内) */}
+      {/* 3. 法人営業ファネル(月内)【RA】。求職者ファネルとは行き先タブが異なるためグリッドを解体し独立させる。 */}
+      {group === "RA" && (
+      <div className="max-w-[640px]">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1092,8 +1142,10 @@ export default function DashboardView({
         </div>
       </section>
       </div>
+      )}
 
-      {/* 3.5 CA別実績(#求職者) */}
+      {/* 3.5 CA別実績(#求職者)【CA】 */}
+      {group === "CA" && (
       <section className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1167,9 +1219,10 @@ export default function DashboardView({
           </p>
         </div>
       </section>
+      )}
 
-      {/* 3.6 営業実績(#21_ra・アポイント報告) */}
-      {showSalesSection && (
+      {/* 3.6 営業実績(#21_ra・アポイント報告)【RA】 */}
+      {group === "RA" && showSalesSection && (
         <section className="flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1268,7 +1321,8 @@ export default function DashboardView({
         </section>
       )}
 
-      {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム) */}
+      {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム)【全体】 */}
+      {group === "全体" && (
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
@@ -1368,8 +1422,10 @@ export default function DashboardView({
         </div>
       </section>
       </div>
+      )}
 
-      {/* 5. 求職者パイプライン(プロジェクト進捗セクションは経営者の指示で廃止) */}
+      {/* 5. 求職者パイプライン(プロジェクト進捗セクションは経営者の指示で廃止)【CA】 */}
+      {group === "CA" && (
       <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
@@ -1420,8 +1476,10 @@ export default function DashboardView({
       </section>
 
       </div>
+      )}
 
-      {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に) */}
+      {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に)【全体】 */}
+      {group === "全体" && (
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
@@ -1460,6 +1518,7 @@ export default function DashboardView({
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }
