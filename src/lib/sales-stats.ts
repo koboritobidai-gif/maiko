@@ -9,12 +9,9 @@ import type { AppointmentReport, SalesDailyReport } from "./types";
 /** 実在の法人営業名簿(経営者申告、固定)。 */
 export const SALES_NAMES = ["清本", "望月"];
 
-/** 営業実績が「その他」(SALES_NAMESのいずれにも一致しない投稿者)に分類された場合のラベル。 */
-const OTHER_LABEL = "その他";
-
 /** 営業×月別の実績1行。 */
 export interface SalesMonthlyRow {
-  /** SALES_NAMES のいずれか、またはどれにも一致しない場合「その他」 */
+  /** SALES_NAMES のいずれか */
   member: string;
   /** 架電数(#21_ra) */
   calls: number;
@@ -40,7 +37,7 @@ export interface SalesMonthlyRow {
 export interface SalesMonthlyStats {
   /** 対象月(YYYY-MM) */
   monthKey: string;
-  /** 全項目0の行は含めない。行順は SALES_NAMES 順→その他 */
+  /** 全項目0の行は含めない。行順は SALES_NAMES 順 */
   rows: SalesMonthlyRow[];
 }
 
@@ -70,7 +67,8 @@ interface RowAccumulator {
 /**
  * 営業実績(直近nヶ月分、今月が先頭)を、Slack「#21_ra」「#22_アポイント報告」から集計する(純関数)。
  * 対象は `SALES_NAMES`(固定リスト、経営者申告)。投稿者表示名との部分一致で担当を判定し、
- * 一致しない投稿者は「その他」に集約する。
+ * 一致しない投稿者は集計対象外とする(経営者確認: 営業は清本・望月の2人のみ。ワークフローbotの
+ * まとめ投稿等から数字を誤って拾い「その他 727件」のような架空の行が出た実例があるため)。
  */
 export function getSalesMonthlyStats(
   reports: SalesDailyReport[],
@@ -108,7 +106,8 @@ export function getSalesMonthlyStats(
     for (const r of reports) {
       if (monthKeyOf(r.date) !== monthKey) continue;
       const name = findSalesNameByAuthor(r.authorName);
-      const row = ensureRow(name ?? OTHER_LABEL, name ? SALES_NAMES.indexOf(name) : SALES_NAMES.length);
+      if (!name) continue;
+      const row = ensureRow(name, SALES_NAMES.indexOf(name));
       row.calls += r.calls ?? 0;
       row.mails += r.mails ?? 0;
       row.lineCount += r.lineCount ?? 0;
@@ -121,7 +120,8 @@ export function getSalesMonthlyStats(
     for (const a of appointments) {
       if (monthKeyOf(a.date) !== monthKey) continue;
       const name = findSalesNameByAuthor(a.authorName);
-      const row = ensureRow(name ?? OTHER_LABEL, name ? SALES_NAMES.indexOf(name) : SALES_NAMES.length);
+      if (!name) continue;
+      const row = ensureRow(name, SALES_NAMES.indexOf(name));
       row.routeCounts.set(a.route, (row.routeCounts.get(a.route) ?? 0) + 1);
     }
 

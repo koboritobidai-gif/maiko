@@ -302,8 +302,8 @@ advanceRatePercent(面接への移行率%)・offers/offerRatePercent(内定人�
 
 salesMonthlyStatsFromSlack は、Slack「#21_ra」(架電数報告・業務報告)「#22_アポイント報告」から、法人営業
 (清本・望月)ごと×月ごとに自動集計した実績です。配列の要素は月(直近6ヶ月、今月が先頭)ごとの
-monthKey(YYYY-MM)と rows(全項目0の行は含まない)で、各行に member(清本/望月。どちらにも紐付かない
-場合「その他」)・calls(架電数)・appointments(アポ獲得数、#22_アポイント報告の1投稿=1件)・
+monthKey(YYYY-MM)と rows(全項目0の行は含まない。清本・望月以外の投稿者は集計対象外)で、各行に
+member(清本/望月)・calls(架電数)・appointments(アポ獲得数、#22_アポイント報告の1投稿=1件)・
 appointmentRoutes(獲得経路の内訳、route/count、件数降順)・meetings(商談数)・contracts(契約数)が
 含まれます。「清本さんの架電数は?」「望月さんの◯月のアポ獲得は?」のような、清本・望月+月+実績系の
 質問には、この salesMonthlyStatsFromSlack の該当月・該当行を使って具体的に答えてください。
