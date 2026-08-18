@@ -68,21 +68,29 @@ async function slackGet<T extends SlackApiResponseBase>(
   botToken: string,
   method: string,
   params: Record<string, string>,
+  /**
+   * 指定すると Next.js のデータキャッシュ(Vercelのサーバーインスタンスをまたいで永続)に
+   * この秒数だけ保存する。サーバーレスではモジュールメモリのキャッシュが再起動で消えるため、
+   * 「同じURLなら結果が変わらない」呼び出し(返信数を鮮度キーにした conversations.replies 等)は
+   * こちらに保存して、コールドスタートでもSlackへの呼び出し数が積み上がらないようにする。
+   */
+  revalidateSeconds?: number,
 ): Promise<T> {
   const url = `${SLACK_API_BASE}/${method}?${new URLSearchParams(params).toString()}`;
-  let res = await fetch(url, {
-    headers: { Authorization: `Bearer ${botToken}` },
-    cache: "no-store",
-  });
+  const headers = { Authorization: `Bearer ${botToken}` };
+  let res = await fetch(
+    url,
+    revalidateSeconds
+      ? { headers, next: { revalidate: revalidateSeconds } }
+      : { headers, cache: "no-store" },
+  );
   // レート制限(429)のときは Retry-After 秒(最大10秒)待って1回だけやり直す。
   // 求職者スレッドを最大250件読むようになり、瞬間的に制限へ達することがあるため。
+  // やり直しは常に no-store(失敗レスポンスがデータキャッシュに残るのを避ける)。
   if (res.status === 429) {
     const retryAfter = Math.min(Number(res.headers.get("retry-after") ?? "1") || 1, 10);
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-    res = await fetch(url, {
-      headers: { Authorization: `Bearer ${botToken}` },
-      cache: "no-store",
-    });
+    res = await fetch(url, { headers, cache: "no-store" });
   }
   const json = (await res.json()) as T;
   if (!res.ok || !json.ok) {
@@ -186,7 +194,8 @@ export class SlackSource implements MessengerSource {
     const cached = this.userNameCache.get(userId);
     if (cached) return cached;
     try {
-      const res = await slackGet<SlackUserInfoResponse>(botToken, "users.info", { user: userId });
+      // 表示名はほぼ変わらないため、データキャッシュにも1日保存する(コールドスタート時の呼び出し削減)。
+      const res = await slackGet<SlackUserInfoResponse>(botToken, "users.info", { user: userId }, 24 * 60 * 60);
       const name =
         res.user?.profile?.real_name ||
         res.user?.profile?.display_name ||
@@ -246,12 +255,24 @@ export class SlackSource implements MessengerSource {
     botToken: string,
     channelId: string,
     threadTs: string,
+    /**
+     * 鮮度キー(「返信数:最新返信ts」)。指定すると `_v` パラメータとしてURLに含め(Slack側は
+     * 未知のパラメータを無視する)、Next.jsのデータキャッシュに30日保存する。スレッドに返信が
+     * 増えるとキーが変わってURLも変わるため、自動的に新しい内容を取り直す。
+     */
+    freshnessKey?: string,
   ): Promise<CandidateThreadReply[]> {
-    const res = await slackGet<SlackRepliesResponse>(botToken, "conversations.replies", {
-      channel: channelId,
-      ts: threadTs,
-      limit: "50",
-    });
+    const res = await slackGet<SlackRepliesResponse>(
+      botToken,
+      "conversations.replies",
+      {
+        channel: channelId,
+        ts: threadTs,
+        limit: "50",
+        ...(freshnessKey ? { _v: freshnessKey } : {}),
+      },
+      freshnessKey ? 30 * 24 * 60 * 60 : undefined,
+    );
     const replyMessages = (res.messages ?? []).filter(
       (m) => m.ts !== threadTs && !m.subtype && !m.bot_id && m.text,
     );
@@ -355,7 +376,8 @@ export class SlackSource implements MessengerSource {
         if (cached && cached.cacheKey === cacheKey) {
           replies = cached.replies;
         } else if (Date.now() < repliesDeadline) {
-          replies = await this.fetchThreadReplies(botToken, channelId, m.ts);
+          // 鮮度キー付きで取得(変化のないスレッドはVercelのデータキャッシュに当たり、Slackを呼ばない)。
+          replies = await this.fetchThreadReplies(botToken, channelId, m.ts, cacheKey);
           threadRepliesCache.set(m.ts, { cacheKey, replies });
         } else if (cached) {
           // 時間切れ: 内容が少し古くても、返信なし扱いよりは前回読んだキャッシュの方が正確。
