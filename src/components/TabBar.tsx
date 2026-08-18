@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconChat,
+  IconCompany,
   IconDashboard,
   IconDeliver,
   IconDocument,
@@ -12,6 +13,7 @@ import {
 
 const TABS = [
   { href: "/", label: "今日の経営", icon: IconDashboard },
+  { href: "/companies", label: "企業・求人", icon: IconCompany },
   { href: "/ask", label: "AIに聞く", icon: IconChat },
   { href: "/deliver", label: "届ける", icon: IconDeliver },
   { href: "/meeting", label: "面談AI", icon: IconMic },
@@ -37,7 +39,7 @@ export default function TabBar() {
             <li key={href} className="flex-1">
               <Link
                 href={href}
-                className="flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors"
+                className="flex flex-col items-center gap-1 py-2.5 text-[10px] whitespace-nowrap transition-colors"
                 style={{
                   color: active ? "var(--color-navy)" : "var(--color-text-muted)",
                 }}
