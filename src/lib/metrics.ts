@@ -942,9 +942,21 @@ export function getPrimaryMonthSnapshots(
     // リズアライズの請求書を除外して二重計上を防ぐ(請求書チェックカードの合計はチャンネルの
     // 実態どおり全件のまま。表記ゆれに備え「リズアライズ/リズリアライズ」の両方に一致させる)。
     const SNS_VENDOR_RE = /リズリ?アライズ/;
-    const dedupedInvoices = monthInvoices.filter(
+    let dedupedInvoices = monthInvoices.filter(
       (inv) => !SNS_VENDOR_RE.test(`${inv.vendorName ?? ""} ${inv.fileName}`),
     );
+    // 名前で特定できない場合の保険: PDFの会社名抽出やファイル名に「リズアライズ」が含まれない
+    // 実請求書があったため、SNS月額固定費と同額(かつ送客パートナー請求書ではない)の請求書を
+    // その月1件だけ除外する(同額の別請求書を誤除外しないよう、名前一致が無い月のみ・1件限定)。
+    const snsMonthlyCostYen = Number(process.env.MARKETING_SNS_MONTHLY_COST ?? "") || 0;
+    if (dedupedInvoices.length === monthInvoices.length && snsMonthlyCostYen > 0) {
+      const snsIndex = dedupedInvoices.findIndex(
+        (inv) => inv.amountYen === snsMonthlyCostYen && !inv.partnerChannel,
+      );
+      if (snsIndex >= 0) {
+        dedupedInvoices = dedupedInvoices.filter((_, i) => i !== snsIndex);
+      }
+    }
     const invoicePaidYen = dedupedInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);
     const unreadableInvoiceCount = dedupedInvoices.filter((inv) => inv.amountYen === undefined).length;
     const moneyInYen = revenueRecords
