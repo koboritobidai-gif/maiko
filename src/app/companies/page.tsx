@@ -22,6 +22,7 @@ export default async function CompaniesPage() {
       jobMatrix={result.jobMatrix}
       status={result.status}
       errorMessage={result.errorMessage}
+      contracts={result.contracts}
     />
   );
 }

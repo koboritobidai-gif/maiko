@@ -75,5 +75,6 @@ export async function GET() {
     revenueStatus: statusOf(revenueResult, (v) => v.status),
     salesStatus: statusOf(salesResult, (v) => v.status),
     companyStatus: statusOf(companyResult, (v) => v.status),
+    contractsStatus: statusOf(companyResult, (v) => v.contracts.status),
   });
 }

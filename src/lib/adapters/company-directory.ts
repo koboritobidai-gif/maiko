@@ -723,3 +723,232 @@ export async function fetchJobMatrixData(accessToken: string, sheetId: string): 
 
   return entries;
 }
+
+// ─────────────────────────────────────────────
+// C. 契約企業一覧(読み取り専用)
+// ─────────────────────────────────────────────
+
+export interface ContractCompany {
+  /** シート上の実行番号(1始まり)。 */
+  rowNumber: number;
+  companyName: string;
+  /** 担当名(清本・本間・江崎 等)。 */
+  staff: string;
+  /** 契約形態(ほぼ「成果報酬」)。 */
+  contractType: string;
+  /** 契約内容(自由記述。原文そのまま)。 */
+  contractTerms: string;
+  /** contractTerms から抽出した報酬表示(「30%」「20〜35%」等の%表記優先。無ければ金額表記、無ければ原文先頭20文字)。 */
+  feeLabel: string;
+  isContracted: boolean;
+  /** 契約書類(「未契約」「クラウドサイン」「書面」等)。 */
+  documentType: string;
+  memo: string;
+  /**
+   * 契約書(Googleドライブ等)のURL。運用上、契約書類列の隣やメモ列など貼り付け位置が一定でなく、
+   * かつ貼られていない行も多いため、行内のどこかのセルに見つかった場合のみ設定する(任意項目)。
+   */
+  contractUrl?: string;
+}
+
+interface ContractColumnIndexes {
+  no: number;
+  companyName: number;
+  staff: number;
+  contractType: number;
+  contractTerms: number;
+  contracted: number;
+  documentType: number;
+  confirmed: number;
+  memo: number;
+}
+
+/** ヘッダー文字列(部分一致解決の探索ラベル)。実物シートのヘッダー1行目をそのまま列挙する。 */
+const CONTRACT_COLUMN_LABELS: Record<keyof ContractColumnIndexes, string> = {
+  no: "No",
+  companyName: "企業",
+  staff: "担当名",
+  contractType: "契約形態",
+  contractTerms: "契約内容",
+  contracted: "契約",
+  documentType: "契約書類",
+  confirmed: "内容確認",
+  memo: "メモ",
+};
+
+function resolveContractColumns(header: string[], tabName: string): ContractColumnIndexes {
+  const idx = {} as ContractColumnIndexes;
+  for (const key of Object.keys(CONTRACT_COLUMN_LABELS) as (keyof ContractColumnIndexes)[]) {
+    idx[key] = findColumnExactOrIncludes(header, CONTRACT_COLUMN_LABELS[key]);
+  }
+  if (idx.companyName < 0) {
+    const headerText = header.filter(Boolean).join(" / ") || "(空)";
+    throw new CompanyDirectoryParseError(
+      `タブ「${tabName}」のヘッダー行に「企業」列が見つかりません(見出し行: ${headerText})。`,
+    );
+  }
+  return idx;
+}
+
+/** 先頭3行の中から「企業」「契約形態」を両方含むヘッダー行を探す(タブ選択のフォールバック用)。 */
+function findContractHeaderRowIndex(rows: SheetValuesRow[]): number {
+  const limit = Math.min(rows.length, 3);
+  for (let i = 0; i < limit; i++) {
+    const texts = (rows[i] ?? []).map(cellToString);
+    const hasCompany = texts.some((t) => t.includes("企業"));
+    const hasContractType = texts.some((t) => t.includes("契約形態"));
+    if (hasCompany && hasContractType) return i;
+  }
+  return -1;
+}
+
+/**
+ * 全角の数字・記号(%・~・英数字等)を半角に変換する(Unicode「全角形」ブロック U+FF01-FF5E は
+ * 半角と等距離 0xFEE0 だけずれているため一括変換できる)。手入力セルの表記ゆれ(全角%等)を
+ * 吸収するために feeLabel 抽出前に通す。
+ */
+function toHalfWidthAscii(text: string): string {
+  return text.replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+}
+
+/**
+ * 契約内容の自由記述(例: 「30%」「100万」「20〜35%」「30%〜40%」「事務40万/エンジニア50万」
+ * 「提示していない」「交渉できる」「30% 3分割払い」)から、経営者が一目で把握したい報酬表示を
+ * 寛容に抽出する。優先順位: ①%表記(範囲表記含む) → ②金額表記(「万」「万円」) → ③どちらも
+ * 無ければ原文の先頭20文字。
+ */
+function extractFeeLabel(contractTerms: string): string {
+  const normalized = toHalfWidthAscii(contractTerms);
+  // 「20〜35%」のように最初の数字に%が付かない範囲表記、「30%〜40%」のように両方に付く表記、
+  // どちらも拾えるよう、1つ目の%は省略可・2つ目の%は必須にする。
+  const rangeMatch = normalized.match(/\d+\s*%?\s*[〜~-]\s*\d+\s*%/);
+  if (rangeMatch) return rangeMatch[0].replace(/\s+/g, "");
+  const singleMatch = normalized.match(/\d+\s*%/);
+  if (singleMatch) return singleMatch[0].replace(/\s+/g, "");
+  const moneyMatch = normalized.match(/\d+(?:\.\d+)?\s*万円?/);
+  if (moneyMatch) return moneyMatch[0].replace(/\s+/g, "");
+  return contractTerms.slice(0, 20);
+}
+
+/**
+ * 契約済み判定(この順で寛容に判定し、いずれか1つでも該当すれば契約済みとみなす):
+ * ①契約列に「○」または「◯」がある ②契約書類が空でも「未契約」でもない ③メモに「契約済」を含む。
+ * それ以外(契約列が空・契約書類が空か「未契約」・メモにも記載なし)は未契約(商談中)として扱う。
+ */
+function isContractedRow(contractedCell: string, documentType: string, memo: string): boolean {
+  const mark = contractedCell.trim();
+  if (mark === "○" || mark === "◯") return true;
+  if (documentType && documentType !== "未契約") return true;
+  if (memo.includes("契約済")) return true;
+  return false;
+}
+
+/**
+ * 契約書(Googleドライブ等)のURLを抽出する。運用上、契約書類列の隣やメモ列など貼り付け位置が
+ * 列単位で一定でないため、列を決め打ちせず行内の全セル(A:M)から https:// で始まる文字列を探す。
+ * 優先順位: ① drive.google.com / docs.google.com を含むURL ② 無ければ最初に見つかったURL。
+ * 貼られていない行の方が多い運用実態のため、見つからない場合でもエラーにはせず undefined を返す。
+ */
+function extractContractUrl(row: SheetValuesRow): string | undefined {
+  const urls: string[] = [];
+  for (const cell of row) {
+    const text = cellToString(cell);
+    const matches = text.match(/https:\/\/\S+/g);
+    if (matches) urls.push(...matches);
+  }
+  if (urls.length === 0) return undefined;
+  return urls.find((u) => u.includes("drive.google.com") || u.includes("docs.google.com")) ?? urls[0];
+}
+
+/**
+ * 企業名の照合用正規化ヘルパー。契約企業一覧と送客可能企業リストとでは企業名の表記(法人格の
+ * 有無・全角/半角スペース)が揺れるため、両者を突き合わせる前にこの関数で正規化して比較する。
+ * 空白(半角・全角)と「株式会社」「(株)」「(株)」(半角/全角括弧どちらも)を除去し小文字化する。
+ */
+export function normalizeCompanyName(name: string): string {
+  return name
+    .replace(/株式会社/g, "")
+    .replace(/[(（]株[)）]/g, "")
+    .replace(/[\s　]+/g, "")
+    .toLowerCase();
+}
+
+function parseContractRows(
+  rows: SheetValuesRow[],
+  headerRowIndex: number,
+  col: ContractColumnIndexes,
+): ContractCompany[] {
+  const result: ContractCompany[] = [];
+  for (let i = headerRowIndex + 1; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    if (isBlankRow(row)) continue;
+
+    const companyName = cellToString(row[col.companyName]);
+    if (!companyName) continue; // 企業名が空の行(小計・空行等)はスキップ
+
+    const contractTerms = col.contractTerms >= 0 ? cellToString(row[col.contractTerms]) : "";
+    const contractedCell = col.contracted >= 0 ? cellToString(row[col.contracted]) : "";
+    const documentType = col.documentType >= 0 ? cellToString(row[col.documentType]) : "";
+    const memo = col.memo >= 0 ? cellToString(row[col.memo]) : "";
+
+    result.push({
+      rowNumber: i + 1,
+      companyName,
+      staff: col.staff >= 0 ? cellToString(row[col.staff]) : "",
+      contractType: col.contractType >= 0 ? cellToString(row[col.contractType]) : "",
+      contractTerms,
+      feeLabel: extractFeeLabel(contractTerms),
+      isContracted: isContractedRow(contractedCell, documentType, memo),
+      documentType,
+      memo,
+      contractUrl: extractContractUrl(row),
+    });
+  }
+  return result;
+}
+
+export interface ContractCompanyResult {
+  tabName: string;
+  companies: ContractCompany[];
+}
+
+/**
+ * 契約企業一覧(スプレッドシート「送客可能/契約後の進捗について」タブ「企業一覧」)を取得する
+ * (読み取り専用)。タブ選択: 名前が「企業一覧」のタブを優先し、無ければ各タブ先頭3行に
+ * 「企業」「契約形態」を含むヘッダー行を持つ最初のタブを使う(送客可能企業リストのタブ探索
+ * パターンを踏襲)。API読み取りは タブ一覧1回(+タブ探索が必要な場合のみプローブ1回)+本体取得1回。
+ */
+export async function fetchContractCompanies(accessToken: string, sheetId: string): Promise<ContractCompanyResult> {
+  // タブ一覧はめったに変わらないため5分キャッシュ(クォータ節約。spreadsheet.ts 参照)。
+  const allTitles = await fetchSheetTabTitles(sheetId, accessToken, 300);
+  if (allTitles.length === 0) {
+    throw new CompanyDirectoryParseError("契約企業シートに読み取り可能なタブがありません。");
+  }
+
+  let tabName: string;
+  let headerRowIndex: number;
+
+  const exactTab = allTitles.find((t) => t === "企業一覧");
+  if (exactTab) {
+    tabName = exactTab;
+    headerRowIndex = 0; // 「企業一覧」タブはヘッダーが1行目である前提
+  } else {
+    const probeRanges = allTitles.map((t) => `${quoteSheetTitle(t)}!A1:M3`);
+    const probeResults = await fetchSheetsValuesBatchGet(sheetId, probeRanges, accessToken);
+    const foundIndex = allTitles.findIndex((_, i) => findContractHeaderRowIndex(probeResults[i] ?? []) >= 0);
+    if (foundIndex < 0) {
+      throw new CompanyDirectoryParseError(
+        `契約企業タブが見つかりません(「企業」「契約形態」を含むヘッダー行を持つタブが無い。タブ一覧: ${allTitles.join(" / ")})。`,
+      );
+    }
+    tabName = allTitles[foundIndex];
+    headerRowIndex = findContractHeaderRowIndex(probeResults[foundIndex] ?? []);
+  }
+
+  const [rows] = await fetchSheetsValuesBatchGet(sheetId, [`${quoteSheetTitle(tabName)}!A:M`], accessToken);
+  const header = (rows[headerRowIndex] ?? []).map(cellToString);
+  const columns = resolveContractColumns(header, tabName);
+  const companies = parseContractRows(rows, headerRowIndex, columns);
+
+  return { tabName, companies };
+}

@@ -8,22 +8,26 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useMemo, useState } from "react";
-import type {
-  JobMatrixCell,
-  JobMatrixEntry,
-  ReferralCompanyGroup,
-  ReferralCompanyJob,
+import {
+  normalizeCompanyName,
+  type ContractCompany,
+  type JobMatrixCell,
+  type JobMatrixEntry,
+  type ReferralCompanyGroup,
+  type ReferralCompanyJob,
 } from "@/lib/adapters/company-directory";
-import type { CompanyDataStatus } from "@/lib/company-data";
+import type { CompanyDataStatus, ContractDataResult } from "@/lib/company-data";
+import KpiCard from "@/components/KpiCard";
 
 type ReferralStatusFilter = "全て" | "募集中" | "募集停止" | "未設定";
-type MainTab = "referral" | "matrix";
+type MainTab = "referral" | "matrix" | "contracts";
 
 interface CompanyDirectoryViewProps {
   referralGroups: ReferralCompanyGroup[];
   jobMatrix: JobMatrixEntry[];
   status: CompanyDataStatus;
   errorMessage?: string;
+  contracts: ContractDataResult;
 }
 
 function statusBadgeLabel(status: CompanyDataStatus): string {
@@ -116,6 +120,10 @@ function SetupInstructions() {
       <p style={{ color: "var(--color-text-muted)" }}>
         ※ 2つのIDが入れ違いに設定されていても、シートのタイトルから自動判別するため問題ありません。
       </p>
+      <p style={{ color: "var(--color-text-muted)" }}>
+        ※ 契約企業サマリー・契約企業タブは環境変数 <code className="rounded bg-[var(--color-cream)] px-1 py-0.5">CONTRACT_COMPANY_SHEET_ID</code>{" "}
+        を追加設定すると有効になります(任意・閲覧者権限で共有すればよい)。
+      </p>
     </div>
   );
 }
@@ -128,6 +136,113 @@ function ErrorBanner({ message }: { message: string }) {
     >
       接続エラーの内容: {message}
     </p>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 契約企業(共通部品。送客可能企業タブの見出し連携でも使う)
+// ─────────────────────────────────────────────
+
+/** 契約済み/未契約の小バッジ配色(契約済み=緑・未契約=グレー。statusStyle と同じ配色方針)。 */
+function contractStatusStyle(isContracted: boolean): { bg: string; fg: string; border: string } {
+  if (isContracted) {
+    return {
+      bg: "color-mix(in srgb, var(--color-good) 14%, transparent)",
+      fg: "var(--color-good)",
+      border: "color-mix(in srgb, var(--color-good) 45%, transparent)",
+    };
+  }
+  return {
+    bg: "color-mix(in srgb, var(--color-text-muted) 16%, transparent)",
+    fg: "var(--color-text-muted)",
+    border: "color-mix(in srgb, var(--color-text-muted) 40%, transparent)",
+  };
+}
+
+function ContractStatusBadge({ isContracted }: { isContracted: boolean }) {
+  const style = contractStatusStyle(isContracted);
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+      style={{ background: style.bg, color: style.fg, border: `1px solid ${style.border}` }}
+    >
+      {isContracted ? "契約済み" : "未契約"}
+    </span>
+  );
+}
+
+/** 報酬バッジ。%表記(feeLabel に % を含む)はゴールドで強調し、金額表記等はグレーの控えめ表示にする。 */
+function FeeBadge({ label }: { label: string }) {
+  const isPercent = label.includes("%");
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold"
+      style={
+        isPercent
+          ? {
+              background: "color-mix(in srgb, var(--color-gold) 16%, transparent)",
+              color: "var(--color-gold)",
+              border: "1px solid color-mix(in srgb, var(--color-gold) 45%, transparent)",
+            }
+          : {
+              background: "var(--color-cream)",
+              color: "var(--color-text)",
+              border: "1px solid var(--color-border)",
+            }
+      }
+    >
+      {label || "-"}
+    </span>
+  );
+}
+
+/** 契約書(Googleドライブ等)へのリンク。運用上、貼られていない行の方が多いため呼び出し側は url がある場合のみ描画する。 */
+function ContractDocumentLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="text-[11px] font-semibold underline"
+      style={{ color: "var(--color-gold)" }}
+    >
+      契約書を開く →
+    </a>
+  );
+}
+
+/**
+ * 送客可能企業リストの企業名と契約企業一覧を突き合わせる(どちらかがどちらかを正規化後の文字列を
+ * 含んでいれば一致とみなす、部分一致の緩い判定)。正規化は adapter の normalizeCompanyName を再利用する。
+ * 同一企業が契約企業シートに複数行ある場合は最初に見つかった行を採用する。
+ */
+function findContractMatch(companyName: string, contracts: ContractCompany[]): ContractCompany | undefined {
+  const normalized = normalizeCompanyName(companyName);
+  if (!normalized) return undefined;
+  return contracts.find((c) => {
+    const cn = normalizeCompanyName(c.companyName);
+    return cn.length > 0 && (normalized.includes(cn) || cn.includes(normalized));
+  });
+}
+
+/** サマリーカード列(契約企業数・商談中数・契約形態の内訳)。契約企業タブの上・送客可能企業タブの上に常時表示する。 */
+function ContractSummaryCards({ companies }: { companies: ContractCompany[] }) {
+  const contractedCount = companies.filter((c) => c.isContracted).length;
+  const uncontractedCount = companies.length - contractedCount;
+  const feeBasedCount = companies.filter((c) => c.contractType.includes("成果報酬")).length;
+  const otherTypeCount = companies.length - feeBasedCount;
+
+  return (
+    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-4">
+      <KpiCard label="契約企業" value={`${contractedCount}社`} accent caption="契約締結済み" />
+      <KpiCard label="商談中・未契約" value={`${uncontractedCount}社`} caption="契約書類なし、または未締結" />
+      <KpiCard
+        label="契約形態の内訳"
+        value={`成果報酬 ${feeBasedCount}社`}
+        caption={otherTypeCount > 0 ? `その他 ${otherTypeCount}社` : "全て成果報酬"}
+      />
+    </div>
   );
 }
 
@@ -430,7 +545,14 @@ function AddCompanyForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ReferralCompanyTab({ groups: initialGroups }: { groups: ReferralCompanyGroup[] }) {
+function ReferralCompanyTab({
+  groups: initialGroups,
+  contractCompanies,
+}: {
+  groups: ReferralCompanyGroup[];
+  /** 契約企業一覧(見出し行の報酬・契約状況バッジ表示用。未設定/未取得時は空配列)。 */
+  contractCompanies: ContractCompany[];
+}) {
   const [groups, setGroups] = useState(initialGroups);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReferralStatusFilter>("全て");
@@ -440,6 +562,18 @@ function ReferralCompanyTab({ groups: initialGroups }: { groups: ReferralCompany
   const [showAddForm, setShowAddForm] = useState(false);
   const [updatingRow, setUpdatingRow] = useState<number | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+
+  // 企業名→契約企業行(部分一致で最初に見つかったもの)のマップ。groups・contractCompanies が
+  // 変わらない限り再計算しない(タブ切り替えのたびに O(企業数×契約企業数) を回さないため)。
+  const contractMatchByCompany = useMemo(() => {
+    const map = new Map<string, ContractCompany>();
+    if (contractCompanies.length === 0) return map;
+    for (const group of initialGroups) {
+      const match = findContractMatch(group.companyName, contractCompanies);
+      if (match) map.set(group.companyName, match);
+    }
+    return map;
+  }, [initialGroups, contractCompanies]);
 
   const allJobs = useMemo(() => groups.flatMap((g) => g.jobs), [groups]);
   const locations = useMemo(() => uniqueSorted(allJobs.map((j) => j.location)), [allJobs]);
@@ -548,12 +682,22 @@ function ReferralCompanyTab({ groups: initialGroups }: { groups: ReferralCompany
       )}
 
       <div className="flex flex-col gap-2.5">
-        {filteredGroups.map((group) => (
+        {filteredGroups.map((group) => {
+          const contractMatch = contractMatchByCompany.get(group.companyName);
+          return (
           <div key={group.companyName} className="card overflow-hidden">
-            <div className="flex items-center justify-between px-3.5 py-2.5" style={{ background: "var(--color-cream)" }}>
-              <span className="text-[13.5px] font-bold" style={{ color: "var(--color-navy)" }}>
-                {group.companyName}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5" style={{ background: "var(--color-cream)" }}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[13.5px] font-bold" style={{ color: "var(--color-navy)" }}>
+                  {group.companyName}
+                </span>
+                {contractMatch && (
+                  <>
+                    <FeeBadge label={`報酬 ${contractMatch.feeLabel}`} />
+                    <ContractStatusBadge isContracted={contractMatch.isContracted} />
+                  </>
+                )}
+              </div>
               <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
                 求人 {group.jobs.length}件
               </span>
@@ -569,7 +713,8 @@ function ReferralCompanyTab({ groups: initialGroups }: { groups: ReferralCompany
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -734,6 +879,148 @@ function JobMatrixTab({ entries }: { entries: JobMatrixEntry[] }) {
 }
 
 // ─────────────────────────────────────────────
+// 契約企業タブ(読み取り専用)
+// ─────────────────────────────────────────────
+
+/** 検索対象文字列に部分一致するか(企業名・担当・契約形態・契約内容・契約書類・メモ)。 */
+function matchesContractQuery(company: ContractCompany, query: string): boolean {
+  if (!query) return true;
+  const haystack = [
+    company.companyName,
+    company.staff,
+    company.contractType,
+    company.contractTerms,
+    company.documentType,
+    company.memo,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return haystack.includes(query);
+}
+
+function ContractCompanyRow({ company }: { company: ContractCompany }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <tr
+        onClick={() => setExpanded((v) => !v)}
+        className="cursor-pointer border-t"
+        style={{ borderColor: "var(--color-border)" }}
+      >
+        <td className="py-2 pr-2 font-semibold" style={{ color: "var(--color-navy)" }}>
+          {company.companyName}
+        </td>
+        <td className="py-2 pr-2">{company.staff || "-"}</td>
+        <td className="py-2 pr-2">{company.contractType || "-"}</td>
+        <td className="py-2 pr-2">
+          <FeeBadge label={company.feeLabel} />
+        </td>
+        <td className="py-2 pr-2">
+          <ContractStatusBadge isContracted={company.isContracted} />
+        </td>
+        <td className="py-2 pr-2">{company.documentType || "-"}</td>
+        <td className="max-w-[220px] truncate py-2 pr-2" style={{ color: "var(--color-text-muted)" }}>
+          {company.memo || "-"}
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="border-t" style={{ borderColor: "var(--color-border)" }}>
+          <td colSpan={7} className="px-2 pb-3 pt-1">
+            <div
+              className="flex flex-col gap-2 rounded-lg px-3 py-2.5 text-[12px] leading-relaxed"
+              style={{ background: "var(--color-cream)" }}
+            >
+              <p>
+                <span style={{ color: "var(--color-text-muted)" }}>契約内容(原文): </span>
+                <span style={{ color: "var(--color-text)" }}>{company.contractTerms || "(未記入)"}</span>
+              </p>
+              {company.memo && (
+                <p>
+                  <span style={{ color: "var(--color-text-muted)" }}>メモ: </span>
+                  <span style={{ color: "var(--color-text)" }}>{company.memo}</span>
+                </p>
+              )}
+              {/* 契約書URLは貼られていない行の方が多い運用実態のため、見つかった行だけリンクを出す。 */}
+              {company.contractUrl && <ContractDocumentLink url={company.contractUrl} />}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function ContractCompanyTab({ companies }: { companies: ContractCompany[] }) {
+  const [query, setQuery] = useState("");
+  const [contractedOnly, setContractedOnly] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    return companies.filter((c) => {
+      if (contractedOnly && !c.isContracted) return false;
+      if (!matchesContractQuery(c, q)) return false;
+      return true;
+    });
+  }, [companies, query, contractedOnly]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="企業名・担当・契約内容・メモ等で検索"
+        className="rounded-full px-4 py-2.5 text-[13px] outline-none"
+        style={{ background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--color-text)" }}>
+          <input
+            type="checkbox"
+            checked={contractedOnly}
+            onChange={(e) => setContractedOnly(e.target.checked)}
+          />
+          契約済みのみ
+        </label>
+        <span className="ml-auto text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+          閲覧専用・行クリックで契約内容の全文を表示
+        </span>
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="py-8 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+          該当する企業が見つかりませんでした。
+        </p>
+      )}
+
+      {filtered.length > 0 && (
+        <div className="card overflow-x-auto p-3.5">
+          <table className="w-full min-w-[760px] text-left text-[12px]">
+            <thead>
+              <tr style={{ color: "var(--color-text-muted)" }}>
+                <th className="pb-2 pr-2 font-medium">企業</th>
+                <th className="pb-2 pr-2 font-medium">担当</th>
+                <th className="pb-2 pr-2 font-medium">契約形態</th>
+                <th className="pb-2 pr-2 font-medium">報酬</th>
+                <th className="pb-2 pr-2 font-medium">契約状況</th>
+                <th className="pb-2 pr-2 font-medium">契約書類</th>
+                <th className="pb-2 pr-2 font-medium">メモ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((company) => (
+                <ContractCompanyRow key={company.rowNumber} company={company} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // 共通UI
 // ─────────────────────────────────────────────
 
@@ -772,8 +1059,16 @@ export default function CompanyDirectoryView({
   jobMatrix,
   status,
   errorMessage,
+  contracts,
 }: CompanyDirectoryViewProps) {
   const [mainTab, setMainTab] = useState<MainTab>("referral");
+  const contractsLive = contracts.status === "live";
+
+  const tabOptions = [
+    ["referral", "送客可能企業"],
+    ["matrix", "求人マトリックス"],
+    ...(contractsLive ? [["contracts", "契約企業"]] : []),
+  ] as [MainTab, string][];
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3.5 px-4 pb-4 pt-4 lg:gap-5 lg:px-8 lg:pb-10 lg:pt-6">
@@ -791,16 +1086,20 @@ export default function CompanyDirectoryView({
 
       {status === "live-error" && errorMessage && <ErrorBanner message={errorMessage} />}
       {status === "unconfigured" && <SetupInstructions />}
+      {/* 契約企業は送客可能企業リスト・求人マトリックスとは独立した接続状態のため、別枠でエラー表示する。 */}
+      {contracts.status === "live-error" && contracts.errorMessage && <ErrorBanner message={contracts.errorMessage} />}
 
       {status !== "unconfigured" && (
         <>
+          {contractsLive && <ContractSummaryCards companies={contracts.companies} />}
+          {contracts.status === "unconfigured" && (
+            <p className="text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+              契約企業サマリー・契約企業タブは環境変数 CONTRACT_COMPANY_SHEET_ID が未設定のため非表示です。
+            </p>
+          )}
+
           <div className="flex overflow-hidden rounded-full border text-[12px]" style={{ borderColor: "var(--color-border)", width: "fit-content" }}>
-            {(
-              [
-                ["referral", "送客可能企業"],
-                ["matrix", "求人マトリックス"],
-              ] as const
-            ).map(([key, label]) => (
+            {tabOptions.map(([key, label]) => (
               <button
                 key={key}
                 type="button"
@@ -817,11 +1116,11 @@ export default function CompanyDirectoryView({
             ))}
           </div>
 
-          {mainTab === "referral" ? (
-            <ReferralCompanyTab groups={referralGroups} />
-          ) : (
-            <JobMatrixTab entries={jobMatrix} />
+          {mainTab === "referral" && (
+            <ReferralCompanyTab groups={referralGroups} contractCompanies={contracts.companies} />
           )}
+          {mainTab === "matrix" && <JobMatrixTab entries={jobMatrix} />}
+          {mainTab === "contracts" && contractsLive && <ContractCompanyTab companies={contracts.companies} />}
         </>
       )}
     </div>
