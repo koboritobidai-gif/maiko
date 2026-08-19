@@ -549,7 +549,7 @@ export default function DashboardView({
             <KpiCard
               label="支出(全体)"
               value={formatYen(moneyOutYen)}
-              caption={`広告費+SNS+請求書${
+              caption={`広告費+SNS+請求書(SNS運用の請求書は固定費と重複のため除外)${
                 pm.unreadableInvoiceCount > 0
                   ? `(※金額を読み取れないPDFが${pm.unreadableInvoiceCount}件あり、未反映)`
                   : ""

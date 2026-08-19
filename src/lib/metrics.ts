@@ -937,8 +937,16 @@ export function getPrimaryMonthSnapshots(
     const marketing = getMarketingSummary(marketingData, weeklyKpis, referralCandidates, referralRates, ref);
     // #請求書のその月支払いの全請求書(パートナー請求書含む)。
     const monthInvoices = invoices.filter((inv) => inv.targetMonth === monthKey);
-    const invoicePaidYen = monthInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);
-    const unreadableInvoiceCount = monthInvoices.filter((inv) => inv.amountYen === undefined).length;
+    // SNS運用のリズアライズは月固定費(MARKETING_SNS_MONTHLY_COST=¥495,000)として広告費側で
+    // 既に計上済みで、同じ金額の請求書PDFが#請求書にも投稿される運用のため、支出の計算では
+    // リズアライズの請求書を除外して二重計上を防ぐ(請求書チェックカードの合計はチャンネルの
+    // 実態どおり全件のまま。表記ゆれに備え「リズアライズ/リズリアライズ」の両方に一致させる)。
+    const SNS_VENDOR_RE = /リズリ?アライズ/;
+    const dedupedInvoices = monthInvoices.filter(
+      (inv) => !SNS_VENDOR_RE.test(`${inv.vendorName ?? ""} ${inv.fileName}`),
+    );
+    const invoicePaidYen = dedupedInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);
+    const unreadableInvoiceCount = dedupedInvoices.filter((inv) => inv.amountYen === undefined).length;
     const moneyInYen = revenueRecords
       .filter((r) => r.month === monthKey)
       .reduce((sum, r) => sum + r.amountYen, 0);
