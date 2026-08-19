@@ -19,7 +19,7 @@ import type {
   WeeklyKpiRecord,
 } from "./types";
 import { DemoSpreadsheetSource, getSpreadsheetSource } from "./adapters/spreadsheet";
-import { DemoSlackSource, getMessengerSource } from "./adapters/messenger";
+import { DemoSlackSource } from "./adapters/messenger";
 import {
   candidates as demoCandidates,
   members as demoMembers,
@@ -109,19 +109,10 @@ async function loadSlackPart(): Promise<SlackPart> {
   if (!isLiveMode()) {
     return loadDemoSlackPart("demo");
   }
-  try {
-    const messenger = getMessengerSource();
-    const slackPosts = await messenger.getRecentPosts(SLACK_HIGHLIGHT_LIMIT);
-    return { slackPosts, slackStatus: "live" };
-  } catch (error) {
-    if (isNextDynamicUsageError(error)) throw error;
-    console.warn("[data-bundle] Slack の取得に失敗したため、デモ投稿へフォールバックします:", error);
-    const part = await loadDemoSlackPart("live-error");
-    return {
-      ...part,
-      slackErrorMessage: error instanceof Error ? error.message : String(error),
-    };
-  }
+  // Slack最新ハイライトは経営者の指示で廃止(Slack本体を見る運用のため)。ライブでは取得せず
+  // 空を返し、ハイライト用チャンネル群への conversations.history 呼び出しを無くして
+  // ダッシュボードの読み込みを軽くする(slackStatus はCA別実績等のバッジ表示用に "live" を返す)。
+  return { slackPosts: [], slackStatus: "live" };
 }
 
 async function buildDataBundle(): Promise<DataBundle> {

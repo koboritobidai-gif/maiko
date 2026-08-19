@@ -18,20 +18,6 @@ import { sourceBadgeLabel } from "@/lib/source-status";
 import type { Candidate, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-  }).format(date);
-}
-
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
 /** 週開始日(YYYY-MM-DD)を「M/D週」表示に変換する。 */
 function formatWeekLabel(weekStart: string): string {
   const [, m, d] = weekStart.split("-").map(Number);
@@ -291,7 +277,6 @@ export default function DashboardView({
   sourceStatus,
   sourceErrorMessage,
   slackStatus,
-  slackErrorMessage,
   marketingMonths,
   marketingStatus,
   marketingErrorMessage,
@@ -1399,49 +1384,8 @@ export default function DashboardView({
       </div>
       )}
 
-      {/* 求職者パイプラインのセクションは経営者の指示で廃止(求職者一覧はサイドバーから) */}
-
-      {/* 7. Slack 最新ハイライト(全幅。lgでは内部を2カラムのマス目に)【全体】 */}
-      {group === "全体" && (
-      <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-            Slack 最新ハイライト
-          </h2>
-          <SourceBadge label={slackBadge} />
-        </div>
-        {slackStatus === "live-error" && slackErrorMessage && (
-          <p
-            className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed"
-            style={{
-              color: "var(--color-bad)",
-              borderColor: "var(--color-bad)",
-              background: "var(--color-card)",
-            }}
-          >
-            接続エラーの内容: {slackErrorMessage}
-          </p>
-        )}
-        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-          {summary.slack.map((post) => (
-            <div key={post.id} className="card flex flex-col gap-1 p-3.5">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold" style={{ color: "var(--color-gold)" }}>
-                  {post.channel}
-                </span>
-                <span style={{ color: "var(--color-text-muted)" }}>
-                  {formatDate(post.postedAt)} {formatTime(post.postedAt)}
-                </span>
-              </div>
-              <p className="text-[12px] font-medium" style={{ color: "var(--color-navy)" }}>
-                {post.author}
-              </p>
-              <p className="text-[13px] leading-relaxed">{post.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      )}
+      {/* 求職者パイプライン・Slack最新ハイライトのセクションは経営者の指示で廃止
+          (Slack本体を見る運用のため。ハイライトの取得自体も data-bundle.ts 側で停止し軽量化)。 */}
     </div>
   );
 }

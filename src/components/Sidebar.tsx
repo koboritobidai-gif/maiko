@@ -2,12 +2,12 @@
 
 /**
  * PC(lg以上)向けの左固定サイドバーナビ。
- * モバイルの下部タブバー(TabBar)とは独立したナビで、求職者一覧をここでは一級項目に昇格させる。
+ * モバイルの下部タブバー(TabBar)とは独立したナビ。求職者一覧は経営者の指示で廃止
+ * (求職者の確認はSlack本体を見る運用のため)。
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  IconCandidates,
   IconChat,
   IconCompany,
   IconDashboard,
@@ -18,7 +18,6 @@ import {
 
 const NAV_ITEMS = [
   { href: "/", label: "今日の経営", icon: IconDashboard },
-  { href: "/candidates", label: "求職者一覧", icon: IconCandidates },
   { href: "/companies", label: "企業・求人", icon: IconCompany },
   { href: "/ask", label: "AIに聞く", icon: IconChat },
   { href: "/deliver", label: "届ける", icon: IconDeliver },
