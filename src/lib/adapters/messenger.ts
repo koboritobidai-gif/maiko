@@ -25,11 +25,23 @@ export interface GetCandidateThreadsOptions {
   replyTimeBudgetMs?: number;
 }
 
+export interface GetCandidateThreadsResult {
+  threads: CandidateThread[];
+  /**
+   * 返信を取得したかった(replyCount > 0 の)のに取得できなかったスレッド数。
+   * 予算外(REPLY_FETCH_LIMIT超過)または時間切れでキャッシュも無く返信が空のままのスレッドを数える。
+   * 1件でもあれば読み込みが「途中まで」であり、この結果を集計に使うと実績が実態より少なく出る
+   * (呼び出し元の candidate-threads.ts / thread-stats.ts が、この件数を見て最終確定値に
+   * フォールバックするかどうかを判断する)。デモ実装は常に0。
+   */
+  skippedReplyFetchCount: number;
+}
+
 export interface MessengerSource {
   getRecentPosts(limit?: number): Promise<SlackPost[]>;
   postMessage(channel: string, author: string, body: string): Promise<PostMessageResult>;
   /** 求職者Slackスレッド(#求職者チャンネル)一覧を取得する(更新日時の新しい順)。 */
-  getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<CandidateThread[]>;
+  getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<GetCandidateThreadsResult>;
 }
 
 /** デモ実装: demo-data.ts の投稿・スレッドを返し、送信はメモリ上でエコーするのみ。 */
@@ -57,8 +69,11 @@ export class DemoSlackSource implements MessengerSource {
     return { ok: true, post };
   }
 
-  async getCandidateThreads(): Promise<CandidateThread[]> {
-    return [...candidateThreads].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  async getCandidateThreads(): Promise<GetCandidateThreadsResult> {
+    return {
+      threads: [...candidateThreads].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
+      skippedReplyFetchCount: 0,
+    };
   }
 }
 
@@ -332,7 +347,7 @@ export class SlackSource implements MessengerSource {
    *   ドメインを覚えて、残りは「https://◯◯.slack.com/archives/チャンネル/p<ts>」形式で組み立てる
    * - 取得は10スレッドずつに分けて実行し、瞬間的なレート制限(429)を避ける
    */
-  async getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<CandidateThread[]> {
+  async getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<GetCandidateThreadsResult> {
     const botToken = this.requireToken();
     const channelId = this.config.candidateChannel;
     if (!channelId) {
@@ -377,7 +392,10 @@ export class SlackSource implements MessengerSource {
     const buildPermalink = (ts: string): string | undefined =>
       permalinkBase ? `${permalinkBase}${channelId}/p${ts.replace(".", "")}` : undefined;
 
-    const buildThread = async (m: SlackMessage, index: number): Promise<CandidateThread> => {
+    const buildThread = async (
+      m: SlackMessage,
+      index: number,
+    ): Promise<{ thread: CandidateThread; skippedReplyFetch: boolean }> => {
       const firstLine = (m.text ?? "").split("\n")[0]?.trim() ?? "";
       const name = firstLine.slice(0, 20);
       const registeredAt = new Date(Number(m.ts.split(".")[0]) * 1000);
@@ -385,23 +403,33 @@ export class SlackSource implements MessengerSource {
       const withinBudget = index < REPLY_FETCH_LIMIT;
 
       let replies: CandidateThreadReply[] = [];
-      if (replyCount > 0 && withinBudget) {
-        const cacheKey = `${replyCount}:${m.latest_reply ?? ""}`;
-        const cached = threadRepliesCache.get(m.ts);
-        if (cached && cached.cacheKey === cacheKey) {
-          replies = cached.replies;
-        } else if (Date.now() < repliesDeadline) {
-          // 鮮度キー付きで取得(変化のないスレッドはVercelのデータキャッシュに当たり、Slackを呼ばない)。
-          replies = await this.fetchThreadReplies(botToken, channelId, m.ts, cacheKey);
-          threadRepliesCache.set(m.ts, { cacheKey, replies });
-        } else if (cached) {
-          // 時間切れ: 内容が少し古くても、返信なし扱いよりは前回読んだキャッシュの方が正確。
-          replies = cached.replies;
+      // 返信を取りたい(replyCount > 0)のに取れなかったかどうか(不完全読み込みの検出用)。
+      let skippedReplyFetch = false;
+      if (replyCount > 0) {
+        if (!withinBudget) {
+          // 予算外(REPLY_FETCH_LIMIT超過): 返信を取得しない。
+          skippedReplyFetch = true;
+        } else {
+          const cacheKey = `${replyCount}:${m.latest_reply ?? ""}`;
+          const cached = threadRepliesCache.get(m.ts);
+          if (cached && cached.cacheKey === cacheKey) {
+            replies = cached.replies;
+          } else if (Date.now() < repliesDeadline) {
+            // 鮮度キー付きで取得(変化のないスレッドはVercelのデータキャッシュに当たり、Slackを呼ばない)。
+            replies = await this.fetchThreadReplies(botToken, channelId, m.ts, cacheKey);
+            threadRepliesCache.set(m.ts, { cacheKey, replies });
+          } else if (cached) {
+            // 時間切れ: 内容が少し古くても、返信なし扱いよりは前回読んだキャッシュの方が正確。
+            replies = cached.replies;
+          } else {
+            // 時間切れ、かつキャッシュも無い: このスレッドは返信なし扱いのまま画面へ出ることになる。
+            skippedReplyFetch = true;
+          }
         }
       }
 
       const latest = replies[replies.length - 1];
-      return {
+      const thread: CandidateThread = {
         threadTs: m.ts,
         name,
         registeredAt,
@@ -412,16 +440,25 @@ export class SlackSource implements MessengerSource {
         permalink: buildPermalink(m.ts),
         replies,
       };
+      return { thread, skippedReplyFetch };
     };
 
     // 10スレッドずつ順に処理する(多数スレッドの一斉並列でレート制限に当たるのを避ける)。
     const threads: CandidateThread[] = [];
+    let skippedReplyFetchCount = 0;
     for (let i = 0; i < parents.length; i += THREAD_CONCURRENCY) {
       const chunk = parents.slice(i, i + THREAD_CONCURRENCY);
-      threads.push(...(await Promise.all(chunk.map((m, j) => buildThread(m, i + j)))));
+      const built = await Promise.all(chunk.map((m, j) => buildThread(m, i + j)));
+      for (const { thread, skippedReplyFetch } of built) {
+        threads.push(thread);
+        if (skippedReplyFetch) skippedReplyFetchCount += 1;
+      }
     }
 
-    return threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    return {
+      threads: threads.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
+      skippedReplyFetchCount,
+    };
   }
 
   async getRecentPosts(limit = 8): Promise<SlackPost[]> {

@@ -20,6 +20,7 @@ import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
 import { loadRevenueRecords } from "@/lib/revenue-data";
 import { loadSalesReports } from "@/lib/sales-data";
+import { warmThreadStatsLastGood } from "@/lib/thread-stats";
 
 export const revalidate = 0;
 export const maxDuration = 60;
@@ -51,6 +52,10 @@ export async function GET() {
 
   // 主目的: #求職者スレッドの未読分を通常(20秒)より長い45秒予算で読み込み、返信キャッシュを深く貯める。
   const threadsResult = await loadCandidateThreads(true, { replyTimeBudgetMs: 45_000 });
+  // 45秒予算で完全に読み込めていれば(threadsResult.incomplete === false)、CA別実績・面談数の
+  // 最終確定値(thread-stats.ts)をここで保存しておく。以後のページ表示はコールドスタートで
+  // 読み込みが不完全になっても、この最終確定値にフォールバックできるため数値が安定する。
+  const threadStatsSaved = await warmThreadStatsLastGood();
 
   // 他のローダーも合わせて温める。1つが失敗・時間切れでも他へ影響しないよう個別に実行する。
   const [bundleResult, marketingResult, invoiceResult, revenueResult, salesResult, companyResult] =
@@ -68,6 +73,8 @@ export async function GET() {
     durationMs: Date.now() - start,
     candidateThreads: threadsResult.threads.length,
     candidateThreadsWithReplies: threadsResult.threads.filter((t) => t.replies.length > 0).length,
+    candidateThreadsSkipped: threadsResult.skippedReplyFetchCount,
+    threadStatsSaved,
     dataBundleSourceStatus: statusOf(bundleResult, (v) => v.sourceStatus),
     dataBundleSlackStatus: statusOf(bundleResult, (v) => v.slackStatus),
     marketingStatus: statusOf(marketingResult, (v) => v.status),

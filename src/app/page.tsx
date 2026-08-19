@@ -13,12 +13,8 @@ import {
 import { loadRevenueRecords, revenueDataTimeoutFallback } from "@/lib/revenue-data";
 import { loadSalesReports, salesDataTimeoutFallback } from "@/lib/sales-data";
 import { getSalesMonthlyStats } from "@/lib/sales-stats";
-import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
-import {
-  buildReferralCandidatesFromSlack,
-  fillInterviewDatesFromSlack,
-  getSlackInterviewMonthlyCounts,
-} from "@/lib/slack-interviews";
+import { buildReferralCandidatesFromSlack, fillInterviewDatesFromSlack } from "@/lib/slack-interviews";
+import { getThreadStatsWithFallback } from "@/lib/thread-stats";
 import { withTimeout } from "@/lib/with-timeout";
 
 // 毎リクエスト動的レンダリング(ライブデータ表示)。`force-dynamic` は使わないこと:
@@ -83,8 +79,12 @@ export default async function TodayDashboardPage() {
   );
   // 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
-  // CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES 固定リスト)。
-  const caStats = getCaMonthlyStatsFromThreads(threadsResult.threads, now);
+  // CA別の月次実績・面談数(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES
+  // 固定リスト)。コールドスタート等でスレッド読み込みが不完全なとき(0件へ落ち込むのを防ぐため)は
+  // 最後に完全読み込みできたときの最終確定値(thread-stats.ts)へフォールバックする。
+  const { stats: threadStats } = await getThreadStatsWithFallback(threadsResult);
+  const caStats = threadStats.caStats;
+  const interviewCountsByMonth = new Map(Object.entries(threadStats.interviewCountsByMonth));
   // 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月・今月が先頭。対象は SALES_NAMES 固定リスト)。
   const salesStats = getSalesMonthlyStats(salesResult.reports, salesResult.appointments, now);
   // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
@@ -97,7 +97,7 @@ export default async function TodayDashboardPage() {
     bundle.settings.referralRates,
     revenueResult.records,
     invoicesResult.invoices,
-    getSlackInterviewMonthlyCounts(threadsResult.threads),
+    interviewCountsByMonth,
     now,
   );
   // 集客・広告セクションの月選択(直近6ヶ月)。主要指標と同じ月の並び・ラベルを使う。

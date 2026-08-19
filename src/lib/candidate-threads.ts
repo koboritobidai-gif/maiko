@@ -19,6 +19,23 @@ const CACHE_MS = 5 * 60_000;
 export interface CandidateThreadsResult {
   threads: CandidateThread[];
   status: SourceStatus;
+  /**
+   * 読み込みが「途中まで」で信頼できない集計になり得るかどうか。
+   * - status "live" のとき: messenger.ts が返信取得を予算切れ・時間切れでスキップしたスレッドが
+   *   1件以上あれば true(SlackSource.getCandidateThreads の skippedReplyFetchCount > 0)。
+   * - status "live-error"(live失敗時のデモフォールバック・withTimeoutのタイムアウトフォールバック
+   *   いずれも含む)のときは常に true(デモ数値をそのまま業務集計に使うと実態とズレるため)。
+   * - status "demo"(DATA_MODE≠live の通常デモモード)のときは常に false
+   *   (これはフォールバックではなく、そもそもデモ数値を見せる画面のため)。
+   * thread-stats.ts はこのフラグを見て、CA別実績・面談数の最終確定値キャッシュを更新するかどうか、
+   * 不完全なときにその最終確定値へフォールバックするかどうかを判断する。
+   */
+  incomplete: boolean;
+  /**
+   * 返信を取りたかったのに取れなかったスレッド数(messenger.ts の skippedReplyFetchCount)。
+   * incomplete の元になった生の件数で、/api/warm の診断表示にのみ使う(live以外は常に0)。
+   */
+  skippedReplyFetchCount: number;
   /** 接続失敗時のエラー内容(live-error のときのみ。画面での自己診断用)。 */
   errorMessage?: string;
 }
@@ -41,16 +58,19 @@ function isLiveMode(): boolean {
 
 async function loadDemo(status: SourceStatus): Promise<CandidateThreadsResult> {
   const demo = new DemoSlackSource();
-  return { threads: await demo.getCandidateThreads(), status };
+  const { threads } = await demo.getCandidateThreads();
+  // status "demo"(通常のデモモード)はそのままデモ数値を見せる画面なので incomplete: false。
+  // status "live-error"(live失敗時のフォールバック)は信頼できない集計として incomplete: true。
+  return { threads, status, incomplete: status !== "demo", skippedReplyFetchCount: 0 };
 }
 
 async function loadLive(opts?: CandidateThreadsLoadOptions): Promise<CandidateThreadsResult> {
   try {
     const source = getMessengerSource();
-    const threads = await source.getCandidateThreads(
+    const { threads, skippedReplyFetchCount } = await source.getCandidateThreads(
       opts?.replyTimeBudgetMs !== undefined ? { replyTimeBudgetMs: opts.replyTimeBudgetMs } : undefined,
     );
-    return { threads, status: "live" };
+    return { threads, status: "live", incomplete: skippedReplyFetchCount > 0, skippedReplyFetchCount };
   } catch (error) {
     if (isNextDynamicUsageError(error)) throw error;
     console.warn(
@@ -87,6 +107,8 @@ export function candidateThreadsTimeoutFallback(): CandidateThreadsResult {
   return {
     threads: [...demoCandidateThreads].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
     status: "live-error",
+    incomplete: true,
+    skippedReplyFetchCount: 0,
     errorMessage: TIMEOUT_FALLBACK_MESSAGE,
   };
 }
