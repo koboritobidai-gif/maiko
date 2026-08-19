@@ -12,7 +12,9 @@
  */
 import type { ReferralInvoice, SourceStatus } from "./types";
 import { DemoInvoiceSource, getInvoiceSource } from "./adapters/invoices";
+import { referralInvoices as demoReferralInvoices } from "./demo-data";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
 
 // marketing-data.ts / candidate-threads.ts と同様、更新頻度が低いデータのため5分キャッシュとする。
 const CACHE_MS = 5 * 60_000;
@@ -105,4 +107,19 @@ export async function loadReferralInvoices(forceRefresh = false): Promise<Invoic
 
   cache = { result, expiresAt: Date.now() + CACHE_MS };
   return result;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。live取得失敗時のフォールバック
+ * (デモ請求書4件+ステータス "live-error"。手動補正 applyManualInvoiceFixes は live成功時のみ
+ * 適用するもののため、loadDemoInvoices 同様ここでも適用しない)と同じ構造。
+ * 裏側では loadLive() が走り続けており、完了すればモジュールキャッシュに反映される。
+ */
+export function invoiceDataTimeoutFallback(): InvoiceDataResult {
+  return {
+    invoices: [...demoReferralInvoices].sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime()),
+    skippedCount: 0,
+    status: "live-error",
+    errorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }

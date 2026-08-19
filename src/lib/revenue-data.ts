@@ -12,7 +12,9 @@
  */
 import type { RevenueRecord, SourceStatus } from "./types";
 import { DemoRevenueSource, getRevenueSource } from "./adapters/revenue";
+import { revenueRecords as demoRevenueRecords } from "./demo-data";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
 
 // invoice-data.ts / marketing-data.ts と同様、更新頻度が低いデータのため5分キャッシュとする。
 const CACHE_MS = 5 * 60_000;
@@ -93,4 +95,18 @@ export async function loadRevenueRecords(forceRefresh = false): Promise<RevenueD
 
   cache = { result, expiresAt: Date.now() + CACHE_MS };
   return result;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。live取得失敗時のフォールバック
+ * (デモ売上2ヶ月分+ステータス "live-error"。MANUAL_REVENUE_RECORDS は live成功時のみ追加する
+ * ものなので、loadDemoRevenue 同様ここでも混ぜない)と同じ構造。
+ * 裏側では loadLive() が走り続けており、完了すればモジュールキャッシュに反映される。
+ */
+export function revenueDataTimeoutFallback(): RevenueDataResult {
+  return {
+    records: demoRevenueRecords,
+    status: "live-error",
+    errorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }

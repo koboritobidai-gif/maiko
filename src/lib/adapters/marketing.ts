@@ -122,7 +122,10 @@ function buildDemoMarketingData(): MarketingData {
 
 // デモデータは実行日(モジュール読み込み時の new Date())基準で1回だけ生成し、以後は使い回す
 // (demo-data.ts の weeklyKpis と同じ方針)。
-const DEMO_MARKETING_DATA: MarketingData = buildDemoMarketingData();
+// marketing-data.ts の timeoutFallback から直接参照するため export する
+// (withTimeout の時間切れフォールバックは同期関数のため、DemoMarketingSource 経由の
+// async 呼び出しを await できず、生成済みのこの定数を直接使う)。
+export const DEMO_MARKETING_DATA: MarketingData = buildDemoMarketingData();
 
 /** デモ実装: 直近2ヶ月分の生成済みデモデータを返す。 */
 export class DemoMarketingSource implements MarketingSource {

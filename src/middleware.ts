@@ -49,6 +49,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // api/warm は認証なしで公開する: Vercel Cron による定期実行・手動でのウォームアップ
+    // アクセスを Basic認証なしで叩けるようにするため。業務データは返さず件数・ステータス文字列
+    // のみを返し、かつ3分スロットルで乱用への耐性を持たせている(詳細は route.ts のコメント参照)。
+    "/((?!_next/static|_next/image|favicon.ico|api/warm).*)",
   ],
 };

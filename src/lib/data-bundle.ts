@@ -20,7 +20,17 @@ import type {
 } from "./types";
 import { DemoSpreadsheetSource, getSpreadsheetSource } from "./adapters/spreadsheet";
 import { DemoSlackSource, getMessengerSource } from "./adapters/messenger";
+import {
+  candidates as demoCandidates,
+  members as demoMembers,
+  placements as demoPlacements,
+  projects as demoProjects,
+  slackPosts as demoSlackPosts,
+  weeklyKpis as demoWeeklyKpis,
+} from "./demo-data";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
+import { DEFAULT_REFERRAL_RATES, FEE_RATE } from "./types";
 
 const CACHE_MS = 60_000;
 const SLACK_HIGHLIGHT_LIMIT = 20;
@@ -127,4 +137,29 @@ export async function loadDataBundle(forceRefresh = false): Promise<DataBundle> 
   const bundle = await buildDataBundle();
   cache = { bundle, expiresAt: Date.now() + CACHE_MS };
   return bundle;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。live取得失敗時のフォールバック
+ * (デモデータ+ステータス "live-error")と同じ構造を、同期関数として組み立てる
+ * (loadSpreadsheetPart/loadSlackPart の失敗時フォールバックは非同期だが、実体は
+ * demo-data.ts の値をそのまま返すだけのため、ここでは直接参照して同期的に返す)。
+ * 裏側では buildDataBundle() が走り続けており、完了すればモジュールキャッシュに反映される。
+ */
+export function dataBundleTimeoutFallback(): DataBundle {
+  return {
+    candidates: demoCandidates,
+    placements: demoPlacements,
+    projects: demoProjects,
+    members: demoMembers,
+    settings: { feeRate: FEE_RATE, referralRates: DEFAULT_REFERRAL_RATES },
+    weeklyKpis: demoWeeklyKpis,
+    sourceStatus: "live-error",
+    sourceErrorMessage: TIMEOUT_FALLBACK_MESSAGE,
+    slackPosts: [...demoSlackPosts]
+      .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
+      .slice(0, SLACK_HIGHLIGHT_LIMIT),
+    slackStatus: "live-error",
+    slackErrorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }

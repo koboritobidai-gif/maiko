@@ -16,11 +16,20 @@ export interface PostMessageResult {
   post: SlackPost;
 }
 
+export interface GetCandidateThreadsOptions {
+  /**
+   * 返信の新規取得に使ってよい時間の上限(ms)。省略時は REPLY_TIME_BUDGET_MS。
+   * /api/warm のウォームアップ実行など、通常のページ表示より長く時間をかけて未読スレッドの
+   * 返信を深く読み込ませたい場合に指定する。
+   */
+  replyTimeBudgetMs?: number;
+}
+
 export interface MessengerSource {
   getRecentPosts(limit?: number): Promise<SlackPost[]>;
   postMessage(channel: string, author: string, body: string): Promise<PostMessageResult>;
   /** 求職者Slackスレッド(#求職者チャンネル)一覧を取得する(更新日時の新しい順)。 */
-  getCandidateThreads(): Promise<CandidateThread[]>;
+  getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<CandidateThread[]>;
 }
 
 /** デモ実装: demo-data.ts の投稿・スレッドを返し、送信はメモリ上でエコーするのみ。 */
@@ -150,6 +159,14 @@ interface SlackMessage {
  * Slack API のレート制限(1分あたりの呼び出し数)に達しにくくする。
  */
 const threadRepliesCache = new Map<string, { cacheKey: string; replies: CandidateThreadReply[] }>();
+
+/**
+ * 返信の新規取得に使ってよい時間の既定の上限(ms)。getCandidateThreads の呼び出し元は
+ * opts.replyTimeBudgetMs で上書きできる(/api/warm はここより長い予算で深く読み込ませる)。
+ * 250スレッドを一度に読むとSlackのレート制限(429)で待ち時間が積み重なり、Vercelの実行時間
+ * 上限(60秒)を超えて画面自体が開けなくなった障害があったための対策。
+ */
+const REPLY_TIME_BUDGET_MS = 20_000;
 
 interface SlackHistoryResponse extends SlackApiResponseBase {
   messages?: SlackMessage[];
@@ -315,7 +332,7 @@ export class SlackSource implements MessengerSource {
    *   ドメインを覚えて、残りは「https://◯◯.slack.com/archives/チャンネル/p<ts>」形式で組み立てる
    * - 取得は10スレッドずつに分けて実行し、瞬間的なレート制限(429)を避ける
    */
-  async getCandidateThreads(): Promise<CandidateThread[]> {
+  async getCandidateThreads(opts?: GetCandidateThreadsOptions): Promise<CandidateThread[]> {
     const botToken = this.requireToken();
     const channelId = this.config.candidateChannel;
     if (!channelId) {
@@ -329,12 +346,10 @@ export class SlackSource implements MessengerSource {
     const THREAD_CONCURRENCY = 10;
     const HISTORY_LOOKBACK_DAYS = 120;
     const HISTORY_MAX_MESSAGES = 600;
-    // 返信の新規取得に使ってよい時間の上限。250スレッドを一度に読むとSlackのレート制限(429)で
-    // 待ち時間が積み重なり、Vercelの実行時間上限(60秒)を超えて画面自体が開けなくなった障害があった。
     // 期限を超えたら残りは「前回読んだ内容(キャッシュ)があればそれ、無ければ返信なし」として先に
     // 画面を返し、次回以降の読み込みで少しずつ埋める(キャッシュは読めた分だけ確実に貯まる)。
-    const REPLY_TIME_BUDGET_MS = 20_000;
-    const repliesDeadline = Date.now() + REPLY_TIME_BUDGET_MS;
+    const replyTimeBudgetMs = opts?.replyTimeBudgetMs ?? REPLY_TIME_BUDGET_MS;
+    const repliesDeadline = Date.now() + replyTimeBudgetMs;
 
     const oldest = String(Math.floor(Date.now() / 1000) - HISTORY_LOOKBACK_DAYS * 86400);
     const historyMessages: SlackMessage[] = [];

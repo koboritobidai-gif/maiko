@@ -7,8 +7,9 @@
  * エラー表示を出し分ける。data-bundle.ts / candidate-threads.ts と同じパターン)。
  */
 import type { MarketingData, SourceStatus } from "./types";
-import { DemoMarketingSource, getMarketingSource } from "./adapters/marketing";
+import { DEMO_MARKETING_DATA, DemoMarketingSource, getMarketingSource } from "./adapters/marketing";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
 
 // 求職者Slackスレッドと同様、更新頻度が低いデータのため5分キャッシュとする。
 const CACHE_MS = 5 * 60_000;
@@ -55,4 +56,17 @@ export async function loadMarketingData(forceRefresh = false): Promise<Marketing
   const result = isLiveMode() ? await loadLive() : await loadDemo("demo");
   cache = { result, expiresAt: Date.now() + CACHE_MS };
   return result;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。live取得失敗時のフォールバック
+ * (デモデータ+ステータス "live-error")と同じ構造。裏側では loadLive() が走り続けており、
+ * 完了すればモジュールキャッシュに反映される。
+ */
+export function marketingDataTimeoutFallback(): MarketingDataResult {
+  return {
+    data: DEMO_MARKETING_DATA,
+    status: "live-error",
+    errorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }

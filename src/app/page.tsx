@@ -1,8 +1,8 @@
 import DashboardView from "@/components/DashboardView";
-import { loadCandidateThreads } from "@/lib/candidate-threads";
-import { loadDataBundle } from "@/lib/data-bundle";
-import { loadReferralInvoices } from "@/lib/invoice-data";
-import { loadMarketingData } from "@/lib/marketing-data";
+import { candidateThreadsTimeoutFallback, loadCandidateThreads } from "@/lib/candidate-threads";
+import { dataBundleTimeoutFallback, loadDataBundle } from "@/lib/data-bundle";
+import { invoiceDataTimeoutFallback, loadReferralInvoices } from "@/lib/invoice-data";
+import { loadMarketingData, marketingDataTimeoutFallback } from "@/lib/marketing-data";
 import {
   getDashboardSummary,
   getInvoiceChecks,
@@ -10,8 +10,8 @@ import {
   getPrimaryMonthSnapshots,
   getRevenueSummary,
 } from "@/lib/metrics";
-import { loadRevenueRecords } from "@/lib/revenue-data";
-import { loadSalesReports } from "@/lib/sales-data";
+import { loadRevenueRecords, revenueDataTimeoutFallback } from "@/lib/revenue-data";
+import { loadSalesReports, salesDataTimeoutFallback } from "@/lib/sales-data";
 import { getSalesMonthlyStats } from "@/lib/sales-stats";
 import { getCaMonthlyStatsFromThreads } from "@/lib/slack-ca-stats";
 import {
@@ -19,6 +19,7 @@ import {
   fillInterviewDatesFromSlack,
   getSlackInterviewMonthlyCounts,
 } from "@/lib/slack-interviews";
+import { withTimeout } from "@/lib/with-timeout";
 
 // 毎リクエスト動的レンダリング(ライブデータ表示)。`force-dynamic` は使わないこと:
 // Next.js 16 では force-dynamic が全 fetch を強制 no-store に上書きするため、messenger.ts が
@@ -29,15 +30,20 @@ export const revalidate = 0;
 // 超えることがある。Vercelの関数実行時間上限を60秒へ引き上げる(2回目以降は5分キャッシュで高速)。
 export const maxDuration = 60;
 
+// 各ローダーに与える時間上限。これを超えたら(ライブ失敗時と同じ形の)フォールバック値で
+// 先にページを返す。元のローダーは裏で走り続け、キャッシュへ貯まった内容は次回アクセス以降に反映される
+// (詳細は with-timeout.ts のコメント参照)。
+const LOADER_TIMEOUT_MS = 25_000;
+
 export default async function TodayDashboardPage() {
   const now = new Date();
   const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult, salesResult] = await Promise.all([
-    loadDataBundle(),
-    loadMarketingData(),
-    loadCandidateThreads(),
-    loadReferralInvoices(),
-    loadRevenueRecords(),
-    loadSalesReports(),
+    withTimeout(loadDataBundle(), LOADER_TIMEOUT_MS, dataBundleTimeoutFallback),
+    withTimeout(loadMarketingData(), LOADER_TIMEOUT_MS, marketingDataTimeoutFallback),
+    withTimeout(loadCandidateThreads(), LOADER_TIMEOUT_MS, candidateThreadsTimeoutFallback),
+    withTimeout(loadReferralInvoices(), LOADER_TIMEOUT_MS, invoiceDataTimeoutFallback),
+    withTimeout(loadRevenueRecords(), LOADER_TIMEOUT_MS, revenueDataTimeoutFallback),
+    withTimeout(loadSalesReports(), LOADER_TIMEOUT_MS, salesDataTimeoutFallback),
   ]);
   const summary = getDashboardSummary(bundle, now);
   // 画面表示用: Slack「#求職者」スレッドの「面談実施」報告から面談日を補完(シートO列の手入力があれば優先)。

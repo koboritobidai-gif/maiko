@@ -17,6 +17,7 @@ import {
 import type { JobMatrixEntry, ReferralCompanyGroup } from "./adapters/company-directory";
 import { getAccessToken } from "./adapters/spreadsheet";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
 
 export type CompanyDataStatus = "live" | "live-error" | "unconfigured";
 
@@ -82,4 +83,18 @@ export async function loadCompanyData(forceRefresh = false): Promise<CompanyData
 /** 状態更新・企業追加の書き込み成功後に呼び、キャッシュを無効化する(次回 loadCompanyData で再取得させる)。 */
 export function clearCompanyDataCache(): void {
   cache = null;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。この機能にはデモデータが存在しないため、
+ * live取得失敗時と同じ status: "live-error"(空データ)を返す。
+ * 裏側では loadLive() が走り続けており、完了すればモジュールキャッシュに反映される。
+ */
+export function companyDataTimeoutFallback(): CompanyDataResult {
+  return {
+    referralGroups: [],
+    jobMatrix: [],
+    status: "live-error",
+    errorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }

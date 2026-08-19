@@ -16,7 +16,9 @@
  */
 import type { AppointmentReport, SalesDailyReport, SourceStatus } from "./types";
 import { DemoSalesSource, getSalesSource } from "./adapters/sales-reports";
+import { appointmentReports as demoAppointmentReports, salesDailyReports as demoSalesDailyReports } from "./demo-data";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
+import { TIMEOUT_FALLBACK_MESSAGE } from "./with-timeout";
 
 // invoice-data.ts / revenue-data.ts と同様、更新頻度が低いデータのため5分キャッシュとする。
 const CACHE_MS = 5 * 60_000;
@@ -124,4 +126,18 @@ export async function loadSalesReports(forceRefresh = false): Promise<SalesDataR
 
   cache = { result, expiresAt: Date.now() + CACHE_MS };
   return result;
+}
+
+/**
+ * `withTimeout` が時間切れ時に返すフォールバック値。live取得が1件も成功しなかった場合の
+ * フォールバック(デモ日報・デモアポ報告+ステータス "live-error")と同じ構造。
+ * 裏側では loadLive() が走り続けており、完了すればモジュールキャッシュに反映される。
+ */
+export function salesDataTimeoutFallback(): SalesDataResult {
+  return {
+    reports: [...demoSalesDailyReports],
+    appointments: [...demoAppointmentReports],
+    status: "live-error",
+    errorMessage: TIMEOUT_FALLBACK_MESSAGE,
+  };
 }
