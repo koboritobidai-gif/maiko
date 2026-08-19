@@ -233,37 +233,62 @@ function ContractSummaryCards({ companies }: { companies: ContractCompany[] }) {
   const contractedCount = companies.filter((c) => c.isContracted).length;
   const uncontractedCount = companies.length - contractedCount;
 
-  // 契約形態の内訳は「成果報酬/その他」の2分ではなく、実際の値ごとに数える
-  // (経営者から「その他◯社の内訳は?」と質問があったため。空欄は「未入力」として明示する)。
+  // 契約形態の内訳は実際の値ごとに数える(空欄は「未入力」)。「300万20回, 成果報酬」のように
+  // 1社に複数の形態が入っている場合はカンマ等で分解して各形態に1社ずつ数える
+  // (組み合わせのまま別項目にすると「◯◯, 成果報酬 1社」のような細かい行が乱立して読みにくいため)。
   const typeCounts = new Map<string, number>();
+  let multiTypeCount = 0;
   for (const c of companies) {
-    const key = c.contractType || "未入力";
-    typeCounts.set(key, (typeCounts.get(key) ?? 0) + 1);
+    const types = c.contractType
+      .split(/[,、,/]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (types.length === 0) types.push("未入力");
+    if (types.length > 1) multiTypeCount += 1;
+    for (const type of types) {
+      typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
+    }
   }
   const typeBreakdown = [...typeCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const maxTypeCount = Math.max(1, ...typeBreakdown.map(([, count]) => count));
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
-      <KpiCard label="送客可能企業(全体)" value={`${companies.length}社`} accent caption="契約企業シートに記載の全社" />
-      <KpiCard label="契約済み" value={`${contractedCount}社`} accent caption="契約締結済み" />
-      <KpiCard label="未契約" value={`${uncontractedCount}社`} caption="商談中・契約書類なし" />
-      {/* 内訳は値の種類数が可変で文字量が多いため、KpiCard ではなく行リストのカードで見せる。 */}
-      <div className="card flex flex-col gap-1 p-3.5">
+    <div className="flex flex-col gap-2.5 lg:gap-4">
+      <div className="grid grid-cols-3 gap-2.5 lg:gap-4">
+        <KpiCard label="送客可能企業(全体)" value={`${companies.length}社`} accent caption="契約企業シートに記載の全社" />
+        <KpiCard label="契約済み" value={`${contractedCount}社`} accent caption="契約締結済み" />
+        <KpiCard label="未契約" value={`${uncontractedCount}社`} caption="商談中・契約書類なし" />
+      </div>
+      {/* 内訳は種類数が多く文字量もあるため、カード1枚に押し込まず全幅の行リスト+バーで見せる。 */}
+      <div className="card flex flex-col gap-2 p-3.5">
         <span className="text-[11px] font-medium" style={{ color: "var(--color-text-muted)" }}>
           契約形態の内訳
         </span>
-        <div className="flex flex-col gap-0.5">
-          {typeBreakdown.map(([type, count]) => (
-            <div key={type} className="flex items-baseline justify-between gap-2">
-              <span className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-                {type}
-              </span>
-              <span className="text-[14px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
+        <div className="flex flex-col">
+          {typeBreakdown.map(([type, count], i) => (
+            <div
+              key={type}
+              className="flex items-center gap-3 py-2"
+              style={i > 0 ? { borderTop: "1px solid var(--color-border)" } : undefined}
+            >
+              <span className="w-[120px] shrink-0 text-[12.5px] font-medium sm:w-[160px]">{type}</span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: "var(--color-border)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${(count / maxTypeCount) * 100}%`, background: "var(--color-navy)" }}
+                />
+              </div>
+              <span className="w-[52px] shrink-0 text-right text-[14px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
                 {count}社
               </span>
             </div>
           ))}
         </div>
+        {multiTypeCount > 0 && (
+          <p className="text-[10.5px]" style={{ color: "var(--color-text-muted)" }}>
+            ※複数の契約形態がある企業({multiTypeCount}社)は各形態に1社ずつ数えているため、合計は全体社数と一致しないことがあります。
+          </p>
+        )}
       </div>
     </div>
   );
