@@ -940,8 +940,9 @@ export function getPrimaryMonthSnapshots(
     // SNS運用のリズアライズは月固定費(MARKETING_SNS_MONTHLY_COST=¥495,000)として広告費側で
     // 既に計上済みで、同じ金額の請求書PDFが#請求書にも投稿される運用のため、支出の計算では
     // リズアライズの請求書を除外して二重計上を防ぐ(請求書チェックカードの合計はチャンネルの
-    // 実態どおり全件のまま。表記ゆれに備え「リズアライズ/リズリアライズ」の両方に一致させる)。
-    const SNS_VENDOR_RE = /リズリ?アライズ/;
+    // 実態どおり全件のまま。表記ゆれに備え「リズアライズ/リズリアライズ」と英語表記
+    // 「RYSREALIZE」(経営者確認。スペース入り・大文字小文字の揺れも許容)に一致させる)。
+    const SNS_VENDOR_RE = /リズリ?アライズ|RYS\s*REALIZE/i;
     let dedupedInvoices = monthInvoices.filter(
       (inv) => !SNS_VENDOR_RE.test(`${inv.vendorName ?? ""} ${inv.fileName}`),
     );
