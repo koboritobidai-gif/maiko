@@ -228,20 +228,43 @@ function findContractMatch(companyName: string, contracts: ContractCompany[]): C
 
 /** サマリーカード列(契約企業数・商談中数・契約形態の内訳)。契約企業タブの上・送客可能企業タブの上に常時表示する。 */
 function ContractSummaryCards({ companies }: { companies: ContractCompany[] }) {
+  // シートに載っている企業は全て「送客できる企業」という経営者の運用のため、
+  // 全体数を主役にし、その中を契約済み/未契約に分けて見せる。
   const contractedCount = companies.filter((c) => c.isContracted).length;
   const uncontractedCount = companies.length - contractedCount;
-  const feeBasedCount = companies.filter((c) => c.contractType.includes("成果報酬")).length;
-  const otherTypeCount = companies.length - feeBasedCount;
+
+  // 契約形態の内訳は「成果報酬/その他」の2分ではなく、実際の値ごとに数える
+  // (経営者から「その他◯社の内訳は?」と質問があったため。空欄は「未入力」として明示する)。
+  const typeCounts = new Map<string, number>();
+  for (const c of companies) {
+    const key = c.contractType || "未入力";
+    typeCounts.set(key, (typeCounts.get(key) ?? 0) + 1);
+  }
+  const typeBreakdown = [...typeCounts.entries()].sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 lg:gap-4">
-      <KpiCard label="契約企業" value={`${contractedCount}社`} accent caption="契約締結済み" />
-      <KpiCard label="商談中・未契約" value={`${uncontractedCount}社`} caption="契約書類なし、または未締結" />
-      <KpiCard
-        label="契約形態の内訳"
-        value={`成果報酬 ${feeBasedCount}社`}
-        caption={otherTypeCount > 0 ? `その他 ${otherTypeCount}社` : "全て成果報酬"}
-      />
+    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
+      <KpiCard label="送客可能企業(全体)" value={`${companies.length}社`} accent caption="契約企業シートに記載の全社" />
+      <KpiCard label="契約済み" value={`${contractedCount}社`} accent caption="契約締結済み" />
+      <KpiCard label="未契約" value={`${uncontractedCount}社`} caption="商談中・契約書類なし" />
+      {/* 内訳は値の種類数が可変で文字量が多いため、KpiCard ではなく行リストのカードで見せる。 */}
+      <div className="card flex flex-col gap-1 p-3.5">
+        <span className="text-[11px] font-medium" style={{ color: "var(--color-text-muted)" }}>
+          契約形態の内訳
+        </span>
+        <div className="flex flex-col gap-0.5">
+          {typeBreakdown.map(([type, count]) => (
+            <div key={type} className="flex items-baseline justify-between gap-2">
+              <span className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+                {type}
+              </span>
+              <span className="text-[14px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
+                {count}社
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
