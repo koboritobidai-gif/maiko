@@ -163,7 +163,7 @@ function ContractStatusBadge({ isContracted }: { isContracted: boolean }) {
   const style = contractStatusStyle(isContracted);
   return (
     <span
-      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+      className="inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold"
       style={{ background: style.bg, color: style.fg, border: `1px solid ${style.border}` }}
     >
       {isContracted ? "契約済み" : "未契約"}
@@ -176,7 +176,7 @@ function FeeBadge({ label }: { label: string }) {
   const isPercent = label.includes("%");
   return (
     <span
-      className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold"
+      className="inline-block shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold"
       style={
         isPercent
           ? {
@@ -958,15 +958,17 @@ function ContractCompanyRow({ company }: { company: ContractCompany }) {
         <td className="py-2 pr-2 font-semibold" style={{ color: "var(--color-navy)" }}>
           {company.companyName}
         </td>
-        <td className="py-2 pr-2">{company.staff || "-"}</td>
-        <td className="py-2 pr-2">{company.contractType || "-"}</td>
-        <td className="py-2 pr-2">
+        {/* 担当・契約状況などの短い列は折り返すと「本間」「契約済み」が縦に割れて崩れるため nowrap
+            (表全体は overflow-x-auto + min-w で横スクロールに逃がす)。 */}
+        <td className="whitespace-nowrap py-2 pr-2">{company.staff || "-"}</td>
+        <td className="whitespace-nowrap py-2 pr-2">{company.contractType || "-"}</td>
+        <td className="whitespace-nowrap py-2 pr-2">
           <FeeBadge label={company.feeLabel} />
         </td>
-        <td className="py-2 pr-2">
+        <td className="whitespace-nowrap py-2 pr-2">
           <ContractStatusBadge isContracted={company.isContracted} />
         </td>
-        <td className="py-2 pr-2">{company.documentType || "-"}</td>
+        <td className="whitespace-nowrap py-2 pr-2">{company.documentType || "-"}</td>
         <td className="max-w-[220px] truncate py-2 pr-2" style={{ color: "var(--color-text-muted)" }}>
           {company.memo || "-"}
         </td>
@@ -1047,13 +1049,13 @@ function ContractCompanyTab({ companies }: { companies: ContractCompany[] }) {
           <table className="w-full min-w-[760px] text-left text-[12px]">
             <thead>
               <tr style={{ color: "var(--color-text-muted)" }}>
-                <th className="pb-2 pr-2 font-medium">企業</th>
-                <th className="pb-2 pr-2 font-medium">担当</th>
-                <th className="pb-2 pr-2 font-medium">契約形態</th>
-                <th className="pb-2 pr-2 font-medium">報酬</th>
-                <th className="pb-2 pr-2 font-medium">契約状況</th>
-                <th className="pb-2 pr-2 font-medium">契約書類</th>
-                <th className="pb-2 pr-2 font-medium">メモ</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">企業</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">担当</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">契約形態</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">報酬</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">契約状況</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">契約書類</th>
+                <th className="whitespace-nowrap pb-2 pr-2 font-medium">メモ</th>
               </tr>
             </thead>
             <tbody>
