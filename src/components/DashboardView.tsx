@@ -330,9 +330,8 @@ export default function DashboardView({
   // 請求書が1件も無く、かつ機能未設定(demo=SLACK_INVOICE_CHANNEL未設定 or デモモード)の場合は
   // カード自体を非表示にする(機能OFF扱い。デモモードでは常にデモ請求書が入るため表示される)。
   const showInvoiceCard = invoiceChecks.length > 0 || invoiceStatus !== "demo";
-  // 月ごとの支出合計(新しい月順)と、送客パートナー請求書の差異件数(警告表示用)。
+  // 月ごとの支出合計(新しい月順)。
   const invoiceMonthlyTotals = getInvoiceMonthlyTotals(invoiceChecks.map((row) => row.invoice));
-  const invoiceMismatchCount = invoiceChecks.filter((row) => row.status === "mismatch").length;
   // 金額を読み取れなかった請求書の一覧(理由と一緒に表示する。多すぎる場合は5件まで)。
   const unreadableInvoices = invoiceChecks
     .map((row) => row.invoice)
@@ -846,14 +845,7 @@ export default function DashboardView({
                 )}
               </div>
             )}
-            {invoiceMismatchCount > 0 && (
-              <p
-                className="mt-2 rounded-lg border px-3 py-2 text-[11px] font-medium"
-                style={{ color: "var(--color-bad)", borderColor: "var(--color-bad)" }}
-              >
-                ⚠️ 送客パートナーの請求書{invoiceMismatchCount}件でアプリ計算との差異があります。「AIに聞く」で「請求書は合ってる?」と質問すると詳細が見られます。
-              </p>
-            )}
+            {/* 差異の警告バナーは経営者の指示で廃止(照合の詳細は従来どおり「AIに聞く」で確認できる)。 */}
             <p className="mt-2.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
               内訳(請求月・会社・金額)は「AIに聞く」で「請求書の内訳は?」と質問すると見られます。
               {invoiceSkippedCount > 0 ? ` 他${invoiceSkippedCount}件のPDFは対象外(直近50件まで)。` : ""}
