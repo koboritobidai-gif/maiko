@@ -884,12 +884,32 @@ function parseContractRows(
     if (isBlankRow(row)) continue;
 
     const companyName = cellToString(row[col.companyName]);
-    if (!companyName) continue; // 企業名が空の行(小計・空行等)はスキップ
-
     const contractTerms = col.contractTerms >= 0 ? cellToString(row[col.contractTerms]) : "";
     const contractedCell = col.contracted >= 0 ? cellToString(row[col.contracted]) : "";
     const documentType = col.documentType >= 0 ? cellToString(row[col.documentType]) : "";
     const memo = col.memo >= 0 ? cellToString(row[col.memo]) : "";
+
+    if (!companyName) {
+      // 企業名が空の行は「縦結合された企業の続き行」。実物シートでは1社が2行にまたがり、
+      // 契約の「○」・契約書類・メモが2行目に入っている企業がある(スパイラル、AQ Group等)。
+      // ここを捨てると契約済みの印がその企業に紐付かず「契約状況がずれる」ため、
+      // 直前の企業に取り込む(空欄の項目を埋め、契約済み判定はOR、メモ・契約内容は連結)。
+      const prev = result[result.length - 1];
+      if (!prev) continue; // 先頭に企業がまだ無い行(ヘッダー直後の飾り行等)は無視
+      if (contractTerms) {
+        prev.contractTerms = prev.contractTerms ? `${prev.contractTerms}\n${contractTerms}` : contractTerms;
+        prev.feeLabel = extractFeeLabel(prev.contractTerms);
+      }
+      if (!prev.staff && col.staff >= 0) prev.staff = cellToString(row[col.staff]);
+      if (!prev.contractType && col.contractType >= 0) prev.contractType = cellToString(row[col.contractType]);
+      if (!prev.documentType) prev.documentType = documentType;
+      if (memo) prev.memo = prev.memo ? `${prev.memo} / ${memo}` : memo;
+      if (!prev.contractUrl) prev.contractUrl = extractContractUrl(row);
+      if (!prev.isContracted) {
+        prev.isContracted = isContractedRow(contractedCell, documentType, memo);
+      }
+      continue;
+    }
 
     result.push({
       rowNumber: i + 1,
