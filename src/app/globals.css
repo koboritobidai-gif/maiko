@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eff5ff;
+  --color-brand-100: #dbe7fe;
+  --color-brand-200: #bfd4fe;
+  --color-brand-300: #93b4fd;
+  --color-brand-400: #6090fa;
+  --color-brand-500: #3b76f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --color-mint-300: #6ee7d5;
+  --color-mint-400: #34e0c0;
+  --color-mint-500: #14c7a8;
+
+  --color-ink: #0d1421;
+  --color-ink-soft: #47536b;
+  --color-ink-muted: #7c8798;
+  --color-canvas: #f4f6fb;
+  --color-line: #e6eaf2;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+
+  --radius-card: 1.25rem;
+
+  --shadow-card: 0 1px 2px rgb(13 20 33 / 0.04), 0 8px 24px -12px rgb(13 20 33 / 0.16);
+  --shadow-float: 0 10px 40px -12px rgb(37 99 235 / 0.45);
+}
+
+:root {
+  color-scheme: light;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* 数字は等幅で揺れないように */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* スクロールバーを隠す横スクロール領域 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 端末の外側は濃い背景、アプリ本体は中央のカラムに */
+.app-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 30rem;
+  min-height: 100dvh;
+  background: var(--color-canvas);
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  body {
+    background: #eaeef6;
+  }
+  .app-shell {
+    box-shadow: 0 0 0 1px var(--color-line), 0 24px 70px -30px rgb(13 20 33 / 0.4);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-pop {
+  animation: pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
