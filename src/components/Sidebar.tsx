@@ -30,7 +30,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="hidden shrink-0 flex-col lg:flex lg:w-64 lg:border-r"
+      className="hidden shrink-0 flex-col print:hidden lg:flex lg:w-64 lg:border-r"
       style={{ background: "#ffffff", borderColor: "var(--color-border)" }}
     >
       <div className="flex flex-col gap-0.5 px-5 pb-5 pt-6">

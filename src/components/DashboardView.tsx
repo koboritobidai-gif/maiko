@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
@@ -566,6 +567,15 @@ export default function DashboardView({
           </h2>
           <div className="flex items-center gap-2">
             <MonthChips months={marketingMonths} value={marketingMonthIdx} onChange={setMarketingMonthIdx} />
+            {/* 経営者が全体MTGでそのままPDF化して配れるよう、選択中の月のA4資料へ遷移する導線。
+                レポート自体は印刷専用ページのためこの画面には印刷対象外の通常リンクでよい。 */}
+            <Link
+              href={`/report/marketing?month=${mkEntry.monthKey}`}
+              className="whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium"
+              style={{ color: "var(--color-navy)", borderColor: "var(--color-border)" }}
+            >
+              MTG資料 →
+            </Link>
             <SourceBadge label={marketingBadge} />
           </div>
         </div>

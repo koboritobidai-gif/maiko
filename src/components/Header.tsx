@@ -37,7 +37,7 @@ export default function Header({ profile, onRequestSwitchRole }: HeaderProps) {
 
   return (
     <header
-      className="sticky top-0 z-40 border-b px-4 pb-4 pt-[calc(env(safe-area-inset-top)+14px)] lg:px-8 lg:py-3.5"
+      className="sticky top-0 z-40 border-b px-4 pb-4 pt-[calc(env(safe-area-inset-top)+14px)] print:hidden lg:px-8 lg:py-3.5"
       style={{ background: "#ffffff", borderColor: "var(--color-border)", color: "var(--color-text)" }}
     >
       <div className="flex items-start justify-between gap-3 lg:items-center">

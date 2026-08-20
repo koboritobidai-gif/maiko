@@ -71,3 +71,19 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+/* マーケティング報告(/report/marketing)等、ブラウザの印刷→PDF保存で使うページ向けの印刷設定。
+   A4縦・余白10mmに固定し、印刷では常に白背景にする(ダークモードは無いが念のため)。 */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  /* レポートの各セクションが表・見出しの途中でページをまたがないようにする。 */
+  .report-section {
+    break-inside: avoid;
+  }
+}
