@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e7e3d9">
+<title>NARU｜Lifestyle Fitness Coach</title>
+<style>
+:root{
+  --bg-top:#e7e3d9; --bg-bottom:#d7d2c4;
+  --surface:#f4f0ea; --surface-alt:#ebe7df; --surface-sunk:#e3ded2;
+  --ink:#22251d; --ink-soft:#5c604f; --ink-mute:#8d8f80;
+  --olive:#737d58; --olive-dark:#5f6849; --olive-soft:#e0e2d3;
+  --orange-a:#e2783c; --orange-b:#d35f2d;
+  --tan:#c58e61;
+  --line:#d8d3c6;
+  --r-lg:18px; --r-md:12px; --r-sm:8px;
+  --safe:env(safe-area-inset-bottom,0px);
+  --nav-h:60px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:var(--font); color:var(--ink);
+  background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-top) 22%,var(--bg-bottom) 78%) fixed;
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+}
+button,input,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+.tnum{font-variant-numeric:tabular-nums}
+.noscroll{scrollbar-width:none}.noscroll::-webkit-scrollbar{display:none}
+
+/* ── アプリの外枠 ── */
+#app{max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;position:relative}
+@media(min-width:520px){
+  body{background:#cfcabc fixed}
+  #app{background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-top) 22%,var(--bg-bottom) 78%);
+       box-shadow:0 0 0 1px rgba(34,37,29,.08),0 30px 70px -40px rgba(34,37,29,.55)}
+}
+.screen{flex:1;display:none;flex-direction:column;animation:fade .28s ease both}
+.screen.on{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pad{padding:0 18px}
+.scroll{flex:1;overflow-y:auto;padding-bottom:calc(var(--nav-h) + var(--safe) + 16px)}
+
+/* ── 共通パーツ ── */
+.eyebrow{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--ink-mute);text-transform:uppercase}
+.h1{font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin:6px 0 0}
+.sub{font-size:13px;color:var(--ink-mute);margin:6px 0 0;line-height:1.6}
+.card{background:var(--surface);border:1px solid rgba(34,37,29,.07);border-radius:var(--r-lg);}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;
+     border-radius:var(--r-md);font-weight:700;font-size:15px;transition:.15s}
+.btn-olive{background:var(--olive);color:#fff}
+.btn-olive:active{background:var(--olive-dark)}
+.btn-olive:disabled{background:var(--surface-sunk);color:var(--ink-mute);cursor:default}
+.btn-ghost{background:var(--surface);border:1px solid rgba(34,37,29,.08);color:var(--ink)}
+.btn-dark{background:var(--ink);color:#f4f0ea}
+.btn-orange{background:linear-gradient(100deg,var(--orange-a),var(--orange-b));color:#fff;
+            box-shadow:0 8px 20px -10px rgba(211,95,45,.9)}
+.btn-tan{background:var(--tan);color:#fff}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#f4f0ea;
+      border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;letter-spacing:.06em}
+.badge{display:inline-block;background:var(--olive);color:#fff;font-size:10.5px;font-weight:800;
+       letter-spacing:.1em;padding:3px 8px;border-radius:5px}
+.divider{height:1px;background:rgba(244,240,234,.16);margin:14px 0}
+
+/* ── ヘッダー ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px}
+.logo{font-size:15px;font-weight:800;letter-spacing:.3em}
+
+/* ── ボトムナビ ── */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+     height:calc(var(--nav-h) + var(--safe));padding-bottom:var(--safe);
+     display:flex;background:rgba(240,236,228,.94);backdrop-filter:blur(10px);
+     border-top:1px solid var(--line);z-index:40}
+.nav.hide{display:none}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink-mute)}
+.nav button.on{color:var(--ink)}
+.nav .en{font-size:13px;font-weight:800;letter-spacing:.08em}
+.nav .ja{font-size:10px}
+
+/* ── 診断 ── */
+.step-dots{display:flex;gap:6px;justify-content:center;margin:18px 0}
+.step-dots i{width:7px;height:7px;border-radius:999px;background:#c9c4b5;transition:.2s}
+.step-dots i.on{width:20px;background:var(--olive)}
+.opt{display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid transparent;
+     border-radius:var(--r-lg);padding:15px 17px;margin-bottom:10px;transition:.15s}
+.opt:active{transform:scale(.99)}
+.opt.on{background:var(--olive-soft);border-color:var(--olive)}
+.opt b{display:block;font-size:16px;font-weight:700}
+.opt span{display:block;font-size:12.5px;color:var(--ink-mute);margin-top:3px}
+
+/* ── ホーム ── */
+.hero{position:relative;overflow:hidden;background:var(--ink);color:#f4f0ea;border-radius:var(--r-lg);padding:18px}
+.hero .orb{position:absolute;right:-34px;top:-34px;width:130px;height:130px;border-radius:999px;
+           background:rgba(115,125,88,.35)}
+.hero .day{font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)}
+.hero h2{margin:5px 0 0;font-size:25px;font-weight:800;letter-spacing:-.01em}
+.hero .by{display:inline-block;margin-top:10px;background:rgba(244,240,234,.13);border-radius:999px;
+          padding:5px 12px;font-size:11.5px;font-weight:600}
+.hero .by b{font-weight:800;letter-spacing:.06em}
+.stats{display:flex;gap:9px;margin-top:11px}
+.stat{flex:1;background:var(--surface);border:1px solid rgba(34,37,29,.07);border-radius:var(--r-md);
+      padding:12px 6px;text-align:center}
+.stat .v{font-size:22px;font-weight:800;line-height:1}
+.stat .v small{font-size:12px;color:var(--ink-mute);font-weight:700}
+.stat .k{font-size:9.5px;letter-spacing:.11em;font-weight:700;color:var(--ink-mute);margin-top:5px}
+.seg{display:flex;gap:9px;margin-top:11px}
+.seg button{flex:1;background:var(--surface);border:1.5px solid transparent;border-radius:var(--r-md);
+            padding:11px 4px;text-align:center;transition:.15s}
+.seg button.on{background:var(--olive-soft);border-color:var(--olive)}
+.seg b{display:block;font-size:14px;font-weight:800}
+.seg span{display:block;font-size:10.5px;color:var(--ink-mute);margin-top:2px}
+.weekstrip{display:flex;gap:5px;margin-top:11px}
+.weekstrip div{flex:1;border-radius:9px;background:var(--surface);border:1px solid rgba(34,37,29,.06);
+               padding:7px 0;text-align:center;font-size:10px;color:var(--ink-mute);font-weight:700}
+.weekstrip div.done{background:var(--olive);border-color:var(--olive);color:#fff}
+.weekstrip div.today{border-color:var(--ink)}
+.weekstrip div i{display:block;font-style:normal;font-size:12px;margin-top:2px}
+
+/* 動画枠 */
+.video{margin-top:11px;border-radius:var(--r-lg);overflow:hidden;background:var(--surface);
+       border:1px solid rgba(34,37,29,.07)}
+.video .frame{position:relative;aspect-ratio:16/11;background:linear-gradient(150deg,#3a3f31,#22251d);
+              display:grid;place-items:center}
+.video .frame video{width:100%;height:100%;object-fit:cover}
+.video .play{width:56px;height:56px;border-radius:999px;background:rgba(244,240,234,.92);display:grid;place-items:center}
+.video .play::after{content:"";border-left:16px solid var(--ink);border-top:10px solid transparent;
+                    border-bottom:10px solid transparent;margin-left:4px}
+.video .tag{position:absolute;top:10px;right:10px;background:rgba(34,37,29,.72);color:#f4f0ea;
+            border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:700}
+.video .cap{padding:12px 14px}
+.video .cap b{font-size:13.5px}
+.video .cap p{margin:3px 0 0;font-size:11.5px;color:var(--ink-mute)}
+.note{margin-top:11px;background:var(--surface);border:1px solid rgba(34,37,29,.07);
+      border-radius:var(--r-lg);padding:14px 16px}
+.note .k{font-size:10.5px;letter-spacing:.14em;font-weight:800;color:var(--ink-mute)}
+.note p{margin:6px 0 0;font-size:13.5px;line-height:1.7}
+
+/* ── TRAIN ── */
+.partline{display:flex;align-items:center;gap:9px;margin:20px 0 10px;font-size:11.5px;
+          font-weight:700;letter-spacing:.12em;color:rgba(244,240,234,.82)}
+.partline .hr{flex:1;height:1px;background:rgba(244,240,234,.16)}
+.exrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);
+       color:var(--ink);border-radius:var(--r-md);padding:13px 15px;margin-bottom:8px;transition:.15s}
+.exrow:active{transform:scale(.995)}
+.exrow .nm{flex:1;min-width:0}
+.exrow .nm{display:flex;flex-direction:column}
+.exrow .en{display:block;font-size:14.5px;font-weight:700;line-height:1.35}
+.exrow .ja{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
+.exrow .dose{font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--ink-soft)}
+.exrow .chev{color:var(--ink-mute);font-size:15px}
+.trainwrap{position:relative;overflow:hidden;background:var(--ink);border-radius:var(--r-lg);padding:18px;color:#f4f0ea}
+
+/* ── 実行 ── */
+.check{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;background:var(--surface);
+       border-radius:var(--r-md);padding:13px 15px;margin-bottom:8px;transition:.15s}
+.check .box{width:24px;height:24px;border-radius:999px;border:1.5px solid #c3bfae;flex:none;margin-top:1px;
+            display:grid;place-items:center;transition:.15s}
+.check.on .box{background:var(--olive);border-color:var(--olive);color:#fff}
+.check.on .en{text-decoration:line-through;color:var(--ink-mute)}
+.check{color:var(--ink)}
+.check .en{display:block;font-size:14.5px;font-weight:700;line-height:1.35}
+.check .ja{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px}
+.check .dose{display:block;font-size:12px;color:var(--ink-soft);margin-top:4px;font-weight:600}
+.progress{height:5px;border-radius:999px;background:var(--surface-sunk);overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;background:var(--olive);border-radius:999px;transition:width .3s}
+
+/* ── タイマー ── */
+.timer{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+.timer .lbl{font-size:12px;letter-spacing:.14em;font-weight:800;color:var(--olive)}
+.timer h2{margin:8px 0 0;font-size:24px;font-weight:800}
+.timer .ja2{font-size:13px;color:var(--ink-mute);margin-top:3px}
+.timer .num{font-size:66px;font-weight:800;letter-spacing:-.02em;margin:14px 0 0;line-height:1}
+.timer .cues{margin-top:18px;width:100%;background:var(--surface);border-radius:var(--r-md);padding:14px 16px;text-align:left}
+.timer .cues li{font-size:13px;line-height:1.7;margin-left:-8px}
+.tctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:14px 18px calc(18px + var(--safe))}
+.tctl .rnd{width:52px;height:52px;border-radius:999px;background:var(--surface);border:1px solid rgba(34,37,29,.08);
+           display:grid;place-items:center;font-size:17px}
+.tctl .main{flex:1;max-width:170px}
+
+/* ── LOG ── */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal div{aspect-ratio:1;border-radius:9px;background:var(--surface-sunk);display:grid;place-items:center;
+         font-size:11.5px;color:var(--ink-mute)}
+.cal div.done{background:var(--olive);color:#fff;font-weight:700}
+.cal div.today{outline:2px solid var(--ink);outline-offset:-2px;color:var(--ink)}
+.cal div.done.today{color:#fff}
+.sess{display:flex;align-items:center;justify-content:space-between;background:var(--surface);
+      border-radius:var(--r-md);padding:13px 15px;margin-bottom:8px}
+.sess b{font-size:14px}.sess span{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px}
+
+/* ── シート／モーダル ── */
+.backdrop{position:fixed;inset:0;background:rgba(34,37,29,.55);z-index:60;display:none;
+          align-items:flex-end;justify-content:center;padding:0}
+.backdrop.on{display:flex}
+.sheet{width:100%;max-width:430px;max-height:86dvh;overflow-y:auto;background:var(--surface-alt);
+       border-radius:22px 22px 0 0;padding:20px 18px calc(24px + var(--safe));animation:up .3s cubic-bezier(.22,1,.36,1) both}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.grab{width:38px;height:4px;border-radius:999px;background:#cfcabb;margin:0 auto 14px}
+.modal{margin:auto 18px;max-width:360px;background:var(--surface-alt);border-radius:22px;padding:26px 22px;
+       text-align:center;animation:up .3s cubic-bezier(.22,1,.36,1) both}
+.backdrop.center{align-items:center}
+.detail-sec{margin-top:16px}
+.detail-sec h4{margin:0 0 7px;font-size:12px;letter-spacing:.12em;font-weight:800;color:var(--ink-mute)}
+.detail-sec ul{margin:0;padding-left:18px}
+.detail-sec li{font-size:13.5px;line-height:1.75;margin-bottom:3px}
+.dot-o::marker{color:var(--olive)}
+.dot-r::marker{color:var(--orange-b)}
+
+/* ── LP ── */
+.lp{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px}
+.lp .hero-t{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin:10px 0 0}
+.lp .avatar{width:44px;height:44px;border-radius:999px;background:linear-gradient(150deg,#8b9469,#5f6849);flex:none}
+.about{border-top:1px solid rgba(34,37,29,.1);margin-top:34px;padding-top:22px}
+.about li{display:flex;gap:10px;margin-bottom:13px;list-style:none}
+.about b{display:block;font-size:14.5px;font-weight:700}
+.about span{display:block;font-size:12px;color:var(--ink-mute);margin-top:2px}
+.about .ck{color:var(--olive);font-weight:800}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="backdrop" id="backdrop"></div>
+<script>
+/* =========================================================================
+   種目ライブラリ
+   video は naru の実演動画。撮影できたら
+     video:{src:"videos/deadlift.mp4", poster:"videos/deadlift.jpg"}
+   に差し替えるだけで、種目詳細と実行画面に自動で出ます。
+   ========================================================================= */
+const EX = {
+  /* ---- ウォームアップ / コンディショニング ---- */
+  "star-jump":{en:"Star Jump",ja:"スタージャンプ",video:null,
+    cues:["手足を同時に大きく開く","膝を軽く曲げてやわらかく着地する"],
+    miss:["腕が上がりきらない","かかとから硬く着地する"],breath:"リズムよく吸って吐く"},
+  "plank-hold":{en:"Plank Hold",ja:"プランク",video:null,
+    cues:["肘は肩の真下","頭からかかとまで一直線","お尻を締めて骨盤を立てる"],
+    miss:["腰が落ちる","お尻が高く上がる","呼吸を止める"],breath:"止めずに細く長く吐き続ける"},
+  "v-up":{en:"V-up",ja:"V字腹筋",video:null,
+    cues:["上体と脚を同時に持ち上げてVをつくる","手は足先へ伸ばす"],
+    miss:["反動で起き上がる","首だけ引き上げる"],breath:"上げるときに吐く"},
+  "cat-cow":{en:"Cat & Cow",ja:"キャット＆カウ",video:null,
+    cues:["手は肩の真下、膝は股関節の真下","背骨を1本ずつ動かすようにゆっくり"],
+    miss:["腰だけで反る","動きが速すぎる"],breath:"反るときに吸い、丸めるときに吐く"},
+  "world-greatest":{en:"World's Greatest Stretch",ja:"ワールドグレイテストストレッチ",video:null,
+    cues:["前足の内側に肘を落とす","胸を開いて天井へ手を伸ばす"],
+    miss:["後ろ足の膝が落ちる","背中が丸まる"],breath:"開くときに吐く"},
+  "hip-circle":{en:"Hip Circle",ja:"ヒップサークル",video:null,
+    cues:["足は肩幅、手は腰に","股関節から大きく円を描く"],
+    miss:["膝だけ動いている","上半身が振られる"],breath:"自然な呼吸"},
+  "arm-circle":{en:"Arm Circle",ja:"アームサークル",video:null,
+    cues:["肩の力を抜いて大きくゆっくり","肩甲骨から動かす"],
+    miss:["首をすくめる","速さだけ追う"],breath:"止めない"},
+  "air-squat":{en:"Air Squat",ja:"エアスクワット",video:null,
+    cues:["お尻を後ろに引きながら下ろす","膝とつま先の向きを揃える"],
+    miss:["膝が内に入る","かかとが浮く"],breath:"下ろすとき吸い、立つとき吐く"},
+  "high-knee":{en:"High Knees",ja:"ハイニー",video:null,
+    cues:["ももを腰の高さまで","つま先着地でリズムよく"],
+    miss:["前かがみになる","膝が上がりきらない"],breath:"短く速く吐く"},
+  "mountain-climber":{en:"Mountain Climber",ja:"マウンテンクライマー",video:null,
+    cues:["肩の真下に手、体は一直線","膝を胸に素早く引き寄せる"],
+    miss:["お尻が上下に跳ねる","肩が手より前に出る"],breath:"短く速く吐く"},
+  "jump-rope":{en:"Single Unders",ja:"なわとび",video:null,
+    cues:["脇を締めて手首で回す","小さく跳ぶ"],
+    miss:["腕全体で回す","高く跳びすぎる"],breath:"リズムよく"},
+  "double-unders":{en:"Double Unders",ja:"二重跳び",video:null,
+    cues:["1回目より少しだけ高く跳ぶ","手首のスナップを速く"],
+    miss:["脚を後ろに蹴り上げる","腕が体から離れる"],breath:"跳ぶリズムに合わせて短く"},
+  "burpee":{en:"Burpee",ja:"バーピー",video:null,
+    cues:["1つ1つの動作を丁寧に","きつければジャンプを省いてよい"],
+    miss:["腰が反ったままプランクに入る","フォームが崩れても回数を追う"],breath:"立ち上がるときに吐く"},
+  "skater":{en:"Skater",ja:"スケーター",video:null,
+    cues:["横に大きく跳んで片脚で着地","1秒静止できる強さで"],
+    miss:["膝が内に入る","上体が起きすぎる"],breath:"跳ぶたびに吐く"},
+  "row-machine":{en:"Row",ja:"ローイング",video:null,
+    cues:["脚→体幹→腕の順に引く","戻すときは腕→体幹→脚"],
+    miss:["腕から引き始める","背中が丸まる"],breath:"引くときに吐く"},
+
+  /* ---- ストレングス（ジム） ---- */
+  "deadlift-wu":{en:"Deadlift — Warm-up",ja:"デッドリフト ウォームアップ",video:null,
+    cues:["軽い重量でフォームの確認から","バーはすねに沿わせる"],
+    miss:["1本目から重量を上げる","背中が丸まったまま引く"],breath:"引く前に息を溜める"},
+  "deadlift":{en:"Deadlift",ja:"デッドリフト",video:null,
+    cues:["バーはすねに沿わせて真上に引く","背中は最後まで真っすぐ","お尻と背中を同時に立てる"],
+    miss:["背中が丸まる","バーが体から離れる","腕で引こうとする"],breath:"引く前に息を止め、立ち切ってから吐く"},
+  "back-squat":{en:"Back Squat",ja:"バックスクワット",video:null,
+    cues:["バーは僧帽筋の上に乗せる","お腹に空気を入れて体幹を固める","股関節から先に引く"],
+    miss:["かかとが浮く","膝が内に入る","上体が突っ込む"],breath:"下ろす前に息を溜め、立ち切って吐く"},
+  "front-squat":{en:"Front Squat",ja:"フロントスクワット",video:null,
+    cues:["肘を高く保つ","上体を立てたまま真下に落ちる"],
+    miss:["肘が下がってバーが落ちる","かかとが浮く"],breath:"下ろす前に息を溜める"},
+  "bench-press":{en:"Bench Press",ja:"ベンチプレス",video:null,
+    cues:["肩甲骨を寄せて下げる","みぞおちの上に下ろす","足裏で床を踏む"],
+    miss:["肩がすくむ","バーが首側に落ちる","お尻が浮く"],breath:"下ろすとき吸い、押すとき吐く"},
+  "overhead-press":{en:"Overhead Press",ja:"オーバーヘッドプレス",video:null,
+    cues:["肋骨を締めて真上に押す","耳の横を通す軌道"],
+    miss:["腰が反る","肩がすくむ"],breath:"押すときに吐く"},
+  "pull-up":{en:"Pull-up",ja:"懸垂",video:null,
+    cues:["肩を下げてから引き始める","鎖骨をバーに近づける"],
+    miss:["肩がすくんだまま引く","反動で蹴り上げる"],breath:"引くときに吐く"},
+  "barbell-row":{en:"Barbell Row",ja:"バーベルロウ",video:null,
+    cues:["股関節から前傾し背中は真っすぐ","おへそに向かって引く"],
+    miss:["上体が起き上がる","腕だけで引く"],breath:"引くときに吐く"},
+  "lat-pulldown":{en:"Lat Pulldown",ja:"ラットプルダウン",video:null,
+    cues:["胸を張って鎖骨へ引く","肘を体の横に落とすイメージ"],
+    miss:["体を大きく倒して反動を使う","腕だけで引く"],breath:"引くときに吐く"},
+  "seated-row":{en:"Seated Row",ja:"シーテッドロウ",video:null,
+    cues:["肩甲骨を寄せてから肘を引く","胸を張ったまま"],
+    miss:["背中が丸まる","体を前後に振る"],breath:"引くときに吐く"},
+  "rdl":{en:"Romanian Deadlift",ja:"ルーマニアンデッドリフト",video:null,
+    cues:["膝を軽く曲げたまま股関節から折る","もも裏が伸びるところで止める"],
+    miss:["膝を曲げてスクワットになる","背中が丸まる"],breath:"下ろすとき吸い、立てるとき吐く"},
+  "bulgarian-split":{en:"Bulgarian Split Squat",ja:"ブルガリアンスクワット",video:null,
+    cues:["後ろ足を台に乗せる","前足に体重の8割を乗せる"],
+    miss:["歩幅が狭く膝が前に出る","体が横に傾く"],breath:"下ろすとき吸い、立つとき吐く"},
+  "hip-thrust":{en:"Hip Thrust",ja:"ヒップスラスト",video:null,
+    cues:["肩甲骨の下を台に預ける","上で1秒お尻を締める"],
+    miss:["腰で反り上げる","あごが上がる"],breath:"上げるときに吐く"},
+  "leg-press":{en:"Leg Press",ja:"レッグプレス",video:null,
+    cues:["足はプレートの真ん中に肩幅","膝を伸ばし切らずに止める"],
+    miss:["腰が丸まってシートから浮く","膝をロックする"],breath:"押すときに吐く"},
+  "db-snatch":{en:"DB Snatch",ja:"ダンベルスナッチ",video:null,
+    cues:["床から一気に頭上まで","肘は最後まで柔らかく"],
+    miss:["腕の力で上げる","腰が丸まる"],breath:"引き上げで吐く"},
+  "db-clean":{en:"DB Clean",ja:"ダンベルクリーン",video:null,
+    cues:["股関節の伸展で跳ね上げる","肘を素早く前に回す"],
+    miss:["腕で引き上げる","キャッチで背中が丸まる"],breath:"跳ね上げで吐く"},
+  "db-thruster":{en:"DB Thruster",ja:"ダンベルスラスター",video:null,
+    cues:["スクワットの勢いをそのまま頭上へ","一連の動きで止めない"],
+    miss:["スクワットとプレスが分断する","腰が反る"],breath:"押し切りで吐く"},
+  "kb-swing":{en:"Kettlebell Swing",ja:"ケトルベルスイング",video:null,
+    cues:["股関節のヒンジで振る","腕は振り子、力を入れない"],
+    miss:["スクワットのようにしゃがむ","腕で持ち上げる"],breath:"振り上げで短く吐く"},
+  "farmer-carry":{en:"Farmer Carry",ja:"ファーマーズキャリー",video:null,
+    cues:["肩を下げて胸を張る","一歩ずつ静かに歩く"],
+    miss:["体が左右に傾く","肩がすくむ"],breath:"止めずに歩く"},
+  "lateral-raise":{en:"Lateral Raise",ja:"サイドレイズ",video:null,
+    cues:["肩の高さまで真横へ","肩をすくめない"],
+    miss:["反動で振り上げる","肩より高く上げる"],breath:"上げるときに吐く"},
+  "db-curl":{en:"DB Curl",ja:"ダンベルカール",video:null,
+    cues:["肘を体の横で固定","下ろすときも力を抜かない"],
+    miss:["肘が前に出る","反動で上げる"],breath:"上げるときに吐く"},
+  "pushdown":{en:"Triceps Pushdown",ja:"プッシュダウン",video:null,
+    cues:["肘を体の横で固定","伸ばし切って1秒止める"],
+    miss:["肘が前後に動く","体重をかけて押す"],breath:"押し下げで吐く"},
+
+  /* ---- 自重（自宅） ---- */
+  "push-up":{en:"Push-up",ja:"プッシュアップ",video:null,
+    cues:["肘は45度に締める","胸から下ろして胸から上げる"],
+    miss:["腰が落ちる","可動域が浅い"],breath:"下ろすとき吸い、押すとき吐く"},
+  "knee-push-up":{en:"Knee Push-up",ja:"膝つきプッシュアップ",video:null,
+    cues:["膝から頭まで一直線","手は肩幅よりやや広く"],
+    miss:["お尻が突き出る","肘が真横に開く"],breath:"下ろすとき吸い、押すとき吐く"},
+  "diamond-push-up":{en:"Diamond Push-up",ja:"ダイヤモンドプッシュアップ",video:null,
+    cues:["親指と人差し指でひし形をつくる","肘は体の横にしまう"],
+    miss:["肘が外に開く","手首が痛いまま続ける"],breath:"押すときに吐く"},
+  "pike-push-up":{en:"Pike Push-up",ja:"パイクプッシュアップ",video:null,
+    cues:["お尻を高く上げて山をつくる","頭を手の前方に下ろす"],
+    miss:["背中が丸まる","肘が外に開く"],breath:"押すときに吐く"},
+  "split-squat":{en:"Split Squat",ja:"スプリットスクワット",video:null,
+    cues:["前の膝はつま先の真上まで","上体は真っすぐ真下に落とす"],
+    miss:["膝がつま先より前に出る","上体が前に倒れる"],breath:"下ろすとき吸い、戻すとき吐く"},
+  "glute-bridge":{en:"Glute Bridge",ja:"ヒップリフト",video:null,
+    cues:["かかとで床を押す","一番上でお尻を1秒締める"],
+    miss:["腰で反り上げる","膝が開く"],breath:"上げるときに吐く"},
+  "single-leg-bridge":{en:"Single Leg Bridge",ja:"シングルレッグヒップリフト",video:null,
+    cues:["片脚を伸ばし骨盤を水平に保つ","支え脚のかかとで押す"],
+    miss:["骨盤が左右に傾く","腰で上げる"],breath:"上げるときに吐く"},
+  "wall-sit":{en:"Wall Sit",ja:"ウォールシット",video:null,
+    cues:["背中を壁につけて膝90度","太ももの前が焼ける感覚をキープ"],
+    miss:["膝がつま先より前に出る","腰が壁から離れる"],breath:"止めずに細く吐く"},
+  "reverse-lunge":{en:"Reverse Lunge",ja:"リバースランジ",video:null,
+    cues:["後ろに大きく引いて真下に落ちる","前足で床を押して戻る"],
+    miss:["歩幅が狭い","上体が前に倒れる"],breath:"戻すときに吐く"},
+  "superman":{en:"Superman",ja:"スーパーマン",video:null,
+    cues:["対角の手足を伸ばして持ち上げる","首は長く、目線は床"],
+    miss:["首を反らして上を見る","反動で上げる"],breath:"上げるときに吐く"},
+  "reverse-plank":{en:"Reverse Plank",ja:"リバースプランク",video:null,
+    cues:["手は肩の真下、胸を開く","お尻を高く持ち上げて一直線"],
+    miss:["お尻が落ちる","肩がすくむ"],breath:"細く長く吐き続ける"},
+  "side-plank":{en:"Side Plank",ja:"サイドプランク",video:null,
+    cues:["肘は肩の真下","腰を高く押し上げて一直線"],
+    miss:["腰が落ちる","体が前後に傾く"],breath:"細く長く吐き続ける"},
+  "hollow-hold":{en:"Hollow Hold",ja:"ホロウホールド",video:null,
+    cues:["腰を床に押しつけたまま","肩と脚を同時に浮かせる"],
+    miss:["腰が浮いて反る","首に力が入る"],breath:"止めずに浅く続ける"},
+  "dead-bug":{en:"Dead Bug",ja:"デッドバグ",video:null,
+    cues:["腰と床のすき間をゼロに保つ","対角の手足をゆっくり伸ばす"],
+    miss:["腰が浮く","動きが速い"],breath:"伸ばすときに吐く"},
+  "leg-raise":{en:"Leg Raise",ja:"レッグレイズ",video:null,
+    cues:["腰を床に押しつけたまま下ろす","下ろすときこそゆっくり"],
+    miss:["腰が浮いて反る","下ろす動作が速い"],breath:"下ろすとき吸い、上げるとき吐く"},
+  "bicycle-crunch":{en:"Bicycle Crunch",ja:"バイシクルクランチ",video:null,
+    cues:["肩と骨盤を近づける","伸ばす脚は床すれすれ"],
+    miss:["首に力が入る","速く回して効いていない"],breath:"ひねるたびに短く吐く"},
+  "russian-twist":{en:"Russian Twist",ja:"ロシアンツイスト",video:null,
+    cues:["胸を張ったままみぞおちから回す","目線も手と一緒に"],
+    miss:["背中が丸まる","腕だけ振る"],breath:"ひねりきったところで吐く"},
+  "chair-dip":{en:"Chair Dip",ja:"チェアディップス",video:null,
+    cues:["椅子の縁を掴みお尻を前へ","肘は後ろにまっすぐ曲げる"],
+    miss:["肩がすくむ","お尻が離れすぎる"],breath:"押すときに吐く"},
+  "band-pull-apart":{en:"Band Pull Apart",ja:"バンドプルアパート",video:null,
+    cues:["肩甲骨を寄せて横に引く","肘は軽く伸ばしたまま"],
+    miss:["肩がすくむ","腰が反る"],breath:"引くときに吐く"},
+  "calf-raise":{en:"Calf Raise",ja:"カーフレイズ",video:null,
+    cues:["かかとを限界まで上げて1秒止める","下ろすときはゆっくり"],
+    miss:["反動で弾む","可動域が浅い"],breath:"上げるときに吐く"},
+
+  /* ---- クールダウン ---- */
+  "child-pose":{en:"Child's Pose",ja:"チャイルドポーズ",video:null,
+    cues:["お尻をかかとに近づけ背中を伸ばす","手は遠くへ"],
+    miss:["肩に力が入る","呼吸が浅い"],breath:"鼻から吸って口から長く吐く"},
+  "hamstring-stretch":{en:"Hamstring Stretch",ja:"ハムストリングストレッチ",video:null,
+    cues:["背中を丸めず股関節から折る","痛気持ちいいところで止める"],
+    miss:["反動をつける","頭だけ近づける"],breath:"吐きながら少しずつ深める"},
+  "quad-stretch":{en:"Quad Stretch",ja:"太もも前のストレッチ",video:null,
+    cues:["かかとをお尻に引き寄せる","膝は体の真横〜やや後ろ"],
+    miss:["腰が反る","膝が外に開く"],breath:"ゆっくり深く"},
+  "chest-stretch":{en:"Chest Stretch",ja:"胸のストレッチ",video:null,
+    cues:["両手を背中で組んで胸を開く","肩は下げたまま"],
+    miss:["腰が反る","肩がすくむ"],breath:"開くときに吐く"},
+  "pigeon":{en:"Pigeon Pose",ja:"ピジョンポーズ",video:null,
+    cues:["前脚のすねを体と平行に","上体を前に倒して脱力"],
+    miss:["骨盤が横に逃げる","力んで呼吸が止まる"],breath:"長く吐き続ける"},
+};
+/* =========================================================================
+   デイリープログラム
+   PART 1 WARM UP → PART 2 STRENGTH → PART 3 FUNCTIONAL → PART 4 COOL DOWN
+   e / n / h はそれぞれ Easy / Normal / Hard の処方
+   ========================================================================= */
+const I = (x,e,n,h,star) => ({x,e,n,h,star:!!star});
+
+const DAYS = {
+gym:[
+ {t:"Deadlift Day",f:"DEADLIFT",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("star-jump","30 sec","40 sec","50 sec"),
+    I("plank-hold","20 sec","20 sec","40 sec"),
+    I("v-up","15 sec","20 sec","30 sec")]},
+  {k:"STRENGTH",n:"DEADLIFT",items:[
+    I("deadlift-wu","10 → 8 (light)","10 → 6 → 4 (light)","10 → 6 → 4 → 2"),
+    I("deadlift","10 rep × 2 set","12 rep × 3 set","8 rep × 5 set"),
+    I("bulgarian-split","8 rep × 1 set","8 rep × 2 set","10 rep × 3 set",1)]},
+  {k:"FUNCTIONAL",r:5,items:[
+    I("double-unders","50 single unders","100 single unders","50 double unders"),
+    I("db-snatch","8 rep","12 rep","16 rep"),
+    I("v-up","8 rep","12 rep","20 rep")]},
+  {k:"COOL DOWN",items:[
+    I("hamstring-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Squat Day",f:"BACK SQUAT",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("air-squat","10 rep","15 rep","20 rep"),
+    I("world-greatest","4 rep","6 rep","8 rep"),
+    I("hip-circle","30 sec","30 sec","40 sec")]},
+  {k:"STRENGTH",n:"BACK SQUAT",items:[
+    I("air-squat","15 rep（フォーム確認）","20 rep（フォーム確認）","20 rep（フォーム確認）"),
+    I("back-squat","10 rep × 3 set","8 rep × 4 set","5 rep × 5 set"),
+    I("leg-press","12 rep × 2 set","12 rep × 3 set","15 rep × 4 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("kb-swing","12 rep","15 rep","20 rep"),
+    I("reverse-lunge","12 rep","20 rep","24 rep"),
+    I("mountain-climber","30 sec","40 sec","50 sec")]},
+  {k:"COOL DOWN",items:[
+    I("quad-stretch","40 sec","40 sec","40 sec"),
+    I("pigeon","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Press Day",f:"BENCH PRESS",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("arm-circle","30 sec","30 sec","40 sec"),
+    I("band-pull-apart","12 rep","15 rep","20 rep"),
+    I("push-up","6 rep","10 rep","15 rep")]},
+  {k:"STRENGTH",n:"BENCH PRESS",items:[
+    I("bench-press","10 rep × 3 set","8 rep × 4 set","5 rep × 5 set"),
+    I("overhead-press","10 rep × 2 set","10 rep × 3 set","8 rep × 4 set"),
+    I("lateral-raise","12 rep × 2 set","15 rep × 3 set","15 rep × 4 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("db-thruster","8 rep","12 rep","15 rep"),
+    I("diamond-push-up","6 rep","10 rep","15 rep"),
+    I("plank-hold","30 sec","40 sec","60 sec")]},
+  {k:"COOL DOWN",items:[
+    I("chest-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Pull Day",f:"PULL-UP",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("row-machine","45 sec","60 sec","75 sec"),
+    I("band-pull-apart","12 rep","15 rep","20 rep"),
+    I("cat-cow","40 sec","40 sec","40 sec")]},
+  {k:"STRENGTH",n:"PULL-UP",items:[
+    I("pull-up","3 rep × 4 set（補助あり）","6 rep × 4 set","8 rep × 5 set"),
+    I("barbell-row","10 rep × 2 set","10 rep × 3 set","8 rep × 4 set"),
+    I("lat-pulldown","12 rep × 2 set","12 rep × 3 set","15 rep × 4 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("seated-row","12 rep","15 rep","20 rep"),
+    I("db-curl","10 rep","12 rep","15 rep"),
+    I("hollow-hold","20 sec","30 sec","45 sec")]},
+  {k:"COOL DOWN",items:[
+    I("chest-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Power Day",f:"DB CLEAN",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("jump-rope","45 sec","60 sec","75 sec"),
+    I("air-squat","10 rep","15 rep","20 rep"),
+    I("world-greatest","4 rep","6 rep","8 rep")]},
+  {k:"STRENGTH",n:"DB CLEAN",items:[
+    I("db-clean","8 rep × 3 set","10 rep × 3 set","10 rep × 5 set"),
+    I("front-squat","8 rep × 2 set","8 rep × 3 set","6 rep × 4 set"),
+    I("pushdown","12 rep × 2 set","15 rep × 3 set","15 rep × 4 set",1)]},
+  {k:"FUNCTIONAL",r:5,items:[
+    I("burpee","6 rep","10 rep","15 rep"),
+    I("db-snatch","8 rep","10 rep","14 rep"),
+    I("double-unders","30 single unders","50 single unders","30 double unders")]},
+  {k:"COOL DOWN",items:[
+    I("hamstring-stretch","40 sec","40 sec","40 sec"),
+    I("quad-stretch","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Hip & Hamstring",f:"RDL",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("glute-bridge","12 rep","15 rep","20 rep"),
+    I("hip-circle","30 sec","30 sec","40 sec"),
+    I("cat-cow","40 sec","40 sec","40 sec")]},
+  {k:"STRENGTH",n:"RDL",items:[
+    I("rdl","10 rep × 3 set","10 rep × 4 set","8 rep × 5 set"),
+    I("hip-thrust","12 rep × 2 set","12 rep × 3 set","15 rep × 4 set"),
+    I("bulgarian-split","8 rep × 1 set","10 rep × 2 set","12 rep × 3 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("kb-swing","15 rep","20 rep","25 rep"),
+    I("farmer-carry","30 sec","40 sec","60 sec"),
+    I("side-plank","20 sec（左右）","30 sec（左右）","45 sec（左右）")]},
+  {k:"COOL DOWN",items:[
+    I("pigeon","40 sec","40 sec","40 sec"),
+    I("hamstring-stretch","40 sec","40 sec","40 sec")]}]}
+],
+
+home:[
+ {t:"Push Day",f:"PUSH-UP",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("arm-circle","30 sec","30 sec","40 sec"),
+    I("star-jump","30 sec","40 sec","50 sec"),
+    I("cat-cow","40 sec","40 sec","40 sec")]},
+  {k:"STRENGTH",n:"PUSH-UP",items:[
+    I("knee-push-up","10 rep × 3 set","12 rep × 2 set","—"),
+    I("push-up","6 rep × 3 set","10 rep × 4 set","15 rep × 5 set"),
+    I("pike-push-up","5 rep × 2 set","8 rep × 3 set","12 rep × 4 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("chair-dip","8 rep","12 rep","16 rep"),
+    I("plank-hold","30 sec","40 sec","60 sec"),
+    I("mountain-climber","30 sec","40 sec","50 sec")]},
+  {k:"COOL DOWN",items:[
+    I("chest-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Lower Day",f:"SPLIT SQUAT",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("air-squat","10 rep","15 rep","20 rep"),
+    I("hip-circle","30 sec","30 sec","40 sec"),
+    I("world-greatest","4 rep","6 rep","8 rep")]},
+  {k:"STRENGTH",n:"SPLIT SQUAT",items:[
+    I("split-squat","8 rep × 3 set","12 rep × 3 set","15 rep × 4 set"),
+    I("reverse-lunge","10 rep × 2 set","12 rep × 3 set","16 rep × 4 set"),
+    I("wall-sit","30 sec × 2 set","45 sec × 2 set","60 sec × 3 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("glute-bridge","15 rep","20 rep","25 rep"),
+    I("calf-raise","15 rep","20 rep","30 rep"),
+    I("high-knee","30 sec","40 sec","50 sec")]},
+  {k:"COOL DOWN",items:[
+    I("quad-stretch","40 sec","40 sec","40 sec"),
+    I("hamstring-stretch","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Core Day",f:"HOLLOW HOLD",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("cat-cow","40 sec","40 sec","40 sec"),
+    I("dead-bug","30 sec","40 sec","50 sec"),
+    I("hip-circle","30 sec","30 sec","40 sec")]},
+  {k:"STRENGTH",n:"HOLLOW HOLD",items:[
+    I("hollow-hold","20 sec × 3 set","30 sec × 4 set","45 sec × 5 set"),
+    I("leg-raise","8 rep × 3 set","12 rep × 3 set","15 rep × 4 set"),
+    I("side-plank","20 sec × 2 set（左右）","30 sec × 2 set（左右）","45 sec × 3 set（左右）",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("bicycle-crunch","30 sec","40 sec","50 sec"),
+    I("russian-twist","30 sec","40 sec","50 sec"),
+    I("v-up","8 rep","12 rep","18 rep")]},
+  {k:"COOL DOWN",items:[
+    I("child-pose","40 sec","40 sec","40 sec"),
+    I("chest-stretch","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Full Body Burner",f:"FULL BODY",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("star-jump","30 sec","40 sec","50 sec"),
+    I("air-squat","10 rep","15 rep","20 rep"),
+    I("arm-circle","30 sec","30 sec","40 sec")]},
+  {k:"STRENGTH",n:"FULL BODY",items:[
+    I("push-up","6 rep × 3 set","12 rep × 3 set","15 rep × 4 set"),
+    I("split-squat","8 rep × 3 set","12 rep × 3 set","15 rep × 4 set"),
+    I("superman","20 sec × 2 set","30 sec × 2 set","45 sec × 3 set",1)]},
+  {k:"FUNCTIONAL",r:5,items:[
+    I("burpee","5 rep","8 rep","12 rep"),
+    I("skater","30 sec","40 sec","50 sec"),
+    I("plank-hold","20 sec","30 sec","45 sec")]},
+  {k:"COOL DOWN",items:[
+    I("hamstring-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Pull & Posture",f:"POSTURE",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("band-pull-apart","12 rep","15 rep","20 rep"),
+    I("cat-cow","40 sec","40 sec","40 sec"),
+    I("arm-circle","30 sec","30 sec","40 sec")]},
+  {k:"STRENGTH",n:"POSTERIOR CHAIN",items:[
+    I("superman","20 sec × 3 set","30 sec × 4 set","45 sec × 5 set"),
+    I("reverse-plank","20 sec × 2 set","30 sec × 3 set","45 sec × 4 set"),
+    I("band-pull-apart","15 rep × 2 set","20 rep × 2 set","25 rep × 3 set",1)]},
+  {k:"FUNCTIONAL",r:4,items:[
+    I("chair-dip","8 rep","12 rep","16 rep"),
+    I("dead-bug","30 sec","40 sec","50 sec"),
+    I("single-leg-bridge","8 rep（左右）","10 rep（左右）","15 rep（左右）")]},
+  {k:"COOL DOWN",items:[
+    I("chest-stretch","40 sec","40 sec","40 sec"),
+    I("child-pose","40 sec","40 sec","40 sec")]}]},
+
+ {t:"Conditioning",f:"INTERVAL",parts:[
+  {k:"WARM UP",r:2,items:[
+    I("high-knee","30 sec","40 sec","50 sec"),
+    I("air-squat","10 rep","15 rep","20 rep"),
+    I("arm-circle","30 sec","30 sec","40 sec")]},
+  {k:"STRENGTH",n:"INTERVAL",items:[
+    I("burpee","6 rep × 3 set","10 rep × 4 set","15 rep × 5 set"),
+    I("mountain-climber","30 sec × 3 set","40 sec × 3 set","50 sec × 4 set"),
+    I("skater","30 sec × 2 set","40 sec × 2 set","50 sec × 3 set",1)]},
+  {k:"FUNCTIONAL",r:5,items:[
+    I("jump-rope","40 sec","60 sec","80 sec"),
+    I("reverse-lunge","12 rep","16 rep","20 rep"),
+    I("hollow-hold","20 sec","30 sec","45 sec")]},
+  {k:"COOL DOWN",items:[
+    I("quad-stretch","40 sec","40 sec","40 sec"),
+    I("pigeon","40 sec","40 sec","40 sec")]}]}
+]};
+
+/* 目的ごとに、ローテーションの並びを変える */
+const GOAL_ORDER = {
+  tone:   [0,2,1,3,4,5],   // 引き締めたい
+  lose:   [5,3,1,0,2,4],   // 痩せたい
+  build:  [0,1,2,3,5,4],   // 筋肉をつけたい
+  stamina:[5,1,3,0,4,2],   // 体力をつけたい
+};
+const GOAL_LABEL = {tone:"引き締めたい",lose:"痩せたい",build:"筋肉をつけたい",stamina:"体力をつけたい"};
+const LEVELS = [
+  {id:"easy",  name:"Easy",  sub:"はじめて / 運動はひさしぶり"},
+  {id:"normal",name:"Normal",sub:"まずは無理なく / 週1〜2は動く"},
+  {id:"hard",  name:"Hard",  sub:"しっかり追い込みたい / 運動に慣れている"},
+];
+const LEVEL_SHORT = {easy:"無理なく始める",normal:"標準ペース",hard:"しっかり追い込む"};
+
+/* =========================================================================
+   状態
+   ========================================================================= */
+const KEY = "naru-tore-v3";
+let S = {profile:null, logs:[], checks:{}, level:null};
+const app = document.getElementById("app");
+const backdrop = document.getElementById("backdrop");
+
+function load(){
+  try{ const r=localStorage.getItem(KEY); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
+}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+
+const todayKey = () => {
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
+const dkey = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+
+function level(){ return S.level || (S.profile && S.profile.level) || "normal"; }
+function place(){ return (S.profile && S.profile.place) || "home"; }
+function goal(){ return (S.profile && S.profile.goal) || "tone"; }
+function weekTarget(){ return (S.profile && S.profile.days) || 3; }
+
+/* 何日目のメニューか。完了した回数で進む */
+function dayNumber(){ return S.logs.length + 1; }
+function todayProgram(){
+  const order = GOAL_ORDER[goal()] || GOAL_ORDER.tone;
+  const list = DAYS[place()];
+  return list[ order[(dayNumber()-1) % order.length] % list.length ];
+}
+function programAt(n){
+  const order = GOAL_ORDER[goal()] || GOAL_ORDER.tone;
+  const list = DAYS[place()];
+  return list[ order[(n-1) % order.length] % list.length ];
+}
+function doseOf(item){ return item[level()==="easy"?"e":level()==="hard"?"h":"n"]; }
+
+function streak(){
+  const set = new Set(S.logs.map(l=>l.date));
+  if(!set.size) return 0;
+  let n=0; const c=new Date();
+  if(!set.has(dkey(c))){ c.setDate(c.getDate()-1); if(!set.has(dkey(c))) return 0; }
+  while(set.has(dkey(c))){ n++; c.setDate(c.getDate()-1); }
+  return n;
+}
+function thisWeekCount(){
+  const now=new Date(); const start=new Date(now); start.setDate(now.getDate()-now.getDay());
+  return S.logs.filter(l=> new Date(l.date+"T00:00:00") >= new Date(dkey(start)+"T00:00:00")).length;
+}
+
+/* =========================================================================
+   画面遷移
+   ========================================================================= */
+let current="lp";
+function go(name){ current=name; render(); window.scrollTo(0,0); const s=app.querySelector(".scroll"); if(s) s.scrollTop=0; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function render(){
+  if(current==="lp") app.innerHTML = viewLP();
+  else if(current==="ob") app.innerHTML = viewOB();
+  else if(current==="home") app.innerHTML = viewHome();
+  else if(current==="train") app.innerHTML = viewTrain();
+  else if(current==="run") app.innerHTML = viewRun();
+  else if(current==="timer") app.innerHTML = viewTimer();
+  else if(current==="log") app.innerHTML = viewLog();
+  else if(current==="settings") app.innerHTML = viewSettings();
+  bind();
+}
+
+function nav(active){
+  return `<div class="nav">
+    ${[["home","HOME","ホーム"],["train","TRAIN","今日"],["log","LOG","記録"]].map(([id,en,ja])=>
+      `<button data-go="${id}" class="${active===id?"on":""}">
+        <span class="en">${en}</span><span class="ja">${ja}</span></button>`).join("")}
+  </div>`;
+}
+function topbar(){
+  return `<div class="topbar">
+    <div class="logo">NARU</div>
+    <div class="pill">🔥 <span class="tnum">${streak()}</span> STREAK</div>
+  </div>`;
+}
+
+/* =========================================================================
+   LP
+   ========================================================================= */
+function viewLP(){
+  return `<div class="screen on">
+    <div class="lp">
+      <div class="eyebrow">NARU &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
+      <h1 class="hero-t">今日の一歩を、<br>ここから。</h1>
+      <p class="sub" style="margin-top:14px">Welcome to my page 🌿</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+        <div class="avatar"></div>
+        <div>
+          <b style="font-size:14.5px">Coaching by NARU</b>
+          <span style="display:block;font-size:12px;color:var(--ink-mute);margin-top:2px">Lifestyle Fitness Coach</span>
+        </div>
+      </div>
+      <div class="about">
+        <div class="eyebrow" style="margin-bottom:14px">ABOUT PERSONAL TRAINING</div>
+        <ul style="margin:0;padding:0">
+          ${[["Perfecting your training form","正しいトレーニングフォームを習いたい人"],
+             ["Optimizing athletic performance","効率良く運動のパフォーマンスをあげたい人"],
+             ["Hypertrophy &amp; Muscle Building","筋肥大を目指したい人"]].map(([a,b])=>
+            `<li><span class="ck">✓</span><span><b>${a}</b><span>${b}</span></span></li>`).join("")}
+        </ul>
+      </div>
+    </div>
+    <div class="pad" style="padding-bottom:calc(26px + var(--safe))">
+      <button class="btn btn-olive" data-start>Start</button>
+      <p style="text-align:center;font-size:12px;color:var(--ink-mute);margin:12px 0 0">
+        ${S.profile? `<button data-go="home" style="text-decoration:underline">前回の続きから</button>`
+                   : `アカウントをお持ちの方は <span style="text-decoration:underline">ログイン</span>`}
+      </p>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   診断（4ステップ）
+   ========================================================================= */
+let ob = {step:0, goal:null, level:null, place:null, days:3};
+const OB_STEPS = [
+  {t:"目的を教えて", s:"あなたに合わせてメニューを組みます", k:"goal",
+   opts:[["tone","引き締めたい","見た目をしゅっと"],["lose","痩せたい","脂肪を落とす"],
+         ["build","筋肉をつけたい","しっかり増やす"],["stamina","体力をつけたい","動ける体に"]]},
+  {t:"今の調子は？", s:"強度の入口を決めます（あとで変えられます）", k:"level",
+   opts:LEVELS.map(l=>[l.id,l.name,l.sub])},
+  {t:"どこでやる？", s:"器具の前提に使います", k:"place",
+   opts:[["gym","ジム","ダンベル・バーベルあり"],["home","自宅","ダンベル・自重メイン"]]},
+  {t:"週に何日やる？", s:"続けられるペースで大丈夫です", k:"days",
+   opts:[[2,"週2日","まずは習慣づけから"],[3,"週3日","いちばん続けやすいペース"],
+         [4,"週4日","しっかり変えたい人向け"],[5,"週5日","本気で仕上げる"]]},
+];
+
+function viewOB(){
+  const st = OB_STEPS[ob.step];
+  const val = ob[st.k];
+  const last = ob.step===OB_STEPS.length-1;
+  return `<div class="screen on">
+    <div class="scroll" style="padding-bottom:20px">
+      <div class="pad" style="padding-top:22px">
+        <div class="eyebrow">STEP ${ob.step+1} / ${OB_STEPS.length}</div>
+        <h1 class="h1">${st.t}</h1>
+        <p class="sub" style="margin-bottom:18px">${st.s}</p>
+        ${st.opts.map(([v,a,b])=>
+          `<button class="opt ${val===v?"on":""}" data-ob="${v}"><b>${a}</b><span>${b}</span></button>`).join("")}
+        <div class="step-dots">${OB_STEPS.map((_,i)=>`<i class="${i===ob.step?"on":""}"></i>`).join("")}</div>
+        <button class="btn btn-olive" data-ob-next ${val==null?"disabled":""}>${last?"はじめる":"次へ"}</button>
+        ${ob.step>0?`<button class="btn btn-ghost" style="margin-top:9px" data-ob-back>もどる</button>`:""}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   ホーム
+   ========================================================================= */
+function viewHome(){
+  const p = todayProgram(), n = dayNumber(), lv = level();
+  const doneToday = S.logs.some(l=>l.date===todayKey());
+  const wk = thisWeekCount(), tgt = weekTarget();
+  const now = new Date(); const wd=["日","月","火","水","木","金","土"];
+  const strip = Array.from({length:7},(_,i)=>{
+    const d=new Date(now); d.setDate(now.getDate()-now.getDay()+i);
+    const k=dkey(d);
+    return {ja:wd[i], done:S.logs.some(l=>l.date===k), today:k===todayKey()};
+  });
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <h1 style="margin:2px 0 12px;font-size:30px;font-weight:800;letter-spacing:-.02em">Hello</h1>
+
+        <div class="hero">
+          <div class="orb"></div>
+          <div class="day">DAY ${n}</div>
+          <h2>${esc(p.t)}</h2>
+          <div class="by">Coaching by <b>NARU</b></div>
+          <button class="btn btn-orange" style="margin-top:14px" data-go="train">
+            🔥 Today's Training &nbsp;→</button>
+        </div>
+
+        <div class="seg">
+          ${LEVELS.map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">
+            <b>${l.name}</b><span>${LEVEL_SHORT[l.id]}</span></button>`).join("")}
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="v tnum">${streak()}</div><div class="k">STREAK 🔥</div></div>
+          <div class="stat"><div class="v tnum">${wk}<small>/${tgt}</small></div><div class="k">THIS WEEK</div></div>
+          <div class="stat"><div class="v tnum">${S.logs.length}</div><div class="k">TOTAL</div></div>
+        </div>
+
+        <div class="weekstrip">
+          ${strip.map(d=>`<div class="${d.done?"done":""} ${d.today?"today":""}">${d.ja}<i>${d.done?"✓":"·"}</i></div>`).join("")}
+        </div>
+
+        ${videoBlock(null)}
+
+        <div class="note">
+          <div class="k">FROM NARU</div>
+          <p>${esc(coachNote(p, lv, doneToday))}</p>
+        </div>
+
+        <div style="margin-top:11px">
+          <button class="btn btn-ghost" data-go="settings">メニューの設定を変える</button>
+        </div>
+
+        <p class="sub" style="text-align:center;margin-top:14px">
+          次の予定：DAY ${n+1} ${esc(programAt(n+1).t)}
+        </p>
+      </div>
+    </div>
+    ${nav("home")}
+  </div>`;
+}
+
+function coachNote(p, lv, doneToday){
+  if(doneToday) return "今日はもう終えてるね。おつかれさま。回復も練習のうち、しっかり食べて寝よう。";
+  const base = {
+    easy:"フォーム第一。回数より“効かせる”意識でいこう。",
+    normal:"フォーム第一。回数より“効かせる”意識でいこう。",
+    hard:"追い込む日こそフォームが命。最後の1repまで丁寧に。",
+  }[lv];
+  const add = {
+    "DEADLIFT":"引く前に一度お腹に空気を入れて、背中を固めてから。",
+    "BACK SQUAT":"しゃがむ深さより、膝とつま先の向きを揃えることを優先。",
+    "BENCH PRESS":"肩甲骨を寄せて下げる。ここが決まると重さが変わる。",
+    "PULL-UP":"肩を下げてから引く。届かない日は補助を使ってOK。",
+    "PUSH-UP":"胸から下ろして胸から上げる。腰が落ちたらそこで終了。",
+  }[p.f] || "きつくなったら回数を減らしていい。止めないことがいちばん強い。";
+  return base + " " + add;
+}
+
+/* 動画枠。exId を渡すとその種目の動画、null ならホームのワンポイント動画 */
+function videoBlock(exId){
+  const v = exId ? (EX[exId] && EX[exId].video) : null;
+  const title = exId ? `${EX[exId].en} のフォーム` : "NARU のワンポイント動画";
+  const sub = exId ? "NARU の実演でフォームを確認できます" : "NARU の実演動画がここに入ります（約15秒）";
+  return `<div class="video">
+    <div class="frame">
+      ${v ? `<video src="${v.src}" ${v.poster?`poster="${v.poster}"`:""} controls playsinline></video>`
+          : `<div class="play"></div><div class="tag">準備中</div>`}
+    </div>
+    <div class="cap"><b>${esc(title)}</b><p>${esc(sub)}</p></div>
+  </div>`;
+}
+
+/* =========================================================================
+   TRAIN（メニュー表示）
+   ========================================================================= */
+function viewTrain(){
+  const p = todayProgram(), lv = level(), n = dayNumber();
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <div class="trainwrap">
+          <div style="position:absolute;right:-34px;top:-46px;width:150px;height:150px;
+               border-radius:999px;background:rgba(115,125,88,.3)"></div>
+          <div style="position:relative">
+            <div class="day" style="font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)">DAY ${n}</div>
+            <h2 style="margin:5px 0 0;font-size:25px;font-weight:800">${esc(p.t)}</h2>
+            <div class="by" style="display:inline-block;margin-top:10px;background:rgba(244,240,234,.13);
+                 border-radius:999px;padding:5px 12px;font-size:11.5px">Coaching by <b style="letter-spacing:.06em">NARU</b></div>
+          </div>
+
+          <div class="seg-dark">
+            ${LEVELS.map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">${l.name}</button>`).join("")}
+          </div>
+
+          ${p.parts.map((part,pi)=>`
+            <div class="partline">
+              <span class="badge">PART ${pi+1}</span>
+              <span>· ${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
+              <span class="hr"></span>
+            </div>
+            ${part.items.map(it=>{
+              const d = doseOf(it);
+              if(d==="—") return "";
+              return `<button class="exrow" data-ex="${it.x}">
+                <span class="nm">
+                  <span class="en">${it.star?"★ ":""}${esc(EX[it.x].en)}</span>
+                  <span class="ja">${esc(EX[it.x].ja)}</span>
+                </span>
+                <span class="dose">${esc(d)}</span>
+                <span class="chev">›</span>
+              </button>`;
+            }).join("")}
+          `).join("")}
+        </div>
+
+        <p class="sub" style="text-align:center;margin:14px 0 10px">種目をタップするとフォームのポイントが見られます</p>
+        <button class="btn btn-olive" data-go="run">チェックしながら進める</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">タイマーで進める</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="home">ホームに戻る</button>
+      </div>
+    </div>
+    ${nav("train")}
+  </div>`;
+}
+
+/* =========================================================================
+   実行：チェックリスト
+   ========================================================================= */
+function flatItems(p){
+  const out=[];
+  p.parts.forEach((part,pi)=>part.items.forEach((it,ii)=>{
+    const d=doseOf(it); if(d==="—") return;
+    out.push({key:pi+"-"+ii, part, pi, it, d});
+  }));
+  return out;
+}
+function viewRun(){
+  const p=todayProgram(), items=flatItems(p);
+  const done = items.filter(x=>S.checks[x.key]).length;
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <p class="sub" style="margin:0">DAY ${dayNumber()} · ${esc(p.t)} — ${level().toUpperCase()}</p>
+        <div class="progress"><i style="width:${(done/items.length*100).toFixed(1)}%"></i></div>
+        <p class="tnum" style="font-size:12px;color:var(--ink-mute);margin:7px 0 4px">${done} / ${items.length} 種目</p>
+
+        ${p.parts.map((part,pi)=>{
+          const rows = part.items.map((it,ii)=>{
+            const d=doseOf(it); if(d==="—") return "";
+            const k=pi+"-"+ii, on=!!S.checks[k];
+            return `<button class="check ${on?"on":""}" data-check="${k}">
+              <span class="box">${on?"✓":""}</span>
+              <span style="flex:1;min-width:0">
+                <span class="en">${it.star?"★ ":""}${esc(EX[it.x].en)}</span>
+                <span class="ja">${esc(EX[it.x].ja)}</span>
+                <span class="dose">${esc(d)}</span>
+              </span>
+            </button>`;
+          }).join("");
+          if(!rows.trim()) return "";
+          return `<div class="partline" style="color:var(--ink-mute)">
+              <span class="badge">PART ${pi+1}</span>
+              <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}</span>
+              <span class="hr" style="background:rgba(34,37,29,.12)"></span>
+            </div>${rows}`;
+        }).join("")}
+
+        <p class="sub" style="text-align:center;margin:16px 0 10px">できた種目をタップしてチェック</p>
+        <button class="btn btn-dark" data-complete>Complete Today</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="train">戻る</button>
+      </div>
+    </div>
+    ${nav("train")}
+  </div>`;
+}
+
+/* =========================================================================
+   実行：タイマー
+   ========================================================================= */
+function parseDose(d){
+  const sec=/(\d+)\s*sec/.exec(d), sets=/×\s*(\d+)\s*set/.exec(d), reps=/(\d+)\s*rep/.exec(d);
+  return {sec:sec?+sec[1]:null, sets:sets?+sets[1]:1, reps:reps?+reps[1]:null};
+}
+function buildFlow(p){
+  const flow=[];
+  p.parts.forEach((part,pi)=>{
+    const rounds=part.r||1;
+    for(let r=1;r<=rounds;r++){
+      part.items.forEach(it=>{
+        const d=doseOf(it); if(d==="—") return;
+        const pd=parseDose(d);
+        const sets = part.k==="STRENGTH" ? pd.sets : 1;
+        for(let s=1;s<=sets;s++){
+          flow.push({x:it.x, star:it.star, part:part.k, pi, label:d,
+            round:rounds>1?r:0, rounds, set:sets>1?s:0, sets,
+            sec:pd.sec, rest: part.k==="COOL DOWN"?5 : part.k==="WARM UP"?10 : 20});
+        }
+      });
+    }
+  });
+  return flow;
+}
+let T={flow:[],i:0,phase:"count",left:3,paused:false,elapsed:0,tick:null};
+
+function startTimer(){
+  T.flow=buildFlow(todayProgram()); T.i=0; T.phase="count"; T.left=3; T.paused=false; T.elapsed=0;
+  clearInterval(T.tick);
+  T.tick=setInterval(()=>{
+    if(T.paused) return;
+    T.elapsed++;
+    if(T.phase==="count"){ T.left--; if(T.left<=0){ enterItem(0); } else updateNum(); return; }
+    if(T.phase==="rest"){ T.left--; if(T.left<=0){ enterItem(T.i+1); } else updateNum(); return; }
+    if(T.phase==="work"){
+      const f=T.flow[T.i];
+      if(f && f.sec){ T.left--; if(T.left<=0){ afterItem(); } else updateNum(); }
+      else updateNum();
+    }
+  },1000);
+}
+function stopTimer(){ clearInterval(T.tick); T.tick=null; }
+function enterItem(i){
+  if(i>=T.flow.length){ stopTimer(); completeToday(); return; }
+  T.i=i; T.phase="work"; const f=T.flow[i];
+  T.left = f.sec || 0;
+  render();
+}
+function afterItem(){
+  const f=T.flow[T.i];
+  if(T.i>=T.flow.length-1){ stopTimer(); completeToday(); return; }
+  if(f.rest>0){ T.phase="rest"; T.left=f.rest; render(); } else enterItem(T.i+1);
+}
+function updateNum(){
+  const n=document.getElementById("t-num"); if(n) n.textContent = fmt(T.left>0?T.left:0);
+  const b=document.getElementById("t-bar"); if(b) b.style.width=((T.i+1)/T.flow.length*100)+"%";
+  const e=document.getElementById("t-el"); if(e) e.textContent = fmtClock(T.elapsed);
+}
+const fmt = s => String(s);
+const fmtClock = s => String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+
+function viewTimer(){
+  if(!T.tick) startTimer();
+  const f=T.flow[T.i]||T.flow[0];
+  const ex=EX[f.x];
+  if(T.phase==="count"){
+    return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
+      <div class="timer">
+        <div class="lbl" style="color:var(--tan)">まもなくスタート</div>
+        <div class="num" id="t-num" style="font-size:88px">${T.left}</div>
+        <p style="margin-top:14px;font-size:14px;opacity:.8">最初の種目：${esc(EX[T.flow[0].x].en)}</p>
+        <button class="btn btn-tan" style="max-width:200px;margin-top:22px" data-skip-count>すぐ始める</button>
+      </div>
+      <div class="tctl"><button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
+        data-quit>やめる</button></div>
+    </div>`;
+  }
+  if(T.phase==="rest"){
+    const nx=T.flow[T.i+1];
+    return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
+      <div class="timer">
+        <div class="lbl" style="color:var(--tan)">REST</div>
+        <div class="num" id="t-num">${T.left}</div>
+        ${nx?`<p style="margin-top:18px;font-size:13px;opacity:.7">次の種目</p>
+        <p style="font-size:17px;font-weight:800;margin:4px 0 0">${esc(EX[nx.x].en)}</p>
+        <p style="font-size:12.5px;opacity:.7;margin:2px 0 0">${esc(EX[nx.x].ja)} · ${esc(nx.label)}</p>`:""}
+        <div style="display:flex;gap:9px;width:100%;margin-top:22px">
+          <button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
+            data-rest-add>+20秒</button>
+          <button class="btn btn-tan" data-rest-skip>スキップ</button>
+        </div>
+      </div>
+      <div class="tctl"><button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
+        data-quit>やめる</button></div>
+    </div>`;
+  }
+  const meta = [ f.round?`ROUND ${f.round}/${f.rounds}`:"", f.set?`SET ${f.set}/${f.sets}`:"" ].filter(Boolean).join(" · ");
+  return `<div class="screen on">
+    <div class="pad" style="padding-top:16px">
+      <div class="progress" style="margin-top:0"><i id="t-bar" style="width:${((T.i+1)/T.flow.length*100)}%"></i></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">
+        <button style="font-size:13px;color:var(--ink-mute)" data-quit>✕ やめる</button>
+        <span class="tnum" style="font-size:12.5px;font-weight:700">${T.i+1} / ${T.flow.length}</span>
+        <span class="tnum" style="font-size:12.5px;color:var(--ink-mute)" id="t-el">${fmtClock(T.elapsed)}</span>
+      </div>
+    </div>
+    <div class="timer">
+      <div class="lbl">PART ${f.pi+1} · ${f.part}${meta?" · "+meta:""}</div>
+      <h2>${f.star?"★ ":""}${esc(ex.en)}</h2>
+      <div class="ja2">${esc(ex.ja)}</div>
+      <div class="num" id="t-num">${f.sec? f.left||T.left : esc(f.label)}</div>
+      ${f.sec?`<p class="sub" style="margin-top:6px">${esc(f.label)}</p>`
+             :`<p class="sub" style="margin-top:6px">できたら「次へ」をタップ</p>`}
+      <ul class="cues">${ex.cues.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
+    </div>
+    <div class="tctl">
+      <button class="rnd" data-t-prev>‹</button>
+      <button class="btn ${f.sec?"btn-ghost":"btn-olive"} main" data-t-toggle>${f.sec?(T.paused?"再開":"一時停止"):"次へ ✓"}</button>
+      <button class="rnd" data-t-next>›</button>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   LOG
+   ========================================================================= */
+function viewLog(){
+  const set=new Set(S.logs.map(l=>l.date));
+  const cells=[]; const now=new Date();
+  for(let i=27;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); cells.push(d); }
+  const recent=[...S.logs].reverse().slice(0,8);
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <div class="stats" style="margin-top:2px">
+          <div class="stat"><div class="v tnum">${streak()}</div><div class="k">STREAK 🔥</div></div>
+          <div class="stat"><div class="v tnum">${thisWeekCount()}<small>/${weekTarget()}</small></div><div class="k">THIS WEEK</div></div>
+          <div class="stat"><div class="v tnum">${S.logs.length}</div><div class="k">TOTAL</div></div>
+        </div>
+
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:11px">LAST 4 WEEKS</div>
+          <div class="cal">
+            ${cells.map(d=>{
+              const k=dkey(d);
+              return `<div class="${set.has(k)?"done":""} ${k===todayKey()?"today":""}">${d.getDate()}</div>`;
+            }).join("")}
+          </div>
+        </div>
+
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:11px">RECENT SESSIONS</div>
+          ${recent.length? recent.map(l=>`
+            <div class="sess">
+              <div><b>${l.date.slice(5).replace("-","/")}</b>
+                <span>${esc(l.title||"Session")} · ${(l.level||"normal").toUpperCase()}</span></div>
+              <div style="color:var(--olive);font-weight:800">✓</div>
+            </div>`).join("")
+          : `<p class="sub" style="margin:0">まだ記録がありません。最初の1回を終えるとここに並びます。</p>`}
+        </div>
+
+        <button class="btn btn-ghost" style="margin-top:11px" data-go="home">トップ画面を見る</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="settings">メニューの設定を変える</button>
+      </div>
+    </div>
+    ${nav("log")}
+  </div>`;
+}
+
+/* =========================================================================
+   設定（記録を消さずに変更できる）
+   ========================================================================= */
+function viewSettings(){
+  const pf=S.profile||{};
+  const row=(title,opts,keyName,cur)=>`
+    <div class="card" style="padding:15px;margin-top:11px">
+      <div class="eyebrow" style="margin-bottom:10px">${title}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${opts.map(([v,label])=>`<button data-set="${keyName}" data-val="${v}"
+          style="border-radius:999px;padding:9px 15px;font-size:13px;font-weight:700;
+          background:${cur==v?"var(--olive)":"var(--surface-alt)"};color:${cur==v?"#fff":"var(--ink)"}">${label}</button>`).join("")}
+      </div>
+    </div>`;
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <h1 class="h1" style="margin-top:2px">設定</h1>
+        <p class="sub" style="margin-bottom:4px">変更してもこれまでの記録は残ります</p>
+        ${row("GOAL 目的",[["tone","引き締めたい"],["lose","痩せたい"],["build","筋肉をつけたい"],["stamina","体力をつけたい"]],"goal",pf.goal)}
+        ${row("LEVEL 強度",LEVELS.map(l=>[l.id,l.name]),"level",level())}
+        ${row("PLACE 場所",[["gym","ジム"],["home","自宅"]],"place",pf.place)}
+        ${row("FREQUENCY 週の回数",[[2,"週2日"],[3,"週3日"],[4,"週4日"],[5,"週5日"]],"days",pf.days)}
+
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:8px">NARU の実演動画</div>
+          <p class="sub" style="margin:0">
+            現在 ${Object.values(EX).filter(e=>e.video).length} / ${Object.keys(EX).length} 種目に動画が入っています。
+            撮影ができ次第、HTML内の <code>EX</code> の <code>video</code> を差し替えると
+            ホーム・種目詳細・タイマー画面に自動で表示されます。
+          </p>
+        </div>
+
+        <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
+        <button class="btn btn-ghost" style="margin-top:9px;color:#a4442c" data-reset>診断をやり直す（データ消去）</button>
+      </div>
+    </div>
+    ${nav("home")}
+  </div>`;
+}
+
+/* =========================================================================
+   種目詳細シート
+   ========================================================================= */
+function openExercise(id){
+  const e=EX[id]; if(!e) return;
+  backdrop.className="backdrop on";
+  backdrop.innerHTML=`<div class="sheet">
+    <div class="grab"></div>
+    <div class="eyebrow">EXERCISE</div>
+    <h2 style="margin:5px 0 0;font-size:22px;font-weight:800">${esc(e.en)}</h2>
+    <p class="sub" style="margin-top:3px">${esc(e.ja)}</p>
+    ${videoBlock(id)}
+    <div class="detail-sec"><h4>フォームのポイント</h4>
+      <ul>${e.cues.map(c=>`<li class="dot-o">${esc(c)}</li>`).join("")}</ul></div>
+    <div class="detail-sec"><h4>よくあるミス</h4>
+      <ul>${e.miss.map(c=>`<li class="dot-r">${esc(c)}</li>`).join("")}</ul></div>
+    <div class="detail-sec"><h4>呼吸</h4>
+      <p style="margin:0;font-size:13.5px;line-height:1.75">${esc(e.breath)}</p></div>
+    <button class="btn btn-ghost" style="margin-top:20px" data-close>閉じる</button>
+  </div>`;
+}
+function closeSheet(){ backdrop.className="backdrop"; backdrop.innerHTML=""; }
+
+/* =========================================================================
+   完了
+   ========================================================================= */
+function completeToday(){
+  const p=todayProgram();
+  S.logs.push({date:todayKey(), title:p.t, level:level(), place:place()});
+  S.checks={}; save();
+  const st=streak();
+  backdrop.className="backdrop center on";
+  backdrop.innerHTML=`<div class="modal">
+    <div style="font-size:38px">🎉</div>
+    <h2 style="margin:8px 0 0;font-size:21px;font-weight:800">Training Complete!</h2>
+    <p class="sub" style="margin-top:5px">Keep it going ― 積み上がってるよ。</p>
+    <p style="margin:16px 0 0;font-size:23px;font-weight:800;color:var(--tan)">
+      <span class="tnum">${st}</span> DAY STREAK 🔥</p>
+    <div style="margin-top:20px;text-align:left">
+      <div class="eyebrow" style="margin-bottom:9px">今日の強度はどうだった？</div>
+      ${[["down","楽だった","次は少し上げよう"],["keep","ちょうどよかった","この強度でいこう"],["up","きつかった","次は少し落とそう"]]
+        .map(([k,a,b])=>`<button data-rpe="${k}" style="display:block;width:100%;text-align:left;background:var(--surface);
+          border-radius:12px;padding:12px 14px;margin-bottom:8px">
+          <b style="font-size:14px">${a}</b>
+          <span style="display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px">${b}</span></button>`).join("")}
+    </div>
+    <button class="btn btn-tan" style="margin-top:10px" data-view-progress>View Progress</button>
+  </div>`;
+}
+function applyRpe(k){
+  const order=["easy","normal","hard"]; let i=order.indexOf(level());
+  if(k==="down") i=Math.min(2,i+1);        // 楽だった → 強度を上げる
+  if(k==="up")   i=Math.max(0,i-1);        // きつかった → 強度を下げる
+  S.level=order[i]; if(S.profile) S.profile.level=order[i];
+  save();
+  const el=backdrop.querySelector("[data-rpe='"+k+"']");
+  if(el){ backdrop.querySelectorAll("[data-rpe]").forEach(b=>b.style.opacity=".45");
+          el.style.opacity="1"; el.style.outline="2px solid var(--olive)"; }
+}
+
+/* =========================================================================
+   イベント
+   ========================================================================= */
+function bind(){
+  const on=(sel,fn)=>app.querySelectorAll(sel).forEach(el=>el.onclick=e=>fn(el,e));
+
+  on("[data-go]",el=>{ const t=el.dataset.go;
+    if(t!=="timer") stopTimer();
+    if(t==="timer"){ stopTimer(); T.tick=null; }
+    go(t);
+  });
+  on("[data-start]",()=>{ ob={step:0,goal:null,level:null,place:null,days:3}; go("ob"); });
+
+  /* 診断 */
+  on("[data-ob]",el=>{
+    const st=OB_STEPS[ob.step]; let v=el.dataset.ob;
+    if(st.k==="days") v=+v;
+    ob[st.k]=v; render();
+  });
+  on("[data-ob-next]",()=>{
+    if(ob.step<OB_STEPS.length-1){ ob.step++; render(); return; }
+    S.profile={goal:ob.goal,level:ob.level,place:ob.place,days:ob.days};
+    S.level=ob.level; save(); go("home");
+  });
+  on("[data-ob-back]",()=>{ ob.step--; render(); });
+
+  /* 強度切り替え */
+  on("[data-level]",el=>{ S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
+
+  /* 種目詳細 */
+  on("[data-ex]",el=>openExercise(el.dataset.ex));
+
+  /* チェックリスト */
+  on("[data-check]",el=>{ const k=el.dataset.check; S.checks[k]=!S.checks[k]; save(); render(); });
+  on("[data-complete]",()=>completeToday());
+
+  /* タイマー */
+  on("[data-skip-count]",()=>enterItem(0));
+  on("[data-rest-add]",()=>{ T.left+=20; updateNum(); });
+  on("[data-rest-skip]",()=>enterItem(T.i+1));
+  on("[data-t-toggle]",()=>{ const f=T.flow[T.i];
+    if(f && f.sec){ T.paused=!T.paused; render(); } else afterItem(); });
+  on("[data-t-next]",()=>afterItem());
+  on("[data-t-prev]",()=>{ if(T.i>0) enterItem(T.i-1); else enterItem(0); });
+  on("[data-quit]",()=>{ stopTimer(); T.tick=null; go("train"); });
+
+  /* 設定 */
+  on("[data-set]",el=>{
+    const k=el.dataset.set; let v=el.dataset.val;
+    if(k==="days") v=+v;
+    if(!S.profile) S.profile={goal:"tone",level:"normal",place:"home",days:3};
+    S.profile[k]=v; if(k==="level") S.level=v;
+    save(); render();
+  });
+  on("[data-reset]",()=>{
+    if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
+      S={profile:null,logs:[],checks:{},level:null};
+      try{ localStorage.removeItem(KEY); }catch(e){}
+      go("lp");
+    }
+  });
+}
+
+backdrop.onclick=e=>{
+  const t=e.target;
+  if(t===backdrop){ closeSheet(); return; }
+  const c=t.closest("[data-close]"); if(c){ closeSheet(); return; }
+  const r=t.closest("[data-rpe]"); if(r){ applyRpe(r.dataset.rpe); return; }
+  const v=t.closest("[data-view-progress]"); if(v){ closeSheet(); stopTimer(); T.tick=null; go("log"); return; }
+};
+
+/* =========================================================================
+   起動
+   ========================================================================= */
+load();
+current = S.profile ? "home" : "lp";
+render();
+</script>
+<style>
+/* 追加スタイル（生成したマークアップ用） */
+.seg-dark{display:flex;gap:0;margin-top:16px;background:rgba(244,240,234,.09);border-radius:10px;padding:4px}
+.seg-dark button{flex:1;padding:9px 0;border-radius:7px;font-size:13px;font-weight:700;color:rgba(244,240,234,.75)}
+.seg-dark button.on{background:var(--surface);color:var(--ink)}
+.trainwrap .exrow{background:var(--surface)}
+.trainwrap .exrow .dose{color:var(--ink-soft)}
+.timer .cues{list-style:disc;padding-left:32px}
+.hero .btn-orange{height:50px}
+.about li{align-items:flex-start}
+code{background:rgba(34,37,29,.07);border-radius:4px;padding:1px 5px;font-size:11.5px}
+</style>
+</body>
+</html>
