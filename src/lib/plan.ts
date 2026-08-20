@@ -1,8 +1,9 @@
-import { AREA_TO_PARTS, EXERCISES, getExercise } from "./exercises";
+import { AREA_TO_PARTS, EXERCISES, GYM_EQUIPMENT, getExercise, isAvailableAt } from "./exercises";
 import type {
   BodyPart,
   Exercise,
   Experience,
+  Place,
   PlanItem,
   Plan,
   Profile,
@@ -12,14 +13,14 @@ import type {
 export const PLAN_WEEKS = 4;
 
 /** 難易度の許容範囲（経験 × 強度） */
-function allowedDifficulty(exp: Experience, intensity: number): (1 | 2 | 3)[] {
+export function allowedDifficulty(exp: Experience, intensity: number): (1 | 2 | 3)[] {
   if (exp === "beginner") return intensity <= 2 ? [1] : [1, 2];
   if (exp === "intermediate") return intensity <= 2 ? [1, 2] : [1, 2, 3];
   return intensity <= 2 ? [1, 2] : [2, 3];
 }
 
 /** 強度から 1 種目あたりの秒数倍率 */
-function durationScale(intensity: number): number {
+export function durationScale(intensity: number): number {
   // 1 → 0.75倍, 3 → 1.0倍, 5 → 1.3倍
   return 0.6 + intensity * 0.14;
 }
@@ -32,7 +33,7 @@ function roundsFor(goal: Profile["goal"], experience: Experience): number {
 }
 
 /** 強度から休憩秒数 */
-function restSeconds(intensity: number, exp: Experience): number {
+export function restSeconds(intensity: number, exp: Experience): number {
   const base = exp === "beginner" ? 25 : exp === "intermediate" ? 20 : 15;
   return Math.max(8, Math.round(base - (intensity - 1) * 3));
 }
@@ -79,10 +80,11 @@ export function trainingDaysOfWeek(daysPerWeek: number): number[] {
   return WEEK_PATTERN[n];
 }
 
-interface PickOptions {
+export interface PickOptions {
   focus: BodyPart;
   difficulties: (1 | 2 | 3)[];
   equipment: Set<string>;
+  place: Place;
   count: number;
   /** 直近で使った種目 ID（連続で同じ種目が出ないように） */
   recent: string[];
@@ -93,12 +95,17 @@ interface PickOptions {
 function scoreExercise(e: Exercise, o: PickOptions): number {
   let score = 0;
   if (e.parts.includes(o.focus)) score += 100;
+  // 主働筋がその部位の種目を優先する
+  // （脚の日に「有酸素だけど脚も使う」種目ばかりが並ぶのを防ぐ）
+  if (e.parts[0] === o.focus) score += 25;
   if (o.focus === "fullbody" && (e.parts.includes("cardio") || e.parts.length > 1)) score += 40;
+  // ジムではマシン・バーベル種目を自重種目より優先する
+  if (o.place === "gym" && e.place === "gym") score += 20;
   // 難易度が合わない種目は下げるが、部位が合うなら候補には残す
   if (!o.difficulties.includes(e.difficulty)) score -= 45;
   // 補助的に他部位も混ぜる
   if (e.parts.includes("abs")) score += 6;
-  if (e.parts.includes("cardio")) score += 4;
+  if (e.parts.includes("cardio")) score += 3;
   const idx = o.recent.indexOf(e.id);
   if (idx >= 0) score -= 80 - idx * 10;
   // 決定的な擬似ランダムで並びに変化をつける
@@ -116,9 +123,12 @@ export function pseudoRandom(key: string): number {
   return ((h >>> 0) % 100000) / 100000;
 }
 
-function pickExercises(o: PickOptions): Exercise[] {
+export function pickExercises(o: PickOptions): Exercise[] {
   const equipOk = EXERCISES.filter(
-    (e) => e.phase === "main" && e.equipment.every((eq) => o.equipment.has(eq)),
+    (e) =>
+      e.phase === "main" &&
+      isAvailableAt(e, o.place) &&
+      e.equipment.every((eq) => o.equipment.has(eq)),
   );
 
   const rank = (list: Exercise[]) =>
@@ -161,20 +171,44 @@ function pickExercises(o: PickOptions): Exercise[] {
   return out;
 }
 
-function pickPhase(
+export function pickPhase(
   phase: "warmup" | "cooldown",
   equipment: Set<string>,
   count: number,
   seed: number,
+  place: Place = "home",
 ): Exercise[] {
   const pool = EXERCISES.filter(
-    (e) => e.phase === phase && e.equipment.every((eq) => equipment.has(eq)),
+    (e) =>
+      e.phase === phase &&
+      isAvailableAt(e, place) &&
+      e.equipment.every((eq) => equipment.has(eq)),
   );
   return pool
     .map((e) => ({ e, s: pseudoRandom(`${e.id}:${seed}`) }))
     .sort((a, b) => b.s - a.s)
     .slice(0, count)
     .map((x) => x.e);
+}
+
+/**
+ * 指定した時間にいちばん近づくセット数を選ぶ。
+ * 単純な四捨五入だと 30分指定で 34分になることがあるので、
+ * 切り上げ／切り捨ての両方を試して誤差の小さい方を採用する。
+ */
+export function chooseRounds(
+  targetSec: number,
+  warmCoolSec: number,
+  roundSec: number,
+  min = 2,
+  max = 6,
+): number {
+  const budget = Math.max(0, targetSec - warmCoolSec);
+  const raw = budget / Math.max(1, roundSec);
+  const lo = Math.max(min, Math.min(max, Math.floor(raw)));
+  const hi = Math.max(min, Math.min(max, Math.ceil(raw)));
+  const err = (n: number) => Math.abs(warmCoolSec + n * roundSec - targetSec);
+  return err(lo) <= err(hi) ? lo : hi;
 }
 
 /** MET から消費カロリーを算出 */
@@ -214,7 +248,13 @@ function titleFor(focus: BodyPart, week: number): string {
 /** プロフィールから 4 週間のプランを生成する */
 export function generatePlan(profile: Profile): Plan {
   const weightKg = profile.weightKg ?? (profile.gender === "female" ? 55 : 68);
-  const equipment = new Set<string>(["none", ...profile.equipment]);
+  const place = profile.place ?? "home";
+  // ジムを選んだ人は常設の器具が全部使える前提にする
+  const equipment = new Set<string>(
+    place === "gym"
+      ? ["none", ...GYM_EQUIPMENT, ...profile.equipment]
+      : ["none", ...profile.equipment],
+  );
   const difficulties = allowedDifficulty(profile.experience, profile.intensity);
   const scale = durationScale(profile.intensity);
   const rest = restSeconds(profile.intensity, profile.experience);
@@ -264,12 +304,13 @@ export function generatePlan(profile: Profile): Plan {
       const baseRounds = roundsFor(profile.goal, profile.experience);
       const perRound = Math.max(3, Math.min(6, Math.round(roughTotal / baseRounds)));
 
-      const warm = pickPhase("warmup", equipment, 2, index);
-      const cool = pickPhase("cooldown", equipment, 2, index + 7);
+      const warm = pickPhase("warmup", equipment, 2, index, place);
+      const cool = pickPhase("cooldown", equipment, 2, index + 7, place);
       const main = pickExercises({
         focus,
         difficulties,
         equipment,
+        place,
         count: perRound,
         recent,
         seed: index * 31 + week,
@@ -299,10 +340,7 @@ export function generatePlan(profile: Profile): Plan {
       // 実際の秒数からセット数を逆算して、指定時間に近づける
       const warmCoolSec = dayTotalSeconds(warmCoolItems);
       const roundSec = roundTemplate.reduce((s, x) => s + x.seconds + rest, 0);
-      const rounds = Math.max(
-        2,
-        Math.min(6, Math.round((targetSec - warmCoolSec) / Math.max(1, roundSec))),
-      );
+      const rounds = chooseRounds(targetSec, warmCoolSec, roundSec);
 
       main.forEach((e) => {
         recent.unshift(e.id);

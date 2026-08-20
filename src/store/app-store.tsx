@@ -11,7 +11,7 @@ import {
 } from "react";
 import { generatePlan } from "@/lib/plan";
 import { calcStreak, todayKey } from "@/lib/format";
-import type { AppState, Plan, Profile, WorkoutLog } from "@/lib/types";
+import type { AppState, CardioLog, Plan, Profile, WorkoutLog } from "@/lib/types";
 
 const STORAGE_KEY = "naru-tore:v2";
 
@@ -20,6 +20,10 @@ const INITIAL: AppState = {
   plan: null,
   logs: [],
   weights: [],
+  weightGoalKg: null,
+  water: {},
+  waterGoal: 8,
+  cardioLogs: [],
   settings: { sound: true, vibration: true, countdownSec: 3 },
 };
 
@@ -31,6 +35,10 @@ interface Store {
   updateProfile: (patch: Partial<Profile>) => void;
   addLog: (log: WorkoutLog) => void;
   addWeight: (kg: number) => void;
+  setWeightGoal: (kg: number | null) => void;
+  addWater: (delta: number) => void;
+  setWaterGoal: (cups: number) => void;
+  addCardioLog: (log: CardioLog) => void;
   setSettings: (patch: Partial<AppState["settings"]>) => void;
   resetAll: () => void;
   /** 派生値 */
@@ -54,6 +62,10 @@ function load(): AppState {
       settings: { ...INITIAL.settings, ...(parsed.settings ?? {}) },
       logs: parsed.logs ?? [],
       weights: parsed.weights ?? [],
+      water: parsed.water ?? {},
+      waterGoal: parsed.waterGoal ?? INITIAL.waterGoal,
+      cardioLogs: parsed.cardioLogs ?? [],
+      weightGoalKg: parsed.weightGoalKg ?? null,
     };
   } catch {
     return INITIAL;
@@ -109,6 +121,26 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setWeightGoal = useCallback((kg: number | null) => {
+    setState((s) => ({ ...s, weightGoalKg: kg }));
+  }, []);
+
+  const addWater = useCallback((delta: number) => {
+    const date = todayKey();
+    setState((s) => {
+      const next = Math.max(0, Math.min(20, (s.water[date] ?? 0) + delta));
+      return { ...s, water: { ...s.water, [date]: next } };
+    });
+  }, []);
+
+  const setWaterGoal = useCallback((cups: number) => {
+    setState((s) => ({ ...s, waterGoal: Math.max(1, Math.min(20, cups)) }));
+  }, []);
+
+  const addCardioLog = useCallback((log: CardioLog) => {
+    setState((s) => ({ ...s, cardioLogs: [...s.cardioLogs, log] }));
+  }, []);
+
   const setSettings = useCallback((patch: Partial<AppState["settings"]>) => {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   }, []);
@@ -124,6 +156,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Store>(() => {
     const completedIds = new Set(state.logs.map((l) => l.dayId));
+    const activeDates = [
+      ...state.logs.map((l) => l.date),
+      ...state.cardioLogs.map((l) => l.date),
+    ];
     return {
       ready,
       state,
@@ -131,14 +167,35 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       updateProfile,
       addLog,
       addWeight,
+      setWeightGoal,
+      addWater,
+      setWaterGoal,
+      addCardioLog,
       setSettings,
       resetAll,
-      streak: calcStreak(state.logs.map((l) => l.date)),
+      streak: calcStreak(activeDates),
       completedIds,
-      totalKcal: state.logs.reduce((s, l) => s + l.kcal, 0),
-      totalSeconds: state.logs.reduce((s, l) => s + l.seconds, 0),
+      totalKcal:
+        state.logs.reduce((s, l) => s + l.kcal, 0) +
+        state.cardioLogs.reduce((s, l) => s + l.kcal, 0),
+      totalSeconds:
+        state.logs.reduce((s, l) => s + l.seconds, 0) +
+        state.cardioLogs.reduce((s, l) => s + l.seconds, 0),
     };
-  }, [ready, state, setProfile, updateProfile, addLog, addWeight, setSettings, resetAll]);
+  }, [
+    ready,
+    state,
+    setProfile,
+    updateProfile,
+    addLog,
+    addWeight,
+    setWeightGoal,
+    addWater,
+    setWaterGoal,
+    addCardioLog,
+    setSettings,
+    resetAll,
+  ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

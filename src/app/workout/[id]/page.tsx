@@ -19,6 +19,7 @@ import { getExercise } from "@/lib/exercises";
 import { beep, unlockAudio, vibrate } from "@/lib/feedback";
 import { formatClock, todayKey } from "@/lib/format";
 import { estimateKcal } from "@/lib/plan";
+import { resolveWorkout } from "@/lib/workout";
 import { useStore } from "@/store/app-store";
 import type { Exercise, PlanItem } from "@/lib/types";
 
@@ -29,7 +30,7 @@ export default function WorkoutPlayerPage() {
   const router = useRouter();
   const { ready, state, addLog } = useStore();
 
-  const day = state.plan?.days.find((d) => d.id === id);
+  const day = useMemo(() => resolveWorkout(id, state), [id, state]);
   const items = useMemo(() => day?.items ?? [], [day]);
   const sound = state.settings.sound;
   const haptics = state.settings.vibration;

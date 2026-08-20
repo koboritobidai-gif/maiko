@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CheckIcon, ClockIcon, FlameIcon, TargetIcon, TrophyIcon } from "@/components/icons";
 import { Button, ButtonLink, Card, StatChip, cx } from "@/components/ui";
 import { formatDuration } from "@/lib/format";
+import { resolveWorkout } from "@/lib/workout";
 import { useStore } from "@/store/app-store";
 
 const RPE_OPTIONS = [
@@ -25,7 +26,7 @@ export default function WorkoutCompletePage() {
   if (!ready) return <div className="grid min-h-dvh place-items-center text-ink-muted">読み込み中…</div>;
 
   const log = [...state.logs].reverse().find((l) => l.dayId === id);
-  const day = state.plan?.days.find((d) => d.id === id);
+  const day = resolveWorkout(id, state);
 
   if (!log || !day) {
     return (

@@ -26,7 +26,21 @@ export type BodyPart =
 export type TargetArea = "abs" | "chest" | "armsBack" | "hipsLegs" | "fullbody";
 
 /** 器具 */
-export type Equipment = "none" | "chair" | "mat" | "dumbbell" | "band";
+export type Equipment =
+  | "none"
+  | "chair"
+  | "mat"
+  | "dumbbell"
+  | "band"
+  // ここから下はジム想定
+  | "barbell"
+  | "machine"
+  | "cable"
+  | "bench"
+  | "pullupBar";
+
+/** トレーニング場所 */
+export type Place = "home" | "gym";
 
 /** エクササイズの計測方法 */
 export type MeasureType = "time" | "reps";
@@ -39,6 +53,8 @@ export interface Exercise {
   nameEn: string;
   parts: BodyPart[];
   equipment: Equipment[];
+  /** どこでできる種目か。"both" は自宅でもジムでも */
+  place: Place | "both";
   /** 1=やさしい 2=ふつう 3=きつい */
   difficulty: 1 | 2 | 3;
   measure: MeasureType;
@@ -88,6 +104,8 @@ export interface Profile {
   daysPerWeek: number;
   /** 1回あたりの目安（分） */
   minutesPerSession: number;
+  /** ふだんトレーニングする場所 */
+  place: Place;
   /** 体重(kg)。消費カロリー計算に使用。未入力なら null */
   weightKg: number | null;
   /** 身長(cm)。未入力なら null */
@@ -151,12 +169,34 @@ export interface WorkoutLog {
   rpe?: number;
 }
 
+/** ウォーキング／ランニングの記録 */
+export interface CardioLog {
+  id: string;
+  /** ISO 日付（YYYY-MM-DD） */
+  date: string;
+  completedAt: string;
+  mode: "walk" | "run";
+  seconds: number;
+  meters: number;
+  kcal: number;
+  /** 通過した座標（ルートの形の描画用） */
+  path: { lat: number; lng: number }[];
+}
+
 export interface AppState {
   profile: Profile | null;
   plan: Plan | null;
   logs: WorkoutLog[];
   /** 体重記録 */
   weights: { date: string; kg: number }[];
+  /** 目標体重(kg)。未設定なら null */
+  weightGoalKg: number | null;
+  /** 水分記録（日付 → 杯数） */
+  water: Record<string, number>;
+  /** 1日の水分目標（杯） */
+  waterGoal: number;
+  /** ウォーキング・ランニングの記録 */
+  cardioLogs: CardioLog[];
   /** 設定 */
   settings: {
     sound: boolean;

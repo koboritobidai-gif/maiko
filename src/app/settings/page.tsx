@@ -6,7 +6,7 @@ import { RestartIcon, SparkIcon } from "@/components/icons";
 import { Button, ButtonLink, Card, SectionTitle, ToggleRow, cx } from "@/components/ui";
 import { AREA_LABEL, EQUIPMENT_LABEL } from "@/lib/exercises";
 import { useStore } from "@/store/app-store";
-import type { Equipment, Goal, TargetArea } from "@/lib/types";
+import type { Equipment, Goal, Place, TargetArea } from "@/lib/types";
 
 const GOALS: { id: Goal; label: string }[] = [
   { id: "lose", label: "体重を減らす" },
@@ -63,6 +63,34 @@ export default function SettingsPage() {
           変更するとプランがその場で作り直されます
         </p>
       </header>
+
+      {/* トレーニング場所 */}
+      <section>
+        <SectionTitle title="トレーニング場所" />
+        <div className="grid grid-cols-2 gap-2">
+          {(["home", "gym"] as Place[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => updateProfile({ place: p })}
+              aria-pressed={profile.place === p}
+              className={cx(
+                "rounded-2xl px-2 py-4 text-[14px] font-bold transition-colors",
+                profile.place === p
+                  ? "bg-brand-600 text-white shadow-[var(--shadow-float)]"
+                  : "bg-white text-ink-soft shadow-[var(--shadow-card)] hover:bg-brand-50",
+              )}
+            >
+              {p === "home" ? "自宅" : "ジム"}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 px-1 text-[12px] leading-relaxed text-ink-muted">
+          {profile.place === "gym"
+            ? "マシン・バーベル・ケーブルを使うメニューで組みます。"
+            : "器具なしの自重メニューを中心に組みます。"}
+        </p>
+      </section>
 
       {/* 目標 */}
       <section>
@@ -187,8 +215,8 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* 器具 */}
-      <section>
+      {/* 器具（自宅のときだけ） */}
+      <section className={profile.place === "gym" ? "hidden" : undefined}>
         <SectionTitle title="使える器具" />
         <div className="flex flex-wrap gap-2">
           {EQUIPMENTS.map((e) => (

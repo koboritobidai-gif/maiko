@@ -6,7 +6,7 @@ import { useStore } from "@/store/app-store";
 import { BottomNav } from "./bottom-nav";
 
 /** ボトムナビを隠す（全画面表示にする）ルート */
-const FULLSCREEN = ["/onboarding", "/workout"];
+const FULLSCREEN = ["/onboarding", "/workout/", "/cardio"];
 
 export function AppFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -18,7 +18,12 @@ export function AppFrame({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell flex flex-col">
-      <div className="flex-1">{children}</div>
+      <div
+        className="flex-1"
+        style={showNav ? { paddingBottom: "calc(var(--nav-h) + var(--safe-bottom))" } : undefined}
+      >
+        {children}
+      </div>
       {showNav && <BottomNav />}
     </div>
   );

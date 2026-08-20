@@ -34,6 +34,8 @@
 :root {
   color-scheme: light;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* ボトムナビの高さ。画面下に固定するUIはこの分だけ持ち上げる */
+  --nav-h: 4rem;
 }
 
 html,

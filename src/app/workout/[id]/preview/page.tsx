@@ -14,6 +14,7 @@ import { ButtonLink, Card, StatChip, cx } from "@/components/ui";
 import { EQUIPMENT_LABEL, PART_LABEL, getExercise } from "@/lib/exercises";
 import { formatDuration } from "@/lib/format";
 import { uniqueMainCount } from "@/lib/plan";
+import { resolveWorkout, workoutProgram } from "@/lib/workout";
 import { useStore } from "@/store/app-store";
 
 export default function WorkoutPreviewPage() {
@@ -23,8 +24,9 @@ export default function WorkoutPreviewPage() {
 
   if (!ready) return <div className="p-6 text-center text-ink-muted">読み込み中…</div>;
 
-  const day = state.plan?.days.find((d) => d.id === id);
-  if (!day || day.isRest) {
+  const day = resolveWorkout(id, state);
+  const program = workoutProgram(id);
+  if (!day) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
         <p className="font-bold">このワークアウトは見つかりませんでした</p>
@@ -57,7 +59,7 @@ export default function WorkoutPreviewPage() {
         </button>
 
         <p className="mt-4 text-[13px] font-semibold text-mint-300">
-          {day.week}週目 {day.day}日目
+          {program ? `${program.program.title} ・ Day ${day.day}` : `${day.week}週目 ${day.day}日目`}
         </p>
         <h1 className="mt-1 text-[24px] font-bold leading-snug tracking-tight">
           {day.title.split("｜")[0]}
@@ -135,7 +137,7 @@ export default function WorkoutPreviewPage() {
 
       {/* 固定スタートボタン */}
       <div
-        className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[30rem] border-t border-line bg-white/92 px-4 py-3 backdrop-blur-md"
+        className="fixed bottom-0 left-1/2 z-20 w-full max-w-[30rem] -translate-x-1/2 border-t border-line bg-white/92 px-4 py-3 backdrop-blur-md"
         style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
       >
         <ButtonLink href={`/workout/${day.id}`} size="lg" className="w-full">

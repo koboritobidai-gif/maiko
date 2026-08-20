@@ -24,9 +24,10 @@ import {
   StatChip,
   cx,
 } from "@/components/ui";
-import { AREA_TO_PARTS, PART_LABEL } from "@/lib/exercises";
+import { EXERCISES, PART_LABEL } from "@/lib/exercises";
 import { formatDuration } from "@/lib/format";
 import { PLAN_WEEKS, menuSummary, uniqueMainCount, weekKcal } from "@/lib/plan";
+import { PROGRAM_TONE_CLASS, programsAt } from "@/lib/programs";
 import { useStore } from "@/store/app-store";
 import type { WorkoutDay } from "@/lib/types";
 
@@ -47,6 +48,7 @@ export default function HomePage() {
       <div className="space-y-6 px-4">
         <TodayCard day={nextDay} allDone={completedIds.has(nextDay.id)} />
         <WeekStrip plan={plan} currentWeek={nextDay.week} completedIds={completedIds} />
+        <ProgramShortcuts />
         <PlanSection plan={plan} completedIds={completedIds} currentWeek={nextDay.week} />
         <CoachNote />
       </div>
@@ -306,6 +308,57 @@ function WorkoutRow({ day, done }: { day: WorkoutDay; done: boolean }) {
   );
 }
 
+/* ─────────────── テーマ別ワークアウトへの導線 ─────────────── */
+
+function ProgramShortcuts() {
+  const { state } = useStore();
+  const place = state.profile?.place ?? "home";
+  const picks = programsAt(place).slice(0, 4);
+
+  return (
+    <section>
+      <SectionTitle
+        title="テーマ別ワークアウト"
+        action={
+          <Link href="/workouts" className="text-[13px] font-semibold text-brand-600">
+            すべて見る
+          </Link>
+        }
+      />
+      <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
+        {picks.map((p) => (
+          <Link key={p.id} href={`/workouts/${p.id}`} className="shrink-0">
+            <Card
+              tone="none"
+              className={cx(
+                "relative flex h-28 w-40 flex-col justify-between overflow-hidden bg-gradient-to-br p-3 text-white",
+                PROGRAM_TONE_CLASS[p.tone],
+              )}
+            >
+              <div className="pointer-events-none absolute -bottom-3 -right-2 h-24 w-14 opacity-45">
+                <BodyFigure active={p.rotation} className="h-full w-full" glow={false} />
+              </div>
+              <p className="relative text-[14px] font-bold leading-snug">{p.title}</p>
+              <p className="relative text-[11px] font-semibold text-white/85">
+                {p.dayCount}ワークアウト
+              </p>
+            </Card>
+          </Link>
+        ))}
+        <Link href="/workouts" className="shrink-0">
+          <Card className="grid h-28 w-28 place-items-center text-center">
+            <span className="px-3 text-[12.5px] font-bold text-brand-600">
+              すべての
+              <br />
+              プログラム
+            </span>
+          </Card>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /* ─────────────── naruからのひとこと ─────────────── */
 
 function CoachNote() {
@@ -317,8 +370,8 @@ function CoachNote() {
       <div>
         <p className="text-[14px] font-bold text-brand-800">naruのお手本動画は準備中です</p>
         <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">
-          各種目のフォームのポイント・よくあるミスは今すぐ確認できます。動画が揃い次第、
-          この画面と実行中の画面にそのまま表示されます。
+          全{EXERCISES.length}種目のフォームのポイント・よくあるミスは今すぐ確認できます。
+          動画が揃い次第、この画面と実行中の画面にそのまま表示されます。
         </p>
         <Link href="/library" className="mt-2 inline-block text-[13px] font-bold text-brand-600">
           種目一覧を見る →

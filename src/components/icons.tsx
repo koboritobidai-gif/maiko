@@ -132,6 +132,26 @@ export const DumbbellOffIcon = (p: P) => (
   </svg>
 );
 
+export const DumbbellIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M4 9v6M7.5 6.5v11M16.5 6.5v11M20 9v6M7.5 12h9" />
+  </svg>
+);
+
+export const WaterIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M12 3.5c3.4 3.6 5.5 6.2 5.5 8.9A5.5 5.5 0 0 1 6.5 12.4c0-2.7 2.1-5.3 5.5-8.9Z" />
+  </svg>
+);
+
+export const RouteIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <circle cx="6" cy="18" r="2.5" />
+    <circle cx="18" cy="6" r="2.5" />
+    <path d="M8.5 18h5a3.5 3.5 0 0 0 0-7h-3a3.5 3.5 0 0 1 0-7H15" />
+  </svg>
+);
+
 export const VideoIcon = (p: P) => (
   <svg {...base} {...p}>
     <rect x="2.5" y="6" width="13" height="12" rx="2.5" />

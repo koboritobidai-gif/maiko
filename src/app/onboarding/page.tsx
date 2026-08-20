@@ -21,6 +21,7 @@ import type {
   Experience,
   Gender,
   Goal,
+  Place,
   Profile,
   TargetArea,
 } from "@/lib/types";
@@ -28,6 +29,7 @@ import type {
 const STEPS = [
   "gender",
   "age",
+  "place",
   "target",
   "goal",
   "experience",
@@ -77,9 +79,15 @@ const EQUIPMENTS: { id: Equipment; label: string; sub: string }[] = [
   { id: "band", label: "トレーニングチューブ", sub: "背中・肩の種目が増えます" },
 ];
 
+const PLACES: { id: Place; label: string; sub: string }[] = [
+  { id: "home", label: "自宅", sub: "器具なし・自重メニュー中心で組みます" },
+  { id: "gym", label: "ジム", sub: "マシンやバーベルを使ったメニューを組みます" },
+];
+
 interface Draft {
   gender: Gender | null;
   ageBand: AgeBand | null;
+  place: Place | null;
   targets: TargetArea[];
   goal: Goal | null;
   experience: Experience | null;
@@ -94,6 +102,7 @@ interface Draft {
 const INITIAL_DRAFT: Draft = {
   gender: null,
   ageBand: null,
+  place: null,
   targets: [],
   goal: null,
   experience: null,
@@ -121,6 +130,8 @@ export default function OnboardingPage() {
         return draft.gender !== null;
       case "age":
         return draft.ageBand !== null;
+      case "place":
+        return draft.place !== null;
       case "target":
         return draft.targets.length > 0;
       case "goal":
@@ -150,6 +161,7 @@ export default function OnboardingPage() {
     const profile: Profile = {
       gender: draft.gender ?? "other",
       ageBand: draft.ageBand ?? "a25_35",
+      place: draft.place ?? "home",
       experience: draft.experience ?? "beginner",
       goal: draft.goal ?? "healthy",
       targets: draft.targets.length ? draft.targets : ["fullbody"],
@@ -230,6 +242,31 @@ export default function OnboardingPage() {
                 >
                   <p className="text-lg font-bold">{a.label}</p>
                   <p className="text-[13px] text-white/70">{a.sub}</p>
+                </OptionCard>
+              ))}
+            </div>
+          </StepShell>
+        )}
+
+        {step === "place" && (
+          <StepShell
+            title="どこで"
+            accent="トレーニングしますか？"
+            caption="あとから切り替えられます"
+          >
+            <div className="grid gap-3">
+              {PLACES.map((p) => (
+                <OptionCard
+                  key={p.id}
+                  selected={draft.place === p.id}
+                  onClick={() => {
+                    patch({ place: p.id });
+                    window.setTimeout(next, 180);
+                  }}
+                  className="px-5 py-4"
+                >
+                  <p className="text-lg font-bold">{p.label}</p>
+                  <p className="text-[13px] text-white/70">{p.sub}</p>
                 </OptionCard>
               ))}
             </div>
@@ -434,7 +471,23 @@ export default function OnboardingPage() {
           </StepShell>
         )}
 
-        {step === "equipment" && (
+        {step === "equipment" && draft.place === "gym" && (
+          <StepShell
+            title="ジムの器具は"
+            accent="そろっています"
+            caption="マシン・バーベル・ケーブルを使う前提でメニューを組みます"
+          >
+            <div className="rounded-2xl bg-white/12 p-5">
+              <p className="text-[14px] leading-relaxed text-white/85">
+                ジムを選んだ場合は、マシン・バーベル・ダンベル・ケーブル・懸垂バーが
+                使える前提でメニューを作ります。使えない器具があるときは、
+                トレーニング中に「次の種目」で飛ばしてください。
+              </p>
+            </div>
+          </StepShell>
+        )}
+
+        {step === "equipment" && draft.place !== "gym" && (
           <StepShell
             title="持っている器具は"
             accent="ありますか？"

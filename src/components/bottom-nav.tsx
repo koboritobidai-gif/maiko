@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, HomeIcon, LibraryIcon, UserIcon } from "./icons";
+import { ChartIcon, DumbbellIcon, HomeIcon, LibraryIcon, UserIcon } from "./icons";
 import { cx } from "./ui";
 
 const TABS = [
   { href: "/", label: "ホーム", Icon: HomeIcon },
+  { href: "/workouts", label: "ワークアウト", Icon: DumbbellIcon },
   { href: "/library", label: "種目", Icon: LibraryIcon },
   { href: "/progress", label: "記録", Icon: ChartIcon },
   { href: "/settings", label: "マイページ", Icon: UserIcon },
@@ -18,10 +19,10 @@ export function BottomNav() {
   return (
     <nav
       aria-label="メインナビゲーション"
-      className="sticky bottom-0 z-30 border-t border-line bg-white/92 backdrop-blur-md"
+      className="fixed bottom-0 left-1/2 z-30 w-full max-w-[30rem] -translate-x-1/2 border-t border-line bg-white/92 backdrop-blur-md"
       style={{ paddingBottom: "var(--safe-bottom)" }}
     >
-      <ul className="mx-auto flex max-w-[30rem]">
+      <ul className="flex h-[var(--nav-h)]">
         {TABS.map(({ href, label, Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
@@ -30,7 +31,7 @@ export function BottomNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
+                  "flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors",
                   active ? "text-brand-600" : "text-ink-muted hover:text-ink-soft",
                 )}
               >
