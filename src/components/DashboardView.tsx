@@ -614,10 +614,20 @@ export default function DashboardView({
             )}
             caption="Google+Meta広告の費用 ÷ 面談数"
           />
+          {/* SNS経由の面談が0件の月は単価を計算できないが、「—」だと費用(月額固定¥495,000)自体が
+              入っていないように見えるという経営者の指摘があったため、その間は費用をそのまま表示する。 */}
           <KpiCard
             label="面談単価(リズリアライズ)"
-            value={formatYenOrDash(mk.sns.costPerInterview)}
-            caption="SNS運用の費用 ÷ 面談数"
+            value={
+              mk.sns.costPerInterview !== null
+                ? formatYen(mk.sns.costPerInterview)
+                : formatYen(mk.sns.cost)
+            }
+            caption={
+              mk.sns.costPerInterview !== null
+                ? "SNS運用の費用 ÷ 面談数"
+                : "SNS運用の費用(今月の面談0件のため単価は未算出)"
+            }
           />
         </div>
         <Collapsible title="媒体別">
