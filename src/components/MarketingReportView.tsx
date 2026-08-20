@@ -28,6 +28,25 @@ function formatYenOrDash(amountYen: number | null): string {
 const navy = { color: "var(--color-navy)" };
 const muted = { color: "var(--color-text-muted)" };
 const borderColor = { borderColor: "var(--color-border)" };
+/** 合計行の下地(アプリ既存のクリーム色)。数字の階層を色で分けて読みやすくするため。 */
+const totalRowBg = { background: "var(--color-cream)" };
+
+/**
+ * セクション見出し(金色の縦バー付き)。全て同じ色・同じ大きさで読みにくいという経営者の
+ * 指摘を受け、アプリ既存の配色(ネイビー+ゴールド)の範囲でメリハリを付ける。
+ */
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-1.5 text-[13px] font-bold" style={navy}>
+      <span
+        aria-hidden
+        className="inline-block h-[14px] w-[3.5px] rounded-full"
+        style={{ background: "var(--color-gold)" }}
+      />
+      {children}
+    </h2>
+  );
+}
 
 /** 送客パートナー(成果報酬)の対象人数合計。 */
 function referralCount(mk: MarketingSummary): number {
@@ -97,7 +116,7 @@ function CompareRow({
 }) {
   return (
     <tr className="border-b" style={borderColor}>
-      <td className="py-1.5 pr-2 align-top font-medium" style={navy}>
+      <td className="py-1.5 pr-2 align-top font-medium" style={muted}>
         {label}
         {caption && (
           <div className="text-[9px] font-normal" style={muted}>
@@ -105,8 +124,11 @@ function CompareRow({
           </div>
         )}
       </td>
-      <td className="py-1.5 pr-2 text-right align-top">{current}</td>
-      <td className="py-1.5 text-right align-top" style={muted}>
+      {/* 今月の数字が主役: 大きく・太く・ネイビー。先月は比較用に小さく控えめ。 */}
+      <td className="py-1.5 pr-2 text-right align-top text-[14px] font-bold" style={navy}>
+        {current}
+      </td>
+      <td className="py-1.5 text-right align-top text-[11px]" style={muted}>
         {last}
       </td>
     </tr>
@@ -151,7 +173,7 @@ export default function MarketingReportView({
           <h1 className="text-xl font-bold" style={navy}>
             マーケティング報告
           </h1>
-          <p className="mt-1 text-sm font-semibold" style={navy}>
+          <p className="mt-1 text-sm font-bold" style={{ color: "var(--color-gold)" }}>
             {formatMonthLabel(monthKey)}
           </p>
           <p className="mt-1 text-[11px]" style={muted}>
@@ -163,9 +185,9 @@ export default function MarketingReportView({
 
       {/* 1. 全体サマリー(広告+SNS+送客パートナー合算、今月/先月比較) */}
       <section className="report-section">
-        <h2 className="mb-1.5 text-[12px] font-bold" style={navy}>
-          全体サマリー
-        </h2>
+        <div className="mb-1.5">
+          <SectionTitle>全体サマリー</SectionTitle>
+        </div>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
@@ -203,9 +225,7 @@ export default function MarketingReportView({
 
       {/* 2-1. 送客パートナー(成果報酬・今月) */}
       <section className="report-section flex flex-col gap-1.5">
-        <h2 className="text-[12px] font-bold" style={navy}>
-          送客パートナー({formatMonthLabel(monthKey)})
-        </h2>
+        <SectionTitle>送客パートナー({formatMonthLabel(monthKey)})</SectionTitle>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
@@ -216,13 +236,13 @@ export default function MarketingReportView({
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b" style={{ ...borderColor, fontWeight: 700 }}>
-              <td className="py-1.5 pr-2 whitespace-nowrap" style={navy}>
+            <tr className="border-b" style={{ ...borderColor, ...totalRowBg, fontWeight: 700 }}>
+              <td className="py-1.5 pl-1 pr-2 whitespace-nowrap" style={navy}>
                 合計
               </td>
-              <td className="py-1.5 pr-2 text-right">{formatYenOrDash(referralUnitCost)}</td>
-              <td className="py-1.5 pr-2 text-right">{referralTotalCount.toLocaleString("ja-JP")}名</td>
-              <td className="py-1.5 text-right">{formatYen(summary.referralTotalYen)}</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{formatYenOrDash(referralUnitCost)}</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{referralTotalCount.toLocaleString("ja-JP")}名</td>
+              <td className="py-1.5 pr-1 text-right text-[13px]" style={navy}>{formatYen(summary.referralTotalYen)}</td>
             </tr>
             {referralRows.length === 0 ? (
               <tr>
@@ -248,9 +268,7 @@ export default function MarketingReportView({
 
       {/* 2-2. SNS広告(アイドマ広告=Google+Meta / リズリアライズ=SNS運用、今月) */}
       <section className="report-section flex flex-col gap-1.5">
-        <h2 className="text-[12px] font-bold" style={navy}>
-          SNS広告({formatMonthLabel(monthKey)})
-        </h2>
+        <SectionTitle>SNS広告({formatMonthLabel(monthKey)})</SectionTitle>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
@@ -263,15 +281,15 @@ export default function MarketingReportView({
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b" style={{ ...borderColor, fontWeight: 700 }}>
-              <td className="py-1.5 pr-2 whitespace-nowrap" style={navy}>
+            <tr className="border-b" style={{ ...borderColor, ...totalRowBg, fontWeight: 700 }}>
+              <td className="py-1.5 pl-1 pr-2 whitespace-nowrap" style={navy}>
                 合計
               </td>
-              <td className="py-1.5 pr-2 text-right">{formatYen(adSnsTotal.cost)}</td>
-              <td className="py-1.5 pr-2 text-right">{adSnsTotal.lineRegs.toLocaleString("ja-JP")}人</td>
-              <td className="py-1.5 pr-2 text-right">{adSnsTotal.reservations.toLocaleString("ja-JP")}件</td>
-              <td className="py-1.5 pr-2 text-right">{adSnsTotal.interviews.toLocaleString("ja-JP")}件</td>
-              <td className="py-1.5 text-right">{formatYenOrDash(adSnsTotal.unitCost)}</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{formatYen(adSnsTotal.cost)}</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{adSnsTotal.lineRegs.toLocaleString("ja-JP")}人</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{adSnsTotal.reservations.toLocaleString("ja-JP")}件</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{adSnsTotal.interviews.toLocaleString("ja-JP")}件</td>
+              <td className="py-1.5 pr-1 text-right text-[13px]" style={navy}>{formatYenOrDash(adSnsTotal.unitCost)}</td>
             </tr>
             <tr className="border-b" style={borderColor}>
               <td className="py-1.5 pr-2 font-medium whitespace-nowrap" style={navy}>

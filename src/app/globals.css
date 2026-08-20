@@ -86,4 +86,10 @@ body {
   .report-section {
     break-inside: avoid;
   }
+  /* 見出しの金色バーや合計行のクリーム下地など、レポートの配色を印刷でも省略させない
+     (ブラウザの印刷は既定で背景色を出さない設定のことがあるため)。 */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
