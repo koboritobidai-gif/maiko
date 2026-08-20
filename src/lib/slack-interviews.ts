@@ -101,11 +101,17 @@ export function getSlackInterviewDatesByName(threads: CandidateThread[]): Map<st
 /**
  * Slackスレッドから検出した面談実施の「月別件数」(YYYY-MM → 人数)を返す(純関数)。
  * 主要指標の面談数は週次KPIシートの手入力を待たずにSlackの面談メモから反映したいという
- * 経営者の要望のため、CA別実績と同じ検出ルール(1スレッド=1人、最初の面談報告の日付の月)で数える。
+ * 経営者の要望のため、CA別実績とまったく同じ数え方(スレッドごとに1件。日付は
+ * getSlackInterviewDatesByName の氏名対応表を引く)にする。
+ * 注意: 氏名対応表の「値」を直接数えると同名スレッドが1件に潰れ、CA別実績の合計と
+ * ズレる(実際に13件 vs 12件の不一致が起きた)。必ずスレッド単位でループすること。
  */
 export function getSlackInterviewMonthlyCounts(threads: CandidateThread[]): Map<string, number> {
+  const byName = getSlackInterviewDatesByName(threads);
   const counts = new Map<string, number>();
-  for (const date of getSlackInterviewDatesByName(threads).values()) {
+  for (const thread of threads) {
+    const date = byName.get(normalizeName(thread.name));
+    if (!date) continue;
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
