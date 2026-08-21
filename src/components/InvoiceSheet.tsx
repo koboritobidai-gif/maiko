@@ -236,12 +236,15 @@ const INVOICE_SHEET_CSS = `
 }
 .invoice-title { text-align: center; font-size: 24px; font-weight: 700; letter-spacing: 18px; text-indent: 18px; margin-bottom: 14mm; }
 .invoice-top { display: flex; justify-content: space-between; }
-.invoice-to { width: 88mm; font-size: 12.5px; }
+/* 宛先ブロックの幅=宛先・件名の下線の長さ。長すぎるという経営者の指摘で 88mm → 70mm に短縮。 */
+.invoice-to { width: 70mm; font-size: 12.5px; }
 .invoice-company-name { font-size: 14px; border-bottom: 1px solid #333; padding: 0 2mm 1.5mm; }
 /* 宛名2行目は下線なし(経営者の指示)。 */
 .invoice-person { padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
-/* 「御中」は会社名の直後ではなく、下線の右端に寄せる(経営者の指示)。 */
-.invoice-company-name { display: flex; justify-content: space-between; align-items: baseline; }
+/* 「御中」は会社名の直後ではなく、下線の右端に固定する(経営者の指示)。
+   margin-left: auto により、会社名が未入力(プレビュー段階)でも位置が左へ寄らない。 */
+.invoice-company-name { display: flex; align-items: baseline; }
+.invoice-onchu { margin-left: auto; }
 /* 会社名(宛先)と件名の間は2行分ほど空ける(経営者の指示で 9mm → 18mm)。 */
 .invoice-subject { margin-top: 18mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
 /* 「下記のとおり〜」の下線は経営者の指示で無し。 */
