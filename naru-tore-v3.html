@@ -209,7 +209,7 @@ button{border:0;background:none;cursor:pointer}
 .dot-r::marker{color:var(--orange-b)}
 
 /* ── LP ── */
-.lp{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;padding:22px}
+.lp{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px}
 .lp .hero-t{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin:10px 0 0}
 .lp .avatar{width:44px;height:44px;border-radius:999px;background:linear-gradient(150deg,#8b9469,#5f6849);flex:none}
 .about{border-top:1px solid rgba(34,37,29,.1);margin-top:34px;padding-top:22px}
@@ -743,7 +743,7 @@ function topbar(){
    LP
    ========================================================================= */
 function viewLP(){
-  return `<div class="screen on">
+  return `<div class="screen on" style="overflow-y:auto">
     <div class="lp">
       <div class="eyebrow">NARU &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
       <h1 class="hero-t">今日の一歩を、<br>ここから。</h1>
