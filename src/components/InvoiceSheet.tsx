@@ -69,7 +69,12 @@ export default function InvoiceSheet({
               <span className="invoice-company-text" style={{ fontSize: `${companyNameFontSize(companyName)}px` }}>
                 {companyName}
               </span>
-              {honorificLine.trim() === "" && <span className="invoice-onchu">御中</span>}
+              {/* 「御中」は会社名と同じ文字サイズに揃える(自動縮小にも連動。経営者の指示)。 */}
+              {honorificLine.trim() === "" && (
+                <span className="invoice-onchu" style={{ fontSize: `${companyNameFontSize(companyName)}px` }}>
+                  御中
+                </span>
+              )}
             </div>
             {honorificLine.trim() !== "" && (
               <div className="invoice-person">
