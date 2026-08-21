@@ -213,12 +213,15 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
                 {selectedMonth ? "この月の行はありません。" : "上で入金月を選んでください。"}
               </p>
             ) : (
-              <table className="w-full min-w-[480px] text-left text-[12px]">
+              // 携帯で会社名・求職者名・見出しが折り返して読みにくいという経営者の指摘のため、
+              // 全セル折り返し禁止(whitespace-nowrap)+携帯では文字をひと回り小さく。
+              // 長い会社名は表ごと横スクロール(外側の overflow-x-auto)に逃がす。
+              <table className="w-full min-w-[480px] text-left text-[11px] sm:text-[12px]">
                 <thead>
                   <tr style={muted}>
-                    <th className="px-3 py-2 font-medium">会社名</th>
-                    <th className="px-3 py-2 font-medium">求職者名</th>
-                    <th className="px-3 py-2 text-right font-medium">金額(税込)</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">会社名</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">求職者名</th>
+                    <th className="whitespace-nowrap px-3 py-2 text-right font-medium">金額(税込)</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
@@ -228,11 +231,11 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
                     const active = selectedRowKey === key;
                     return (
                       <tr key={key} className="border-t" style={borderColor}>
-                        <td className="px-3 py-2 font-medium" style={{ color: "var(--color-text)" }}>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium" style={{ color: "var(--color-text)" }}>
                           {row.company}
                         </td>
-                        <td className="px-3 py-2">{row.candidateName || "-"}</td>
-                        <td className="px-3 py-2 text-right">{formatYen(row.amountYen)}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{row.candidateName || "-"}</td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right">{formatYen(row.amountYen)}</td>
                         <td className="px-3 py-2 text-right">
                           <button
                             type="button"
