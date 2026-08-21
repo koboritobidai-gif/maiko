@@ -153,45 +153,44 @@ export default function InvoiceSheet({
                 <td />
               </tr>
             ))}
+            {/* 小計以下は明細表の「行」として続ける: 別テーブルにすると縦線が明細の列と揃わず、
+                明細表の下線と小計の上線が二重(太線)に見える問題があったため(経営者の指摘)。
+                ラベルは数量+単価の2列、金額は明細の金額列にぴったり重なる。
+                左側(No.+摘要の2列ぶん)は枠線なしのセルにして、お振込先をそこへ置く(雛形と同配置)。 */}
+            <tr className="sumrow">
+              <td className="bankcell" colSpan={2} rowSpan={5}>
+                <div className="invoice-bank">
+                  <div className="invoice-bank-label">お振込先</div>
+                  <div className="invoice-bank-body">
+                    gmoあおぞらネット　法人営業部
+                    <br />
+                    普通 2516698
+                    <br />
+                    カ)トビダイ
+                  </div>
+                </div>
+              </td>
+              <td className="k" colSpan={2}>小計</td>
+              <td className="v">{formatYen(tax.subtotalYen)}</td>
+            </tr>
+            <tr className="sumrow">
+              <td className="k" colSpan={2}>消費税</td>
+              <td className="v">{formatYen(tax.taxYen)}</td>
+            </tr>
+            <tr className="sumrow grand">
+              <td className="k" colSpan={2}>合計</td>
+              <td className="v">{formatYen(tax.totalYen)}</td>
+            </tr>
+            <tr className="sumrow sub">
+              <td className="k" colSpan={2}>10%対象(税抜)</td>
+              <td className="v">{formatYen(tax.subtotalYen)}</td>
+            </tr>
+            <tr className="sumrow sub">
+              <td className="k" colSpan={2}>10%消費税</td>
+              <td className="v">{formatYen(tax.taxYen)}</td>
+            </tr>
           </tbody>
         </table>
-
-        <div className="invoice-bottom">
-          <div className="invoice-bank">
-            <div className="invoice-bank-label">お振込先</div>
-            <div className="invoice-bank-body">
-              gmoあおぞらネット　法人営業部
-              <br />
-              普通 2516698
-              <br />
-              カ)トビダイ
-            </div>
-          </div>
-          <table className="invoice-sums">
-            <tbody>
-              <tr>
-                <td className="k">小計</td>
-                <td className="v">{formatYen(tax.subtotalYen)}</td>
-              </tr>
-              <tr>
-                <td className="k">消費税</td>
-                <td className="v">{formatYen(tax.taxYen)}</td>
-              </tr>
-              <tr className="grand">
-                <td className="k">合計</td>
-                <td className="v">{formatYen(tax.totalYen)}</td>
-              </tr>
-              <tr className="sub">
-                <td className="k">10%対象(税抜)</td>
-                <td className="v">{formatYen(tax.subtotalYen)}</td>
-              </tr>
-              <tr className="sub">
-                <td className="k">10%消費税</td>
-                <td className="v">{formatYen(tax.taxYen)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
 
         <div className="invoice-notes">
           <div className="invoice-notes-k">備考</div>
@@ -270,16 +269,16 @@ const INVOICE_SHEET_CSS = `
 .invoice-items .qty { width: 20mm; text-align: center; }
 .invoice-items .price, .invoice-items .amt { width: 30mm; text-align: right; }
 .invoice-items td.empty { height: 7.2mm; }
-.invoice-bottom { display: flex; justify-content: space-between; margin-top: 0; }
-.invoice-bank { font-size: 12px; margin-top: 5mm; }
+/* 小計以下は明細表の行として描く(列の縦線を明細と一致させるため)。左側のお振込先セルは
+   表の外に見えるよう枠線を消す。 */
+.invoice-items td.bankcell { border: none; vertical-align: top; padding: 4mm 2mm 0 0; }
+.invoice-items tr.sumrow td.k { background: #f2f2f2; text-align: center; padding: 1.6mm 2mm; }
+.invoice-items tr.sumrow td.v { text-align: right; padding: 1.6mm 2mm; }
+.invoice-items tr.sumrow.grand td.k, .invoice-items tr.sumrow.grand td.v { font-weight: 700; }
+.invoice-items tr.sumrow.sub td.k, .invoice-items tr.sumrow.sub td.v { font-size: 10.5px; padding: 1mm 2mm; }
+.invoice-bank { font-size: 12px; }
 .invoice-bank .invoice-bank-label { margin-bottom: 1.5mm; }
 .invoice-bank .invoice-bank-body { padding-left: 6mm; line-height: 1.8; border-bottom: 1px solid #333; padding-bottom: 1mm; display: inline-block; }
-.invoice-sums { width: 78mm; border-collapse: collapse; font-size: 12px; }
-.invoice-sums td { border: 1.5px solid #333; padding: 1.6mm 2mm; }
-.invoice-sums td.k { width: 30mm; background: #f2f2f2; text-align: center; }
-.invoice-sums td.v { text-align: right; }
-.invoice-sums tr.grand td { font-weight: 700; }
-.invoice-sums tr.sub td { font-size: 10.5px; padding: 1mm 2mm; }
 .invoice-notes { margin-top: 6mm; border: 1.5px solid #333; display: flex; font-size: 12px; }
 .invoice-notes .invoice-notes-k { width: 18mm; border-right: 1.5px solid #333; display: flex; align-items: center; justify-content: center; font-weight: 600; }
 .invoice-notes .invoice-notes-v { padding: 4mm 3mm; min-height: 18mm; flex: 1; }
