@@ -85,6 +85,15 @@ export default async function TodayDashboardPage() {
   const { stats: threadStats } = await getThreadStatsWithFallback(threadsResult);
   const caStats = threadStats.caStats;
   const interviewCountsByMonth = new Map(Object.entries(threadStats.interviewCountsByMonth));
+  // 月次推移の面談数も主要指標と同じ基準(週次KPIシートとSlack検出の大きい方)に揃える
+  // (経営者の指摘: シート未入力の当月が月次推移だけ0件に見えるため)。
+  const summaryForView = {
+    ...summary,
+    monthlyHistory: summary.monthlyHistory.map((p) => ({
+      ...p,
+      interviews: Math.max(p.interviews, interviewCountsByMonth.get(p.month) ?? 0),
+    })),
+  };
   // 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月・今月が先頭。対象は SALES_NAMES 固定リスト)。
   const salesStats = getSalesMonthlyStats(salesResult.reports, salesResult.appointments, now);
   // 主要指標セクションの月選択(直近6ヶ月)。各月のKPI+お金の出入りをまとめて渡す。
@@ -120,7 +129,7 @@ export default async function TodayDashboardPage() {
 
   return (
     <DashboardView
-      summary={summary}
+      summary={summaryForView}
       summaryLastMonth={summaryLastMonth}
       summaryTwoMonthsAgo={summaryTwoMonthsAgo}
       candidates={candidates}
