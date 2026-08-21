@@ -30,6 +30,17 @@ export interface InvoiceSheetProps {
 }
 
 /** 品目欄の空行数(雛形通り、記入欄の見た目を保つための余白行)。 */
+/**
+ * 会社名の文字サイズ(px)を社名の長さから決める。長い社名でも必ず1行に収める(経営者の指示。
+ * 「株式会社インバウンドホールディングス」のような長い社名が2行に折り返した実例があった)。
+ * 宛先の下線幅70mm(≈265px)から「御中」と余白ぶん(≈52px)を引いた約213pxに、全角1文字≈
+ * フォントサイズpx として収まる大きさを計算し、基準14px〜下限9pxの範囲に丸める。
+ */
+function companyNameFontSize(companyName: string): number {
+  const length = Math.max(companyName.length, 1);
+  return Math.min(14, Math.max(9, Math.floor(213 / length)));
+}
+
 const EMPTY_ITEM_ROW_COUNT = 8;
 
 export default function InvoiceSheet({
@@ -52,9 +63,12 @@ export default function InvoiceSheet({
         <div className="invoice-top">
           <div className="invoice-to">
             {/* 宛名2行目が空のときは会社名に「御中」を付け、入力があるときは「御中」を付けずに
-                「◯◯ 様」の行(下線なし)を表示する(経営者の指示)。 */}
+                「◯◯ 様」の行(下線なし)を表示する(経営者の指示)。
+                会社名は太字・必ず1行(長い社名は文字サイズを自動縮小して折り返しを防ぐ)。 */}
             <div className="invoice-company-name">
-              {companyName}
+              <span className="invoice-company-text" style={{ fontSize: `${companyNameFontSize(companyName)}px` }}>
+                {companyName}
+              </span>
               {honorificLine.trim() === "" && <span className="invoice-onchu">御中</span>}
             </div>
             {honorificLine.trim() !== "" && (
@@ -122,7 +136,8 @@ export default function InvoiceSheet({
           </div>
           <div className="invoice-due">
             <span>お支払期限:</span>
-            <span>{dueDateLabel}</span>
+            {/* 日付はラベルの右の残り幅の中央に置く(経営者の指示)。 */}
+            <span className="invoice-due-date">{dueDateLabel}</span>
           </div>
         </div>
 
@@ -242,9 +257,12 @@ const INVOICE_SHEET_CSS = `
 /* 宛名2行目は下線なし(経営者の指示)。 */
 .invoice-person { padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
 /* 「御中」は会社名の直後ではなく、下線の右端に固定する(経営者の指示)。
-   margin-left: auto により、会社名が未入力(プレビュー段階)でも位置が左へ寄らない。 */
+   margin-left: auto により、会社名が未入力(プレビュー段階)でも位置が左へ寄らない。
+   会社名・御中とも折り返し禁止(必ず横並びの1行)。会社名と御中の間は最低でも
+   padding-left ぶんの空きを確保する。会社名は太字。 */
 .invoice-company-name { display: flex; align-items: baseline; }
-.invoice-onchu { margin-left: auto; }
+.invoice-company-text { font-weight: 700; white-space: nowrap; }
+.invoice-onchu { margin-left: auto; padding-left: 3mm; white-space: nowrap; }
 /* 会社名(宛先)と件名の間は2行分ほど空ける(経営者の指示で 9mm → 18mm)。 */
 .invoice-subject { margin-top: 18mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
 /* 「下記のとおり〜」の下線は経営者の指示で無し。 */
@@ -264,7 +282,9 @@ const INVOICE_SHEET_CSS = `
 .invoice-totalbar .invoice-amount { font-size: 15px; font-weight: 700; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
 .invoice-totalbar .invoice-amount .invoice-label { font-size: 13px; margin-right: 8mm; }
 .invoice-totalbar .invoice-amount .invoice-tax { font-size: 11px; font-weight: 400; margin-left: 4mm; }
-.invoice-totalbar .invoice-due { font-size: 12.5px; width: 66mm; display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
+.invoice-totalbar .invoice-due { font-size: 12.5px; width: 66mm; display: flex; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
+/* 日付はラベルの右側の残り幅の中央に置く(経営者の指示)。 */
+.invoice-totalbar .invoice-due .invoice-due-date { flex: 1; text-align: center; }
 .invoice-items { margin-top: 4mm; width: 100%; border-collapse: collapse; font-size: 12px; }
 .invoice-items th, .invoice-items td { border: 1.5px solid #333; padding: 1.8mm 2mm; }
 .invoice-items th { background: #f2f2f2; font-weight: 600; }
