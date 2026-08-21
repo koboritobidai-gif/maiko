@@ -241,7 +241,8 @@ const INVOICE_SHEET_CSS = `
 .invoice-company-name { font-size: 14px; border-bottom: 1px solid #333; padding: 0 2mm 1.5mm; }
 /* 宛名2行目は下線なし(経営者の指示)。 */
 .invoice-person { padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
-.invoice-onchu { margin-left: 4mm; }
+/* 「御中」は会社名の直後ではなく、下線の右端に寄せる(経営者の指示)。 */
+.invoice-company-name { display: flex; justify-content: space-between; align-items: baseline; }
 /* 会社名(宛先)と件名の間は2行分ほど空ける(経営者の指示で 9mm → 18mm)。 */
 .invoice-subject { margin-top: 18mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
 /* 「下記のとおり〜」の下線は経営者の指示で無し。 */
