@@ -79,10 +79,18 @@ export function isBusinessDay(d: Date): boolean {
   return !HOLIDAY_SET.has(toIsoDate(d));
 }
 
-/** 入金月(YYYY-MM)から請求日(=入金月の1日)を求める。 */
+/**
+ * 入金月(YYYY-MM)から請求日を求める。
+ * 入金月の1日を起点に、土日・祝日である間は1日ずつ後ろへ送り「その月の最初の平日」にする
+ * (経営者の指示: 請求日も土日祝を避け、支払期限と同じ月の最初の平日を自動記載する)。
+ */
 export function getDefaultIssueDate(monthKey: string): Date {
   const [y, m] = monthKey.split("-").map(Number);
-  return new Date(y, m - 1, 1);
+  const d = new Date(y, m - 1, 1);
+  while (!isBusinessDay(d)) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
 }
 
 /**
