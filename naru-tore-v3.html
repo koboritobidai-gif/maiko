@@ -32,17 +32,17 @@ button{border:0;background:none;cursor:pointer}
 .noscroll{scrollbar-width:none}.noscroll::-webkit-scrollbar{display:none}
 
 /* ── アプリの外枠 ── */
-#app{max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;position:relative}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
 @media(min-width:520px){
   body{background:#cfcabc fixed}
   #app{background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-top) 22%,var(--bg-bottom) 78%);
        box-shadow:0 0 0 1px rgba(34,37,29,.08),0 30px 70px -40px rgba(34,37,29,.55)}
 }
-.screen{flex:1;display:none;flex-direction:column;animation:fade .28s ease both}
+.screen{flex:1;min-height:0;display:none;flex-direction:column;animation:fade .28s ease both}
 .screen.on{display:flex}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
 .pad{padding:0 18px}
-.scroll{flex:1;overflow-y:auto;padding-bottom:calc(var(--nav-h) + var(--safe) + 16px)}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:20px}
 
 /* ── 共通パーツ ── */
 .eyebrow{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--ink-mute);text-transform:uppercase}
@@ -70,10 +70,9 @@ button{border:0;background:none;cursor:pointer}
 .logo{font-size:15px;font-weight:800;letter-spacing:.3em}
 
 /* ── ボトムナビ ── */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
-     height:calc(var(--nav-h) + var(--safe));padding-bottom:var(--safe);
+.nav{flex:none;height:calc(var(--nav-h) + var(--safe));padding-bottom:var(--safe);
      display:flex;background:rgba(240,236,228,.94);backdrop-filter:blur(10px);
-     border-top:1px solid var(--line);z-index:40}
+     border-top:1px solid var(--line)}
 .nav.hide{display:none}
 .nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink-mute)}
 .nav button.on{color:var(--ink)}
@@ -168,7 +167,7 @@ button{border:0;background:none;cursor:pointer}
 .progress i{display:block;height:100%;background:var(--olive);border-radius:999px;transition:width .3s}
 
 /* ── タイマー ── */
-.timer{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+.timer{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 24px}
 .timer .lbl{font-size:12px;letter-spacing:.14em;font-weight:800;color:var(--olive)}
 .timer h2{margin:8px 0 0;font-size:24px;font-weight:800}
 .timer .ja2{font-size:13px;color:var(--ink-mute);margin-top:3px}
@@ -210,7 +209,7 @@ button{border:0;background:none;cursor:pointer}
 .dot-r::marker{color:var(--orange-b)}
 
 /* ── LP ── */
-.lp{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px}
+.lp{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;padding:22px}
 .lp .hero-t{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin:10px 0 0}
 .lp .avatar{width:44px;height:44px;border-radius:999px;background:linear-gradient(150deg,#8b9469,#5f6849);flex:none}
 .about{border-top:1px solid rgba(34,37,29,.1);margin-top:34px;padding-top:22px}
@@ -952,8 +951,8 @@ function viewTrain(){
         </div>
 
         <p class="sub" style="text-align:center;margin:14px 0 10px">種目をタップするとフォームのポイントが見られます</p>
-        <button class="btn btn-olive" data-go="run">チェックしながら進める</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">タイマーで進める</button>
+        <button class="btn btn-olive" data-go="timer">トレーニングを始める</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="run">リストで自分のペースで進める</button>
         <button class="btn btn-ghost" style="margin-top:9px" data-go="home">ホームに戻る</button>
       </div>
     </div>
@@ -975,38 +974,51 @@ function flatItems(p){
 function viewRun(){
   const p=todayProgram(), items=flatItems(p);
   const done = items.filter(x=>S.checks[x.key]).length;
+  const nextKey = (items.find(x=>!S.checks[x.key])||{}).key;
+
   return `<div class="screen on">
     ${topbar()}
     <div class="scroll">
       <div class="pad">
         <p class="sub" style="margin:0">DAY ${dayNumber()} · ${esc(p.t)} — ${level().toUpperCase()}</p>
-        <div class="progress"><i style="width:${(done/items.length*100).toFixed(1)}%"></i></div>
-        <p class="tnum" style="font-size:12px;color:var(--ink-mute);margin:7px 0 4px">${done} / ${items.length} 種目</p>
 
         ${p.parts.map((part,pi)=>{
-          const rows = part.items.map((it,ii)=>{
-            const d=doseOf(it); if(d==="—") return "";
+          const rows=part.items.map((it,ii)=>({it,ii,d:doseOf(it)})).filter(r=>r.d!=="—");
+          if(!rows.length) return "";
+          const allDone = rows.every(r=>S.checks[pi+"-"+r.ii]);
+          const head = `<div class="partline" style="color:var(--ink-mute)">
+              <span class="badge" style="${allDone?"background:#a9b191":""}">PART ${pi+1}</span>
+              <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}${allDone?" · 完了 ✓":""}</span>
+              <span class="hr" style="background:rgba(34,37,29,.12)"></span>
+              ${allDone?`<button data-fold="${pi}" style="font-size:11.5px;color:var(--ink-mute)">${S.folded&&S.folded[pi]===false?"隠す":"開く"}</button>`:""}
+            </div>`;
+          if(allDone && !(S.folded && S.folded[pi]===false)) return head;
+          return head + rows.map(({it,ii,d})=>{
             const k=pi+"-"+ii, on=!!S.checks[k];
-            return `<button class="check ${on?"on":""}" data-check="${k}">
+            return `<button class="check ${on?"on":""} ${k===nextKey?"next":""}" data-check="${k}" ${k===nextKey?'id="next-item"':""}>
               <span class="box">${on?"✓":""}</span>
               <span style="flex:1;min-width:0">
                 <span class="en">${it.star?"★ ":""}${esc(EX[it.x].en)}</span>
                 <span class="ja">${esc(EX[it.x].ja)}</span>
-                <span class="dose">${esc(d)}</span>
+                <span class="dose">${esc(d)}${part.r?` ・ ${part.r}周`:""}</span>
               </span>
+              <span class="info" data-ex="${it.x}">?</span>
             </button>`;
           }).join("");
-          if(!rows.trim()) return "";
-          return `<div class="partline" style="color:var(--ink-mute)">
-              <span class="badge">PART ${pi+1}</span>
-              <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}</span>
-              <span class="hr" style="background:rgba(34,37,29,.12)"></span>
-            </div>${rows}`;
         }).join("")}
 
-        <p class="sub" style="text-align:center;margin:16px 0 10px">できた種目をタップしてチェック</p>
-        <button class="btn btn-dark" data-complete>Complete Today</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="train">戻る</button>
+        <p class="sub" style="text-align:center;margin:16px 0 0">できた種目をタップしてチェック</p>
+        <button class="btn btn-ghost" style="margin-top:10px" data-go="train">戻る</button>
+      </div>
+    </div>
+
+    <div class="runbar">
+      <div class="runbar-in">
+        <div style="flex:1">
+          <div class="progress" style="margin:0"><i style="width:${(done/items.length*100).toFixed(1)}%"></i></div>
+          <p class="tnum" style="font-size:11.5px;color:var(--ink-mute);margin:5px 0 0">${done} / ${items.length} 種目</p>
+        </div>
+        <button class="btn btn-dark" style="width:auto;padding:0 16px;height:46px;font-size:14px;white-space:nowrap" data-complete>Complete Today</button>
       </div>
     </div>
     ${nav("train")}
@@ -1032,7 +1044,8 @@ function buildFlow(p){
         for(let s=1;s<=sets;s++){
           flow.push({x:it.x, star:it.star, part:part.k, pi, label:d,
             round:rounds>1?r:0, rounds, set:sets>1?s:0, sets,
-            sec:pd.sec, rest: part.k==="COOL DOWN"?5 : part.k==="WARM UP"?10 : 20});
+            sec:pd.sec,
+            rest: part.k==="COOL DOWN"?5 : part.k==="WARM UP"?10 : part.k==="STRENGTH"?60 : 20});
         }
       });
     }
@@ -1080,6 +1093,8 @@ function viewTimer(){
   if(!T.tick) startTimer();
   const f=T.flow[T.i]||T.flow[0];
   const ex=EX[f.x];
+
+  /* --- 開始前のカウントダウン --- */
   if(T.phase==="count"){
     return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
       <div class="timer">
@@ -1088,54 +1103,117 @@ function viewTimer(){
         <p style="margin-top:14px;font-size:14px;opacity:.8">最初の種目：${esc(EX[T.flow[0].x].en)}</p>
         <button class="btn btn-tan" style="max-width:200px;margin-top:22px" data-skip-count>すぐ始める</button>
       </div>
-      <div class="tctl"><button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
-        data-quit>やめる</button></div>
+      <div class="tctl"><button class="btn" style="background:rgba(244,240,234,.12);color:#f4f0ea" data-quit>やめる</button></div>
     </div>`;
   }
+
+  /* --- 休憩 --- */
   if(T.phase==="rest"){
     const nx=T.flow[T.i+1];
     return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
+      ${stepHeader(true)}
       <div class="timer">
         <div class="lbl" style="color:var(--tan)">REST</div>
         <div class="num" id="t-num">${T.left}</div>
-        ${nx?`<p style="margin-top:18px;font-size:13px;opacity:.7">次の種目</p>
-        <p style="font-size:17px;font-weight:800;margin:4px 0 0">${esc(EX[nx.x].en)}</p>
-        <p style="font-size:12.5px;opacity:.7;margin:2px 0 0">${esc(EX[nx.x].ja)} · ${esc(nx.label)}</p>`:""}
-        <div style="display:flex;gap:9px;width:100%;margin-top:22px">
-          <button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
-            data-rest-add>+20秒</button>
-          <button class="btn btn-tan" data-rest-skip>スキップ</button>
-        </div>
+        ${nx?`<p style="margin-top:20px;font-size:12px;letter-spacing:.12em;opacity:.6">NEXT</p>
+        <p style="font-size:19px;font-weight:800;margin:5px 0 0">${nx.star?"★ ":""}${esc(EX[nx.x].en)}</p>
+        <p style="font-size:13px;opacity:.7;margin:3px 0 0">${esc(EX[nx.x].ja)}</p>
+        <p style="font-size:15px;font-weight:700;margin:8px 0 0;color:var(--tan)">${esc(setLabel(nx))}${stepMeta(nx)?" ・ "+stepMeta(nx):""}</p>`:""}
       </div>
-      <div class="tctl"><button class="btn btn-ghost" style="background:rgba(244,240,234,.12);color:#f4f0ea;border:0"
-        data-quit>やめる</button></div>
+      <div class="stepbar" style="background:rgba(34,37,29,.96);border-top-color:rgba(244,240,234,.12)">
+        <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-rest-add>+30</button>
+        <button class="btn btn-tan main" data-rest-skip>休憩をとばす</button>
+        <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-quit>✕</button>
+      </div>
     </div>`;
   }
-  const meta = [ f.round?`ROUND ${f.round}/${f.rounds}`:"", f.set?`SET ${f.set}/${f.sets}`:"" ].filter(Boolean).join(" · ");
+
+  /* --- 種目 --- */
+  const isTime = !!f.sec;
   return `<div class="screen on">
-    <div class="pad" style="padding-top:16px">
-      <div class="progress" style="margin-top:0"><i id="t-bar" style="width:${((T.i+1)/T.flow.length*100)}%"></i></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">
-        <button style="font-size:13px;color:var(--ink-mute)" data-quit>✕ やめる</button>
-        <span class="tnum" style="font-size:12.5px;font-weight:700">${T.i+1} / ${T.flow.length}</span>
-        <span class="tnum" style="font-size:12.5px;color:var(--ink-mute)" id="t-el">${fmtClock(T.elapsed)}</span>
-      </div>
-    </div>
+    ${stepHeader(false)}
     <div class="timer">
-      <div class="lbl">PART ${f.pi+1} · ${f.part}${meta?" · "+meta:""}</div>
+      <div class="lbl">PART ${f.pi+1} · ${f.part}${stepMeta(f)?" · "+stepMeta(f):""}</div>
       <h2>${f.star?"★ ":""}${esc(ex.en)}</h2>
       <div class="ja2">${esc(ex.ja)}</div>
-      <div class="num" id="t-num">${f.sec? f.left||T.left : esc(f.label)}</div>
-      ${f.sec?`<p class="sub" style="margin-top:6px">${esc(f.label)}</p>`
-             :`<p class="sub" style="margin-top:6px">できたら「次へ」をタップ</p>`}
-      <ul class="cues">${ex.cues.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
+
+      ${isTime
+        ? `<div class="num ${T.paused?"paused":""}" id="t-num">${T.left}</div>
+           <p class="sub" style="margin-top:2px">秒 ・ ${esc(setLabel(f))}</p>`
+        : `<div class="dose-big">${esc(setLabel(f))}</div>
+           <p class="sub" style="margin-top:4px">${f.set?`全${f.sets}セット中 ${f.set}セット目 ・ `:""}できたら下のボタンを押す</p>`}
+
+      <ul class="cues">${ex.cues.slice(0,2).map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
+      <div class="steplinks">
+        <button data-ex="${f.x}">フォームを見る</button>
+        <span>·</span>
+        <button data-jump-open>全体を見る</button>
+      </div>
     </div>
-    <div class="tctl">
-      <button class="rnd" data-t-prev>‹</button>
-      <button class="btn ${f.sec?"btn-ghost":"btn-olive"} main" data-t-toggle>${f.sec?(T.paused?"再開":"一時停止"):"次へ ✓"}</button>
-      <button class="rnd" data-t-next>›</button>
+
+    <div class="stepbar">
+      <button class="rnd" data-t-prev aria-label="前の種目">‹</button>
+      <button class="btn ${isTime&&!T.paused?"btn-ghost":"btn-olive"} main" data-t-toggle>
+        ${isTime ? (T.paused?"再開する":"一時停止") : "できた ✓"}
+      </button>
+      <button class="rnd" data-t-next aria-label="次の種目">›</button>
     </div>
   </div>`;
+}
+
+/* セット表示中は、そのセットぶんの処方だけを大きく出す */
+function setLabel(f){
+  return f.set ? f.label.replace(/\s*×\s*\d+\s*set/,"").trim() : f.label;
+}
+
+/* 「ROUND 1/2」「SET 2/3」 */
+function stepMeta(f){
+  return [ f.round?`ROUND ${f.round}/${f.rounds}`:"", f.set?`SET ${f.set}/${f.sets}`:"" ].filter(Boolean).join(" · ");
+}
+
+function stepHeader(dark){
+  const pct = ((T.i+1)/T.flow.length*100);
+  return `<div class="pad" style="padding-top:14px">
+    <div class="progress" style="margin-top:0;${dark?"background:rgba(244,240,234,.16)":""}">
+      <i id="t-bar" style="width:${pct}%;${dark?"background:var(--tan)":""}"></i></div>
+    <div class="stephead">
+      <button data-quit>✕ やめる</button>
+      <span class="tnum">${T.i+1} / ${T.flow.length}</span>
+      <span class="tnum" id="t-el">${fmtClock(T.elapsed)}</span>
+    </div>
+  </div>`;
+}
+
+/* 全体リスト（現在地までジャンプできる） */
+function openJump(){
+  backdrop.className="backdrop on";
+  let html="", lastKey="";
+  T.flow.forEach((f,i)=>{
+    const key=f.pi+"|"+(f.round||0);
+    if(key!==lastKey){
+      lastKey=key;
+      const part=todayProgram().parts[f.pi];
+      html+=`<div class="jump-head"><span class="badge">PART ${f.pi+1}</span>
+        <span>· ${part.k}${f.round?` · ROUND ${f.round}/${f.rounds}`:""}</span></div>`;
+    }
+    const state = i<T.i ? "past" : i===T.i ? "now" : "";
+    html+=`<button class="jump-row ${state}" data-jump="${i}">
+      <span class="mk">${i<T.i?"✓":i===T.i?"▶":""}</span>
+      <span style="flex:1;min-width:0">
+        <span class="en">${f.star?"★ ":""}${esc(EX[f.x].en)}</span>
+        <span class="ja">${esc(EX[f.x].ja)}${f.set?` · SET ${f.set}/${f.sets}`:""}</span>
+      </span>
+      <span class="dose">${esc(setLabel(f))}</span></button>`;
+  });
+  backdrop.innerHTML=`<div class="sheet">
+    <div class="grab"></div>
+    <div class="eyebrow">TODAY'S MENU</div>
+    <h2 style="margin:5px 0 2px;font-size:20px;font-weight:800">${esc(todayProgram().t)}</h2>
+    <p class="sub" style="margin-bottom:12px">タップするとその種目へ移動します</p>
+    ${html}
+    <button class="btn btn-ghost" style="margin-top:16px" data-close>閉じる</button>
+  </div>`;
+  setTimeout(()=>{ const el=backdrop.querySelector(".jump-row.now"); if(el) el.scrollIntoView({block:"center"}); },30);
 }
 
 /* =========================================================================
@@ -1232,6 +1310,7 @@ function viewSettings(){
    ========================================================================= */
 function openExercise(id){
   const e=EX[id]; if(!e) return;
+  if(current==="timer") T.paused=true;   // 解説を見ている間はカウントを止める
   backdrop.className="backdrop on";
   backdrop.innerHTML=`<div class="sheet">
     <div class="grab"></div>
@@ -1320,7 +1399,16 @@ function bind(){
   on("[data-ex]",el=>openExercise(el.dataset.ex));
 
   /* チェックリスト */
-  on("[data-check]",el=>{ const k=el.dataset.check; S.checks[k]=!S.checks[k]; save(); render(); });
+  on("[data-check]",(el,e)=>{
+    // 「?」を押したときは解説を開く（チェックしない）
+    if(e.target.closest("[data-ex]")){ openExercise(e.target.closest("[data-ex]").dataset.ex); return; }
+    const k=el.dataset.check; S.checks[k]=!S.checks[k]; save(); render();
+    // 次の未チェック種目まで自動でスクロールする
+    setTimeout(()=>{ const n=document.getElementById("next-item");
+      if(n) n.scrollIntoView({behavior:"smooth",block:"center"}); },40);
+  });
+  on("[data-fold]",el=>{ const i=el.dataset.fold; S.folded=S.folded||{};
+    S.folded[i] = S.folded[i]===false ? true : false; render(); });
   on("[data-complete]",()=>completeToday());
 
   /* タイマー */
@@ -1332,6 +1420,7 @@ function bind(){
   on("[data-t-next]",()=>afterItem());
   on("[data-t-prev]",()=>{ if(T.i>0) enterItem(T.i-1); else enterItem(0); });
   on("[data-quit]",()=>{ stopTimer(); T.tick=null; go("train"); });
+  on("[data-jump-open]",()=>openJump());
 
   /* 設定 */
   on("[data-set]",el=>{
@@ -1356,6 +1445,8 @@ backdrop.onclick=e=>{
   const c=t.closest("[data-close]"); if(c){ closeSheet(); return; }
   const r=t.closest("[data-rpe]"); if(r){ applyRpe(r.dataset.rpe); return; }
   const v=t.closest("[data-view-progress]"); if(v){ closeSheet(); stopTimer(); T.tick=null; go("log"); return; }
+  const j=t.closest("[data-jump]"); if(j){ closeSheet(); enterItem(+j.dataset.jump); return; }
+  const x=t.closest("[data-ex]"); if(x){ openExercise(x.dataset.ex); return; }
 };
 
 /* =========================================================================
@@ -1367,6 +1458,43 @@ render();
 </script>
 <style>
 /* 追加スタイル（生成したマークアップ用） */
+/* ステップ式の実行画面 */
+.stephead{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:12.5px}
+.stephead button{color:var(--ink-mute)}
+.stephead .tnum:nth-of-type(1){font-weight:700}
+.stephead .tnum:last-child{color:var(--ink-mute)}
+.screen[style*="var(--ink)"] .stephead button,
+.screen[style*="var(--ink)"] .stephead .tnum{color:rgba(244,240,234,.7)}
+.timer .num.paused{opacity:.4}
+.dose-big{font-size:40px;font-weight:800;letter-spacing:-.01em;margin-top:16px;line-height:1.15}
+.steplinks{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:16px;font-size:13px}
+.steplinks button{font-weight:700;color:var(--olive);text-decoration:underline;text-underline-offset:3px}
+.steplinks span{color:var(--ink-mute)}
+.stepbar{flex:none;display:flex;gap:10px;align-items:center;justify-content:center;
+  padding:12px 18px calc(14px + var(--safe));background:rgba(240,236,228,.96);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.stepbar .rnd{width:54px;height:54px;flex:none;border-radius:999px;background:var(--surface);
+  border:1px solid rgba(34,37,29,.08);display:grid;place-items:center;font-size:20px}
+.stepbar .main{flex:1;height:54px;font-size:16px}
+
+/* 全体リスト（ジャンプ） */
+.jump-head{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:11.5px;
+  font-weight:700;letter-spacing:.1em;color:var(--ink-mute)}
+.jump-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface);
+  border-radius:10px;padding:11px 13px;margin-bottom:6px;color:var(--ink)}
+.jump-row .mk{width:18px;flex:none;color:var(--olive);font-weight:800;font-size:13px}
+.jump-row .en{display:block;font-size:13.5px;font-weight:700}
+.jump-row .ja{display:block;font-size:11px;color:var(--ink-mute);margin-top:1px}
+.jump-row .dose{font-size:11.5px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+.jump-row.past{opacity:.5}
+.jump-row.now{background:var(--olive-soft);outline:1.5px solid var(--olive)}
+
+/* チェックリスト画面 */
+.check.next{outline:1.5px solid var(--olive)}
+.check .info{width:22px;height:22px;flex:none;border-radius:999px;background:var(--surface-sunk);
+  color:var(--ink-mute);font-size:12px;font-weight:800;display:grid;place-items:center;align-self:center}
+.runbar{flex:none;background:rgba(240,236,228,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.runbar-in{display:flex;align-items:center;gap:14px;padding:11px 18px}
 .seg-dark{display:flex;gap:0;margin-top:16px;background:rgba(244,240,234,.09);border-radius:10px;padding:4px}
 .seg-dark button{flex:1;padding:9px 0;border-radius:7px;font-size:13px;font-weight:700;color:rgba(244,240,234,.75)}
 .seg-dark button.on{background:var(--surface);color:var(--ink)}
