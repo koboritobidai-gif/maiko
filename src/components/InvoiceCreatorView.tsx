@@ -42,14 +42,16 @@ interface InvoiceFormState {
   dueDate: string;
 }
 
-const DEFAULT_HONORIFIC = "ご担当者";
+// 宛名2行目は経営者の指示で既定は空欄(空欄なら請求書に行ごと表示されない)。請求No.の既定は「1」。
+const DEFAULT_HONORIFIC = "";
+const DEFAULT_INVOICE_NO = "1";
 
 const BLANK_FORM: InvoiceFormState = {
   companyName: "",
   honorificLine: DEFAULT_HONORIFIC,
   candidateName: "",
   amountYen: "",
-  invoiceNo: "",
+  invoiceNo: DEFAULT_INVOICE_NO,
   issueDate: "",
   dueDate: "",
 };
@@ -128,7 +130,7 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
       honorificLine: DEFAULT_HONORIFIC,
       candidateName: row.candidateName ?? "",
       amountYen: String(row.amountYen),
-      invoiceNo: "",
+      invoiceNo: DEFAULT_INVOICE_NO,
       issueDate: toDateInputValue(getDefaultIssueDate(row.month)),
       dueDate: toDateInputValue(getDefaultDueDate(row.month)),
     });

@@ -52,10 +52,13 @@ export default function InvoiceSheet({
         <div className="invoice-top">
           <div className="invoice-to">
             <div className="invoice-company-name">{companyName}</div>
-            <div className="invoice-person">
-              <span>{honorificLine}</span>
-              <span>様</span>
-            </div>
+            {/* 宛名2行目は経営者の指示により既定では出さない(入力があるときだけ「◯◯ 様」の行を表示)。 */}
+            {honorificLine.trim() !== "" && (
+              <div className="invoice-person">
+                <span>{honorificLine}</span>
+                <span>様</span>
+              </div>
+            )}
             <div className="invoice-subject">件名: 人材紹介費用</div>
             <div className="invoice-greeting">下記のとおり、ご請求申し上げます。</div>
           </div>
@@ -79,12 +82,11 @@ export default function InvoiceSheet({
             <div className="invoice-issuer">
               <div className="invoice-issuer-name">株式会社翔び台</div>
               <div>〒107-0052</div>
+              {/* 住所は太字にしない(経営者の指示。他の行と同じ太さで表示する)。 */}
               <div>
-                <b>
-                  東京都港区赤坂4-8-20
-                  <br />
-                  JESCO赤坂表町ビル809
-                </b>
+                東京都港区赤坂4-8-20
+                <br />
+                JESCO赤坂表町ビル809
               </div>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element -- 雛形通りmm単位で絶対配置する社印。next/imageの余白制御より素のimgの方が単純。 */}
@@ -235,7 +237,8 @@ const INVOICE_SHEET_CSS = `
 .invoice-company-name { font-size: 14px; border-bottom: 1px solid #333; padding: 0 2mm 1.5mm; }
 .invoice-person { border-bottom: 1px solid #333; padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
 .invoice-subject { margin-top: 9mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
-.invoice-greeting { margin-top: 2.5mm; font-size: 12px; border-bottom: 1px solid #333; padding: 0 6mm 1.5mm; }
+/* 「下記のとおり〜」の下線は経営者の指示で無し。 */
+.invoice-greeting { margin-top: 2.5mm; font-size: 12px; padding: 0 6mm 1.5mm; }
 .invoice-meta { width: 72mm; font-size: 12px; position: relative; }
 .invoice-meta table { width: 100%; border-collapse: collapse; }
 .invoice-meta td { padding: 1.2mm 0; vertical-align: top; }
@@ -246,11 +249,12 @@ const INVOICE_SHEET_CSS = `
 .invoice-contact { margin-top: 3mm; line-height: 1.7; }
 .invoice-contact td { padding: 0.4mm 0; }
 .invoice-contact td.k { text-align: right; padding-right: 2mm; white-space: nowrap; }
-.invoice-totalbar { margin-top: 8mm; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
-.invoice-totalbar .invoice-amount { font-size: 15px; font-weight: 700; }
+/* 合計金額とお支払期限の下線は1本につなげず、それぞれ別々に引く(経営者の指示)。 */
+.invoice-totalbar { margin-top: 8mm; display: flex; justify-content: space-between; align-items: flex-end; }
+.invoice-totalbar .invoice-amount { font-size: 15px; font-weight: 700; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
 .invoice-totalbar .invoice-amount .invoice-label { font-size: 13px; margin-right: 8mm; }
 .invoice-totalbar .invoice-amount .invoice-tax { font-size: 11px; font-weight: 400; margin-left: 4mm; }
-.invoice-totalbar .invoice-due { font-size: 12.5px; width: 66mm; display: flex; justify-content: space-between; }
+.invoice-totalbar .invoice-due { font-size: 12.5px; width: 66mm; display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 1.5mm; }
 .invoice-items { margin-top: 4mm; width: 100%; border-collapse: collapse; font-size: 12px; }
 .invoice-items th, .invoice-items td { border: 1.5px solid #333; padding: 1.8mm 2mm; }
 .invoice-items th { background: #f2f2f2; font-weight: 600; }
