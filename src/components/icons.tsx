@@ -87,6 +87,15 @@ export function IconCompany(props: IconProps) {
   );
 }
 
+export function IconInvoice(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 3h12v17l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1V3Z" />
+      <path d="M9 8h6M9 11.5h6M9 15h3.5" />
+    </svg>
+  );
+}
+
 export function IconChevronDown(props: IconProps) {
   return (
     <svg {...base} strokeWidth={2} {...props}>
