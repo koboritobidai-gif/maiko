@@ -33,6 +33,8 @@ interface InvoiceFormState {
   /** 宛名2行目(既定「ご担当者」) */
   honorificLine: string;
   candidateName: string;
+  /** 摘要の内訳(任意・自由記載)。「月収28万×12ヶ月×成功報酬35%」等を摘要の2行目に印字する。 */
+  breakdownNote: string;
   /** 金額(税込)。<input type="number"> の生値をそのまま保持する(空欄も許容するため文字列で持つ)。 */
   amountYen: string;
   /** 請求No.(既定は空欄) */
@@ -50,6 +52,7 @@ const BLANK_FORM: InvoiceFormState = {
   companyName: "",
   honorificLine: DEFAULT_HONORIFIC,
   candidateName: "",
+  breakdownNote: "",
   amountYen: "",
   invoiceNo: DEFAULT_INVOICE_NO,
   issueDate: "",
@@ -129,6 +132,7 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
       companyName: row.company,
       honorificLine: DEFAULT_HONORIFIC,
       candidateName: row.candidateName ?? "",
+      breakdownNote: "",
       amountYen: String(row.amountYen),
       invoiceNo: DEFAULT_INVOICE_NO,
       issueDate: toDateInputValue(getDefaultIssueDate(row.month)),
@@ -269,6 +273,18 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
             <FormField label="請求No." value={form.invoiceNo} onChange={(v) => update("invoiceNo", v)} placeholder="未記入可" />
             <FormField label="請求日" type="date" value={form.issueDate} onChange={(v) => update("issueDate", v)} />
             <FormField label="お支払期限" type="date" value={form.dueDate} onChange={(v) => update("dueDate", v)} />
+            {/* 摘要の内訳(任意): 摘要の2行目に印字される自由記載。改行も可のため textarea。 */}
+            <label className="flex flex-col gap-1 text-[11px] sm:col-span-2" style={muted}>
+              摘要の内訳(任意・摘要の2行目に印字されます)
+              <textarea
+                value={form.breakdownNote}
+                onChange={(e) => update("breakdownNote", e.target.value)}
+                placeholder="例: 月収28万×12ヶ月×成功報酬35%"
+                rows={2}
+                className="rounded-lg px-2.5 py-1.5 text-[12.5px] outline-none"
+                style={{ background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+              />
+            </label>
           </div>
         </section>
       </div>
@@ -279,6 +295,7 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
           companyName={form.companyName}
           honorificLine={form.honorificLine}
           candidateName={form.candidateName}
+          breakdownNote={form.breakdownNote}
           totalYen={totalYen}
           invoiceNo={form.invoiceNo}
           issueDateLabel={issueDate ? formatIssueDateLabel(issueDate) : ""}

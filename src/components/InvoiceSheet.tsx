@@ -19,6 +19,11 @@ export interface InvoiceSheetProps {
   honorificLine: string;
   /** 求職者名(摘要「【◯◯様】人材紹介費用」に使う) */
   candidateName: string;
+  /**
+   * 摘要の内訳(任意・自由記載)。「月収28万×12ヶ月×成功報酬35%」のように金額の内訳を
+   * 摘要の2行目として記載する運用があるため(経営者の要望)。空欄なら2行目は出さない。
+   */
+  breakdownNote: string;
   /** 金額(税込)。売上シートの金額そのもの。 */
   totalYen: number;
   /** 請求No.(空欄可。空欄ならそのまま空欄で印字する) */
@@ -47,6 +52,7 @@ export default function InvoiceSheet({
   companyName,
   honorificLine,
   candidateName,
+  breakdownNote,
   totalYen,
   invoiceNo,
   issueDateLabel,
@@ -159,7 +165,13 @@ export default function InvoiceSheet({
           <tbody>
             <tr>
               <td className="no">1</td>
-              <td>【{candidateName}様】人材紹介費用</td>
+              <td>
+                【{candidateName}様】人材紹介費用
+                {/* 内訳(任意)は摘要の2行目に。改行入力もそのまま反映する。 */}
+                {breakdownNote.trim() !== "" && (
+                  <div style={{ whiteSpace: "pre-line" }}>{breakdownNote}</div>
+                )}
+              </td>
               <td className="qty">1　名</td>
               <td className="price">{formatYen(tax.subtotalYen)}</td>
               <td className="amt">{formatYen(tax.subtotalYen)}</td>
