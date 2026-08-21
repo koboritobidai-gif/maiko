@@ -8,12 +8,14 @@ import {
   IconDashboard,
   IconDeliver,
   IconDocument,
+  IconInvoice,
   IconMic,
 } from "./icons";
 
 const TABS = [
   { href: "/", label: "今日の経営", icon: IconDashboard },
   { href: "/companies", label: "企業・求人", icon: IconCompany },
+  { href: "/invoice", label: "請求書", icon: IconInvoice },
   { href: "/ask", label: "AIに聞く", icon: IconChat },
   { href: "/deliver", label: "届ける", icon: IconDeliver },
   { href: "/meeting", label: "面談AI", icon: IconMic },

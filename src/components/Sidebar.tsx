@@ -24,8 +24,7 @@ const NAV_ITEMS = [
   { href: "/deliver", label: "届ける", icon: IconDeliver },
   { href: "/meeting", label: "面談AI", icon: IconMic },
   { href: "/proposal", label: "提案書", icon: IconDocument },
-  // 「請求書作成」はモバイルのTabBarには追加しない。印刷(PDF保存)前提の機能でPC運用のみのため、
-  // モバイルの操作導線に混ぜる必要が無い(Sidebarはlg以上でのみ表示されるナビ)。
+  // 「請求書作成」はモバイルのTabBarにも「請求書」として追加済み(経営者の要望で携帯からも作成可)。
   { href: "/invoice", label: "請求書作成", icon: IconInvoice },
 ];
 

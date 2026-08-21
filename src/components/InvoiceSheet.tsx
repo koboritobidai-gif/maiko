@@ -242,6 +242,14 @@ const INVOICE_SHEET_CSS = `
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 16px rgba(16, 24, 40, 0.12);
 }
+/* 携帯(狭い画面)ではA4幅のプレビューが収まらないため、全体を縮小表示する
+   (経営者の指示で携帯からも請求書を作れるようにする)。印刷時はこのメディアクエリに
+   一致しない(印刷ビューポートはA4幅)ため紙面サイズには影響しない。 */
+@media (max-width: 700px) {
+  .invoice-sheet {
+    zoom: 0.46;
+  }
+}
 @media print {
   .invoice-sheet {
     width: 188mm;
