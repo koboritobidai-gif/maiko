@@ -51,8 +51,12 @@ export default function InvoiceSheet({
 
         <div className="invoice-top">
           <div className="invoice-to">
-            <div className="invoice-company-name">{companyName}</div>
-            {/* 宛名2行目は経営者の指示により既定では出さない(入力があるときだけ「◯◯ 様」の行を表示)。 */}
+            {/* 宛名2行目が空のときは会社名に「御中」を付け、入力があるときは「御中」を付けずに
+                「◯◯ 様」の行(下線なし)を表示する(経営者の指示)。 */}
+            <div className="invoice-company-name">
+              {companyName}
+              {honorificLine.trim() === "" && <span className="invoice-onchu">御中</span>}
+            </div>
             {honorificLine.trim() !== "" && (
               <div className="invoice-person">
                 <span>{honorificLine}</span>
@@ -235,7 +239,9 @@ const INVOICE_SHEET_CSS = `
 .invoice-top { display: flex; justify-content: space-between; }
 .invoice-to { width: 88mm; font-size: 12.5px; }
 .invoice-company-name { font-size: 14px; border-bottom: 1px solid #333; padding: 0 2mm 1.5mm; }
-.invoice-person { border-bottom: 1px solid #333; padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
+/* 宛名2行目は下線なし(経営者の指示)。 */
+.invoice-person { padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
+.invoice-onchu { margin-left: 4mm; }
 .invoice-subject { margin-top: 9mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
 /* 「下記のとおり〜」の下線は経営者の指示で無し。 */
 .invoice-greeting { margin-top: 2.5mm; font-size: 12px; padding: 0 6mm 1.5mm; }
