@@ -242,7 +242,8 @@ const INVOICE_SHEET_CSS = `
 /* 宛名2行目は下線なし(経営者の指示)。 */
 .invoice-person { padding: 3mm 2mm 1.5mm; display: flex; justify-content: space-between; }
 .invoice-onchu { margin-left: 4mm; }
-.invoice-subject { margin-top: 9mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
+/* 会社名(宛先)と件名の間は2行分ほど空ける(経営者の指示で 9mm → 18mm)。 */
+.invoice-subject { margin-top: 18mm; font-size: 13px; font-weight: 600; border-bottom: 2px solid #333; padding: 0 2mm 1mm; }
 /* 「下記のとおり〜」の下線は経営者の指示で無し。 */
 .invoice-greeting { margin-top: 2.5mm; font-size: 12px; padding: 0 6mm 1.5mm; }
 .invoice-meta { width: 72mm; font-size: 12px; position: relative; }
@@ -285,7 +286,7 @@ const INVOICE_SHEET_CSS = `
    (メディアクエリは詳細度を上げないため、前方に書くと後続の基本ルールで打ち消される)。 */
 @media print {
   .invoice-title { margin-bottom: 8mm; }
-  .invoice-subject { margin-top: 6mm; }
+  .invoice-subject { margin-top: 15mm; }
   .invoice-totalbar { margin-top: 5mm; }
   .invoice-items td.empty { height: 6mm; }
   .invoice-notes { margin-top: 4mm; }
