@@ -356,8 +356,11 @@ export class SlackSource implements MessengerSource {
 
     // CA別実績で6月分まで表示したいという経営者の要望のため、履歴は約4ヶ月(120日)前まで
     // カーソルページングで遡る(以前は直近100メッセージのみで、古い月のスレッドが範囲外に落ちていた)。
-    // 返信取得の上限も同じ理由で250スレッドまで拡大(返信キャッシュにより2回目以降の取得は差分のみ)。
-    const REPLY_FETCH_LIMIT = 250;
+    // 返信取得の件数上限は「実質無制限」の600にする: 以前の250では実際のスレッド数(352件)を
+    // 下回り、常に102件が読み残し=「完全に読めた」状態に永遠に到達できず、最終確定値の保存
+    // (thread-stats.ts)が一度も成功しない構造欠陥になっていた(/api/warm の実測で判明)。
+    // 呼び出し数の実際の抑制は時間予算(repliesDeadline)とデータキャッシュが担う。
+    const REPLY_FETCH_LIMIT = 600;
     const THREAD_CONCURRENCY = 10;
     const HISTORY_LOOKBACK_DAYS = 120;
     const HISTORY_MAX_MESSAGES = 600;
