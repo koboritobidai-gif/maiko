@@ -79,6 +79,16 @@ export default async function TodayDashboardPage() {
   );
   // 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。
   const revenueSummary = getRevenueSummary(revenueResult.records, now);
+  // 入金予定: 売上シートの「今月より先の入金月」の合計(入金月の昇順)。トップの主要指標に
+  // これから入ってくるお金を表示したいという経営者の要望(9月末・10月末入金分など)。
+  const nowMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const upcomingRevenue = [
+    ...revenueResult.records
+      .filter((r) => r.month > nowMonthKey)
+      .reduce((m, r) => m.set(r.month, (m.get(r.month) ?? 0) + r.amountYen), new Map<string, number>()),
+  ]
+    .map(([monthKey, totalYen]) => ({ monthKey, totalYen }))
+    .sort((a, b) => (a.monthKey < b.monthKey ? -1 : 1));
   // CA別の月次実績・面談数(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES
   // 固定リスト)。コールドスタート等でスレッド読み込みが不完全なとき(0件へ落ち込むのを防ぐため)は
   // 最後に完全読み込みできたときの最終確定値(thread-stats.ts)へフォールバックする。
@@ -145,6 +155,7 @@ export default async function TodayDashboardPage() {
       invoiceStatus={invoicesResult.status}
       invoiceErrorMessage={invoicesResult.errorMessage}
       revenueSummary={revenueSummary}
+      upcomingRevenue={upcomingRevenue}
       revenueStatus={revenueResult.status}
       revenueErrorMessage={revenueResult.errorMessage}
       primaryMonths={primaryMonths}

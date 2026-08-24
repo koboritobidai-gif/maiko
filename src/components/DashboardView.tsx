@@ -258,6 +258,8 @@ interface DashboardViewProps {
   invoiceErrorMessage?: string;
   /** 送客売上(翔び台が紹介先企業から貰う金額)の今月・先月まとめ。 */
   revenueSummary: { thisMonth: RevenueMonthSummary; lastMonth: RevenueMonthSummary };
+  /** 入金予定(今月より先の入金月ごとの合計、入金月の昇順)。売上シート未来月タブ由来。 */
+  upcomingRevenue: { monthKey: string; totalYen: number }[];
   revenueStatus: SourceStatus;
   revenueErrorMessage?: string;
   /** 主要指標セクションの月選択用スナップショット(直近6ヶ月、今月が先頭)。 */
@@ -286,6 +288,7 @@ export default function DashboardView({
   invoiceStatus,
   invoiceErrorMessage,
   revenueSummary,
+  upcomingRevenue,
   revenueStatus,
   revenueErrorMessage,
   primaryMonths,
@@ -531,7 +534,24 @@ export default function DashboardView({
         </div>
         {/* お金の出入り(支出=広告+SNS+送客費用+その他の支払い)。売上シート未導入の間は非表示。 */}
         {showRevenueSection && (
-          <div className="grid grid-cols-2 gap-2.5 lg:gap-4">
+          <div className={`grid grid-cols-2 gap-2.5 lg:gap-4 ${upcomingRevenue.length > 0 ? "lg:grid-cols-3" : ""}`}>
+            {/* 入金予定: 売上シートの未来月タブ(9月末入金分など)の合計。これから入るお金を
+                トップでひと目で見たいという経営者の要望。 */}
+            {upcomingRevenue.length > 0 && (
+              <KpiCard
+                label={`入金予定(${shortMonthLabel(upcomingRevenue[0].monthKey)}末)`}
+                value={formatYen(upcomingRevenue[0].totalYen)}
+                caption={
+                  upcomingRevenue.length > 1
+                    ? upcomingRevenue
+                        .slice(1, 4)
+                        .map((u) => `${shortMonthLabel(u.monthKey)}末 ${formatYen(u.totalYen)}`)
+                        .join(" / ")
+                    : "その先の入金予定はまだシートにありません"
+                }
+                accent
+              />
+            )}
             <KpiCard
               label="支出(全体)"
               value={formatYen(moneyOutYen)}
