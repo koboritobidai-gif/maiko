@@ -460,4 +460,6 @@ export interface RevenueRecord {
   candidateName?: string;
   /** 金額(円) */
   amountYen: number;
+  /** 備考(任意。シートに列があれば)。請求書作成で摘要の内訳(2行目)へ自動転記する。 */
+  note?: string;
 }

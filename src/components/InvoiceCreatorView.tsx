@@ -132,7 +132,8 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
       companyName: row.company,
       honorificLine: DEFAULT_HONORIFIC,
       candidateName: row.candidateName ?? "",
-      breakdownNote: "",
+      // シートの備考列(分割払いの内訳等)を摘要の内訳へ自動転記(経営者の要望。手直し可)。
+      breakdownNote: row.note ?? "",
       amountYen: String(row.amountYen),
       invoiceNo: DEFAULT_INVOICE_NO,
       issueDate: toDateInputValue(getDefaultIssueDate(row.month)),

@@ -129,6 +129,9 @@ function parseRevenueTab(rows: SheetValuesRow[], tabTitle: string, month: string
   const channelIdx = findColumnIndex(header, (t) => t.includes("流入経路") || t.includes("経路"));
   const amountIdx = findColumnIndex(header, (t) => t.includes("金額") || t.includes("報酬") || t.includes("売上"));
   const candidateIdx = findColumnIndex(header, (t) => t.includes("求職者"));
+  // 備考列(任意): 「2回目/24回 ※1回〜12回→55,000円…」のような分割払いの内訳が書かれる運用。
+  // 請求書作成画面で摘要の内訳(2行目)へ自動転記するために読み取る。
+  const noteIdx = findColumnIndex(header, (t) => t.includes("備考"));
 
   if (companyIdx < 0 || channelIdx < 0 || amountIdx < 0) {
     const headerText = header.map(cellToString).filter(Boolean).join(" / ") || "(空行)";
@@ -165,6 +168,7 @@ function parseRevenueTab(rows: SheetValuesRow[], tabTitle: string, month: string
       company,
       candidateName: candidateIdx >= 0 ? cellToString(row[candidateIdx]) || undefined : undefined,
       amountYen: Math.round(amountYen),
+      note: noteIdx >= 0 ? cellToString(row[noteIdx]) || undefined : undefined,
     });
   }
   return records;
