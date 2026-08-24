@@ -201,7 +201,17 @@ export default function InvoiceCreatorView({ records }: { records: RevenueRecord
 
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <SectionLabel>2. 行を選ぶ</SectionLabel>
+            <div className="flex items-baseline gap-2.5">
+              <SectionLabel>2. 行を選ぶ</SectionLabel>
+              {/* 選択中の入金月の合計(税込)。トップの「入金予定」と同じ数字を請求書作成でも
+                  確認したいという経営者の要望。 */}
+              {rowsForMonth.length > 0 && (
+                <span className="text-[12px] font-bold whitespace-nowrap" style={{ color: "var(--color-gold)" }}>
+                  合計 {formatYen(rowsForMonth.reduce((sum, r) => sum + r.amountYen, 0))}
+                  <span className="ml-1 font-medium" style={muted}>({rowsForMonth.length}件)</span>
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={selectBlank}
