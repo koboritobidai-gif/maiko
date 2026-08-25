@@ -922,6 +922,11 @@ export function getPrimaryMonthSnapshots(
   const interviewsForMonth = (ref: Date): number => {
     const sheet = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談数", ref);
     const slack = slackInterviewCountsByMonth?.get(monthKeyOf(ref)) ?? 0;
+    // 過去月でシートに入力がある場合はKPI表の確定値を優先する(経営者の指摘: Slack検出は
+    // 同一人物の重複スレッドやメモ形式の誤検出で実際より多く出ることがあり、7月35件が
+    // 47件に化けた実例があった)。Slack検出で補うのは「当月」と「シート未入力(0)の月」のみ。
+    const isPastMonth = monthKeyOf(ref) < monthKeyOf(now);
+    if (isPastMonth && sheet > 0) return sheet;
     return Math.max(sheet, slack);
   };
   const snapshots: PrimaryMonthSnapshot[] = [];

@@ -101,7 +101,12 @@ export default async function TodayDashboardPage() {
     ...summary,
     monthlyHistory: summary.monthlyHistory.map((p) => ({
       ...p,
-      interviews: Math.max(p.interviews, interviewCountsByMonth.get(p.month) ?? 0),
+      // 過去月でシートに入力があればKPI表の確定値を優先(主要指標と同じルール。metrics.ts の
+      // interviewsForMonth のコメント参照)。Slack検出で補うのは当月とシート未入力の月のみ。
+      interviews:
+        p.month < nowMonthKey && p.interviews > 0
+          ? p.interviews
+          : Math.max(p.interviews, interviewCountsByMonth.get(p.month) ?? 0),
     })),
   };
   // 営業実績(#21_ra・#22_アポイント報告から自動集計。直近6ヶ月・今月が先頭。対象は SALES_NAMES 固定リスト)。
