@@ -1,0 +1,20 @@
+{
+  "_comment": "Each entry: name (file-safe), path (appended to UYSOT_API_BASE unless 'url' given), method, host note. Fill in KPI endpoints as they are identified from the HAR / cURL captures.",
+  "endpoints": [
+    {
+      "name": "conversation",
+      "path": "/conversation?page=1&size=20",
+      "method": "GET",
+      "status": "confirmed",
+      "note": "Paginated envelope {data:{data:[],currentPage,totalElements,totalPages}}. Host: mcpclient.app.uysot.uz/v1"
+    }
+
+    ,{ "name": "PENDING_marketing_spend",  "path": "", "method": "GET", "status": "todo", "note": "マーケ: 使った金額" }
+    ,{ "name": "PENDING_list_count",       "path": "", "method": "GET", "status": "todo", "note": "マーケ: リスト数" }
+    ,{ "name": "PENDING_store_visits",     "path": "", "method": "GET", "status": "todo", "note": "営業: 来店数" }
+    ,{ "name": "PENDING_lead_source",      "path": "", "method": "GET", "status": "todo", "note": "営業: 流入経路" }
+    ,{ "name": "PENDING_deal_status",      "path": "", "method": "GET", "status": "todo", "note": "営業: 案件ごとの状況" }
+    ,{ "name": "PENDING_contracts",        "path": "", "method": "GET", "status": "todo", "note": "営業: 契約数" }
+    ,{ "name": "PENDING_monthly_sales",    "path": "", "method": "GET", "status": "todo", "note": "月次: 売上 / 累計 / 見込み" }
+  ]
+}

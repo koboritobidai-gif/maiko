@@ -1,0 +1,8 @@
+# secrets
+.env
+*.token
+# fetched data (may contain business data) — keep the folder, ignore contents
+/data/*.json
+!/data/.gitkeep
+# node
+node_modules/
