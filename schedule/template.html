@@ -1,0 +1,178 @@
+<meta charset="utf-8">
+<title>浜屋様 ウズベキスタン ビジネスミッションツアー日程表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#12266b; --navy-d:#0d1b4d; --blue:#1f4fbf; --blue-l:#3f6fd8;
+    --ink:#1e2740; --muted:#6b7a94; --line:#e3e8f1; --soft:#f5f7fb;
+    --rule:#c9d8ef;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Noto Sans JP","IPAPGothic","IPAGothic",sans-serif;background:#fff;color:var(--ink);
+       -webkit-font-smoothing:antialiased}
+  .sheet{width:1200px;height:849px;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+
+  /* ---------- header ---------- */
+  .head{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px 0}
+  .head h1{font-size:22px;font-weight:900;color:var(--navy);letter-spacing:.3px;line-height:1.2}
+  .head .sub{margin-top:5px;font-size:12.5px;font-weight:700;color:var(--blue);letter-spacing:1.2px}
+  .head .right{text-align:right;padding-top:2px}
+  .head .right .lbl{font-size:9.5px;letter-spacing:3.2px;color:#96a2b8;font-weight:500}
+  .head .right .rng{margin-top:3px;font-size:16px;font-weight:900;color:var(--blue);letter-spacing:.6px}
+
+  /* ---------- info + photos ---------- */
+  .info{margin:11px 18px 0;display:flex;gap:11px;align-items:stretch}
+  .ibox{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:10px 15px;
+        display:flex;flex-direction:column;justify-content:center;gap:7px}
+  .ibox.a{flex:0 0 316px} .ibox.b{flex:1}
+  .kv{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;line-height:1.4}
+  .kv .ki{width:13px;height:13px;flex:0 0 13px;margin-top:1px;color:var(--blue)}
+  .kv .k{color:var(--muted);font-weight:500;flex:0 0 auto;letter-spacing:.4px}
+  .kv .sep{color:#aab6cb;flex:0 0 auto}
+  .kv .v{font-weight:700;color:var(--ink)}
+  .kv .v small{font-weight:500;font-size:11px;color:var(--muted)}
+  .kv .nowrap{white-space:nowrap}
+
+  .photos{flex:0 0 496px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .ph{border-radius:7px;overflow:hidden;display:flex;flex-direction:column;background:#dbe7f8;
+      box-shadow:0 1px 3px rgba(18,38,107,.13)}
+  .ph img{width:100%;flex:1;object-fit:cover;display:block;min-height:0}
+  .ph .cap{background:var(--navy-d);color:#fff;font-size:9.5px;font-weight:700;
+           text-align:center;padding:4px 2px;letter-spacing:.4px}
+
+  /* ---------- days ---------- */
+  .days{flex:1 1 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;
+        padding:11px 18px 0;min-height:0}
+  .day{border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;
+       overflow:hidden;background:#fff}
+  .dhead{display:flex;align-items:center;gap:6px;padding:9px 10px 9px;background:var(--soft);
+         border-bottom:1px solid var(--line)}
+  .dhead .badge{background:var(--navy);color:#fff;font-size:8.5px;font-weight:700;letter-spacing:1.2px;
+                border-radius:4px;padding:3px 5px;flex:0 0 auto}
+  .dhead .num{font-size:19px;font-weight:900;color:var(--navy);line-height:1;flex:0 0 auto}
+  .dhead .dt{display:flex;flex-direction:column;margin-left:2px;min-width:0}
+  .dhead .dt b{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;letter-spacing:-.2px}
+  .dhead .dt i{font-size:8.5px;font-style:normal;color:var(--muted);font-weight:500;margin-top:2px;
+               white-space:nowrap}
+
+  .items{flex:1;padding:9px 10px 2px}
+  .it{padding:3.5px 0;font-size:9.5px;line-height:1.55;color:var(--ink);font-weight:500;
+      word-break:normal;overflow-wrap:normal;line-break:strict}
+  .it .ic{display:inline-block;width:11.5px;height:11.5px;vertical-align:-1.5px;
+          margin-right:5px;color:var(--blue-l)}
+  .it .t{font-weight:700;color:var(--navy);letter-spacing:.2px;margin-right:3px;white-space:nowrap}
+  .it .n{display:block;font-size:8px;color:var(--muted);font-weight:400;line-height:1.45;
+         margin-top:1px;padding-left:16.5px}
+  .nb{white-space:nowrap}
+
+  .dfoot{margin:5px 10px 0;border-top:1px solid var(--rule);padding:7px 0 9px;
+         display:flex;align-items:center;justify-content:center;gap:5px;color:var(--navy);
+         text-align:center}
+  .dfoot .fi{width:11px;height:11px;flex:0 0 11px}
+  .dfoot span{font-size:8.5px;font-weight:700;letter-spacing:.2px;line-height:1.35}
+  .dfoot.dep{color:var(--navy)}
+
+  /* ---------- benefits ---------- */
+  .bene{flex:0 0 auto;margin:11px 18px 0;background:var(--soft);border:1px solid var(--line);
+        border-radius:9px;padding:10px 14px 12px}
+  .bene .bh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .bene .bh .bar{width:3.5px;height:14px;background:var(--blue);border-radius:2px}
+  .bene .bh h2{font-size:12.5px;font-weight:900;color:var(--navy);letter-spacing:.3px}
+  .bgrid{display:grid;grid-template-columns:repeat(6,1fr)}
+  .b{text-align:center;padding:0 9px;border-left:1px solid var(--line)}
+  .b:first-child{border-left:0}
+  .b .bi{width:21px;height:21px;color:var(--blue);margin-bottom:5px}
+  .b .bt{font-size:10px;font-weight:700;color:var(--navy);line-height:1.4}
+  .b .bd{margin-top:3px;font-size:8px;font-weight:400;color:var(--muted);line-height:1.55}
+
+  /* ---------- bottom ---------- */
+  .strip{flex:0 0 auto;margin:10px 18px 16px;display:flex;gap:11px}
+  .cell{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:10px 14px;
+        display:flex;align-items:flex-start;gap:9px}
+  .cell.h{flex:0 0 553px;align-items:center} .cell.n{flex:1}
+  .cell .ci{width:22px;height:22px;flex:0 0 22px;border-radius:6px;background:var(--navy);color:#fff;
+            padding:5px}
+  .cell .ttl{font-size:11px;font-weight:900;color:var(--navy);flex:0 0 auto}
+  .cell p{font-size:9px;color:var(--muted);line-height:1.65;font-weight:400}
+</style>
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M2 16h20M6 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5 13.6 12V4.9a1.6 1.6 0 0 0-3.2 0V12L3 15.5v1.9l7.4-2.1v4.4l-2.2 1.4v1.4l3.8-.9 3.8.9v-1.4l-2.2-1.4v-4.4l7.4 2.1Z"/></symbol>
+  <symbol id="i-meal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v7a3 3 0 0 0 6 0V2M7 9v13M18 2c-1.7 1-2.5 3.2-2.5 5.5S16.3 12 18 13v9"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18L12 3 3 10Z"/><path d="M5 10v8M10 10v8M14 10v8M19 10v8M3 21h18"/></symbol>
+  <symbol id="i-bldg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2M10 21v-3h4v3"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14M3 16v-3.2L5.2 7A2 2 0 0 1 7 5.8h10a2 2 0 0 1 1.8 1.2L21 12.8V16M3 16v2.5M21 16v2.5"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="16.5" cy="16" r="1.6"/></symbol>
+  <symbol id="i-mosque" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c2.6 2.2 4 4.2 4 6.3 0 1.1-.4 2-1 2.7h-6c-.6-.7-1-1.6-1-2.7 0-2.1 1.4-4.1 4-6.3Z"/><path d="M5 21v-7.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1V21M3 21h18M9 21v-3.5a3 3 0 0 1 6 0V21"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5h11v9H2zM13 9.5h4l4 3.5v2.5h-8z"/><circle cx="6" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="1.6"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4"/></symbol>
+  <symbol id="i-acc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="1.8"/><path d="M11 21a5.5 5.5 0 1 1 3.7-9.6M13 7.5l-3.2 1.6a1.6 1.6 0 0 0-.8 1.9L10.5 15h4.3l2.7 5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.6 2.8 4 6 4 9.5s-1.4 6.7-4 9.5c-2.6-2.8-4-6-4-9.5s1.4-6.7 4-9.5Z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20v-6M11 20V9M16 20v-9M21 20V5"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M11 13.5 8.4 11a2 2 0 0 0-2.8 2.8l4.2 4.2a3 3 0 0 0 4.2 0L18 14l-2.5-6.5a2 2 0 0 0-1.9-1.3H8.8a3 3 0 0 0-2.1.9L3 10.7"/><path d="M18 14l3-1.5-2-7.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></symbol>
+  <symbol id="i-hotel2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V6l9-3 9 3v15"/><path d="M3 21h18M9 21v-4h6v4M8 9h2M14 9h2M8 13h2M14 13h2"/></symbol>
+</svg>
+
+<div class="sheet">
+
+  <div class="head">
+    <div>
+      <h1>株式会社 浜屋様　ウズベキスタン ビジネスミッションツアー日程表</h1>
+      <div class="sub">政府機関訪問・現地企業商談・市場調査</div>
+    </div>
+    <div class="right">
+      <div class="lbl">SCHEDULE</div>
+      <div class="rng">2026.8.24 – 8.29</div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="ibox a">
+      <div class="kv"><svg class="ki"><use href="#i-pin"/></svg><span class="k">行き先</span><span class="sep">：</span>
+        <span class="v">ウズベキスタン共和国<br><small>（タシケント市・ウルゲンチ市）</small></span></div>
+      <div class="kv"><svg class="ki"><use href="#i-cal"/></svg><span class="k">滞在期間</span><span class="sep">：</span>
+        <span class="v"><span class="nowrap">2026年8月24日 〜 8月29日</span>　<small class="nowrap">（6日間）</small></span></div>
+      <div class="kv"><svg class="ki"><use href="#i-users"/></svg><span class="k">参加者</span><span class="sep">：</span>
+        <span class="v">2名</span></div>
+    </div>
+    <div class="ibox b">
+      <div class="kv"><svg class="ki"><use href="#i-bed"/></svg><span class="k">宿泊先</span><span class="sep">：</span>
+        <span class="v"><span class="nowrap">LOTTE CITY HOTEL TASHKENT PALACE</span></span></div>
+      <div class="kv"><svg class="ki"><use href="#i-user"/></svg><span class="k">担当者</span><span class="sep">：</span>
+        <span class="v">RAKHIMOV Makhmud</span></div>
+      <div class="kv"><svg class="ki"><use href="#i-phone"/></svg><span class="k">連絡先</span><span class="sep">：</span>
+        <span class="v">+998 90 725 67 66</span></div>
+    </div>
+    <div class="photos"><!--PHOTOS--></div>
+  </div>
+
+  <div class="days"><!--DAYS--></div>
+
+  <div class="bene">
+    <div class="bh"><span class="bar"></span><h2>このツアーで得られること</h2></div>
+    <div class="bgrid"><!--BENEFITS--></div>
+  </div>
+
+  <div class="strip">
+    <div class="cell h">
+      <svg class="ci"><use href="#i-hotel2"/></svg>
+      <div class="ttl">宿泊ホテル</div>
+      <p>宿泊先は基本的に「LOTTE CITY HOTEL TASHKENT PALACE」を予定しております。</p>
+    </div>
+    <div class="cell n">
+      <svg class="ci"><use href="#i-info"/></svg>
+      <div class="ttl">ご案内</div>
+      <p>※交通事情や現地の都合により、行程・内容が変更となる場合がございます。事前のご案内なく訪問先を変更させていただく場合もございますので、何卒ご了承くださいませ。</p>
+    </div>
+  </div>
+
+</div>
