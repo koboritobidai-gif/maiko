@@ -5,133 +5,81 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#0e2a63; --navy-d:#0a1f4d; --navy-l:#1b3f8f;
-    --ink:#16233d; --muted:#5b6b8c; --line:#dfe5f2;
-    --bg:#eef2f9; --gold:#c9a227; --card:#ffffff;
+    --navy:#0f2f6b; --navy-d:#0a2050; --navy-l:#1c4a9e;
+    --ink:#17233c; --muted:#5f6f8f; --line:#e2e8f3;
+    --gold:#c9a227; --band:#f2f5fa;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:"Noto Sans JP","IPAPGothic","IPAGothic",sans-serif;
-    background:var(--bg); color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-  }
-  .sheet{width:1200px;background:var(--bg);padding:0 0 22px}
+  body{font-family:"Noto Sans JP","IPAPGothic","IPAGothic",sans-serif;background:#fff;color:var(--ink);
+       -webkit-font-smoothing:antialiased}
+  .sheet{width:1200px;height:849px;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 
-  /* ---------- header ---------- */
-  .hero{
-    position:relative;overflow:hidden;
-    background:linear-gradient(105deg,#0a1f4d 0%,#0e2a63 46%,#1b3f8f 100%);
-    padding:22px 34px 20px;
-  }
-  .hero::after{
-    content:"";position:absolute;right:-60px;top:-40px;width:520px;height:220px;
-    background:
-      radial-gradient(circle at 30% 60%, rgba(255,255,255,.10) 0 40%, transparent 41%),
-      radial-gradient(circle at 68% 40%, rgba(255,255,255,.07) 0 32%, transparent 33%);
-    transform:rotate(-8deg);
-  }
-  .hero h1{font-size:31px;font-weight:900;color:#fff;letter-spacing:.4px;line-height:1.2}
-  .hero h1 .accent{color:#9fc0ff}
-  .hero .sub{margin-top:7px;font-size:15px;font-weight:500;color:#bcd0f5;letter-spacing:1.5px}
-  .hero .right{position:absolute;right:34px;top:26px;text-align:right;z-index:2}
-  .hero .right .lbl{font-size:11px;letter-spacing:4px;color:#8fadea;font-weight:500}
-  .hero .right .rng{margin-top:4px;font-size:21px;font-weight:900;color:#fff;letter-spacing:1px}
-  .hero .rule{height:3px;width:100%;margin-top:16px;
-    background:linear-gradient(90deg,var(--gold) 0 118px,rgba(255,255,255,.22) 118px 100%)}
+  /* ---------- header (navy block: title + info) ---------- */
+  .hero{position:relative;background:linear-gradient(100deg,#0a2050 0%,#0f2f6b 52%,#164289 100%);
+        padding:15px 26px 16px;color:#fff;flex:0 0 auto;overflow:hidden}
+  .skyline{position:absolute;right:0;top:0;height:100%;width:430px;opacity:.22}
+  .hero h1{font-size:26px;font-weight:900;letter-spacing:.4px;line-height:1.15;position:relative;z-index:2}
+  .hero .sub{margin-top:5px;font-size:14.5px;font-weight:500;color:#a9c4f2;letter-spacing:1.4px;position:relative;z-index:2}
+  .infobar{margin-top:13px;display:flex;gap:12px;position:relative;z-index:2}
+  .ibox{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:8px;
+        padding:9px 14px;display:flex;flex-direction:column;gap:6px}
+  .ibox.a{flex:0 0 458px} .ibox.b{flex:0 0 418px} .ibox.c{flex:1}
+  .kv{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.35}
+  .kv svg{width:13px;height:13px;flex:0 0 13px;color:#a9c4f2}
+  .kv .k{color:#a9c4f2;font-weight:500;flex:0 0 auto;letter-spacing:.5px}
+  .kv .sep{color:#5f80c4}
+  .kv .v{font-weight:700;color:#fff;white-space:nowrap}
+  .kv .v small{font-weight:400;font-size:11px;color:#c9d9f5}
 
-  /* ---------- info bar ---------- */
-  .info{
-    margin:18px 24px 0;background:var(--card);border:1px solid var(--line);
-    border-radius:12px;padding:16px 22px;display:flex;gap:26px;align-items:stretch;
-    box-shadow:0 1px 3px rgba(14,42,99,.06);
-  }
-  .info .col{display:flex;flex-direction:column;gap:11px;justify-content:center}
-  .info .col.grow{flex:1}
-  .info .divider{width:1px;background:var(--line)}
-  .row{display:flex;align-items:flex-start;gap:10px}
-  .row .ic{
-    width:26px;height:26px;flex:0 0 26px;border-radius:7px;background:#eaf0fd;
-    display:flex;align-items:center;justify-content:center;color:var(--navy);
-  }
-  .row .ic svg{width:15px;height:15px}
-  .row .txt .k{font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.5px}
-  .row .txt .v{font-size:14px;font-weight:700;color:var(--ink);line-height:1.45;margin-top:1px}
-  .row .txt .v small{font-size:11.5px;font-weight:500;color:var(--muted)}
+  /* ---------- days ---------- */
+  .days{flex:1 1 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:9px;padding:12px 26px 0;min-height:0}
+  .day{border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;overflow:hidden;
+       background:#fff;box-shadow:0 1px 2px rgba(15,47,107,.05)}
+  .dhead{text-align:center;padding:9px 6px 8px;background:var(--band);border-bottom:1px solid var(--line)}
+  .dhead .num{font-size:15px;font-weight:900;color:var(--navy);letter-spacing:1.6px}
+  .dhead .date{margin-top:3px;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .dhead .city{margin-top:1px;font-size:10px;font-weight:500;color:var(--muted)}
 
-  /* ---------- day grid ---------- */
-  .days{margin:16px 24px 0;display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-  .day{
-    background:var(--card);border:1px solid var(--line);border-radius:12px;
-    display:flex;flex-direction:column;overflow:hidden;
-    box-shadow:0 1px 3px rgba(14,42,99,.06);
-  }
-  .day.hl{border-color:#b9ccf5;box-shadow:0 2px 10px rgba(14,42,99,.14)}
-  .dhead{background:linear-gradient(160deg,#0e2a63,#16367e);color:#fff;padding:11px 13px 12px;position:relative}
-  .day.hl .dhead{background:linear-gradient(160deg,#123a8c,#1b4bb0)}
-  .dhead .no{display:flex;align-items:baseline;gap:7px}
-  .dhead .no .lbl{font-size:9.5px;letter-spacing:2.5px;color:#9fc0ff;font-weight:700;
-    border:1px solid rgba(159,192,255,.45);border-radius:3px;padding:1px 5px}
-  .dhead .no .num{font-size:23px;font-weight:900;line-height:1}
-  .dhead .date{margin-top:8px;font-size:14px;font-weight:700}
-  .dhead .city{margin-top:2px;font-size:11.5px;color:#b9cffb;font-weight:500}
-  .dhead .tag{
-    position:absolute;right:10px;top:10px;font-size:9.5px;font-weight:700;
-    background:var(--gold);color:#2a2000;border-radius:3px;padding:2px 6px;letter-spacing:.5px;
-  }
+  .items{flex:1;padding:8px 9px 2px;display:flex;flex-direction:column}
+  .it{display:flex;gap:6px;padding:3px 0}
+  .it .ic{width:14px;flex:0 0 14px;display:flex;justify-content:center;padding-top:2px;color:var(--navy-l)}
+  .it .ic svg{width:12px;height:12px}
+  .it .body{min-width:0;font-size:10px;line-height:1.5;color:var(--ink);font-weight:500}
+  .it .body .t{font-weight:700;color:var(--navy);letter-spacing:.2px;margin-right:3px}
+  .it .body .n{display:block;font-size:8.5px;color:var(--muted);font-weight:400;line-height:1.4;margin-top:1px}
 
-  .items{flex:1;padding:9px 11px 4px;display:flex;flex-direction:column;gap:0}
-  .it{display:flex;gap:8px;padding:4px 0}
-  .it .ic{width:17px;flex:0 0 17px;display:flex;justify-content:center;padding-top:2px;color:var(--navy-l)}
-  .it .ic svg{width:13px;height:13px}
-  .it .body{min-width:0}
-  .it .t{font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.3;letter-spacing:.2px}
-  .it .d{font-size:11px;font-weight:500;color:var(--ink);line-height:1.45;margin-top:1px}
-  .it .n{display:block;font-size:9.5px;color:var(--muted);font-weight:400;line-height:1.4;margin-top:1px}
-  .it.free .t{display:none}
+  .dfoot{margin:4px 9px 0;border-top:1px solid var(--gold);padding:7px 0 8px;
+         display:flex;align-items:center;justify-content:center;gap:5px;color:var(--navy);text-align:center}
+  .dfoot svg{width:11px;height:11px;flex:0 0 11px}
+  .dfoot span{font-size:8.5px;font-weight:700;letter-spacing:.2px;line-height:1.3}
 
-  .dfoot{
-    border-top:1px solid var(--line);margin:6px 11px 0;padding:9px 0 10px;
-    display:flex;align-items:center;gap:6px;color:var(--navy);
-  }
-  .dfoot svg{width:12px;height:12px;flex:0 0 12px}
-  .dfoot span{font-size:9.5px;font-weight:700;letter-spacing:.3px;line-height:1.3}
-  .dfoot.dep{color:#96601a}
+  /* ---------- benefits band ---------- */
+  .bene{flex:0 0 auto;margin:12px 26px 0;background:linear-gradient(100deg,#0a2050,#123madeup)}
+  .bene{background:linear-gradient(100deg,#0a2050 0%,#0f2f6b 60%,#164289 100%);border-radius:9px;
+        padding:0 14px 12px;position:relative}
+  .bene .tab{display:inline-flex;align-items:center;gap:7px;background:var(--navy-d);color:#fff;
+             border-radius:0 0 7px 7px;padding:5px 14px 6px;margin-left:2px}
+  .bene .tab .bar{width:3px;height:12px;background:var(--gold);border-radius:2px}
+  .bene .tab h2{font-size:12px;font-weight:900;letter-spacing:.5px}
+  .bgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:6px}
+  .b{text-align:center;padding:0 2px}
+  .b .icw{height:26px;display:flex;align-items:center;justify-content:center;color:#bcd3fb;margin-bottom:5px}
+  .b .icw svg{width:23px;height:23px}
+  .b .bt{font-size:10px;font-weight:700;color:#fff;line-height:1.35}
+  .b .bd{margin-top:3px;font-size:8.5px;font-weight:400;color:#9fb8e4;line-height:1.5}
 
-  /* ---------- benefits ---------- */
-  .bottom{margin:16px 24px 0;display:grid;grid-template-columns:1fr 292px;gap:12px}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;
-    box-shadow:0 1px 3px rgba(14,42,99,.06)}
-  .panel .ph{display:flex;align-items:center;gap:8px;padding:12px 18px 0}
-  .panel .ph .bar{width:4px;height:16px;background:var(--navy);border-radius:2px}
-  .panel .ph h2{font-size:14px;font-weight:900;color:var(--navy)}
-  .bene{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:12px 16px 16px}
-  .bene .b{text-align:center;padding:0 3px}
-  .bene .b .circ{
-    width:42px;height:42px;margin:0 auto 7px;border-radius:50%;
-    background:#eaf0fd;display:flex;align-items:center;justify-content:center;color:var(--navy);
-  }
-  .bene .b .circ svg{width:21px;height:21px}
-  .bene .b .bt{font-size:11px;font-weight:700;color:var(--navy);line-height:1.35}
-  .bene .b .bd{margin-top:4px;font-size:9.5px;font-weight:400;color:var(--muted);line-height:1.5}
-
-  .side{display:flex;flex-direction:column;gap:12px}
-  .hotel{
-    background:linear-gradient(160deg,#0e2a63,#16367e);border-radius:12px;color:#fff;
-    padding:14px 18px 16px;flex:1;
-  }
-  .hotel .hh{display:flex;align-items:center;gap:8px}
-  .hotel .hh svg{width:15px;height:15px}
-  .hotel .hh h2{font-size:13.5px;font-weight:900}
-  .hotel .name{margin-top:10px;font-size:14px;font-weight:900;color:#fff;letter-spacing:.3px;line-height:1.4}
-  .hotel .name .u{display:block;width:52px;height:2px;background:var(--gold);margin-top:7px}
-  .hotel .note{margin-top:9px;font-size:10px;color:#c2d5f8;line-height:1.65;font-weight:400}
-  .notice{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;
-    display:flex;gap:9px;box-shadow:0 1px 3px rgba(14,42,99,.06)}
-  .notice .ic{width:20px;height:20px;flex:0 0 20px;border-radius:50%;background:var(--navy);
-    display:flex;align-items:center;justify-content:center;color:#fff}
-  .notice .ic svg{width:11px;height:11px}
-  .notice p{font-size:9.5px;color:var(--muted);line-height:1.65}
-  .notice p b{color:var(--ink);font-weight:700;font-size:10px;display:block;margin-bottom:2px}
+  /* ---------- bottom strip ---------- */
+  .strip{flex:0 0 auto;margin:10px 26px 14px;display:flex;gap:10px}
+  .cell{background:var(--band);border:1px solid var(--line);border-radius:8px;padding:9px 14px;
+        display:flex;align-items:flex-start;gap:9px}
+  .cell.h{flex:0 0 486px;align-items:center}
+  .cell.n{flex:1}
+  .cell .ic{width:20px;height:20px;flex:0 0 20px;border-radius:5px;background:var(--navy);color:#fff;
+            display:flex;align-items:center;justify-content:center}
+  .cell .ic svg{width:12px;height:12px}
+  .cell .ttl{font-size:11px;font-weight:900;color:var(--navy);flex:0 0 auto}
+  .cell p{font-size:9.5px;color:var(--muted);line-height:1.6;font-weight:400}
+  .cell p b{color:var(--ink);font-weight:700}
 </style>
 
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
@@ -162,53 +110,45 @@
 
   <!-- ================= HERO ================= -->
   <div class="hero">
-    <h1>株式会社浜屋様　<span class="accent">ウズベキスタン ビジネスミッションツアー日程表</span></h1>
+    <svg class="skyline" viewBox="0 0 430 180" preserveAspectRatio="xMaxYMax slice" fill="none">
+      <g stroke="#ffffff" stroke-width="1.6" opacity=".55">
+        <path d="M18 180v-58h30v58M24 122v-10h18v10M33 112c7-6 10-11 10-16 0-6-4-11-10-16-6 5-10 10-10 16 0 5 3 10 10 16Z"/>
+        <path d="M70 180v-84h46v84M78 96V84h30v12M93 84c11-9 16-17 16-25 0-9-6-17-16-25-10 8-16 16-16 25 0 8 5 16 16 25Z" />
+        <path d="M79 180v-24a14 14 0 0 1 28 0v24"/>
+        <path d="M138 180v-96h22v96M149 84V52M143 52h12M149 52c0-8 0-16 0-22"/>
+        <path d="M176 180v-70h34v70M182 110V98h22v12M193 98c8-7 12-13 12-19 0-7-5-13-12-19-7 6-12 12-12 19 0 6 4 12 12 19Z"/>
+        <path d="M228 180v-120h30v120M243 60V34M232 92h22M232 116h22M232 140h22"/>
+        <path d="M272 180v-88h26v88M279 92V80h12v12M285 80c7-6 10-11 10-16s-3-10-10-16c-7 6-10 11-10 16s3 10 10 16Z"/>
+        <path d="M314 180v-104h34v104M321 76V64h20v12M331 64c9-7 13-14 13-21s-4-14-13-21c-9 7-13 14-13 21s4 14 13 21Z"/>
+        <path d="M322 180v-30a9 9 0 0 1 18 0v30"/>
+        <path d="M364 180v-74h26v74M370 106V94h14v12M377 94c7-6 10-11 10-16s-3-10-10-16c-7 6-10 11-10 16s3 10 10 16Z"/>
+        <path d="M404 180v-58h22v58M412 122v-40M406 82h14"/>
+      </g>
+      <g stroke="#ffffff" stroke-width="1.1" opacity=".28">
+        <path d="M0 180v-46h22v46M55 180v-34h14v34M120 180v-40h16v40M164 180v-30h10v30M214 180v-36h12v36M262 180v-28h9v28M304 180v-42h9v42M354 180v-32h9v32M396 180v-26h7v26"/>
+      </g>
+    </svg>
+    <h1>株式会社浜屋様　ウズベキスタン ビジネスミッションツアー日程表</h1>
     <div class="sub">政府機関訪問・現地企業商談・市場調査</div>
-    <div class="right">
-      <div class="lbl">SCHEDULE</div>
-      <div class="rng">2026.8.24 — 8.29</div>
-    </div>
-    <div class="rule"></div>
-  </div>
 
-  <!-- ================= INFO ================= -->
-  <div class="info">
-    <div class="col grow">
-      <div class="row">
-        <div class="ic"><svg><use href="#i-pin"/></svg></div>
-        <div class="txt"><div class="k">行き先</div>
-          <div class="v">ウズベキスタン共和国　<small>（タシケント市・ウルゲンチ市）</small></div></div>
+    <div class="infobar">
+      <div class="ibox a">
+        <div class="kv"><svg><use href="#i-pin"/></svg><span class="k">行き先</span><span class="sep">：</span>
+          <span class="v">ウズベキスタン共和国　<small>（タシケント市・ウルゲンチ市）</small></span></div>
+        <div class="kv"><svg><use href="#i-cal"/></svg><span class="k">滞在期間</span><span class="sep">：</span>
+          <span class="v">2026年8月24日 〜 8月29日　<small>（6日間）</small></span></div>
       </div>
-      <div class="row">
-        <div class="ic"><svg><use href="#i-cal"/></svg></div>
-        <div class="txt"><div class="k">滞在期間</div>
-          <div class="v">2026年8月24日 〜 8月29日　<small>（6日間）</small></div></div>
+      <div class="ibox b">
+        <div class="kv"><svg><use href="#i-bed"/></svg><span class="k">宿泊先</span><span class="sep">：</span>
+          <span class="v">LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+        <div class="kv"><svg><use href="#i-user"/></svg><span class="k">担当者</span><span class="sep">：</span>
+          <span class="v">RAKHIMOV Makhmud</span></div>
       </div>
-    </div>
-    <div class="divider"></div>
-    <div class="col grow">
-      <div class="row">
-        <div class="ic"><svg><use href="#i-bed"/></svg></div>
-        <div class="txt"><div class="k">宿泊先</div>
-          <div class="v">LOTTE CITY HOTEL TASHKENT PALACE</div></div>
-      </div>
-      <div class="row">
-        <div class="ic"><svg><use href="#i-users"/></svg></div>
-        <div class="txt"><div class="k">参加者</div>
-          <div class="v">2名　<small>嶋田様・家塚様</small></div></div>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div class="col">
-      <div class="row">
-        <div class="ic"><svg><use href="#i-user"/></svg></div>
-        <div class="txt"><div class="k">担当者</div>
-          <div class="v">RAKHIMOV Makhmud</div></div>
-      </div>
-      <div class="row">
-        <div class="ic"><svg><use href="#i-phone"/></svg></div>
-        <div class="txt"><div class="k">連絡先</div>
-          <div class="v">+998 90 725 67 66</div></div>
+      <div class="ibox c">
+        <div class="kv"><svg><use href="#i-users"/></svg><span class="k">参加者</span><span class="sep">：</span>
+          <span class="v">2名</span></div>
+        <div class="kv"><svg><use href="#i-phone"/></svg><span class="k">連絡先</span><span class="sep">：</span>
+          <span class="v">+998 90 725 67 66</span></div>
       </div>
     </div>
   </div>
@@ -216,203 +156,129 @@
   <!-- ================= DAYS ================= -->
   <div class="days">
 
-    <!-- DAY 1 -->
     <div class="day">
-      <div class="dhead">
-        <div class="no"><span class="lbl">DAY</span><span class="num">1</span></div>
-        <div class="date">8月24日（月）</div>
-        <div class="city">タシケント</div>
-      </div>
+      <div class="dhead"><div class="num">DAY 1</div><div class="date">8月24日（月）</div><div class="city">タシケント</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">16:40</div><div class="d">タシケント着</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bed"/></svg></div>
-          <div class="body"><div class="d">ホテルチェックイン</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">夕食</div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">16:40</span>タシケント着</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bed"/></svg></div><div class="body">ホテルチェックイン</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">夕食</div></div>
       </div>
-      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL<br>TASHKENT PALACE</span></div>
     </div>
 
-    <!-- DAY 2 -->
-    <div class="day hl">
-      <div class="dhead">
-        <div class="tag">変更</div>
-        <div class="no"><span class="lbl">DAY</span><span class="num">2</span></div>
-        <div class="date">8月25日（火）</div>
-        <div class="city">タシケント</div>
-      </div>
+    <div class="day">
+      <div class="dhead"><div class="num">DAY 2</div><div class="date">8月25日（火）</div><div class="city">タシケント</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">ホテルにて朝食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-users"/></svg></div>
-          <div class="body"><div class="t">10:00</div><div class="d">打ち合わせ<span class="n">本間様</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-users"/></svg></div>
-          <div class="body"><div class="t">13:00</div><div class="d">打ち合わせ<span class="n">ブニヨド様</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div>
-          <div class="body"><div class="t">17:00</div><div class="d">タシケント市役所で打合せ</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">19:00</div><div class="d">夕食</div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">ホテルにて朝食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-users"/></svg></div><div class="body"><span class="t">10:00</span>打ち合わせ<span class="n">本間様</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-users"/></svg></div><div class="body"><span class="t">13:00</span>打ち合わせ<span class="n">ブニヨド様</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div><div class="body"><span class="t">17:00</span>タシケント市役所で打合せ</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">19:00</span>夕食</div></div>
       </div>
-      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL<br>TASHKENT PALACE</span></div>
     </div>
 
-    <!-- DAY 3 -->
     <div class="day">
-      <div class="dhead">
-        <div class="no"><span class="lbl">DAY</span><span class="num">3</span></div>
-        <div class="date">8月26日（水）</div>
-        <div class="city">タシケント</div>
-      </div>
+      <div class="dhead"><div class="num">DAY 3</div><div class="date">8月26日（水）</div><div class="city">タシケント</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">ホテルにて朝食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div>
-          <div class="body"><div class="t">10:30</div><div class="d">ホテルから出発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div>
-          <div class="body"><div class="t">11:30</div><div class="d">JICAウズベキスタンで打合せ</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">12:30</div><div class="d">昼食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div>
-          <div class="body"><div class="t">15:00</div><div class="d">「NUR」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div>
-          <div class="body"><div class="t">17:00</div><div class="d">「Inklyuziv Hayot」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">19:00</div><div class="d">夕食</div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">ホテルにて朝食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div><div class="body"><span class="t">10:30</span>ホテルから出発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div><div class="body"><span class="t">11:30</span>JICAウズベキスタンで打合せ</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">12:30</span>昼食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div><div class="body"><span class="t">15:00</span>「NUR」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div><div class="body"><span class="t">17:00</span>「Inklyuziv Hayot」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">19:00</span>夕食</div></div>
       </div>
-      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL<br>TASHKENT PALACE</span></div>
     </div>
 
-    <!-- DAY 4 -->
     <div class="day">
-      <div class="dhead">
-        <div class="no"><span class="lbl">DAY</span><span class="num">4</span></div>
-        <div class="date">8月27日（木）</div>
-        <div class="city">タシケント → ウルゲンチ</div>
-      </div>
+      <div class="dhead"><div class="num">DAY 4</div><div class="date">8月27日（木）</div><div class="city">タシケント → ウルゲンチ</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">ホテルにて朝食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div>
-          <div class="body"><div class="t">9:30</div><div class="d">ホテルから出発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div>
-          <div class="body"><div class="t">10:00</div><div class="d">「Sharoit Plyus」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">12:00</div><div class="d">昼食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">13:45</div><div class="d">タシケント発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">15:15</div><div class="d">ウルゲンチ着</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div>
-          <div class="body"><div class="t">15:45</div><div class="d">「Japan Plaza」販売事務所訪問</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div>
-          <div class="body"><div class="t">17:00</div><div class="d">ホレズム州役所で打合せ</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-mosque"/></svg></div>
-          <div class="body"><div class="d">世界遺産「イチャンカラ・ヒバ城」視察</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">夕食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">23:10</div><div class="d">ウルゲンチ発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">0:30</div><div class="d">タシケント着<span class="n">翌8月28日（金）</span></div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">ホテルにて朝食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div><div class="body"><span class="t">9:30</span>ホテルから出発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-acc"/></svg></div><div class="body"><span class="t">10:00</span>「Sharoit Plyus」と打合せ<span class="n">現場レベルの障碍者就労支援団体</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">12:00</span>昼食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">13:45</span>タシケント発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">15:15</span>ウルゲンチ着</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div><div class="body"><span class="t">15:45</span>「Japan Plaza」販売事務所訪問</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bank"/></svg></div><div class="body"><span class="t">17:00</span>ホレズム州役所で打合せ</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-mosque"/></svg></div><div class="body">世界遺産「イチャンカラ・ヒバ城」視察</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">夕食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">23:10</span>ウルゲンチ発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">0:30</span>タシケント着<span class="n">翌8月28日（金）</span></div></div>
       </div>
-      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL<br>TASHKENT PALACE</span></div>
     </div>
 
-    <!-- DAY 5 -->
     <div class="day">
-      <div class="dhead">
-        <div class="no"><span class="lbl">DAY</span><span class="num">5</span></div>
-        <div class="date">8月28日（金）</div>
-        <div class="city">タシケント</div>
-      </div>
+      <div class="dhead"><div class="num">DAY 5</div><div class="date">8月28日（金）</div><div class="city">タシケント</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">ホテルにて朝食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div>
-          <div class="body"><div class="t">10:30</div><div class="d">ホテルから出発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-truck"/></svg></div>
-          <div class="body"><div class="t">11:00</div><div class="d">「Makhsus Trans」と打合せ<span class="n">ゴミ収集・特殊車両運行の実務主体</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">12:30</div><div class="d">昼食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-chip"/></svg></div>
-          <div class="body"><div class="t">14:00</div><div class="d">「Uzeltexsanoat」と打合せ<span class="n">電子・電気産業および計測機器製造業コンツェルン</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-tv"/></svg></div>
-          <div class="body"><div class="t">16:00</div><div class="d">「MediaPark」と打合せ<span class="n">家電チェーン</span></div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">18:00</div><div class="d">夕食</div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">ホテルにて朝食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div><div class="body"><span class="t">10:30</span>ホテルから出発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-truck"/></svg></div><div class="body"><span class="t">11:00</span>「Makhsus Trans」と打合せ<span class="n">ゴミ収集・特殊車両運行の実務主体</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">12:30</span>昼食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-chip"/></svg></div><div class="body"><span class="t">14:00</span>「Uzeltexsanoat」と打合せ<span class="n">電子・電気産業および計測機器製造業コンツェルン</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-tv"/></svg></div><div class="body"><span class="t">16:00</span>「MediaPark」と打合せ<span class="n">家電チェーン</span></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">18:00</span>夕食</div></div>
       </div>
-      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL TASHKENT PALACE</span></div>
+      <div class="dfoot"><svg><use href="#i-hotel2"/></svg><span>LOTTE CITY HOTEL<br>TASHKENT PALACE</span></div>
     </div>
 
-    <!-- DAY 6 -->
     <div class="day">
-      <div class="dhead">
-        <div class="no"><span class="lbl">DAY</span><span class="num">6</span></div>
-        <div class="date">8月29日（土）</div>
-        <div class="city">タシケント</div>
-      </div>
+      <div class="dhead"><div class="num">DAY 6</div><div class="date">8月29日（土）</div><div class="city">タシケント</div></div>
       <div class="items">
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">ホテルにて朝食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div>
-          <div class="body"><div class="t">11:00</div><div class="d">ホテルから出発</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-mosque"/></svg></div>
-          <div class="body"><div class="t">12:00</div><div class="d">旧市街モスク視察</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="t">12:30</div><div class="d">昼食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div>
-          <div class="body"><div class="t">14:00</div><div class="d">日本人墓地・日本人資料館視察</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div>
-          <div class="body"><div class="t">16:00</div><div class="d">Japan Uz Trade House 事務所訪問</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="t">19:30</div><div class="d">タシケント空港着</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div>
-          <div class="body"><div class="d">夕食</div></div></div>
-        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div>
-          <div class="body"><div class="d">タシケント発</div></div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">ホテルにて朝食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-car"/></svg></div><div class="body"><span class="t">11:00</span>ホテルから出発</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-mosque"/></svg></div><div class="body"><span class="t">12:00</span>旧市街モスク視察</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body"><span class="t">12:30</span>昼食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div><div class="body"><span class="t">14:00</span>日本人墓地・日本人資料館視察</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-bldg"/></svg></div><div class="body"><span class="t">16:00</span>Japan Uz Trade House 事務所訪問</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body"><span class="t">19:30</span>タシケント空港着</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-meal"/></svg></div><div class="body">夕食</div></div>
+        <div class="it"><div class="ic"><svg><use href="#i-plane"/></svg></div><div class="body">タシケント発</div></div>
       </div>
-      <div class="dfoot dep"><svg><use href="#i-plane"/></svg><span>タシケント発／ご帰国</span></div>
+      <div class="dfoot"><svg><use href="#i-plane"/></svg><span>タシケント発／ご帰国</span></div>
     </div>
 
   </div>
 
-  <!-- ================= BOTTOM ================= -->
-  <div class="bottom">
-    <div class="panel">
-      <div class="ph"><div class="bar"></div><h2>このツアーで得られること</h2></div>
-      <div class="bene">
-        <div class="b"><div class="circ"><svg><use href="#i-bank"/></svg></div>
-          <div class="bt">政府機関との<br>関係構築ができる</div>
-          <div class="bd">政府関係者との面談を通じて現地制度や投資動向を把握できます</div></div>
-        <div class="b"><div class="circ"><svg><use href="#i-hand"/></svg></div>
-          <div class="bt">現地企業・パートナー<br>企業と直接商談できる</div>
-          <div class="bd">現地企業との交流を通じて新たなビジネス機会を創出します</div></div>
-        <div class="b"><div class="circ"><svg><use href="#i-chart"/></svg></div>
-          <div class="bt">ウズベキスタン市場を<br>理解できる</div>
-          <div class="bd">市場規模や消費動向、商流の実態を把握できます</div></div>
-        <div class="b"><div class="circ"><svg><use href="#i-truck"/></svg></div>
-          <div class="bt">輸出入・物流環境を<br>確認できる</div>
-          <div class="bd">物流インフラや通関環境など実態面を確認できます</div></div>
-        <div class="b"><div class="circ"><svg><use href="#i-globe"/></svg></div>
-          <div class="bt">現地ビジネス環境を<br>把握できる</div>
-          <div class="bd">法制度や投資環境、人材事情などを理解できます</div></div>
-        <div class="b"><div class="circ"><svg><use href="#i-users"/></svg></div>
-          <div class="bt">新たなビジネス機会を<br>創出できる</div>
-          <div class="bd">官民双方とのネットワーク構築を通じて事業機会を広げます</div></div>
-      </div>
+  <!-- ================= BENEFITS ================= -->
+  <div class="bene">
+    <div class="tab"><span class="bar"></span><h2>このツアーで得られること</h2></div>
+    <div class="bgrid">
+      <div class="b"><div class="icw"><svg><use href="#i-bank"/></svg></div>
+        <div class="bt">政府機関との<br>関係構築ができる</div>
+        <div class="bd">政府関係者との面談を通じて現地制度や投資動向を把握できます</div></div>
+      <div class="b"><div class="icw"><svg><use href="#i-hand"/></svg></div>
+        <div class="bt">現地企業・パートナー<br>企業と直接商談できる</div>
+        <div class="bd">現地企業との交流を通じて新たなビジネス機会を創出します</div></div>
+      <div class="b"><div class="icw"><svg><use href="#i-chart"/></svg></div>
+        <div class="bt">ウズベキスタン市場を<br>理解できる</div>
+        <div class="bd">市場規模や消費動向、商流の実態を把握できます</div></div>
+      <div class="b"><div class="icw"><svg><use href="#i-truck"/></svg></div>
+        <div class="bt">輸出入・物流環境を<br>確認できる</div>
+        <div class="bd">物流インフラや通関環境など実態面を確認できます</div></div>
+      <div class="b"><div class="icw"><svg><use href="#i-globe"/></svg></div>
+        <div class="bt">現地ビジネス環境を<br>把握できる</div>
+        <div class="bd">法制度や投資環境、人材事情などを理解できます</div></div>
+      <div class="b"><div class="icw"><svg><use href="#i-users"/></svg></div>
+        <div class="bt">新たなビジネス機会を<br>創出できる</div>
+        <div class="bd">官民双方とのネットワーク構築を通じて事業機会を広げます</div></div>
     </div>
+  </div>
 
-    <div class="side">
-      <div class="hotel">
-        <div class="hh"><svg><use href="#i-hotel2"/></svg><h2>宿泊ホテル</h2></div>
-        <div class="name">LOTTE CITY HOTEL<br>TASHKENT PALACE<span class="u"></span></div>
-        <div class="note">滞在中は基本的に「LOTTE CITY HOTEL TASHKENT PALACE」に宿泊を予定しております。</div>
-      </div>
-      <div class="notice">
-        <div class="ic"><svg><use href="#i-info"/></svg></div>
-        <p><b>ご案内</b>交通事情や現地の都合により、行程・内容が変更となる場合がございます。事前のご案内なく訪問先を変更させていただく場合もございますので、何卒ご了承くださいませ。</p>
-      </div>
+  <!-- ================= BOTTOM STRIP ================= -->
+  <div class="strip">
+    <div class="cell h">
+      <div class="ic"><svg><use href="#i-hotel2"/></svg></div>
+      <div class="ttl">宿泊ホテル</div>
+      <p>宿泊先は基本的に「LOTTE CITY HOTEL TASHKENT PALACE」を予定しております。</p>
+    </div>
+    <div class="cell n">
+      <div class="ic"><svg><use href="#i-info"/></svg></div>
+      <div class="ttl">ご案内</div>
+      <p>※交通事情や現地の都合により、行程・内容が変更となる場合がございます。事前のご案内なく訪問先を変更させていただく場合もございますので、何卒ご了承くださいませ。</p>
     </div>
   </div>
 
