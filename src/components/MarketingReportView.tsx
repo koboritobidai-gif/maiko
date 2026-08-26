@@ -134,10 +134,13 @@ export default function MarketingReportView({
             </tr>
           </thead>
           <tbody>
+            {/* LINE登録には送客パートナー経由の人数も合算する(経営者の指示。パートナー経由は
+                LINEを通らず面談に入るが、母数として同じ行で把握したい運用のため)。 */}
             <CompareRow
               label="LINE登録"
-              current={`${summary.totalLineRegs.toLocaleString("ja-JP")}人`}
-              last={`${summaryLastMonth.totalLineRegs.toLocaleString("ja-JP")}人`}
+              current={`${(summary.totalLineRegs + referralCount(summary)).toLocaleString("ja-JP")}人`}
+              last={`${(summaryLastMonth.totalLineRegs + referralCount(summaryLastMonth)).toLocaleString("ja-JP")}人`}
+              caption="※送客パートナー経由の人数を含む"
             />
             <CompareRow
               label="予約"

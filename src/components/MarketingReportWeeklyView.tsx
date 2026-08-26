@@ -123,9 +123,9 @@ export default function MarketingReportWeeklyView({
           <tbody>
             <CompareRow
               label="LINE登録"
-              current={`${summary.totalLineRegs.toLocaleString("ja-JP")}人`}
-              last={`${summaryLastWeek.totalLineRegs.toLocaleString("ja-JP")}人`}
-              caption={snsNote}
+              current={`${(summary.totalLineRegs + referralCount(summary)).toLocaleString("ja-JP")}人`}
+              last={`${(summaryLastWeek.totalLineRegs + referralCount(summaryLastWeek)).toLocaleString("ja-JP")}人`}
+              caption={["※送客パートナー経由の人数を含む", snsNote].filter(Boolean).join(" ")}
             />
             <CompareRow
               label="予約"
