@@ -57,6 +57,8 @@ h1{font-family:"Shippori Mincho B1","Yu Mincho",serif;font-weight:700;
 .topthree li{margin-bottom:9px;font-size:14.5px;line-height:1.8}
 .topthree li::marker{color:var(--accent);font-family:"IBM Plex Mono",monospace;font-weight:600}
 .topthree b{font-weight:700}
+.topthree .dt{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);
+  margin-right:6px;letter-spacing:.02em}
 
 /* data strip */
 .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
@@ -82,8 +84,12 @@ h2.sec-t{font-family:"Shippori Mincho B1","Yu Mincho",serif;font-weight:600;
 .arts{display:flex;flex-direction:column;gap:20px}
 .art{background:var(--card);border:1px solid var(--line);border-radius:3px;
   box-shadow:var(--shadow);padding:22px 26px 24px}
+.art-meta{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 6px}
 .art-tag{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 6px}
+  text-transform:uppercase;color:var(--accent);font-weight:600;margin:0}
+.art-date{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink);
+  font-weight:600;background:var(--accent-wash);padding:1px 8px;border-radius:2px;
+  letter-spacing:.02em}
 .art h3{font-family:"Shippori Mincho B1","Yu Mincho",serif;font-size:19.5px;font-weight:600;
   margin:0 0 12px;line-height:1.5;text-wrap:balance}
 .art p{margin:0 0 12px;font-size:14.5px}
@@ -91,6 +97,12 @@ h2.sec-t{font-family:"Shippori Mincho B1","Yu Mincho",serif;font-weight:600;
 .art ul{margin:0 0 12px;padding-left:1.2em}
 .art li{font-size:14px;line-height:1.8;margin-bottom:4px}
 .art li::marker{color:var(--accent)}
+
+.back{border-left:2px solid var(--line);padding:8px 0 8px 14px;margin:0 0 12px;
+  font-size:13px;color:var(--muted)}
+.back > b:first-child{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;font-weight:600}
+.back b{color:var(--ink);font-weight:600}
 
 .means{border-left:3px solid var(--accent);background:var(--accent-wash);
   padding:12px 16px;border-radius:0 2px 2px 0;font-size:13.5px;margin:14px 0 0}
@@ -123,6 +135,7 @@ table.d td{padding:9px 10px;border-bottom:1px solid var(--line-soft);line-height
 table.d tr:last-child td{border-bottom:none}
 table.d td.n{font-family:"IBM Plex Mono",monospace;white-space:nowrap}
 table.d td.up{color:var(--accent);font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+table.d td.dn{color:var(--brick);font-family:"IBM Plex Mono",monospace;white-space:nowrap}
 
 /* sourcing guide */
 .guide{background:var(--card);border:1px solid var(--line);border-radius:3px;
@@ -133,6 +146,9 @@ table.d td.up{color:var(--accent);font-family:"IBM Plex Mono",monospace;white-sp
 .warn{border-left:3px solid var(--brick);background:var(--brick-wash);padding:12px 16px;
   border-radius:0 2px 2px 0;font-size:13.5px;margin:0}
 .warn b{color:var(--brick)}
+.note{border-left:3px solid var(--brick);background:var(--brick-wash);padding:11px 15px;
+  border-radius:0 2px 2px 0;font-size:13px;margin:12px 0 0}
+.note b{color:var(--brick)}
 
 footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);
   color:var(--muted);font-size:12.5px}
@@ -160,10 +176,10 @@ footer a{color:var(--muted)}
   </div>
   <h1>タシュケント便り</h1>
   <p class="issue">2026年8月号　／　現地に行けないあいだも、街は動いています。</p>
-  <p class="standfirst">ご購入いただいた物件のある街で、この1か月に何が起きたか。大統領の動き、インフラ整備、経済指標を、オーナー様の資産価値という視点から整理してお届けします。</p>
+  <p class="standfirst">2026年8月にタシュケントで発表・報道されたニュースだけを集めました。各記事に発表日を入れています。背景として7月以前の経緯に触れている箇所は、そのつど日付を添えて区別しています。</p>
   <div class="masthead-meta">
+    <span><b>対象期間</b> 2026年8月1日〜31日</span>
     <span><b>発行</b> 2026年8月末</span>
-    <span><b>対象期間</b> 2026年6月〜8月</span>
     <span><b>読了目安</b> 6分</span>
     <span><b>次号</b> 2026年9月末</span>
   </div>
@@ -172,19 +188,19 @@ footer a{color:var(--muted)}
 <div class="topthree">
   <h2>今月の3行</h2>
   <ol>
-    <li><b>新タシュケント国際空港が着工。</b>日本の双日が出資比率30%で参画し、2029年の開港を目指します。</li>
-    <li><b>大統領が新タシュケントの新プロジェクトを相次いで視察。</b>32haの複合開発「グレート・シルクロード」が発表されました。</li>
-    <li><b>ムーディーズがウズベキスタンを格上げ（Ba3→Ba2）。</b>上半期のGDP成長率は8.5%、住宅・賃料はともに前年比プラスで推移しています。</li>
+    <li><span class="dt">8/25</span><b>大統領が163件の新規施設を一斉稼働。</b>総額約50兆スム（約42.4億ドル）。独立35周年を前にした国家行事です。</li>
+    <li><span class="dt">8/23</span><b>アリエフ・アゼルバイジャン大統領が新タシュケントを視察。</b>現場には現在1万人超が就労、完成時には26万人分の雇用が見込まれると公表されました。</li>
+    <li><span class="dt">8/25</span><b>過去10年の対内投資が1,600億ドル超、経済規模は2.5倍に。</b>大統領が独立記念の演説で表明しました。</li>
   </ol>
 </div>
 
 <div class="strip">
-  <div class="stat"><span class="l">GDP 2026 (見込)</span><span class="v">$180B+</span><span class="d">大統領表明</span></div>
-  <div class="stat"><span class="l">上半期GDP成長</span><span class="v">8.5%</span><span class="d">前年同期比</span></div>
-  <div class="stat"><span class="l">中古㎡単価 (5月)</span><span class="v">$1,150</span><span class="d">+8.5% YoY</span></div>
-  <div class="stat"><span class="l">平均賃料 (5月)</span><span class="v">$550</span><span class="d">+10.0% YoY</span></div>
-  <div class="stat"><span class="l">格付 (Moody's)</span><span class="v">Ba2</span><span class="d">6月に格上げ</span></div>
-  <div class="stat"><span class="l">為替 (6/3)</span><span class="v">12,052</span><span class="d flat">UZS / USD</span></div>
+  <div class="stat"><span class="l">新規稼働施設 (8/25)</span><span class="v">163件</span><span class="d">産業72 ＋ 社会91</span></div>
+  <div class="stat"><span class="l">事業総額 (8/25)</span><span class="v">$42.4億</span><span class="d">約50兆スム</span></div>
+  <div class="stat"><span class="l">新タシュケント就労者 (8/23)</span><span class="v">10,000人+</span><span class="d">建設現場</span></div>
+  <div class="stat"><span class="l">対内投資 過去10年 (8/25)</span><span class="v">$160B+</span><span class="d">経済規模 2.5倍</span></div>
+  <div class="stat"><span class="l">政策金利 (7/29)</span><span class="v">14.0%</span><span class="d flat">据え置き</span></div>
+  <div class="stat"><span class="l">26年末 インフレ見通し (7/29)</span><span class="v">6.5%</span><span class="d flat">中央銀行</span></div>
 </div>
 
 <!-- ============ 01 大統領の動き ============ -->
@@ -194,306 +210,283 @@ footer a{color:var(--muted)}
   <div class="arts">
 
     <article class="art">
-      <p class="art-tag">New Tashkent</p>
-      <h3>32haの複合開発「グレート・シルクロード」構想を発表</h3>
-      <p>ミルジヨエフ大統領に、新タシュケントで実施される「グレート・シルクロード」プロジェクトが披露されました。32ヘクタールの敷地に住宅・商業施設・ホテル、文化教育施設などを配置し、新タシュケントの公共・文化の中心地のひとつになる構想です。</p>
-      <p>あわせて、新タシュケント第1期の工事が6,000ヘクタールの範囲で進行中であることが示されました。第1期完了時点で60万人分の都市インフラが整い、全体では人口200万人規模の都市を目指します。</p>
-      <div class="means"><b>What this means for owners</b>「住宅だけが建つベッドタウン」ではなく、商業・文化・ホテルが同時に計画されているかどうかは、将来の賃貸需要と流動性を大きく左右します。街の中心機能が具体化したことは、周辺住宅にとって前向きな材料です。</div>
+      <div class="art-meta"><p class="art-tag">National</p><span class="art-date">2026年8月25日</span></div>
+      <h3>163件の新規施設が一斉稼働。総額 約42.4億ドル</h3>
+      <p>ミルジヨエフ大統領が、独立35周年を前に新規施設の一斉稼働式典に出席しました。内訳は<b>産業・サービス分野の大型案件72件</b>と<b>社会インフラ施設91件</b>で、総額は約50兆スム（約42.4億ドル）です。</p>
+      <ul>
+        <li>創出雇用：15,000人</li>
+        <li>年間財政収入への寄与：約1兆スム（約8,489万ドル）</li>
+        <li>対象分野：エネルギー、農業・食品加工、冶金、自動車製造、電機、建材、鉱業、繊維・軽工業</li>
+      </ul>
+      <div class="means"><b>What this means for owners</b>製造業の稼働は、その地域の雇用と人口を生みます。住宅の実需は最終的に「そこに働く場所があるか」で決まるため、産業案件の積み上がりは賃貸需要の土台になります。</div>
       <div class="slot">
         <p class="sh">Photo 01</p>
-        <p>大統領がプロジェクト模型・パネルの前で説明を受けている公式写真</p>
-        <span class="where">入手先：大統領公式サイト president.uz のプレスサービス写真、または newtashkent.uz の同記事掲載写真</span>
+        <p>稼働式典で大統領が施設を視察している公式写真（8月25日撮影）</p>
+        <span class="where">入手先：president.uz プレスサービス／gazeta.uz 掲載写真（要許諾）</span>
       </div>
-      <p class="src">出典：president.uz「Great Silk Road project presented in New Tashkent」／ newtashkent.uz</p>
+      <p class="src">出典：gazeta.uz（2026年8月25日）／Trend.az（2026年8月）</p>
     </article>
 
     <article class="art">
-      <p class="art-tag">Urban Policy</p>
-      <h3>都市開発の新方針 ── 「開発面積の30%以上を緑地に」</h3>
-      <p>大統領はタシュケント市の都市化と緑地拡大に関する提案を検討し、<b>対象地区の少なくとも30%（約400ヘクタール）を緑地に充てる</b>方針が示されました。市内9か所に合計134ヘクタールの新公園を整備する計画も含まれます。</p>
-      <p>承認済みプロジェクトの実施により、年間15億ドルの域内総生産の押し上げ、3.5兆スムの財政収入、26万人の雇用創出が見込まれるとされています。</p>
-      <div class="means"><b>What this means for owners</b>緑地率と公園整備は、住環境の質を通じて中長期の住宅価格に効いてくる要素です。「量をつくる」段階から「質を上げる」段階に政策の重心が移りつつあることを示す動きといえます。</div>
+      <div class="art-meta"><p class="art-tag">Diplomacy</p><span class="art-date">2026年8月23〜24日</span></div>
+      <h3>アゼルバイジャン大統領が公式訪問、「永遠の友好条約」に署名</h3>
+      <p>アリエフ大統領がタシュケントを公式訪問し、両首脳会議で<b>永遠の友好条約</b>に署名しました。あわせて次の点で合意しています。</p>
+      <ul>
+        <li>2030年までに貿易額を10億ドルへ引き上げ</li>
+        <li>カスピ海横断（トランスカスピ海）ルートの物流強化</li>
+        <li>姉妹都市提携の締結、外務省間プログラムの調整</li>
+      </ul>
+      <div class="means"><b>What this means for owners</b>物流ルートの強化は、ウズベキスタンが「内陸国」という地理的な不利をどこまで解消できるかという長期テーマに直結します。輸出入コストの低下は、経済成長を通じて不動産市場の底上げにつながる方向の材料です。</div>
       <div class="slot">
         <p class="sh">Photo 02</p>
-        <p>整備された並木道・公園の完成写真、または緑地計画のマスタープラン図</p>
-        <span class="where">入手先：dunyo.info／gov.uz の当該記事掲載写真、または自社撮影の市内公園カット</span>
+        <p>両首脳の署名式の公式写真（8月23日または24日撮影）</p>
+        <span class="where">入手先：president.uz プレスサービス</span>
       </div>
-      <p class="src">出典：dunyo.info／gov.uz「Priority tasks for the comprehensive development of Tashkent city determined」</p>
-    </article>
-
-    <article class="art">
-      <p class="art-tag">Diplomacy</p>
-      <h3>8月23〜24日、アゼルバイジャン大統領がタシュケントを公式訪問</h3>
-      <p>アリエフ大統領が公式訪問し、両首脳は「永遠の友好条約」に署名。2030年までに貿易額を10億ドルへ引き上げること、カスピ海横断ルートの物流強化、共同投資メカニズムの深化などで合意しました。</p>
-      <p>同じ8月24〜26日には、タシュケントで初開催の「シルクロード金融・技術フォーラム」が開かれ、74か国から6,000人以上が参加しています。</p>
-      <div class="means"><b>What this means for owners</b>国際会議・首脳外交の開催地になることは、ホテル・オフィス・住宅の実需を押し上げます。特に長期滞在の外国人が増える局面では、賃貸市場に直接効きます。</div>
-      <div class="slot">
-        <p class="sh">Photo 03</p>
-        <p>両首脳の署名式の公式写真／フォーラム会場の全景</p>
-        <span class="where">入手先：president.uz プレスサービス、フォーラム公式サイトのプレスキット</span>
-      </div>
-      <p class="src">出典：specialeurasia.com（2026年8月24日）／ arabianreseller.com（2026年8月24日）</p>
+      <p class="src">出典：Euronews（2026年8月23日）／gazeta.uz（2026年8月24日）／SpecialEurasia（2026年8月24日）</p>
     </article>
 
   </div>
 </section>
 
-<!-- ============ 02 インフラ ============ -->
+<!-- ============ 02 新タシュケント ============ -->
 <section class="sec">
-  <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-t">インフラ整備</h2></div>
+  <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-t">新タシュケントの最新</h2></div>
 
   <div class="arts">
 
     <article class="art">
-      <p class="art-tag">Airport — 今月の最重要ニュース</p>
-      <h3>新タシュケント国際空港が6月に着工。日本の双日が30%出資</h3>
-      <p>2026年6月17日、新タシュケント国際空港の建設・運営に関するPPP（官民連携）契約が締結され、建設が始まりました。タシュケント州のウルタチルチク郡・クイチルチク郡にまたがる敷地で、2026〜2030年に工事を進め、<b>2029年の開港</b>を目指します。</p>
+      <div class="art-meta"><p class="art-tag">New Tashkent — 今月の注目</p><span class="art-date">2026年8月23日</span></div>
+      <h3>アリエフ大統領が現地視察。「現在1万人超が就労」と公表</h3>
+      <p>アリエフ大統領が、ウズベキスタン最大の都市開発プロジェクトである新タシュケントを視察しました。この視察にあわせて、プロジェクトの現況として次の数字が公表されています。</p>
       <ul>
-        <li>第1期：ターミナル20万8,000㎡＋4km滑走路2本</li>
-        <li>完成時：年間旅客2,000万人、貨物12万9,000トン、時間あたり30回の離着陸</li>
-        <li>タシュケント〜サマルカンド／アンディジャン／ボスタンリク各有料道路と接続、高速鉄道駅も併設</li>
-        <li>出資：ビジョン・インベスト（サウジ）45%、<b>双日（日本）30%</b>、仁川国際空港公社（韓国）15%、ウズベキスタン・エアポーツ10%</li>
+        <li><b>現在、建設現場で1万人超が就労</b></li>
+        <li>プロジェクト全体の完成時には <b>26万人分の新規雇用</b> を創出見込み</li>
       </ul>
-      <div class="means"><b>What this means for owners</b>空港は、都市の東側エリアの位置づけを根本から変えるインフラです。日本の総合商社が3割を出資しているという事実は、事業の実現可能性を測るうえでオーナー様にとって分かりやすい判断材料になります。</div>
+      <p>新タシュケントは、経済・投資政策・交通・教育・環境・デジタル技術を一つの空間に統合する新しい都市開発モデルとして紹介されました。</p>
+      <div class="back"><b>背景（7月以前）</b>第1期は6,000ヘクタールの範囲で工事が進行中で、完了時点で60万人分の都市インフラが整う計画。全体では人口200万人規模を目指しています（大統領府 発表）。</div>
+      <div class="means"><b>What this means for owners</b>「1万人が現に働いている」という数字は、計画の実行段階を測るうえで最も分かりやすい指標のひとつです。図面や完成予想図ではなく、いま現場が動いているという事実が第三国の元首の視察を通じて公表された点に意味があります。</div>
       <div class="slot">
-        <p class="sh">Photo 04 ＋ 05</p>
-        <p>①調印式または起工式の公式写真　②ターミナルの完成イメージパース</p>
-        <span class="where">入手先：Uzbekistan Airports 公式リリース、kun.uz／UzDaily 掲載写真、双日のニュースリリース（日本語・引用しやすい）</span>
+        <p class="sh">Photo 03 ＋ 04</p>
+        <p>①両大統領が新タシュケントの模型・パネルを視察している写真（8月23日撮影）　②同日の街区の全景</p>
+        <span class="where">入手先：apa.az／Trend.az 掲載の公式写真、newtashkent.uz</span>
       </div>
-      <p class="src">出典：CAPA Centre for Aviation／kun.uz（2026年5月5日）／Astana Times（2026年5月）／UzDaily</p>
-    </article>
-
-    <div class="two">
-      <article class="art">
-        <p class="art-tag">Metro</p>
-        <h3>地下鉄は2030年までに103km・79駅へ</h3>
-        <p>2026年5月、当局は2030年までに総延長103km・79駅とする計画案を公表しました。現行ネットワークのほぼ倍増にあたります。</p>
-        <ul>
-          <li>チーランザール線の8km延伸（TTZ地区へ、3駅新設）をトルコ企業が施工中。事業費1.1億ドル、日量8.5万人を想定</li>
-          <li>大統領の指示により、ドゥストリク駅を起点とする22km・9駅の新線を設計・建設へ。日量23万人を想定</li>
-        </ul>
-        <div class="means"><b>What this means for owners</b>駅ができるかどうかは、賃料と流動性に最も直接的に効くインフラです。次号以降、路線図上でお客様の物件位置との関係を継続的にお伝えします。</div>
-        <div class="slot">
-          <p class="sh">Photo 06</p>
-          <p>新駅の建設現場／新型車両／延伸計画の路線図</p>
-          <span class="where">入手先：Tashkent Metro 公式、gazeta.uz、自社撮影</span>
-        </div>
-        <p class="src">出典：International Railway Journal／Urban Transport Magazine</p>
-      </article>
-
-      <article class="art">
-        <p class="art-tag">City Works</p>
-        <h3>運河沿い18.5kmの整備と、公園の面的整備</h3>
-        <p>2026年、市内の運河護岸18.5kmを改修し、あわせて緑地と遊歩空間を整備。4つのゾーンで人工湖・池の建設が計画され、各地区に5kmの日陰付き遊歩道を3本ずつ設ける方針が示されています。</p>
-        <p>「10マハッラ（地区共同体）につき1つの公園」を整備する別プログラムも動き出しました。</p>
-        <div class="means"><b>What this means for owners</b>派手さはありませんが、こうした日常の生活環境整備は住民の定着率を上げ、賃貸の空室期間を短くする方向に働きます。</div>
-        <div class="slot">
-          <p class="sh">Photo 07</p>
-          <p>整備後の運河沿い遊歩道（人が歩いている生活感のあるカット）</p>
-          <span class="where">入手先：gov.uz／gazeta.uz、または自社撮影</span>
-        </div>
-        <p class="src">出典：gov.uz「Priority tasks for the comprehensive development of Tashkent city determined」</p>
-      </article>
-    </div>
-
-  </div>
-</section>
-
-<!-- ============ 03 街づくり ============ -->
-<section class="sec">
-  <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-t">新タシュケントの街づくり</h2></div>
-
-  <div class="arts">
-
-    <article class="art">
-      <p class="art-tag">Stadium</p>
-      <h3>5.5万人スタジアムが2027年U-20ワールドカップの会場に</h3>
-      <p>新タシュケントに建設中の5万5,000席のサッカースタジアムが、2027年FIFA U-20ワールドカップの会場に決まりました。事業費は約1億ドル、国内最大規模で、FIFA基準に準拠した設計です。準決勝・決勝は5万人超の収容が要件とされており、この規模はそれを満たします。</p>
-      <p>大統領は起工式に出席し、その後も建設現場を訪問しています。グリーンエネルギー、スマート管理、快適な都市環境という原則のもとに設計されているとされます。</p>
-      <div class="means"><b>What this means for owners</b>国際大会には「開催日という動かせない締切」があります。周辺の道路・交通・宿泊インフラが2027年に向けて集中的に整備される可能性が高く、新タシュケントの工程全体を後押しする要因になります。</div>
-      <div class="slot">
-        <p class="sh">Photo 08 ＋ 09</p>
-        <p>①スタジアム建設現場の空撮または全景　②完成イメージパース</p>
-        <span class="where">入手先：uza.uz／gazeta.uz／qalampir.uz の掲載写真、newtashkent.uz 公式</span>
-      </div>
-      <p class="src">出典：gazeta.uz（2025年11月13日）／uza.uz／daryo.uz（2026年3月25日）</p>
-    </article>
-
-    <article class="art">
-      <p class="art-tag">Development Pipeline</p>
-      <h3>進行中の主要プロジェクト一覧</h3>
-      <div class="scroller">
-        <table class="d">
-          <thead><tr><th>プロジェクト</th><th>規模</th><th>時期</th></tr></thead>
-          <tbody>
-            <tr><td>新タシュケント 第1期</td><td class="n">6,000 ha ／ 60万人分</td><td class="n">進行中</td></tr>
-            <tr><td>全体計画</td><td class="n">25,000 ha ／ 人口200万人規模</td><td class="n">長期</td></tr>
-            <tr><td>完成済み床面積</td><td class="n">約 180万 ㎡</td><td class="n">2025年後半時点</td></tr>
-            <tr><td>実施中プロジェクト数</td><td class="n">100件超</td><td class="n">現在</td></tr>
-            <tr><td>「Sharq Bahori」住宅団地</td><td class="n">95 ha ／ 約15,000戸</td><td class="n">建設中</td></tr>
-            <tr><td>新ウズベキスタン大学</td><td class="n">学生10,000人規模</td><td class="n">2027年完成予定</td></tr>
-            <tr><td>「グレート・シルクロード」複合施設</td><td class="n">32 ha</td><td class="n">計画発表</td></tr>
-            <tr><td>サッカースタジアム</td><td class="n">55,000席 ／ 約$100M</td><td class="n">2027年大会に向け建設中</td></tr>
-            <tr><td>自動駐車・EV充電・レンタサイクル</td><td class="n">市域整備</td><td class="n">2026年完了予定</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="means"><b>What this means for owners</b>住宅・大学・スタジアム・商業が同時並行で進んでいることが、この街の特徴です。住宅の供給だけが先行する開発と比べ、入居後の生活が成立しやすい構成になっています。</div>
-      <div class="slot">
-        <p class="sh">Photo 10</p>
-        <p>新タシュケント全体のドローン空撮（毎号 同じ高度・同じ方位で撮り、街全体の変化を定点で見せる）</p>
-        <span class="where">入手先：自社撮影を強く推奨。この1枚がニュースレターの看板になります</span>
-      </div>
-      <p class="src">出典：newtashkent.uz／Euronews（2026年1月17日）／Wikipedia「New Tashkent」</p>
+      <p class="src">出典：apa.az（2026年8月23日）／Trend.az（2026年8月23日）</p>
     </article>
 
   </div>
 </section>
 
-<!-- ============ 04 マーケット ============ -->
+<!-- ============ 03 インフラ ============ -->
 <section class="sec">
-  <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-t">数字で見るマーケット</h2></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-t">インフラ整備</h2></div>
 
   <div class="arts">
 
     <article class="art">
-      <p class="art-tag">Housing Price</p>
-      <h3>住宅価格 ── 中古㎡単価は前年比 +8.5%</h3>
-      <div class="scroller">
-        <table class="d">
-          <thead><tr><th>指標</th><th>水準</th><th>前年比</th></tr></thead>
-          <tbody>
-            <tr><td>中古 平均㎡単価（5月）</td><td class="n">$1,150</td><td class="up">+8.5%</td></tr>
-            <tr><td>新築 価格</td><td class="n">—</td><td class="up">+8.8%</td></tr>
-            <tr><td>新築分譲の価格帯</td><td class="n">$900 〜 $2,200 / ㎡</td><td class="n">地区差</td></tr>
-            <tr><td>高価格帯地区（ミラバード／ヤッカサライ／ミルゾ・ウルグベク）</td><td class="n">$1,413 〜 $2,121 / ㎡</td><td class="n">—</td></tr>
-            <tr><td>低価格帯地区（ウチテパ／アルマザール／セルゲリ）</td><td class="n">$900 〜 $1,367 / ㎡</td><td class="n">—</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>タイプ別では1部屋が +1.1%、3部屋が +2.7% と上昇した一方、2部屋が −1.1%、4部屋以上が −1.5% と下落しており、全体が一律に上がっているわけではありません。市場全体としては、2021〜2023年の急上昇のあと、上昇ペースが落ち着いた局面にあります。</p>
-      <div class="means"><b>What this means for owners</b>地区間で最大8倍近い価格差があります。「タシュケントの平均」ではなく、ご自身の物件がどの価格帯に属するかで見ることが大切です。個別の位置づけはお問い合わせいただければお答えします。</div>
-      <p class="src">出典：kun.uz（2026年4月7日／6月19日）／zamin.uz（2026年5月21日）／UzDaily</p>
-    </article>
-
-    <article class="art">
-      <p class="art-tag">Rent</p>
-      <h3>賃貸 ── 平均賃料 月$550、供給は前月比21%減</h3>
-      <div class="scroller">
-        <table class="d">
-          <thead><tr><th>指標</th><th>水準（2026年5月）</th><th>前年比</th></tr></thead>
-          <tbody>
-            <tr><td>平均賃料（住宅）</td><td class="n">$550 / 月</td><td class="up">+10.0%</td></tr>
-            <tr><td>㎡あたり賃料</td><td class="n">$8.9 / ㎡</td><td class="up">+10.8%</td></tr>
-            <tr><td>1ベッドルーム</td><td class="n">$400 / 月</td><td class="up">+14.3%</td></tr>
-            <tr><td>2ベッドルーム</td><td class="n">$500 / 月</td><td class="n">横ばい</td></tr>
-            <tr><td>4部屋以上</td><td class="n">$800 / 月</td><td class="up">約 +20%</td></tr>
-            <tr><td>募集件数</td><td class="n">約 18,100件</td><td class="n">前月比 −21%</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>地区差も大きく、1ベッドルームの平均はミラバードで月$600、オルマゾール／セルゲリ／ウチテパでは月$350です。募集件数が4月の22,800件から大きく減っており、小〜中規模住宅の需要が供給を上回る状態が続いています。</p>
-      <div class="means"><b>What this means for owners</b>賃料の伸びが最も大きいのは<b>小型住戸（1ベッドルーム、+14.3%）</b>です。募集在庫が減っている局面は貸し手に有利で、引渡し後の賃貸付けを考えるうえでは追い風の環境といえます。</div>
-      <p class="src">出典：kun.uz（2026年6月9日）／ウズベキスタン中央銀行「Real Estate Market of Uzbekistan」</p>
-    </article>
-
-    <article class="art">
-      <p class="art-tag">Macro</p>
-      <h3>経済 ── 上半期 +8.5%成長、ムーディーズが格上げ</h3>
+      <div class="art-meta"><p class="art-tag">Airport</p><span class="art-date">2026年8月20日</span></div>
+      <h3>新タシュケント国際空港、敷地はヒースローより広い1,310ha</h3>
+      <p>新タシュケント国際空港がウズベキスタンを地域の航空ハブにできるか、という分析記事が報じられました。ここで新たに示された規模感は次のとおりです。</p>
       <ul>
-        <li><b>GDP</b>：2026年末に1,800億ドル超へ（大統領表明、6月）。上半期の成長率は8.5%。サービス業 +14.7%、建設業 +14.2%</li>
-        <li><b>成長率見通し</b>：ADB 6.7%、IMF 約6.8%、世界銀行 6.4%（2026年）</li>
-        <li><b>投資</b>：2021年以降の対内直接投資は累計1,230億ドル。2026年上半期の投資額は246億ユーロ</li>
-        <li><b>格付</b>：ムーディーズが6月に Ba3 → <b>Ba2</b> へ格上げ。フィッチは BB を維持しつつ見通しを「安定的」から「ポジティブ」へ</li>
-        <li><b>為替・物価</b>：1米ドル ≈ 12,052スム（2026年6月3日）。2025年のインフレ率は7.3%</li>
+        <li>敷地面積 <b>1,310ヘクタール</b>（ロンドン・ヒースロー空港より広い）</li>
+        <li>旅客ターミナル 208,000㎡</li>
+        <li>官民連携（PPP）フェーズは 2026〜2030年、<b>2030年の運用開始</b>を見込む</li>
       </ul>
-      <div class="means"><b>What this means for owners</b>格付の改善は国の資金調達コストを下げ、インフラ投資の継続性を高めます。一方でスム安・インフレは実質的な購買力に影響するため、<b>円換算での評価</b>とあわせて見る必要があります。次号から購入時レートとの比較欄を設けます。</div>
+      <div class="back"><b>背景（7月以前）</b>2026年6月17日にPPP契約が締結され、建設が始まりました。出資構成はビジョン・インベスト（サウジ）45%、<b>双日（日本）30%</b>、仁川国際空港公社（韓国）15%、ウズベキスタン・エアポーツ10%。完成時は年間旅客2,000万人規模。</div>
+      <div class="note"><b>開港時期について</b>　情報源によって「2029年」と「2030年」の両方が報じられています。本号は8月20日付の最新報道にもとづき2030年としています。確定情報が出た号で改めてお知らせします。</div>
+      <div class="means"><b>What this means for owners</b>ヒースローより広い敷地という規模感は、この空港が既存空港の置き換えではなく、都市の東側に新しい経済圏をつくる計画であることを示しています。日本の総合商社が3割を出資している点も、事業の実現可能性を測る材料としてご覧ください。</div>
       <div class="slot">
-        <p class="sh">Photo 11</p>
-        <p>写真ではなくグラフを1点：住宅㎡単価と賃料の12か月推移（毎号 同じ形式で更新）</p>
-        <span class="where">作成元：kun.uz／中央銀行レポートの公表値を自社でグラフ化</span>
+        <p class="sh">Photo 05</p>
+        <p>空港の完成イメージパース、または建設予定地の空撮</p>
+        <span class="where">入手先：Uzbekistan Airports 公式リリース、双日のニュースリリース（日本語）</span>
       </div>
-      <p class="src">出典：kun.uz（2026年6月17日）／ADB／IMF（2026年6月18日）／Euronews（2026年7月24日）／中央銀行</p>
+      <p class="src">出典：Asia-Plus（2026年8月20日）／CAPA Centre for Aviation／kun.uz（2026年5月5日）</p>
+    </article>
+
+    <article class="art">
+      <div class="art-meta"><p class="art-tag">Ongoing</p><span class="art-date">継続中の案件</span></div>
+      <h3>8月に新しい発表がなかった、進行中の案件</h3>
+      <p>先月までにお伝えした案件のうち、8月中に新たな公式発表がなかったものです。動きがあった号で改めて詳報します。</p>
+      <div class="scroller">
+        <table class="d">
+          <thead><tr><th>案件</th><th>最後の発表</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td>地下鉄の2030年計画</td><td class="n">2026年5月</td><td>総延長103km・79駅へ拡張する計画案を当局が公表</td></tr>
+            <tr><td>チーランザール線 8km延伸</td><td class="n">—</td><td>TTZ地区へ3駅新設、事業費1.1億ドル。トルコ企業が施工中</td></tr>
+            <tr><td>ドゥストリク起点の新線</td><td class="n">—</td><td>22km・9駅。大統領指示により設計・建設へ</td></tr>
+            <tr><td>タシュケント市の運河沿い整備</td><td class="n">2026年内</td><td>護岸18.5kmの改修と緑地・遊歩空間の整備</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="means"><b>What this means for owners</b>「今月は動きがなかった」ことも情報です。毎号この欄で継続案件の最終発表日を追いかけますので、どの計画がどれくらい止まっているかを、そのままご確認いただけます。</div>
+      <p class="src">出典：International Railway Journal／Urban Transport Magazine／gov.uz</p>
     </article>
 
   </div>
 </section>
 
-<!-- ============ 05 制度・日本 ============ -->
+<!-- ============ 04 経済・マーケット ============ -->
 <section class="sec">
-  <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-t">制度と、日本とのつながり</h2></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-t">経済とマーケット</h2></div>
+
+  <div class="arts">
+
+    <article class="art">
+      <div class="art-meta"><p class="art-tag">Macro</p><span class="art-date">2026年8月25日</span></div>
+      <h3>過去10年の対内投資が1,600億ドル超、経済規模は2.5倍に</h3>
+      <p>独立35周年に関連する発表のなかで、大統領は過去10年間にウズベキスタンが<b>1,600億ドルを超える海外投資</b>を集め、<b>経済規模が2.5倍以上に拡大</b>したことを表明しました。</p>
+      <div class="back"><b>背景（7月以前）</b>2026年上半期の実質GDP成長率は8.5%（7月24日報道）。中央銀行は7月29日の会合で政策金利を14%に据え置き、2026年末のインフレ見通しを6.5%に維持しました。6月の年間インフレ率は6.4%です。</div>
+      <div class="means"><b>What this means for owners</b>政策金利14%は高水準で、現地通貨建ての住宅ローンは依然として重い水準にあります。国内の購買力が価格を押し上げるより、外資と人口流入が牽引する市場である、という構図を前提にご覧ください。</div>
+      <div class="slot">
+        <p class="sh">Photo 06</p>
+        <p>独立記念行事、またはタシュケント市街の全景（8月撮影分）</p>
+        <span class="where">入手先：president.uz、または自社撮影</span>
+      </div>
+      <p class="src">出典：Trend.az（2026年8月）／Euronews（2026年7月24日）／gazeta.uz（2026年7月30日）／中央銀行</p>
+    </article>
+
+    <article class="art">
+      <div class="art-meta"><p class="art-tag">Housing &amp; Rent</p><span class="art-date">8月公表・7月分データ</span></div>
+      <h3>住宅・賃貸 ── 7月の中古住宅は全国で+1.7%、タシュケント市は前年比マイナス</h3>
+      <p>8月に公表された7月分のデータです。全国の中古住宅価格は6月の+0.3%から7月は<b>+1.7%</b>へ伸びが加速した一方、タシュケント市は月次でわずかに上昇したものの、前年比では下落が続いています。</p>
+      <div class="scroller">
+        <table class="d">
+          <thead><tr><th>指標（2026年7月）</th><th>水準</th><th>前月比</th><th>前年比</th></tr></thead>
+          <tbody>
+            <tr><td>全国 中古住宅価格</td><td class="n">—</td><td class="up">+1.7%</td><td class="n">—</td></tr>
+            <tr><td>タシュケント市 中古住宅価格</td><td class="n">—</td><td class="up">+0.8%</td><td class="dn">−3.2%</td></tr>
+            <tr><td>タシュケント市 賃料</td><td class="n">$8.0 / ㎡</td><td class="n">横ばい</td><td class="dn">−2.8%</td></tr>
+            <tr><td>高額3区の賃料<br>（ミラバード／シャイハンタウル／ヤッカサライ）</td><td class="n">$10.3 / ㎡</td><td class="n">—</td><td class="n">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><b>数値の読み方について</b>　同じ月でも、調査主体や集計通貨（ドル建て／スム建て）によって前年比の符号が異なることがあります。本号は7月分として公表された系列をそのまま掲載しており、他の資料と数字が一致しない場合があります。ご自身の物件の評価は、個別にお問い合わせください。</div>
+      <div class="means"><b>What this means for owners</b>タシュケント市は前年比で調整局面にあります。一方で全国の中古価格は7月に伸びが加速しており、市場全体が一律に動いているわけではありません。短期の値動きより、空港・新タシュケントといった供給側の変化が効いてくる中期のスパンでご覧いただくのが現実的です。</div>
+      <div class="slot">
+        <p class="sh">Photo 07</p>
+        <p>写真ではなくグラフを1点：タシュケント市の中古住宅価格と賃料の12か月推移（毎号 同じ形式で更新）</p>
+        <span class="where">作成元：公表値を自社でグラフ化</span>
+      </div>
+      <p class="src">出典：kun.uz／経済研究改革センター（CERR）の7月分公表値</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ============ 05 制度・イベント ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-t">制度とイベント</h2></div>
 
   <div class="arts">
 
     <div class="two">
       <article class="art">
-        <p class="art-tag">Residency</p>
-        <h3>不動産購入による居住許可（ゴールデンビザ）</h3>
-        <p>2025年4月18日の大統領令により導入され、同年6月1日に発効した制度です。不動産投資により居住許可を取得でき、投資額の基準は地域によって異なります。</p>
-        <ul>
-          <li>タシュケント市・タシュケント州：<b>30万ドル</b></li>
-          <li>サマルカンド、ブハラ、ナマンガン、アンディジャン、フェルガナ、ホラズム：20万ドル</li>
-          <li>その他地域：10万ドル</li>
-        </ul>
-        <p>期限の定めのない居住許可（パーマネントカード）が付与され、家族の追加は無料。対象は111か国の国民です。</p>
-        <div class="means"><b>What this means for owners</b>ご購入額によっては対象となる可能性があります。要件・手続きは変更されうるため、ご検討の際は個別にご相談ください。</div>
-        <p class="src">出典：米国議会図書館 Global Legal Monitor／Astana Times／UzDaily</p>
+        <div class="art-meta"><p class="art-tag">Forum</p><span class="art-date">2026年8月24〜26日</span></div>
+        <h3>シルクロード金融・技術フォーラムがタシュケントで初開催</h3>
+        <p>74か国から6,000人以上が参加する国際フォーラムが、タシュケントで初めて開催されました。テーマは、デジタル決済とインフラ、イスラム金融と新たな金融回廊、AIと新興技術、トークン化とデジタル資産、クロスボーダー金融と規制の5つです。</p>
+        <div class="means"><b>What this means for owners</b>大型の国際会議が定着すると、ホテル・オフィス・サービスアパートメントの実需が生まれます。長期滞在の外国人が増える局面は、賃貸市場に直接効きます。</div>
+        <div class="slot">
+          <p class="sh">Photo 08</p>
+          <p>フォーラム会場の全景（8月24〜26日撮影）</p>
+          <span class="where">入手先：フォーラム公式のプレスキット</span>
+        </div>
+        <p class="src">出典：Arabian Reseller（2026年8月24日）</p>
       </article>
 
       <article class="art">
-        <p class="art-tag">Japan</p>
-        <h3>日本との協力案件は120億ドル規模に</h3>
-        <p>2026年、両国は120億ドルを超える協力プロジェクトのポートフォリオを形成しました。教育、医療、環境、水資源管理、運輸、<b>都市開発</b>、観光、農業、防災などが対象です。</p>
-        <p>7月にはタシュケントで日本企業向けの投資フォーラムが開催され、両国間の貿易額は3億7,530万ドルと報じられています。ウズベキスタン・日本投資プラットフォームの創設や、サマルカンド州における日本モデルの経済特区設置も提案されました。</p>
-        <div class="means"><b>What this means for owners</b>日本企業の進出は、駐在員向け賃貸という具体的な需要層につながります。空港PPPへの双日の参画とあわせ、日本とこの街の距離は着実に縮まっています。</div>
-        <p class="src">出典：daryo.uz（2026年5月4日／6月26日／7月8日）／Times of Central Asia／frank.uz</p>
+        <div class="art-meta"><p class="art-tag">Policy</p><span class="art-date">2026年7月27日</span></div>
+        <h3>タシュケント市の追加措置（大統領決定 PP-279）</h3>
+        <p>8月の動きの背景として、7月27日に署名された大統領決定「2026〜2027年のタシュケント市の社会経済発展に関する追加措置」（PP-279）をご紹介します。</p>
+        <ul>
+          <li>新しい社会経済開発メカニズムを<b>2031年1月1日まで</b>試験導入</li>
+          <li>市長の決定により、各区に経済特区・工業ゾーン内の土地区画を割り当て可能に</li>
+          <li>アルマザール区の青年センターに「青年クリエイティブパーク」を設置</li>
+        </ul>
+        <p>2026年はタシュケントにとって「加速的発展と所得成長の年」と位置づけられています。</p>
+        <div class="means"><b>What this means for owners</b>区ごとに投資を呼び込む権限が広がる制度で、区どうしの開発競争が起きやすくなります。エリアごとの伸びの差が今後さらに広がる可能性があります。</div>
+        <p class="src">出典：UzDaily／dunyo.info</p>
       </article>
     </div>
+
+    <article class="art">
+      <div class="art-meta"><p class="art-tag">Reference</p><span class="art-date">2025年4月18日 署名／6月1日 施行</span></div>
+      <h3>【継続情報】不動産購入による居住許可（ゴールデンビザ）</h3>
+      <p>制度そのものに8月の変更はありませんが、お問い合わせが多いため毎号ご案内します。不動産投資により居住許可を取得でき、投資額の基準は地域により異なります。</p>
+      <ul>
+        <li>タシュケント市・タシュケント州：<b>30万ドル</b></li>
+        <li>サマルカンド、ブハラ、ナマンガン、アンディジャン、フェルガナ、ホラズム：20万ドル</li>
+        <li>その他地域：10万ドル</li>
+      </ul>
+      <p>期限の定めのない居住許可（パーマネントカード）が付与され、家族の追加は無料。対象は111か国の国民です。</p>
+      <div class="means"><b>What this means for owners</b>ご購入額によっては対象となる可能性があります。要件・手続きは変更されうるため、ご検討の際は個別にご相談ください。</div>
+      <p class="src">出典：米国議会図書館 Global Legal Monitor／Astana Times／UzDaily</p>
+    </article>
 
   </div>
 </section>
 
-<!-- ============ 写真の手当て ============ -->
+<!-- ============ 06 次号予告 ============ -->
 <section class="sec">
-  <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-t">写真の手当て（社内用メモ）</h2></div>
+  <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-t">次号予告</h2></div>
   <div class="guide">
-    <h3>本号に必要な写真：11点</h3>
+    <h3>2026年9月号（9月末発行予定）</h3>
+    <ul style="margin:0;padding-left:1.2em">
+      <li><b>9月1日・独立35周年</b>の記念行事と、それにあわせて発表される新規プロジェクト</li>
+      <li>8月分の不動産統計（9月中旬に公表見込み）</li>
+      <li>中央銀行の次回 金融政策決定会合の結果</li>
+      <li>地下鉄・運河沿い整備など、継続案件の進捗</li>
+    </ul>
+    <p style="margin-top:14px">ご質問やご要望は、担当までお気軽にお寄せください。次号のQ&amp;A欄で取り上げます。</p>
+  </div>
+</section>
+
+<!-- ============ 07 写真の手当て（社内用） ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-t">写真と編集のメモ（社内用）</h2></div>
+  <div class="guide">
+    <h3>本号に必要な写真：8点</h3>
     <p>ニュース系の写真は、次の優先順で確保するのが安全かつ実務的です。</p>
     <div class="scroller">
       <table class="d">
         <thead><tr><th>優先</th><th>入手先</th><th>内容と注意点</th></tr></thead>
         <tbody>
-          <tr><td class="n">1</td><td>自社撮影</td><td>権利関係の心配がなく、他社と差別化できる。空撮・街の生活感・現場カットはここで。毎号の看板写真は自社撮影で持つのが理想</td></tr>
-          <tr><td class="n">2</td><td>大統領府 president.uz<br>newtashkent.uz<br>gov.uz / uza.uz</td><td>公式プレスサービスの写真。出典表記を条件に利用できる場合が多いが、<b>各サイトの利用条件を必ず確認</b>すること</td></tr>
-          <tr><td class="n">3</td><td>事業者のプレスリリース</td><td>双日、Uzbekistan Airports、デベロッパー各社。報道用素材として提供されているものは条件が明記されていることが多い</td></tr>
-          <tr><td class="n">4</td><td>報道機関<br>gazeta.uz / kun.uz など</td><td>原則として無断転載不可。<b>個別に許諾を取るか、リンクでの紹介にとどめる</b></td></tr>
+          <tr><td class="n">1</td><td>自社撮影</td><td>権利関係の心配がなく、他社と差別化できる。空撮・街の生活感・現場カットはここで</td></tr>
+          <tr><td class="n">2</td><td>大統領府 president.uz<br>newtashkent.uz／gov.uz／uza.uz</td><td>公式プレスサービスの写真。出典表記を条件に利用できる場合が多いが、<b>各サイトの利用条件を必ず確認</b>すること</td></tr>
+          <tr><td class="n">3</td><td>事業者のプレスリリース</td><td>双日、Uzbekistan Airports、デベロッパー各社。報道用素材として条件が明記されていることが多い</td></tr>
+          <tr><td class="n">4</td><td>報道機関<br>gazeta.uz／kun.uz／apa.az など</td><td>原則として無断転載不可。<b>個別に許諾を取るか、リンクでの紹介にとどめる</b></td></tr>
           <tr><td class="n">5</td><td>ストックフォト</td><td>タシュケントの街並みなど汎用カット。ライセンスを購入して使用</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="warn"><b>要注意</b>　報道写真の無断転載は著作権侵害にあたります。オーナー様への配布物は「私的利用」にはあたらないため、出典を書けば自由に使えるわけではありません。迷ったら、写真は使わずリンクで紹介するか、自社撮影に差し替えてください。この判断だけは省略しないことをおすすめします。</p>
+    <p class="warn"><b>要注意</b>　報道写真の無断転載は著作権侵害にあたります。オーナー様への配布物は「私的利用」にはあたらないため、出典を書けば自由に使えるわけではありません。迷ったら、写真は使わずリンクで紹介するか、自社撮影に差し替えてください。</p>
+    <h3 style="margin-top:22px">今後の掲載予定（編集メモ）</h3>
+    <ul style="margin:0;padding-left:1.2em">
+      <li><b>新タシュケントのスタジアム</b> ── 建設中の話題は既にご案内済みのため、本号では扱いません。<b>竣工が発表された号で、完成のニュースとして掲載</b>します。</li>
+      <li>新ウズベキスタン大学（2027年完成予定）── 竣工が近づいた段階で特集</li>
+      <li>「グレート・シルクロード」複合施設 ── 着工が発表された号で詳報</li>
+    </ul>
   </div>
 </section>
 
 <footer>
   <p><b>免責事項</b>　本資料は情報提供を目的としたもので、投資勧誘や利回りの保証を目的とするものではありません。記載の数値・予定は作成時点の公表情報にもとづくもので、今後変更される可能性があります。為替および現地法制度の変動により、実際の投資成果は変動します。制度の適用可否については、個別に専門家へご確認ください。</p>
-  <p><b>本号の数値について</b>　各項目に出典を明記しています。現地報道の集計値を含むため、公的統計と定義が異なる場合があります。掲載前に一次情報（大統領府・中央銀行・各事業者の公式発表）での確認をおすすめします。</p>
+  <p><b>本号の数値について</b>　各記事に発表日と出典を明記しています。現地報道の集計値を含むため、公的統計と定義が異なる場合があります。掲載前に一次情報（大統領府・中央銀行・各事業者の公式発表）での確認をおすすめします。</p>
 
   <h4>主な出典</h4>
   <ul>
-    <li><a href="https://president.uz/en/lists/view/9046">president.uz — Great Silk Road project presented in New Tashkent</a></li>
-    <li><a href="https://gov.uz/en/news/view/111513">gov.uz — Priority tasks for the comprehensive development of Tashkent city</a></li>
-    <li><a href="https://kun.uz/en/news/2026/05/05/new-tashkent-international-airport-construction-set-for-june-start">kun.uz — New Tashkent international airport construction set for June start</a></li>
-    <li><a href="https://centreforaviation.com/data/profiles/newairports/new-tashkent-international-airport">CAPA — New Tashkent International Airport profile</a></li>
-    <li><a href="https://www.railjournal.com/passenger/metros/turkish-firm-to-build-tashkent-metro-extension/">International Railway Journal — Turkish firm to build Tashkent metro extension</a></li>
-    <li><a href="https://www.gazeta.uz/en/2025/11/13/stadium/">gazeta.uz — Construction of 55,000-seat football stadium begins in New Tashkent</a></li>
-    <li><a href="https://kun.uz/en/news/2026/04/07/how-much-do-apartments-cost-in-tashkent-in-2026">kun.uz — How much do apartments cost in Tashkent in 2026</a></li>
-    <li><a href="https://kun.uz/en/news/2026/06/09/tashkent-rental-market-sees-10-annual-price-growth-as-housing-supply-drops-00990d">kun.uz — Tashkent rental market sees 10% annual price growth</a></li>
-    <li><a href="https://kun.uz/en/news/2026/06/17/uzbekistans-gdp-projected-to-surpass-180-billion-in-2026-shavkat-mirziyoyev-dbd07c">kun.uz — Uzbekistan's GDP projected to surpass $180 billion in 2026</a></li>
-    <li><a href="https://www.euronews.com/2026/07/24/uzbek-economy-grows-85-as-services-and-investment-expand">Euronews — Uzbek economy grows 8.5% in first half of 2026</a></li>
-    <li><a href="https://www.loc.gov/item/global-legal-monitor/2025-06-27/uzbekistan-new-program-aims-to-enhance-foreign-investments-in-exchange-for-residence-permits/">Library of Congress — Uzbekistan: residence permits for foreign investment</a></li>
-    <li><a href="https://timesca.com/uzbekistan-and-japan-announce-over-12-billion-in-new-strategic-projects/">Times of Central Asia — Uzbekistan and Japan announce over $12 billion in new strategic projects</a></li>
-    <li><a href="https://www.euronews.com/2026/01/17/new-tashkent-building-a-sustainable-city-from-scratch">Euronews — New Tashkent: Building a sustainable city from scratch</a></li>
+    <li><a href="https://www.gazeta.uz/en/2026/08/25/projects/">gazeta.uz（2026年8月25日）— President launches 163 new facilities worth over $4.2 billion</a></li>
+    <li><a href="https://www.trend.az/casia/uzbekistan/4217940.html">Trend.az（2026年8月）— Uzbekistan marks its 35th Independence anniversary with 163 new projects</a></li>
+    <li><a href="https://www.trend.az/casia/uzbekistan/4218071.html">Trend.az（2026年8月）— Uzbekistan's investment inflow tops $160B as economy expands</a></li>
+    <li><a href="https://en.apa.az/official-news/president-ilham-aliyev-familiarized-himself-with-new-tashkent-uzbekistans-largest-urban-development-project-521452">apa.az（2026年8月23日）— Aliyev familiarized himself with "New Tashkent"</a></li>
+    <li><a href="https://www.trend.az/azerbaijan/politics/4217468.html">Trend.az（2026年8月23日）— "New Tashkent" project is a unique achievement of modern urban development</a></li>
+    <li><a href="https://www.euronews.com/2026/08/23/uzbekistan-and-azerbaijan-deepen-alliance-with-1bn-trade-target-and-stronger-trans-caspian">Euronews（2026年8月23日）— Uzbekistan and Azerbaijan deepen alliance with $1bn trade target</a></li>
+    <li><a href="https://www.gazeta.uz/en/2026/08/24/eternal-friendship-treaty-uzbekistan-azerbaijan/">gazeta.uz（2026年8月24日）— Uzbekistan and Azerbaijan sign Eternal Friendship Treaty</a></li>
+    <li><a href="https://www.specialeurasia.com/2026/08/24/aliyev-azerbaijan-uzbekistan/">SpecialEurasia（2026年8月24日）— Aliyev Visit to Tashkent</a></li>
+    <li><a href="https://asiaplus.news/en/2026/08/20/tashkent-to-build-new-airport-aimed-at-strengthening-uzbekistans-aviation-position-in-the-region-will-it-push-out-kazakhstan/">Asia-Plus（2026年8月20日）— New Tashkent Airport Aims to Make Uzbekistan a Regional Aviation Hub</a></li>
+    <li><a href="https://arabianreseller.com/2026/08/24/uzbekistan-unveils-next-phase-of-financial-transformation-at-tashkent-forum/">Arabian Reseller（2026年8月24日）— Silk Road Finance and Technology Forum</a></li>
+    <li><a href="https://www.gazeta.uz/en/2026/07/30/cb-rate/">gazeta.uz（2026年7月30日）— Central Bank holds key rate at 14%</a></li>
+    <li><a href="https://www.uzdaily.uz/en/uzbekistan-approves-new-measures-for-tashkents-development/">UzDaily — Uzbekistan Approves New Measures for Tashkent's Development（PP-279、2026年7月27日署名）</a></li>
+    <li><a href="https://www.euronews.com/2026/07/24/uzbek-economy-grows-85-as-services-and-investment-expand">Euronews（2026年7月24日）— Uzbek economy grows 8.5% in first half of 2026</a></li>
+    <li><a href="https://kun.uz/en/news/2026/05/05/new-tashkent-international-airport-construction-set-for-june-start">kun.uz（2026年5月5日）— New Tashkent international airport construction set for June start</a></li>
   </ul>
 </footer>
 

@@ -97,7 +97,7 @@ def build(out_path, extra_css, title, strip_internal):
     b = body_part
     if strip_internal:
         # remove section 06 (社内用メモ) entirely
-        start = b.find('<!-- ============ 写真の手当て ============ -->')
+        start = b.find('<!-- ============ 07 写真の手当て（社内用） ============ -->')
         end = b.find("<footer>")
         if start == -1 or end == -1:
             sys.exit("could not locate internal section markers")
