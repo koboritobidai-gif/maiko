@@ -1,0 +1,126 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+.stage>*{position:absolute}
+/* --- scheme row --- */
+.sch{top:0;left:0;width:1792px;height:262px}
+.sch .n{position:absolute;top:16px;width:520px;height:190px;background:#fff;border:1px solid var(--line);
+  border-radius:6px;text-align:center;padding:34px 26px 0}
+.sch .n.last{border:2px solid var(--teal);background:#F4FBFA}
+.sch .cap{position:absolute;top:0;left:50%;transform:translateX(-50%);background:#fff;
+  border:1px solid var(--teal);color:var(--teal);border-radius:18px;font-size:17px;font-weight:700;
+  padding:5px 24px;white-space:nowrap}
+.sch .n .ttl{font-size:27px;font-weight:700;color:var(--navy);line-height:1.45}
+.sch .n.last .ttl{color:var(--teal-d)}
+.sch .n .sm{margin-top:12px;font-size:15px;color:#6C7A8D;line-height:1.6}
+.sch .a{position:absolute;top:100px;width:26px;height:22px;
+  border-top:11px solid transparent;border-bottom:11px solid transparent;border-left:18px solid var(--teal)}
+.sch .pill{position:absolute;left:396px;top:222px;width:1000px;height:44px;border:1px solid var(--teal);
+  border-radius:22px;background:#fff;color:var(--teal);font-size:19px;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+/* --- merit cards --- */
+.mer{top:296px;left:0;width:1792px;height:326px}
+.mer .c{position:absolute;top:0;width:578px;height:326px;background:#fff;border:1px solid var(--line);
+  border-radius:6px;overflow:hidden}
+.mer .c .h{height:52px;background:var(--navy-card);color:#fff;font-size:20px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.04em}
+.mer .c .in{padding:22px 28px}
+.mer .c p{font-size:17px;line-height:1.75;color:var(--muted);font-weight:500}
+.mer .rate{display:flex;justify-content:space-between;margin-top:4px}
+.mer .rate div{width:158px;text-align:center;border:1px solid #CFE0E4;border-radius:5px;padding:12px 0 10px;background:#F5FAFB}
+.mer .rate .lb{font-size:14px;color:var(--teal);font-weight:700;margin-bottom:4px}
+.mer .rate .vl{font-size:34px;font-weight:700;color:var(--teal-d);line-height:1}
+.mer ol{list-style:none;counter-reset:s}
+.mer ol li{counter-increment:s;font-size:17px;font-weight:500;color:var(--ink);
+  padding-left:38px;position:relative;margin-bottom:11px;line-height:1.5}
+.mer ol li:before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;
+  border-radius:50%;background:var(--teal);color:#fff;font-size:15px;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+.mer .kv{margin-top:14px;font-size:17px;font-weight:700;color:var(--teal-d);line-height:1.6}
+/* --- bottom bar --- */
+.cta{top:650px;left:0;width:1792px;height:74px;border-radius:4px;background:var(--navy-card);color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:22px}
+.cta .badge{background:var(--gold);color:#22160A;font-size:17px;font-weight:700;padding:6px 16px;border-radius:3px}
+.cta .m{font-size:28px;font-weight:700;letter-spacing:.02em}
+.cta .m em{font-style:normal;color:var(--gold)}
+.cta .sm{font-size:15px;color:#AFC0D4;font-weight:500}
+</style></head><body>
+
+<div class="orn"><i class="grey"></i><i class="gold"></i><i class="hair"></i><i class="wedge"></i></div>
+<img class="logo" src="../assets/logo.png">
+<div class="eyebrow">SCHEME &amp; MERIT</div>
+<h1><span class="t">ノーリスク・ノーコスト</span>で、翔び台が「分割」のご提案を可能に</h1>
+<div class="sub">与信審査と債権保証は提携先が担当。翔び台の紹介料は満額・回収リスクなしで確定します。</div>
+
+<div class="stage">
+  <div class="sch">
+    <div class="n" style="left:0">
+      <div class="cap">採用企業</div>
+      <div class="ttl">紹介料を<br>最大12ヶ月分割で支払う</div>
+      <div class="sm">紹介料35％の210万円を17.5万円ずつ支払い<br>※初月：保証料＋17.5万円</div>
+    </div>
+    <div class="a" style="left:546px"></div>
+    <div class="n" style="left:636px">
+      <div class="cap">PD for HR（PROTOCOL）</div>
+      <div class="ttl">審査・保証</div>
+      <div class="sm">与信審査のうえ、紹介料債権を保証。<br>督促・回収の実務もお任せいただけます。</div>
+    </div>
+    <div class="a" style="left:1182px"></div>
+    <div class="n last" style="left:1272px">
+      <div class="cap">翔び台</div>
+      <div class="ttl">紹介料は満額・<br>回収リスクなし</div>
+      <div class="sm">ノーリスク・ノーコストで<br>「分割」メニューをご提案できます。</div>
+    </div>
+    <div class="pill">必要に応じて、流動化による早期資金化も可能</div>
+  </div>
+
+  <div class="mer">
+    <div class="c" style="left:0">
+      <div class="h">未回収リスク・回収業務はゼロ</div>
+      <div class="in">
+        <p>分割払いでも、紹介料は保証の対象。<br>採用企業からの入金が滞った場合も、翔び台に未回収リスクは発生しません。督促・回収の業務も不要です。</p>
+        <div class="kv">クレジットカードや後払いサービスと違い、<br>高単価案件も上限なく分割にできます。</div>
+      </div>
+    </div>
+    <div class="c" style="left:607px">
+      <div class="h">早期退職時は返金制度で対応</div>
+      <div class="in">
+        <p style="margin-bottom:16px">入社後に早期退職が発生した場合も、退職タイミングに応じた返金制度が設けられています。</p>
+        <div class="rate">
+          <div><div class="lb">30日以内の退職</div><div class="vl">80<span style="font-size:20px">％</span></div></div>
+          <div><div class="lb">60日以内の退職</div><div class="vl">50<span style="font-size:20px">％</span></div></div>
+          <div><div class="lb">90日以内の退職</div><div class="vl">20<span style="font-size:20px">％</span></div></div>
+        </div>
+        <div class="note" style="margin-top:12px">※返金額は、紹介料・保証料率・返金率・未経過月数をもとに算出されます。</div>
+      </div>
+    </div>
+    <div class="c" style="left:1214px">
+      <div class="h">導入は5ステップ</div>
+      <div class="in">
+        <ol>
+          <li>相談・申込：課題やニーズを伺い、最適なプランをご提案</li>
+          <li>フォームへのご入力：企業情報・取引情報などをご記入</li>
+          <li>保証条件の提示：保証料率・保証対象範囲などをご案内</li>
+          <li>契約締結：条件にご同意いただければ保証契約を締結</li>
+          <li>サービス利用開始</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <span class="badge">期間限定</span>
+    <span class="m">加盟金・月額利用料は<em>無料</em></span>
+    <span class="sm">通常：加盟金 30万円／月額 5万円</span>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="tag">
+    <div class="l1">資金の制約で、<span class="gold">採用の機会</span>を逃さない。</div>
+    <div class="l2">翔び台は、採用の「その先」まで伴走します。</div>
+  </div>
+  <img src="../assets/footer_icons.png">
+  <div class="pg"><b>12</b>/ 12</div>
+</div>
+</body></html>

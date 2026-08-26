@@ -1,0 +1,60 @@
+:root{
+  --navy:#00143C;
+  --navy-card:#01173F;
+  --navy-foot:#001C46;
+  --teal:#016B73;
+  --teal-d:#00565D;
+  --gold:#CD9D41;
+  --red:#E40D16;
+  --bg:#F9F9FA;
+  --blue-bg:#E8F3F9;
+  --green-bg:#E6F4F1;
+  --ink:#12233F;
+  --muted:#4C5B72;
+  --line:#D9DEE6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px}
+body{
+  font-family:"Noto Sans CJK JP","Noto Sans JP",sans-serif;
+  background:var(--bg);color:var(--ink);
+  position:relative;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* ---- corner ornament ---- */
+.orn{position:absolute;top:0;left:0;width:760px;height:760px;overflow:hidden;pointer-events:none}
+.orn i{position:absolute;top:0;display:block;height:1400px;transform-origin:0 0;transform:rotate(45deg)}
+.orn .wedge{position:absolute;top:0;left:0;width:170px;height:172px;transform:none;
+  background:var(--navy-card);clip-path:polygon(0 0,160px 0,0 162px)}
+.orn .hair{left:175px;width:2px;background:#C7CDDD}
+.orn .gold{left:190px;width:2px;background:var(--gold)}
+.orn .grey{left:552px;width:126px;background:#F1F1F2}
+/* ---- header ---- */
+.logo{position:absolute;top:22px;right:56px;width:190px;height:60px}
+.eyebrow{position:absolute;top:24px;left:152px;font-size:16px;font-weight:700;
+  letter-spacing:.26em;color:#7C8B9C}
+h1{position:absolute;top:52px;left:124px;font-size:44px;font-weight:700;color:var(--navy);
+  letter-spacing:.01em;line-height:1.25}
+h1 .t{color:var(--teal)}
+h1 .r{color:var(--red)}
+.sub{position:absolute;top:126px;left:126px;font-size:19px;font-weight:500;color:var(--muted)}
+/* ---- footer ---- */
+.foot{position:absolute;left:0;bottom:0;width:1920px;height:158px;background:var(--navy-foot)}
+.foot .tag{position:absolute;left:64px;top:36px;color:#fff}
+.foot .tag .l1{font-size:25px;font-weight:700;letter-spacing:.02em;line-height:1.5}
+.foot .tag .l2{font-size:25px;font-weight:700;letter-spacing:.02em;line-height:1.5}
+.foot .tag .gold{color:var(--gold)}
+.foot .tag .sea{color:#4FC6C0}
+.foot img{position:absolute;left:790px;top:0;width:1024px;height:158px}
+.pg{position:absolute;right:30px;bottom:20px;color:#93A6BC;font-size:20px;font-weight:500}
+.pg b{color:#EAF0F7;font-size:29px;font-weight:700;margin-right:4px}
+/* ---- generic pieces ---- */
+.stage{position:absolute;left:64px;top:168px;width:1792px}
+.chip{display:inline-block;background:var(--navy-card);color:#fff;font-size:17px;font-weight:700;
+  padding:6px 20px;border-radius:3px;letter-spacing:.04em}
+.card{background:#fff;border:1px solid var(--line);border-radius:6px}
+.redbar{background:var(--red);color:#fff;font-weight:700;font-size:27px;text-align:center;
+  border-radius:4px;letter-spacing:.03em}
+.navybar{background:var(--navy-card);color:#fff;font-weight:700;font-size:27px;text-align:center;
+  border-radius:4px;letter-spacing:.03em}
+.note{font-size:14px;color:#7A879A;line-height:1.6}

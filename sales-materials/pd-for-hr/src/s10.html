@@ -1,0 +1,95 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+.stage{height:700px}
+.stage>*{position:absolute}
+/* row1 : chain */
+.chain{top:0;left:0;width:1792px;height:120px}
+.chain .b{position:absolute;top:0;width:322px;height:120px;background:#fff;border:1px solid var(--line);
+  border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.chain .b span{font-size:20px;font-weight:700;color:var(--navy);line-height:1.45}
+.chain .b.hot{border:2px solid var(--red);background:#FFF6F6}
+.chain .b.hot .big{font-size:34px;font-weight:700;color:var(--red);line-height:1.2}
+.chain .b .s{font-size:14px;color:#7A879A;font-weight:500;margin-top:4px}
+.chain .a{position:absolute;top:50px;width:24px;height:20px;
+  border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:16px solid #B9C2CE}
+/* row2 : three problem cards */
+.cards{top:152px;left:0;width:1792px;height:440px}
+.cards .c{position:absolute;top:0;width:578px;height:440px;background:#fff;border:1px solid var(--line);
+  border-radius:6px;overflow:hidden}
+.cards .c .h{height:48px;background:var(--teal);color:#fff;font-size:19px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.06em}
+.cards .c .in{padding:22px 30px 24px}
+.cards .c .seg{font-size:20px;font-weight:700;color:var(--teal);text-align:center;
+  border-bottom:2px solid #BFDCDE;padding-bottom:7px;width:300px;margin:0 auto}
+.cards .c .hd{margin-top:16px;font-size:33px;font-weight:700;color:var(--teal-d);text-align:center;line-height:1.4}
+.cards .c ul{margin-top:18px;list-style:none}
+.cards .c li{font-size:17px;color:var(--muted);line-height:1.85;padding-left:14px;position:relative;font-weight:500}
+.cards .c li:before{content:"・";position:absolute;left:-2px;color:#93A0B2}
+.cards .c .res{margin-top:20px;height:56px;border:2px solid var(--red);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;color:var(--red);font-size:21px;font-weight:700}
+/* row3 */
+.concl{top:622px;left:0;width:1792px;height:64px;line-height:64px}
+</style></head><body>
+
+<div class="orn"><i class="grey"></i><i class="gold"></i><i class="hair"></i><i class="wedge"></i></div>
+<img class="logo" src="../assets/logo.png">
+<div class="eyebrow">THE ISSUE</div>
+<h1>「一括払い」が、<span class="r">採用の意思決定</span>を止めている</h1>
+<div class="sub">紹介料の一括払いは、企業規模を問わず採用のブレーキに。求められているのは「柔軟な採用投資」です。</div>
+
+<div class="stage">
+  <div class="chain">
+    <div class="b" style="left:0"><span>新たな社員を<br>採用したい</span></div>
+    <div class="a" style="left:334px"></div>
+    <div class="b" style="left:368px"><span>人材紹介会社へ<br>依頼</span></div>
+    <div class="a" style="left:702px"></div>
+    <div class="b hot" style="left:736px"><span>年収600万円の場合</span><span class="big">手数料 210万円</span><span class="s">※紹介料35％の場合</span></div>
+    <div class="a" style="left:1070px"></div>
+    <div class="b" style="left:1104px"><span>一括払いが<br>採用の障壁になる</span></div>
+    <div class="a" style="left:1438px"></div>
+    <div class="b" style="left:1472px"><span>意思決定が<br>ストップしてしまう</span></div>
+  </div>
+
+  <div class="cards">
+    <div class="c" style="left:0">
+      <div class="h">課題①</div>
+      <div class="in">
+        <div class="seg">スタートアップ・小規模企業</div>
+        <div class="hd">一括払いが重くて<br>採用を諦める</div>
+        <ul><li>紹介料の一括負担が大きい</li><li>他の成長投資との両立が難しい</li><li>キャッシュを温存したい</li></ul>
+        <div class="res">採用を諦めるケースが発生</div>
+      </div>
+    </div>
+    <div class="c" style="left:607px">
+      <div class="h">課題②</div>
+      <div class="in">
+        <div class="seg">中堅企業</div>
+        <div class="hd">キャッシュフローを<br>最適化したい</div>
+        <ul><li>採用コストを平準化したい</li><li>予算管理を柔軟にしたい</li><li>キャッシュフローを最適化したい</li></ul>
+        <div class="res">採用投資の柔軟性が低い</div>
+      </div>
+    </div>
+    <div class="c" style="left:1214px">
+      <div class="h">課題③</div>
+      <div class="in">
+        <div class="seg">大手企業</div>
+        <div class="hd">経営戦略として<br>資金を有効活用したい</div>
+        <ul><li>成長投資へ資金を回したい</li><li>ROIを重視した採用をしたい</li><li>財務戦略上、一括払いを避けたい</li></ul>
+        <div class="res">採用コストが資金効率を圧迫</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concl redbar">企業ごとに理由は違っても、求めているのは「柔軟な採用投資」</div>
+</div>
+
+<div class="foot">
+  <div class="tag">
+    <div class="l1">「まず会おう、まず話そう。」</div>
+    <div class="l2">その一歩を止めているのは、<span class="gold">支払い方法</span>かもしれません。</div>
+  </div>
+  <img src="../assets/footer_icons.png">
+  <div class="pg"><b>10</b>/ 12</div>
+</div>
+</body></html>

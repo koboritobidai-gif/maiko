@@ -1,0 +1,115 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+.stage>*{position:absolute}
+/* --- before / after --- */
+.ba{top:0;left:0;width:1792px;height:392px}
+.ba .box{position:absolute;top:0;height:392px;background:#fff;border:1px solid var(--line);
+  border-radius:6px;overflow:hidden}
+.ba .box .h{height:52px;font-size:21px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.1em}
+.ba .before{left:0;width:700px}
+.ba .before .h{background:#4B5058}
+.ba .after{left:930px;width:862px;border:2px solid var(--teal)}
+.ba .after .h{background:var(--teal)}
+.ba .in{padding:26px 40px}
+.ba .amt{text-align:center;font-size:62px;font-weight:700;color:var(--navy);line-height:1.1}
+.ba .amt .u{font-size:34px}
+.ba .amtsub{text-align:center;font-size:18px;color:var(--muted);margin-top:6px;font-weight:500}
+.ba .after .amt{color:var(--teal)}
+.ba .after .amt .lead{font-size:34px;margin-right:8px}
+.ba hr{border:0;border-top:1px solid #E4E8EE;margin:22px 0 18px}
+.ba ul{list-style:none}
+.ba li{font-size:19px;line-height:1.55;color:var(--ink);font-weight:500;
+  padding-left:36px;position:relative;margin-bottom:10px}
+.ba li .n{font-size:14px;color:#7A879A;font-weight:400}
+.ba li:before{position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700}
+.ba .before li:before{content:"×";background:#EFEFF1;color:#8A8F98}
+.ba .after li:before{content:"✓";background:#DFF0F0;color:var(--teal)}
+.ba .arrow{position:absolute;left:706px;top:196px;width:220px;text-align:center}
+.ba .arrow .p{display:inline-block;border:1px solid var(--teal);color:var(--teal);border-radius:20px;
+  font-size:17px;font-weight:700;padding:6px 18px;background:#fff}
+.ba .arrow .ln{position:absolute;left:8px;top:19px;width:204px;height:2px;background:var(--teal);z-index:-1}
+/* --- cash flow bars --- */
+.cf{top:416px;left:0;width:1792px;height:240px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px 34px}
+.cf .t{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:14px}
+.cf .t em{font-style:normal;color:var(--teal)}
+.cf .rows{position:relative;height:158px}
+.cf .lab{position:absolute;left:0;width:150px;font-size:19px;font-weight:700;color:var(--ink)}
+.cf .bar{position:absolute;left:166px;height:52px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;font-weight:700}
+.cf .r1{top:42px}
+.cf .r2{top:106px}
+.cf .seg{height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cf .seg .s{font-size:14px;font-weight:500;color:#5C6B80}
+.cf .pay{width:340px;background:var(--blue-bg);color:var(--teal);border:1px solid #C9E2EC;border-radius:4px 0 0 4px}
+.cf .keep{width:1246px;background:var(--green-bg);color:#0E7A5F;border:1px solid #C6E4DA;border-left:0;border-radius:0 4px 4px 0}
+.cf .profit{position:absolute;left:166px;top:0;width:1586px;height:34px;background:#0071CE;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;border-radius:4px 4px 0 0}
+.cf .lump{width:1586px;background:#FDECEC;color:var(--red);border:1px solid #F5C6C6;border-radius:4px}
+.notes{top:674px;left:0;width:1792px}
+</style></head><body>
+
+<div class="orn"><i class="grey"></i><i class="gold"></i><i class="hair"></i><i class="wedge"></i></div>
+<img class="logo" src="../assets/logo.png">
+<div class="eyebrow">NEW OPTION</div>
+<h1>採用を<span class="t">「一括払い」から「月額」へ</span></h1>
+<div class="sub">翔び台は、紹介料を最大12ヶ月に分割できる新しい支払いオプション「PD for HR」の取り扱いを開始します。</div>
+
+<div class="stage">
+  <div class="ba">
+    <div class="box before">
+      <div class="h">導入前</div>
+      <div class="in">
+        <div class="amt">210<span class="u">万円</span></div>
+        <div class="amtsub">紹介料（一括）</div>
+        <hr>
+        <ul>
+          <li>予算が合わず失注</li>
+          <li>値引き対応で利益圧迫</li>
+          <li>2人採用したいが、1人分の資金しかない</li>
+        </ul>
+      </div>
+    </div>
+    <div class="arrow"><div class="ln"></div><span class="p">サービスを活用</span></div>
+    <div class="box after">
+      <div class="h">導入後</div>
+      <div class="in">
+        <div class="amt"><span class="lead">月額</span>17.5<span class="u">万円</span></div>
+        <div class="amtsub">で提案可能（2ヶ月目以降）　※初月：保証料＋17.5万円</div>
+        <hr>
+        <ul>
+          <li>予算内に収まり、受注できる</li>
+          <li>売上210万円をそのまま確定</li>
+          <li>費用は原則、採用企業側のご負担<span class="n">（人材紹介会社にてご負担いただくケースにも対応）</span></li>
+          <li>初期のキャッシュアウトがないため、複数名の採用も可能</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="cf">
+    <div class="t">採用した人材が生み出すキャッシュから毎月の支払いを補うことで、<em>実質的にキャッシュアウトが起こらない設計</em></div>
+    <div class="rows">
+      <div class="profit">採用した人材が生み出す利益</div>
+      <div class="lab" style="top:56px">PD for HR</div>
+      <div class="seg pay" style="position:absolute;left:166px;top:42px">紹介料の支払い<span class="s">17.5万円 / 月</span></div>
+      <div class="seg keep" style="position:absolute;left:506px;top:42px">手元に残る利益<span class="s">事業成長や投資に活用</span></div>
+      <div class="lab" style="top:120px">一括払い</div>
+      <div class="seg lump" style="position:absolute;left:166px;top:106px">紹介料の支払い<span class="s" style="color:#C9484C">210万円</span></div>
+    </div>
+  </div>
+
+  <div class="notes note">※年収600万円・紹介料35％の場合のシミュレーション例（紹介料2,100,000円／保証料13％）。初月合計 322,875円、2〜12ヶ月 175,000円／月。　※分割条件は企業ごとの与信に応じて個別に設計されます。</div>
+</div>
+
+<div class="foot">
+  <div class="tag">
+    <div class="l1">コストを下げるのではなく、<span class="sea">支払い方</span>を変える。</div>
+    <div class="l2">予算の壁で、採用の機会を逃さない。</div>
+  </div>
+  <img src="../assets/footer_icons.png">
+  <div class="pg"><b>11</b>/ 12</div>
+</div>
+</body></html>
