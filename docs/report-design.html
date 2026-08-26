@@ -1,0 +1,538 @@
+<title>タシュケント月次レポート設計</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ink:#16202B;
+  --paper:#EFF3F4;
+  --card:#FFFFFF;
+  --card-sub:#F5F8F9;
+  --line:#D5DEE1;
+  --line-soft:#E4EBED;
+  --muted:#5A6C77;
+  --accent:#0E7C8B;
+  --accent-deep:#08505C;
+  --accent-wash:#E2EFF1;
+  --brick:#AF5138;
+  --brick-wash:#F6E7E2;
+  --shadow:0 1px 2px rgba(22,32,43,.06), 0 12px 28px -18px rgba(22,32,43,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E6EDEF;
+    --paper:#0E151A;
+    --card:#18222A;
+    --card-sub:#1E2A33;
+    --line:#2E3D47;
+    --line-soft:#26333C;
+    --muted:#93A5AF;
+    --accent:#48B6C4;
+    --accent-deep:#8FD6DF;
+    --accent-wash:#12313A;
+    --brick:#D98063;
+    --brick-wash:#3A241D;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E6EDEF;
+  --paper:#0E151A;
+  --card:#18222A;
+  --card-sub:#1E2A33;
+  --line:#2E3D47;
+  --line-soft:#26333C;
+  --muted:#93A5AF;
+  --accent:#48B6C4;
+  --accent-deep:#8FD6DF;
+  --accent-wash:#12313A;
+  --brick:#D98063;
+  --brick-wash:#3A241D;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.85;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px 96px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:72px 0 40px;border-bottom:2px solid var(--ink)}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin:0 0 18px;
+}
+h1{
+  font-family:"Shippori Mincho B1","Yu Mincho",serif;
+  font-weight:700;font-size:clamp(30px,5.4vw,46px);line-height:1.3;
+  margin:0 0 18px;text-wrap:balance;letter-spacing:.01em;
+}
+.lede{margin:0;max-width:60ch;color:var(--muted);font-size:15.5px}
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:26px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--muted);
+}
+.meta b{color:var(--ink);font-weight:600}
+
+/* ---------- section ---------- */
+.sec{padding-top:64px}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:30px}
+.sec-num{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;font-weight:600;
+  color:var(--accent);letter-spacing:.1em;
+}
+h2{
+  font-family:"Shippori Mincho B1","Yu Mincho",serif;
+  font-weight:600;font-size:clamp(20px,3vw,25px);margin:0;line-height:1.4;
+}
+.sec-note{margin:-16px 0 30px;color:var(--muted);font-size:14px;max-width:62ch}
+
+/* ---------- page mockups ---------- */
+.pages{display:flex;flex-direction:column;gap:22px}
+.page{
+  background:var(--card);border:1px solid var(--line);border-radius:3px;
+  box-shadow:var(--shadow);overflow:hidden;
+  display:grid;grid-template-columns:64px 1fr;
+}
+.page-tab{
+  background:var(--accent-wash);border-right:1px solid var(--line-soft);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:18px 0;gap:6px;
+}
+.page-tab .p{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.14em;color:var(--accent-deep)}
+.page-tab .n{font-family:"Shippori Mincho B1",serif;font-size:30px;font-weight:700;color:var(--accent-deep);line-height:1}
+.page-body{padding:22px 26px 26px}
+.page-title{
+  font-family:"Shippori Mincho B1","Yu Mincho",serif;font-size:19px;font-weight:600;
+  margin:0 0 4px;
+}
+.page-goal{
+  margin:0 0 18px;font-size:13px;color:var(--muted);
+  padding-bottom:14px;border-bottom:1px dashed var(--line);
+}
+.page-goal b{color:var(--accent);font-weight:600}
+
+.blocks{display:grid;gap:12px}
+.block{
+  background:var(--card-sub);border:1px solid var(--line-soft);border-radius:2px;
+  padding:12px 14px;
+}
+.block-h{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin:0 0 7px;
+}
+.block ul{margin:0;padding-left:1.15em}
+.block li{font-size:13.5px;line-height:1.75}
+.block li::marker{color:var(--muted)}
+
+.photos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+.ph{
+  aspect-ratio:4/3;border:1.5px dashed var(--line);border-radius:2px;
+  background:
+    repeating-linear-gradient(45deg,transparent,transparent 7px,var(--line-soft) 7px,var(--line-soft) 8px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:6px;text-align:center;
+}
+.ph .k{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;color:var(--accent);font-weight:600}
+.ph .t{font-size:11px;color:var(--muted);line-height:1.4}
+
+.minitable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.minitable th,.minitable td{border-bottom:1px solid var(--line-soft);padding:5px 8px;text-align:left}
+.minitable th{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;
+}
+.scroller{overflow-x:auto}
+
+.flag{
+  border-left:3px solid var(--brick);background:var(--brick-wash);
+  padding:10px 14px;border-radius:0 2px 2px 0;font-size:13px;
+}
+.flag b{color:var(--brick)}
+
+/* ---------- anxiety cards ---------- */
+.fears{display:grid;gap:18px}
+.fear{
+  background:var(--card);border:1px solid var(--line);border-radius:3px;
+  box-shadow:var(--shadow);padding:20px 24px 8px;
+}
+.fear-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.fear-h h3{
+  font-family:"Shippori Mincho B1","Yu Mincho",serif;font-size:18px;font-weight:600;margin:0;
+}
+.fear-q{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.08em;
+  color:var(--accent);font-weight:600;
+}
+.fear-say{margin:0 0 14px;font-size:13.5px;color:var(--muted)}
+table.items{width:100%;border-collapse:collapse;font-size:13.5px}
+table.items th{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;
+  padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+table.items td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top;line-height:1.7}
+table.items tr:last-child td{border-bottom:none}
+table.items td.pri{white-space:nowrap;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--accent);letter-spacing:.05em}
+table.items td.what{font-weight:500;min-width:13em}
+table.items td.why{color:var(--muted);font-size:13px}
+
+/* ---------- rules ---------- */
+.rules{display:grid;gap:2px;background:var(--line-soft);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.rule{background:var(--card);padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.rule .r{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;font-weight:600;color:var(--accent);padding-top:4px}
+.rule p{margin:0;font-size:14px}
+.rule p b{font-weight:700}
+.rule p span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+/* ---------- calendar ---------- */
+.cal{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.cal-item{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:14px 16px}
+.cal-item .m{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.1em;color:var(--accent);font-weight:600}
+.cal-item .t{font-size:13.5px;margin-top:4px;line-height:1.6}
+
+footer{margin-top:72px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+footer p{margin:0 0 6px}
+
+@media (max-width:640px){
+  .page{grid-template-columns:1fr}
+  .page-tab{flex-direction:row;align-items:center;gap:10px;padding:10px 18px;border-right:none;border-bottom:1px solid var(--line-soft)}
+  .page-tab .n{font-size:22px}
+  .page-body{padding:18px 18px 22px}
+  .photos{grid-template-columns:repeat(2,1fr)}
+  table.items td.what{min-width:0}
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Owner Report / Design Brief</p>
+  <h1>新タシュケント・タシュケント<br>オーナー向け月次レポート設計</h1>
+  <p class="lede">購入後のオーナーが毎月受け取る資料の、構成・写真・掲載項目の設計図です。本文4ページ＋写真7〜10点を基本形とし、毎号まったく同じ順番・同じ指標で発行することを前提にしています。</p>
+  <div class="meta">
+    <span><b>本文</b> 4ページ</span>
+    <span><b>写真</b> 定点4点＋工程3〜5点</span>
+    <span><b>発行</b> 毎月1回・月初5営業日以内</span>
+    <span><b>対象</b> 引渡し前オーナー</span>
+  </div>
+</header>
+
+<!-- ============ 1. PAGE STRUCTURE ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">01</span><h2>4ページの構成</h2></div>
+  <p class="sec-note">1ページ＝1テーマ。文字を詰め込まず、写真と表を主役にします。オーナーが最初の30秒で知りたいのは「進んでいるか」「予定どおりか」の2点なので、それを1ページ目に集約します。</p>
+
+  <div class="pages">
+
+    <!-- P1 -->
+    <article class="page">
+      <div class="page-tab"><span class="p">PAGE</span><span class="n">1</span></div>
+      <div class="page-body">
+        <h3 class="page-title">今月のサマリー（表紙兼用）</h3>
+        <p class="page-goal">answering — <b>本当に建っているのか／予定どおりか</b></p>
+        <div class="blocks">
+          <div class="block">
+            <p class="block-h">Highlights</p>
+            <ul>
+              <li>今月のハイライトを3行だけ（工事・街・為替から各1行）</li>
+              <li>号数・対象期間・撮影日・発行日を必ず明記</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Dashboard — 毎号同じ4指標</p>
+            <div class="scroller">
+              <table class="minitable">
+                <thead><tr><th>指標</th><th>今月</th><th>前月</th><th>計画</th><th>差異</th></tr></thead>
+                <tbody>
+                  <tr><td>工事進捗率（出来高ベース）</td><td>42%</td><td>36%</td><td>41%</td><td>+1pt</td></tr>
+                  <tr><td>完了階数／総階数</td><td>9 / 16</td><td>8 / 16</td><td>9 / 16</td><td>±0</td></tr>
+                  <tr><td>引渡予定（変更の有無）</td><td>2027年3月</td><td>2027年3月</td><td>2027年3月</td><td>変更なし</td></tr>
+                  <tr><td>当該棟の販売済率</td><td>78%</td><td>74%</td><td>—</td><td>+4pt</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="block">
+            <p class="block-h">Definition — 数字の根拠</p>
+            <ul>
+              <li>進捗率の算定方法（出来高査定／工程消化率／デベロッパー公表値）を注記で固定</li>
+              <li>定義を変えた月は、変えた事実を明記する</li>
+            </ul>
+          </div>
+          <div class="flag"><b>今月の注意事項欄（必須）</b>　遅延・規制変更・想定外のコストなど、悪い情報を毎号1つ以上ここに書く。良い話だけのレポートは、かえって信用されません。</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- P2 -->
+    <article class="page">
+      <div class="page-tab"><span class="p">PAGE</span><span class="n">2</span></div>
+      <div class="page-body">
+        <h3 class="page-title">工事進捗（写真中心）</h3>
+        <p class="page-goal">answering — <b>自分の部屋は、いま何階まで来ているのか</b></p>
+        <div class="blocks">
+          <div class="block">
+            <p class="block-h">定点観測 — 毎号 同じ位置・同じ画角・同じ順番</p>
+            <div class="photos">
+              <div class="ph"><span class="k">01</span><span class="t">敷地全景<br>南東側から</span></div>
+              <div class="ph"><span class="k">02</span><span class="t">エントランス<br>予定地</span></div>
+              <div class="ph"><span class="k">03</span><span class="t">オーナー住戸階<br>からの眺望</span></div>
+              <div class="ph"><span class="k">04</span><span class="t">ドローン空撮<br>街区全体</span></div>
+            </div>
+            <ul style="margin-top:10px">
+              <li>各写真のキャプションに<b>撮影日</b>を入れる（使い回し疑惑を消す最短手段）</li>
+              <li>前月分と2枚並べ（Before / After）で掲載すると変化が一目でわかる</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Progress — 工程の実況</p>
+            <ul>
+              <li>今月完了した工程（例：9階スラブ打設完了／外構造成30%）</li>
+              <li>来月の予定工程</li>
+              <li>遅延がある場合は「日数・理由・回復見込み」の3点セットで</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Site Voice — 現場からのひとこと</p>
+            <ul>
+              <li>現地監理者の氏名・顔写真・3行コメント。発信者の顔が見えると信頼度が上がります</li>
+              <li>作業員や資材搬入が写ったカットを1点添える（「動いている」証拠）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- P3 -->
+    <article class="page">
+      <div class="page-tab"><span class="p">PAGE</span><span class="n">3</span></div>
+      <div class="page-body">
+        <h3 class="page-title">マーケット &amp; 周辺環境</h3>
+        <p class="page-goal">answering — <b>資産価値は上がっているのか／貸せるのか</b></p>
+        <div class="blocks">
+          <div class="block">
+            <p class="block-h">Price &amp; Rent — 出典を必ず添える</p>
+            <div class="scroller">
+              <table class="minitable">
+                <thead><tr><th>指標</th><th>今月</th><th>3か月前</th><th>前年同月</th><th>出典</th></tr></thead>
+                <tbody>
+                  <tr><td>新築分譲 平均㎡単価（同エリア）</td><td>$1,180</td><td>$1,140</td><td>$1,020</td><td>現地統計</td></tr>
+                  <tr><td>中古 成約㎡単価</td><td>$990</td><td>$960</td><td>$880</td><td>仲介実績</td></tr>
+                  <tr><td>賃料相場 1BR／2BR（月額）</td><td>$420 / $650</td><td>—</td><td>—</td><td>募集事例</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="block">
+            <p class="block-h">FX — 円で考えるための欄</p>
+            <ul>
+              <li>USD/JPY と UZS/USD の月末レート、前月末、<b>ご購入時レート</b>の3点を並べる</li>
+              <li>ご購入価格の円換算額を毎号更新（購入時の円換算額と併記）</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Infrastructure — 街が育っている証拠</p>
+            <ul>
+              <li>交通：地下鉄延伸・幹線道路の進捗と開業予定</li>
+              <li>生活：学校・病院・商業施設の着工／開業</li>
+              <li>新タシュケント全体の人口計画・入居開始時期に関する当局発表</li>
+              <li>周辺の競合／新規供給プロジェクトの動向</li>
+            </ul>
+            <div class="photos" style="grid-template-columns:repeat(3,1fr);margin-top:10px">
+              <div class="ph"><span class="k">05</span><span class="t">最寄り交通<br>工事・開業状況</span></div>
+              <div class="ph"><span class="k">06</span><span class="t">新設された<br>生活施設</span></div>
+              <div class="ph"><span class="k">07</span><span class="t">街の生活感<br>人の往来</span></div>
+            </div>
+          </div>
+          <div class="block">
+            <p class="block-h">Policy — 外国人オーナーに効く制度ニュース</p>
+            <ul>
+              <li>外国人の不動産所有・登記に関する動き／ビザ・居住許可の変更</li>
+              <li>税制（固定資産税・賃貸所得税・譲渡益）／送金・両替規制</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- P4 -->
+    <article class="page">
+      <div class="page-tab"><span class="p">PAGE</span><span class="n">4</span></div>
+      <div class="page-body">
+        <h3 class="page-title">オーナー様の実務・Q&amp;A</h3>
+        <p class="page-goal">answering — <b>次に自分は何をすればいいのか</b></p>
+        <div class="blocks">
+          <div class="block">
+            <p class="block-h">Your Schedule — ここだけ個別差し込み</p>
+            <div class="scroller">
+              <table class="minitable">
+                <thead><tr><th>回</th><th>期日</th><th>金額</th><th>状況</th></tr></thead>
+                <tbody>
+                  <tr><td>第3回</td><td>2026/07/31</td><td>$12,000</td><td>入金済</td></tr>
+                  <tr><td>第4回</td><td>2026/10/31</td><td>$12,000</td><td>次回</td></tr>
+                  <tr><td>残額</td><td>—</td><td>$36,000</td><td>—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul style="margin-top:10px"><li>この1ブロックを差し込みにするだけで、満足度が大きく変わります</li></ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Roadmap — 「いま、どこにいるか」の図</p>
+            <ul>
+              <li>契約 → 中間金 → 竣工 → 内覧・検査 → 登記 → 鍵引渡し → 内装／家具 → 賃貸募集</li>
+              <li>現在地をマーカーで示し、各ステップの必要書類・費用を短く添える</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Q&amp;A — 実際に届いた質問を2〜3件</p>
+            <ul>
+              <li>1人の疑問は、たいてい全員の疑問。個別回答をそのまま資産にする</li>
+            </ul>
+          </div>
+          <div class="block">
+            <p class="block-h">Contact &amp; Next</p>
+            <ul>
+              <li>現地視察・内覧のご案内（次回催行月）／賃貸管理・家具パッケージのご案内</li>
+              <li>オーナー専用窓口（担当者名つき）／次号予告</li>
+              <li>免責事項を巻末に固定掲載</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ============ 2. WHAT ELSE ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">02</span><h2>買った人が安心する情報</h2></div>
+  <p class="sec-note">購入後の不安は5つに集約されます。「他に何を載せるか」は、この5つのどれに効くかで選ぶと迷いません。★★★は毎号必須、★★は隔号でも可、★は年1回の特集で足ります。</p>
+
+  <div class="fears">
+
+    <article class="fear">
+      <div class="fear-h"><span class="fear-q">FEAR 01</span><h3>進捗不安</h3></div>
+      <p class="fear-say">「本当に建っているのか？」——写真がすべてを解決します。</p>
+      <table class="items">
+        <thead><tr><th>優先</th><th>掲載項目</th><th>効く理由</th></tr></thead>
+        <tbody>
+          <tr><td class="pri">★★★</td><td class="what">定点観測写真の前月比較</td><td class="why">数字より雄弁。同アングル・同順番を崩さないことが条件</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">撮影日つきキャプション</td><td class="why">「写真の使い回しでは？」という疑念を先回りで消す</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">工程表（計画 vs 実績のガント）</td><td class="why">進捗率という一つの数字より、遅れの構造が見える</td></tr>
+          <tr><td class="pri">★★</td><td class="what">タイムラプス動画・360°ビュー</td><td class="why">紙面にQRコードを置いて動画へ誘導。変化が体感できる</td></tr>
+          <tr><td class="pri">★★</td><td class="what">現地監理者の顔写真とコメント</td><td class="why">発信者の顔が見えるだけで信頼の質が変わる</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="fear">
+      <div class="fear-h"><span class="fear-q">FEAR 02</span><h3>遅延不安</h3></div>
+      <p class="fear-say">「予定どおり引き渡されるのか？」——隠さないことが最大の安心材料です。</p>
+      <table class="items">
+        <thead><tr><th>優先</th><th>掲載項目</th><th>効く理由</th></tr></thead>
+        <tbody>
+          <tr><td class="pri">★★★</td><td class="what">引渡予定日と前月からの変更有無</td><td class="why">変更がない月も毎号書く。書き続けること自体が信頼になる</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">遅延の日数・理由・回復見込み</td><td class="why">後から発覚するのが最悪。先に自分から出せば説明責任を果たせる</td></tr>
+          <tr><td class="pri">★★</td><td class="what">遅延時の契約上の取り扱い</td><td class="why">違約金・補償条項が契約書のどこにあるかの案内だけでも効く</td></tr>
+          <tr><td class="pri">★★</td><td class="what">デベロッパーの最新状況</td><td class="why">他プロジェクトの竣工実績、受注・財務のニュース。会社への信頼が土台</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="fear">
+      <div class="fear-h"><span class="fear-q">FEAR 03</span><h3>価格不安</h3></div>
+      <p class="fear-say">「自分が買った値段は、いま高いのか安いのか？」</p>
+      <table class="items">
+        <thead><tr><th>優先</th><th>掲載項目</th><th>効く理由</th></tr></thead>
+        <tbody>
+          <tr><td class="pri">★★★</td><td class="what">同エリア㎡単価の推移（3か月前・前年同月比）</td><td class="why">自分の買値と直接比べられる形で出すことが肝心</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">為替と円換算の評価額</td><td class="why">日本人オーナーは最後は円で考える。購入時レートとの併記が必須</td></tr>
+          <tr><td class="pri">★★</td><td class="what">中古の「成約」事例</td><td class="why">募集価格ではなく実際に売れた価格が、唯一の現実的な指標</td></tr>
+          <tr><td class="pri">★★</td><td class="what">周辺の新規供給量・競合プロジェクト</td><td class="why">供給過剰リスクを自分で判断する材料を渡す</td></tr>
+          <tr><td class="pri">★★</td><td class="what">同プロジェクトの販売済率</td><td class="why">完売に近づくほど安心材料。伸びない月も正直に出す</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="fear">
+      <div class="fear-h"><span class="fear-q">FEAR 04</span><h3>出口不安</h3></div>
+      <p class="fear-say">「貸せるのか、売れるのか？」——ここが最も情報不足になりがちな領域です。</p>
+      <table class="items">
+        <thead><tr><th>優先</th><th>掲載項目</th><th>効く理由</th></tr></thead>
+        <tbody>
+          <tr><td class="pri">★★★</td><td class="what">近隣の募集賃料・成約賃料・稼働率</td><td class="why">引渡し後の収入イメージが立つ。最大の関心事</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">想定利回り（参考値である旨を明記）</td><td class="why">数字は出す。ただし保証と読める表現は避ける</td></tr>
+          <tr><td class="pri">★★</td><td class="what">転売可能になる時期・名義変更の手続きと費用</td><td class="why">説明されないまま不安だけ溜まる典型。先に開示する</td></tr>
+          <tr><td class="pri">★★</td><td class="what">賃貸管理・家具パッケージの内容と費用</td><td class="why">「貸すまでの段取り」が具体化すると不安が消える</td></tr>
+          <tr><td class="pri">★★</td><td class="what">管理費・光熱費・修繕積立の目安</td><td class="why">ランニングコストの実額。手取りの計算ができるようになる</td></tr>
+          <tr><td class="pri">★★</td><td class="what">賃貸需要の背景（企業進出・大学・駐在需要）</td><td class="why">賃料数字の裏づけとなるストーリー</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="fear">
+      <div class="fear-h"><span class="fear-q">FEAR 05</span><h3>実務不安</h3></div>
+      <p class="fear-say">「手続きと税金は大丈夫か？」——個別性が高く、ここを押さえると差別化になります。</p>
+      <table class="items">
+        <thead><tr><th>優先</th><th>掲載項目</th><th>効く理由</th></tr></thead>
+        <tbody>
+          <tr><td class="pri">★★★</td><td class="what">そのオーナー個別の支払スケジュールと残額</td><td class="why">1ブロックの差し込みで「自分あての資料」に変わる</td></tr>
+          <tr><td class="pri">★★★</td><td class="what">引渡しまでの全体フローと現在地</td><td class="why">先の見通しが立つ。毎号同じ図で現在地だけ動かす</td></tr>
+          <tr><td class="pri">★★</td><td class="what">登記・所有権証明の手続きと必要書類</td><td class="why">外国人所有まわりは不安が大きく、事前提示の価値が高い</td></tr>
+          <tr><td class="pri">★★</td><td class="what">送金ルート・手数料・所要日数</td><td class="why">実際にやると詰まりやすい。経験値そのものが提供価値</td></tr>
+          <tr><td class="pri">★★</td><td class="what">税務（現地の固定資産税・賃貸所得税／日本の確定申告・外国税額控除・国外財産調書）</td><td class="why">年1回の特集でも可。ただし年内に必ず1回は触れる</td></tr>
+          <tr><td class="pri">★</td><td class="what">用語集・現地の不動産用語</td><td class="why">巻末に固定。読み手のリテラシーが上がると質問の質も上がる</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+  </div>
+</section>
+
+<!-- ============ 3. RULES ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">03</span><h2>毎号を貫く運用ルール</h2></div>
+  <p class="sec-note">レポートの価値は1号あたりの完成度ではなく、号を重ねたときの比較可能性から生まれます。</p>
+  <div class="rules">
+    <div class="rule"><span class="r">R1</span><p><b>構成・順番・指標を毎号固定する</b><span>比較できることが安心の正体。デザインを変えたくなっても、指標の並びは変えない</span></p></div>
+    <div class="rule"><span class="r">R2</span><p><b>数字には必ず出典を添える</b><span>政府発表／デベロッパー公式／現地報道／自社試算のいずれかを明記。自社試算は自社試算と書く</span></p></div>
+    <div class="rule"><span class="r">R3</span><p><b>悪い情報を毎号1つ以上載せる</b><span>良い話だけの資料は信用されない。先に出せば説明、後から出れば釈明になる</span></p></div>
+    <div class="rule"><span class="r">R4</span><p><b>利回り・値上がりを断定しない</b><span>「保証」「必ず」「確実に」は使わない。参考値である旨と免責事項を毎号固定掲載する</span></p></div>
+    <div class="rule"><span class="r">R5</span><p><b>1ページ＝1テーマ、写真と表が主役</b><span>文章は補足。読了ではなく「めくって把握できる」ことを目標にする</span></p></div>
+    <div class="rule"><span class="r">R6</span><p><b>オーナー限定であることを見せる</b><span>専用窓口、オーナー数と国籍構成、限定の視察案内。特別扱いされている実感が継続的な信頼を生む</span></p></div>
+    <div class="rule"><span class="r">R7</span><p><b>発行日を守る</b><span>毎月同じタイミングで届くこと自体が、事業の継続性のシグナルになる</span></p></div>
+  </div>
+</section>
+
+<!-- ============ 4. YEARLY ============ -->
+<section class="sec">
+  <div class="sec-head"><span class="sec-num">04</span><h2>年間の特集ローテーション</h2></div>
+  <p class="sec-note">構成は固定したまま、その月だけの深掘り特集を1ページ分（またはP3の一部を差し替え）で回すと、マンネリを防げます。</p>
+  <div class="cal">
+    <div class="cal-item"><div class="m">JAN</div><div class="t">今年の街づくり計画と<br>マイルストーン</div></div>
+    <div class="cal-item"><div class="m">MAR</div><div class="t">日本の確定申告と<br>海外不動産（前年分）</div></div>
+    <div class="cal-item"><div class="m">MAY</div><div class="t">賃貸マーケット深掘り<br>成約事例特集</div></div>
+    <div class="cal-item"><div class="m">JUL</div><div class="t">現地視察レポート<br>オーナー訪問記</div></div>
+    <div class="cal-item"><div class="m">SEP</div><div class="t">交通インフラ進捗の<br>総まとめ</div></div>
+    <div class="cal-item"><div class="m">NOV</div><div class="t">出口戦略<br>売却・名義変更の実務</div></div>
+  </div>
+</section>
+
+<footer>
+  <p>本ページは月次レポートの設計案です。ダッシュボード・価格表・支払スケジュールの数値はレイアウト確認用のサンプルであり、実在のプロジェクトの実績値ではありません。</p>
+  <p>実運用時は、各数値に出典を付し、利回り・将来価格に関する断定的表現を避け、免責事項を巻末に固定掲載してください。</p>
+</footer>
+
+</div>
