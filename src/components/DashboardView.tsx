@@ -534,24 +534,7 @@ export default function DashboardView({
         </div>
         {/* お金の出入り(支出=広告+SNS+送客費用+その他の支払い)。売上シート未導入の間は非表示。 */}
         {showRevenueSection && (
-          <div className={`grid grid-cols-2 gap-2.5 lg:gap-4 ${upcomingRevenue.length > 0 ? "lg:grid-cols-3" : ""}`}>
-            {/* 入金予定: 売上シートの未来月タブ(9月末入金分など)の合計。これから入るお金を
-                トップでひと目で見たいという経営者の要望。 */}
-            {upcomingRevenue.length > 0 && (
-              <KpiCard
-                label={`入金予定(${shortMonthLabel(upcomingRevenue[0].monthKey)}末)`}
-                value={formatYen(upcomingRevenue[0].totalYen)}
-                caption={
-                  upcomingRevenue.length > 1
-                    ? upcomingRevenue
-                        .slice(1, 4)
-                        .map((u) => `${shortMonthLabel(u.monthKey)}末 ${formatYen(u.totalYen)}`)
-                        .join(" / ")
-                    : "その先の入金予定はまだシートにありません"
-                }
-                accent
-              />
-            )}
+          <div className="grid grid-cols-2 gap-2.5 lg:gap-4">
             <KpiCard
               label="支出(全体)"
               value={formatYen(moneyOutYen)}
@@ -573,6 +556,25 @@ export default function DashboardView({
                 </span>
               }
             />
+          </div>
+        )}
+        {/* 入金予定(翌月末入金分・1ヶ月分のみ)。主要指標のカード群とは別の行・別の配色にし、
+            「今月」を表示しているときだけ出す(経営者の指示: 過去月のチップを見ているときに
+            未来の入金予定が混ざると紛らわしいため。9月になれば自動で10月末入金分に切り替わる)。 */}
+        {showRevenueSection && primaryMonthIdx === 0 && upcomingRevenue.length > 0 && (
+          <div
+            className="flex items-baseline justify-between gap-3 rounded-xl px-3.5 py-3"
+            style={{
+              background: "color-mix(in srgb, var(--color-gold) 10%, var(--color-card))",
+              border: "1px solid color-mix(in srgb, var(--color-gold) 45%, transparent)",
+            }}
+          >
+            <span className="text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+              入金予定({shortMonthLabel(upcomingRevenue[0].monthKey)}末入金分)
+            </span>
+            <span className="text-[20px] font-bold leading-tight" style={{ color: "var(--color-gold)" }}>
+              {formatYen(upcomingRevenue[0].totalYen)}
+            </span>
           </div>
         )}
       </section>
