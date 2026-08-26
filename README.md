@@ -30,3 +30,20 @@
 4. 良い話だけにしない
 5. 利回り・値上がりを断定しない。免責事項を巻末に固定掲載する
 6. 写真の権利処理を必ず確認する
+
+## PDF の作り方
+
+```bash
+# 1. 日本語フォント（Noto Sans JP / Shippori Mincho B1 / IBM Plex Mono）をインストール
+# 2. 印刷用HTMLを生成
+python3 tools/build_pdf.py          # docs/newsletter-2026-08.html → print_dist.html / print_proof.html
+# 3. Chromium で PDF 化
+chromium --headless=new --no-pdf-header-footer --print-to-pdf=out.pdf file://$PWD/print_dist.html
+```
+
+出力（`dist/`）
+
+| ファイル | 内容 |
+|---|---|
+| `タシュケント便り_2026年08月号.pdf` | 配布用ドラフト（A4・7ページ）。写真枠は空欄。社内メモは削除済み |
+| `タシュケント便り_2026年08月号_社内校正版.pdf` | A4・8ページ。写真の入手先メモと権利処理の注意つき |
