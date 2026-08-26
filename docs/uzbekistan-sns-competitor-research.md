@@ -103,6 +103,47 @@
 
 ---
 
+## 3-2. ドバイ勢が取っている7つの立ち位置
+
+ドバイ市場を掘ると、発信者は7つのレーンに分かれている。全部を同時にやる必要はないが、**どのレーンで戦うかを決めないと発信がぼやける。ウズベキスタンでは7つすべてが空いている。**
+
+### L1｜法人ブランド型 — 会社が顔を出す
+[深谷忠司が導く! ドバイライフ & 不動産](https://www.youtube.com/@fukaya_jcme)／[JCME GROUP](https://jcme-group.com/)。2018年ドバイ移住、2021年に現地法人設立。**「日本人経営で初めてドバイの不動産ライセンスを取得」**を旗印にし、現地大手デベロッパーとの直接提携を打ち出す。不動産だけでなく銀行口座開設・ビザ発給・法人設立まで扱い、[「不動産・法人設立・移住がゼロから学べるセミナー」](https://jcme-group.com/seminer-202605/)を毎月開催。
+
+> **移植する点：「日本人で初めて◯◯」という一次的な立ち位置を旗にする。** ウズベキスタンなら「日本人で初めて現地デベロッパーと直接契約」など。そして**定例セミナーを集客の受け皿にする**（LINE個別相談の前段として機能する）。
+
+### L2｜移住系YouTuberが不動産へ横展開 ＝ 戦略資料に最も近い型
+[森翔吾](https://www.sho51.com/)。YouTube登録者 **19.6万人**。フィリピン留学 → ロシア移住 → ロシアで不動産投資 → ドバイ移住ビザ取得、という順番。ブログでは[「ドバイ不動産は暴落するのか？——業界が言えない本音」](https://www.sho51.com/dubai-investment-wait-6months/)、[「当時、結局ドバイに住まなかった理由」](https://www.sho51.com/no-dubai/)、会社設立の初年度費用を **712,684円** と1円単位で公開。
+
+> **移植する点：「国の情報発信で先にフォロワーを取り、後から不動産に接続する」順番が、戦略資料の設計とまったく同じ。** しかも「住まなかった理由」まで書き、費用を1円単位で出す。この2つが信用の作り方そのもの。
+
+### L3｜オウンドメディア型 — note のお手本
+[ドバイ総合研究所](https://getfr33.com/)（Logical X Consultancy FZ-LLC）。「在住エージェントが解説」を掲げ、[「不動産指数とは？暴落ニュースと実際の物件価格の違い」](https://getfr33.com/dubai-property-index/)、[「過去の暴落事例と失敗パターン」](https://getfr33.com/dubai-property-decline/)、デベロッパー徹底比較まで網羅。
+
+> **移植する点：「デベロッパー徹底比較」と「ニュースと実態の乖離を解説する記事」。** どちらもウズベキスタンで今すぐ書けて、かつ誰も書いていない。noteの初期ラインナップに直結する。
+
+### L4｜リスク・逆張りキーワード ＝ 独立した巨大流入源
+[失敗しないためのポイント14選](https://worldinvest.jp/dubai-failure-point/)／[「やめとけ？ウソとホント」](https://media.camel-ftk.com/2026/02/15/dubai-investment-myths/)／[「7つの失敗パターンと回避策」](https://astravista-property.com/guide/dubai-real-estate)／[「よくある詐欺とは？チェックリスト付き」](https://apexcapitaldubai.com/jp/dubai-note/dubai-real-estate-fraud/)。YouTubeにも「ドバイ不動産の闇 — 廃墟タワマン一室に27人居住」といった裏側系が存在する。
+
+> **移植する点：「やめとけ」「暴落」「詐欺」「失敗」は、売り手側が自分で取りに行っているキーワード群。** 検索する人は最も真剣に検討している層で、しかもウズベキスタンでは競合がまだ誰も書いていない。ここを先に押さえる。
+
+### L5｜外部大手メディア出演 → 自チャンネルへ逆輸入
+東成樹は[PIVOT MONEY](https://www.youtube.com/watch?v=mZ-OvpHGG0g)に専門家として出演し、自分のチャンネルに[「PIVOTに出演しました」プレイリスト](https://www.youtube.com/playlist?list=PL94IZGjdCBl9cWCJJesjTa1BoJMcPLxow)を作って再利用している。[「最新ビジネス大解剖」](https://www.youtube.com/watch?v=yex6GEPxF8A)など他番組にも専門家枠がある。
+
+> **移植する点：自力で伸ばすより、すでに大きいチャンネルに「専門家」として出るほうが速い。** ウズベキスタンは今「日本語の専門家が存在しない」状態なので枠を取りやすい。半年〜1年で立ち位置を確立し、ビジネス系チャンネルに売り込む。
+
+### L6｜移住・ビザ・税 — 不動産の手前にある広い入口
+[ドバイ移住サポート／パパ社長・外村健一（Biz Easy）](https://dubai-kenichi.com/) 中東11年（[X @BizEasy1](https://x.com/bizeasy1)）／note [「法人はドバイ、住むのは東南アジア」](https://note.com/dubai_abu_dhabi/n/nea6cc1b55790)／[Anna Advisors 移住完全ガイド](https://anna-advisors.com/usefulinformation/20250804-0930/)／[ネクスパート法律事務所](https://nexpert-law.com/web3/dubai-company-establishment-immigration)／[アエルワールド 投資ビザ](https://www.investorvisa.jp/investorvisa/uae/)／[ゴールドオンライン](https://gentosha-go.com/articles/-/42566)。
+
+> **移植する点：** 士業・コンサルが**「ビザ・税・法人設立」で入口を作り、不動産に接続している。** ウズベキスタンは「ビザ・滞在・法人設立・現地口座」がまるごと空白。不動産より検索母数が大きく、LEVEL2コンテンツの補強になる。
+
+### L7｜個人ブランド型 Instagram — 属性 × 場所
+[小桧山美由紀（@miyumiyu922018）](https://www.instagram.com/miyumiyu922018/) 約4万フォロワー。「4児シンママ × ドバイ在住」という属性の掛け算で刺している。不動産アカウントではないが、ドバイという場所の認知を広げている層。
+
+> **移植する点：** 不動産を語らずにフォロワーを取る枠。**「属性 × 場所」で刺す** — ウズベキスタン版なら「元◯◯ × タシケント在住」。LEVEL1（認知）担当として、法人アカウントとは別に個人アカウントを立てる選択肢がある。
+
+---
+
 ## 4. 具体的に「どこがいいか」＝ マネるべき8つの型
 
 ### ① 顔と経歴を担保に出す（法人名だけでは伸びない）
@@ -220,6 +261,7 @@ LEVEL3のコンテンツ比率15〜20%のうち、**最初の1本はリスク側
 - [にこまるツアー 経営者視察ツアー](https://www.nikomaru.jp/overseas/uzb2026tour) / [JTBラピタ 視察ツアー](https://reg.lapita.jp/public/seminar/view/308)
 - [さきの海外不動産しか勝たん](https://www.youtube.com/channel/UCpv0oCYCHywaOIsqh48MEVw) / [PR TIMES ドバイ不動産MAP](https://prtimes.jp/main/html/rd/p/000000014.000145106.html) / [視察ツアーレポート](https://travelspot.jp/702336/) / [宮脇咲 note](https://note.com/saki_kaigai/n/ncda463d01048)
 - [東成樹 @higashi_dubai](https://x.com/higashi_dubai) / [note](https://note.com/higashi_dubai/n/n10db9671f3e5) / [@show_dubai](https://x.com/show_dubai) / [@Riography](https://x.com/riography) / [@exgrow_dubai](https://www.instagram.com/exgrow_dubai/) / [ドバイ不動産の歩き方](https://note.com/dubai_navi/n/n3e457023d9d7)
+- ベンチマーク（ドバイ・追加）：[深谷忠司 ドバイライフ&不動産](https://www.youtube.com/@fukaya_jcme) / [JCME GROUP](https://jcme-group.com/) / [JCMEセミナー](https://jcme-group.com/seminer-202605/) / [森翔吾 公式ブログ](https://www.sho51.com/) / [業界が言えない本音](https://www.sho51.com/dubai-investment-wait-6months/) / [住まなかった理由](https://www.sho51.com/no-dubai/) / [ドバイ総合研究所](https://getfr33.com/) / [不動産指数の解説](https://getfr33.com/dubai-property-index/) / [暴落事例](https://getfr33.com/dubai-property-decline/) / [失敗しないポイント14選](https://worldinvest.jp/dubai-failure-point/) / [やめとけ？ウソとホント](https://media.camel-ftk.com/2026/02/15/dubai-investment-myths/) / [7つの失敗パターン](https://astravista-property.com/guide/dubai-real-estate) / [詐欺チェックリスト](https://apexcapitaldubai.com/jp/dubai-note/dubai-real-estate-fraud/) / [PIVOT MONEY](https://www.youtube.com/watch?v=mZ-OvpHGG0g) / [PIVOT出演プレイリスト](https://www.youtube.com/playlist?list=PL94IZGjdCBl9cWCJJesjTa1BoJMcPLxow) / [最新ビジネス大解剖](https://www.youtube.com/watch?v=yex6GEPxF8A) / [ドバイ移住サポート（パパ社長）](https://dubai-kenichi.com/) / [X @BizEasy1](https://x.com/bizeasy1) / [note ドバイ・アブダビ](https://note.com/dubai_abu_dhabi/n/nea6cc1b55790) / [Anna Advisors](https://anna-advisors.com/usefulinformation/20250804-0930/) / [ネクスパート法律事務所](https://nexpert-law.com/web3/dubai-company-establishment-immigration) / [アエルワールド](https://www.investorvisa.jp/investorvisa/uae/) / [ゴールドオンライン](https://gentosha-go.com/articles/-/42566) / [@miyumiyu922018](https://www.instagram.com/miyumiyu922018/)
 - [DataReportal Digital 2026: Uzbekistan](https://datareportal.com/reports/digital-2026-uzbekistan) / [NapoleonCat Uzbekistan](https://stats.napoleoncat.com/social-media-users-in-uzbekistan/) / [101digital.uz レポート](https://101digital.uz/en/blog/uzbekistan-digital-marketing-report-2026/)
 - [Instagram リール攻略 2026](https://tatap.jp/knowledge/instagram-reel-185/) / [カルーセル攻略](https://tatap.jp/knowledge/instagram-carousel-sorting/) / [リール改善ガイド](https://marketingone.co.jp/instagram-reels-cvr-creative-guide-2026/)
 
