@@ -1,0 +1,254 @@
+import Link from "next/link";
+import PrintButton from "@/components/PrintButton";
+import {
+  borderColor,
+  CompareRow,
+  formatDateYmd,
+  formatYen,
+  formatYenOrDash,
+  muted,
+  navy,
+  SectionTitle,
+  totalRowBg,
+} from "@/components/marketing-report-shared";
+import type { MarketingWeeklySummary } from "@/lib/metrics";
+
+/** 週の開始日・終了日から「2026年8月24日週(8/24〜8/30)」形式のラベルを作る。 */
+function formatWeekLabel(weekStart: Date, weekEnd: Date): string {
+  const y = weekStart.getFullYear();
+  const m1 = weekStart.getMonth() + 1;
+  const d1 = weekStart.getDate();
+  const m2 = weekEnd.getMonth() + 1;
+  const d2 = weekEnd.getDate();
+  return `${y}年${m1}月${d1}日週(${m1}/${d1}〜${m2}/${d2})`;
+}
+
+/** 送客パートナー(成果報酬)の対象人数合計。 */
+function referralCount(w: MarketingWeeklySummary): number {
+  return w.referralPartners.reduce((sum, r) => sum + r.count, 0);
+}
+
+/**
+ * 「今週」「先週」のいずれかでSNS(リズリアライズ)週次実績が取得できない(シート未入力)場合の注記。
+ * LINE登録・面談実施数は取得できた週だけSNS分を合算しているため、その旨を正直に示す。
+ */
+function snsAvailabilityNote(current: MarketingWeeklySummary, last: MarketingWeeklySummary): string | undefined {
+  const missing: string[] = [];
+  if (!current.sns.available) missing.push("今週");
+  if (!last.sns.available) missing.push("先週");
+  if (missing.length === 0) return undefined;
+  return `※SNS(リズリアライズ)の週次実績が${missing.join("・")}分シートに未入力のため、広告分のみで集計しています`;
+}
+
+interface MarketingReportWeeklyViewProps {
+  /** 対象週の月曜日。 */
+  weekStart: Date;
+  /** 対象週の日曜日。 */
+  weekEnd: Date;
+  /** 対象週の集客・広告サマリ。 */
+  summary: MarketingWeeklySummary;
+  /** 前週(その前の7日間)の集客・広告サマリ(全体サマリー表の「先週」列用)。 */
+  summaryLastWeek: MarketingWeeklySummary;
+  /** レポート作成日時(表示は日付のみ)。 */
+  generatedAt: Date;
+  /** 前週リンクの `week` クエリ値(YYYY-MM-DD、前週の月曜日)。 */
+  prevWeekParam: string;
+  /** 翌週リンクの `week` クエリ値(YYYY-MM-DD、翌週の月曜日)。 */
+  nextWeekParam: string;
+}
+
+/**
+ * 全体MTG(毎週木曜12時)用「マーケティング週次報告」1枚資料。月次版(MarketingReportView)と
+ * 同じ見た目の部品(marketing-report-shared)を使い、対象週(月曜〜日曜)の実績を今週/先週で比較する。
+ * 印刷(ブラウザの印刷→PDF保存)で使うため、Sidebar/Header/TabBar は globals.css 側で
+ * `print:hidden` にして紙面から除外している(ページ内のナビゲーションリンクも同様に除外)。
+ */
+export default function MarketingReportWeeklyView({
+  weekStart,
+  weekEnd,
+  summary,
+  summaryLastWeek,
+  generatedAt,
+  prevWeekParam,
+  nextWeekParam,
+}: MarketingReportWeeklyViewProps) {
+  const referralTotalCount = referralCount(summary);
+  const referralRows = summary.referralPartners.filter((r) => r.count > 0);
+  const referralUnitCost = referralTotalCount > 0 ? summary.referralTotalYen / referralTotalCount : null;
+  const snsNote = snsAvailabilityNote(summary, summaryLastWeek);
+
+  return (
+    <div className="mx-auto flex w-full max-w-[720px] flex-col gap-4 px-4 py-6 text-[12px] leading-tight print:max-w-none print:gap-3 print:px-0 print:py-0 print:text-[11px]">
+      {/* ナビゲーション(月次版へ・前週/翌週。印刷時は除外)。 */}
+      <nav className="print:hidden flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]" style={muted}>
+        <Link href="/report/marketing" className="underline underline-offset-2">
+          ← 月次版を見る
+        </Link>
+        <span aria-hidden>|</span>
+        <Link href={`/report/marketing?week=${prevWeekParam}`} className="underline underline-offset-2">
+          ← 前週
+        </Link>
+        <Link href={`/report/marketing?week=${nextWeekParam}`} className="underline underline-offset-2">
+          翌週 →
+        </Link>
+      </nav>
+
+      {/* ヘッダー */}
+      <header className="report-section flex items-start justify-between gap-4 border-b pb-3" style={borderColor}>
+        <div>
+          <h1 className="text-xl font-bold" style={navy}>
+            マーケティング週次報告
+          </h1>
+          <p className="mt-1 text-sm font-bold" style={{ color: "var(--color-gold)" }}>
+            {formatWeekLabel(weekStart, weekEnd)}
+          </p>
+          <p className="mt-1 text-[11px]" style={muted}>
+            株式会社翔び台 / 作成日 {formatDateYmd(generatedAt)}
+          </p>
+        </div>
+        <PrintButton />
+      </header>
+
+      {/* 1. 全体サマリー(広告+SNS+送客パートナー合算、今週/先週比較) */}
+      <section className="report-section flex flex-col gap-1.5">
+        <SectionTitle>全体サマリー</SectionTitle>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
+              <th className="pb-1.5 pr-2 font-medium">指標</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">今週</th>
+              <th className="pb-1.5 text-right font-medium">先週</th>
+            </tr>
+          </thead>
+          <tbody>
+            <CompareRow
+              label="LINE登録"
+              current={`${summary.totalLineRegs.toLocaleString("ja-JP")}人`}
+              last={`${summaryLastWeek.totalLineRegs.toLocaleString("ja-JP")}人`}
+              caption={snsNote}
+            />
+            <CompareRow
+              label="予約"
+              current={`${summary.totalReservations.toLocaleString("ja-JP")}件`}
+              last={`${summaryLastWeek.totalReservations.toLocaleString("ja-JP")}件`}
+              caption="※送客パートナー・SNSは予約を計測しないため広告経由のみ"
+            />
+            <CompareRow
+              label="面談実施数"
+              current={`${summary.totalInterviews.toLocaleString("ja-JP")}件`}
+              last={`${summaryLastWeek.totalInterviews.toLocaleString("ja-JP")}件`}
+            />
+            <CompareRow
+              label="週の費用"
+              current={formatYen(summary.totalCost)}
+              last={formatYen(summaryLastWeek.totalCost)}
+            />
+            <CompareRow
+              label="面談単価(週)"
+              current={formatYenOrDash(summary.costPerInterview)}
+              last={formatYenOrDash(summaryLastWeek.costPerInterview)}
+            />
+          </tbody>
+        </table>
+        <p className="text-[9px]" style={muted}>
+          ※SNS運用は月額固定のため週次費用には含めていません。
+        </p>
+      </section>
+
+      {/* 2-1. 送客パートナー(成果報酬・今週) */}
+      <section className="report-section flex flex-col gap-1.5">
+        <SectionTitle>送客パートナー(今週)</SectionTitle>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
+              <th className="pb-1.5 pr-2 font-medium">経路</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">単価</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">面談</th>
+              <th className="pb-1.5 text-right font-medium">費用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b" style={{ ...borderColor, ...totalRowBg, fontWeight: 700 }}>
+              <td className="py-1.5 pl-1 pr-2 whitespace-nowrap" style={navy}>
+                合計
+              </td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{formatYenOrDash(referralUnitCost)}</td>
+              <td className="py-1.5 pr-2 text-right text-[13px]" style={navy}>{referralTotalCount.toLocaleString("ja-JP")}名</td>
+              <td className="py-1.5 pr-1 text-right text-[13px]" style={navy}>{formatYen(summary.referralTotalYen)}</td>
+            </tr>
+            {referralRows.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-2 text-center" style={muted}>
+                  今週の対象者はいません
+                </td>
+              </tr>
+            ) : (
+              referralRows.map((r) => (
+                <tr key={r.channel} className="border-b" style={borderColor}>
+                  <td className="py-1.5 pr-2 font-medium whitespace-nowrap" style={navy}>
+                    {r.channel}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right">{formatYen(r.unitCostYen)}</td>
+                  <td className="py-1.5 pr-2 text-right">{r.count.toLocaleString("ja-JP")}名</td>
+                  <td className="py-1.5 text-right">{formatYen(r.costYen)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      {/* 2-2. 広告内訳(アイドマ広告=Google+Meta / リズリアライズ=SNS運用、今週) */}
+      <section className="report-section flex flex-col gap-1.5">
+        <SectionTitle>広告内訳(今週)</SectionTitle>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b" style={{ ...borderColor, color: "var(--color-text-muted)" }}>
+              <th className="pb-1.5 pr-2 font-medium">区分</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">費用</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">LINE登録</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">予約</th>
+              <th className="pb-1.5 pr-2 text-right font-medium">面談</th>
+              <th className="pb-1.5 text-right font-medium">面談単価</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className={summary.sns.available ? "border-b" : undefined} style={borderColor}>
+              <td className="py-1.5 pr-2 font-medium whitespace-nowrap" style={navy}>
+                アイドマ広告
+              </td>
+              <td className="py-1.5 pr-2 text-right">{formatYen(summary.ad.cost)}</td>
+              <td className="py-1.5 pr-2 text-right">{summary.ad.lineRegs.toLocaleString("ja-JP")}人</td>
+              <td className="py-1.5 pr-2 text-right">{summary.ad.reservations.toLocaleString("ja-JP")}件</td>
+              <td className="py-1.5 pr-2 text-right">{summary.ad.interviews.toLocaleString("ja-JP")}件</td>
+              <td className="py-1.5 text-right">{formatYenOrDash(summary.ad.costPerInterview)}</td>
+            </tr>
+            {summary.sns.available && (
+              <tr>
+                <td className="py-1.5 pr-2 font-medium whitespace-nowrap" style={navy}>
+                  リズリアライズ
+                </td>
+                {/* 費用・予約・面談単価は週次では出せない指標(月額固定費/計測なし)のため「—」。 */}
+                <td className="py-1.5 pr-2 text-right">—</td>
+                <td className="py-1.5 pr-2 text-right">{summary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                <td className="py-1.5 pr-2 text-right">—</td>
+                <td className="py-1.5 pr-2 text-right">{summary.sns.interviews.toLocaleString("ja-JP")}件</td>
+                <td className="py-1.5 text-right">—</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <p className="text-[9px]" style={muted}>
+          {summary.sns.available
+            ? "※リズリアライズは月額固定費のため週次の費用・面談単価は算出していません。予約数も計測していません。"
+            : "※リズリアライズは今週分の週次実績がシートに未入力のため掲載していません。"}
+        </p>
+      </section>
+
+      {/* 単価の「—」表示についての注記。 */}
+      <p className="text-[9px]" style={muted}>
+        「—」は分母が0件などのため算出できないこと、または週次では算出しない指標であることを示します。
+      </p>
+    </div>
+  );
+}

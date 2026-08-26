@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
 import SourceBadge from "@/components/SourceBadge";
-import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit } from "@/lib/metrics";
+import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit, mondayOfWeek } from "@/lib/metrics";
 import type {
   DashboardSummary,
   InvoiceCheckRow,
@@ -29,6 +29,21 @@ function formatWeekLabel(weekStart: string): string {
 function formatMonthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return `${y}年${m}月`;
+}
+
+/**
+ * 「週次資料 →」リンクの既定 week パラメータ(YYYY-MM-DD、対象週の月曜日)。
+ * 全体MTGは毎週木曜12時に「直近の完了した週(前週の月〜日)」を報告する運用のため、
+ * 既定値は進行中の今週ではなく1週間前(先週)の月曜日にする(経営者確認: 8/27木曜のMTGでは
+ * 8/17〜8/23週を報告する)。
+ */
+function defaultWeeklyReportWeekParam(now: Date = new Date()): string {
+  const thisMonday = mondayOfWeek(now);
+  const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7);
+  const y = lastMonday.getFullYear();
+  const m = String(lastMonday.getMonth() + 1).padStart(2, "0");
+  const d = String(lastMonday.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 /** 前月比の差分を「+n」「-n」「±0」の形式で表す(先月表示時は先々月との比較になるため「前月比」表記)。 */
@@ -597,6 +612,15 @@ export default function DashboardView({
               style={{ color: "var(--color-navy)", borderColor: "var(--color-border)" }}
             >
               MTG資料 →
+            </Link>
+            {/* 毎週木曜12時の全体MTG用、週次資料(前週分)への導線。既定 week は上記コメントの
+                とおり先週の月曜日(直近の完了した週)。 */}
+            <Link
+              href={`/report/marketing?week=${defaultWeeklyReportWeekParam()}`}
+              className="whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium"
+              style={{ color: "var(--color-navy)", borderColor: "var(--color-border)" }}
+            >
+              週次資料 →
             </Link>
             <SourceBadge label={marketingBadge} />
           </div>

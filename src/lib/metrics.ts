@@ -776,6 +776,187 @@ export function getMarketingSummary(
 }
 
 // ─────────────────────────────────────────────
+// 週次レポート(全体MTG向け、月曜〜日曜)の集計
+// 月次(getMarketingSummary 以下)とは別関数として新設し、既存の月次集計ロジックには
+// 手を入れない。レコードの粒度が異なる指標を混同しないよう、ここでの方針は:
+// - 広告(Google広告・Meta広告)は AdDailyRecord が「日付」を持つ日次レコードのため、
+//   週の範囲(月曜0時〜翌週月曜0時未満)でそのまま絞り込める(=週で切れる)。
+// - SNS運用(リズリアライズ)は SnsWeeklyRecord 自体が「週1レコード」の粒度
+//   (weekStart=シート「期間」欄から算出した月曜日、値はその週1週間分の実績)のため、
+//   対象週の月曜日と weekStart が完全一致するレコードがあれば週の値として使える。
+//   ただし当該週分がまだシートに入力されていない(または月をまたいだ直近の週で欠測)場合は
+//   一致するレコードが無く、その場合は「取得できない週」として扱い、値を合算しない
+//   (available=false。呼び出し側で注記を出す)。
+// - 送客パートナーは Candidate.interviewedAt(面談日)が週内かどうかで判定する
+//   (月次の getReferralPartnerSummary と異なり、登録日・更新日へのフォールバックはしない。
+//   週次は「面談日そのもの」でしか週に帰属させられないため)。
+// - SNS運用の月額固定費(495,000円)は特定の週に按分できないため totalCost には含めない
+//   (呼び出し側で注記を表示する)。
+// ─────────────────────────────────────────────
+
+/** 日付の時刻部分を切り捨てる。 */
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** `days` 日後(負数で前)の日付(時刻切り捨て)を返す。 */
+function addDays(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+}
+
+/** 日付を「YYYY-MM-DD」キーに変換する(週次レポートのURLクエリ・週ラベル用)。 */
+function toDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** 指定日が属する週の月曜日を返す(週次レポートの週定義: 月曜〜日曜)。 */
+export function mondayOfWeek(d: Date): Date {
+  const date = startOfDay(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // 日曜(0)は前週月曜まで6日戻す
+  return addDays(date, diff);
+}
+
+/** `date` が `weekStart`(月曜0時)を起点とする週(月曜〜日曜)に含まれるか。 */
+function isDateInWeek(date: Date, weekStart: Date): boolean {
+  const start = startOfDay(weekStart).getTime();
+  const end = addDays(startOfDay(weekStart), 7).getTime(); // 翌週月曜0時(排他的上限)
+  const t = date.getTime();
+  return t >= start && t < end;
+}
+
+/** 週次: Google広告+Meta広告の合算実績(日次レコードを週の範囲で絞り込んで合計)。 */
+export interface WeeklyAdSummary {
+  cost: number;
+  lineRegs: number;
+  reservations: number;
+  interviews: number;
+  /** 面談単価(円) = 費用 / 面談実施数(分母0ならnull)。 */
+  costPerInterview: number | null;
+}
+
+function summarizeAdWeek(records: AdDailyRecord[], weekStart: Date): WeeklyAdSummary {
+  const inWeek = records.filter((r) => isDateInWeek(r.date, weekStart));
+  const cost = inWeek.reduce((sum, r) => sum + r.cost, 0);
+  const lineRegs = inWeek.reduce((sum, r) => sum + r.lineRegs, 0);
+  const reservations = inWeek.reduce((sum, r) => sum + r.reservations, 0);
+  const interviews = inWeek.reduce((sum, r) => sum + r.interviews, 0);
+  return { cost, lineRegs, reservations, interviews, costPerInterview: divOrNull(cost, interviews) };
+}
+
+/**
+ * 週次: SNS運用(リズリアライズ)の実績。SnsWeeklyRecord は元々「週1レコード」の粒度のため、
+ * 対象週の月曜日と一致するレコードがあればその週の値をそのまま使う。無ければ available=false
+ * (その週の実績がシートにまだ無い/欠測。呼び出し側で「取得できない」旨を注記する)。
+ */
+export interface WeeklySnsSummary {
+  /** その週の週次トラッキング実績が取得できたか。false の場合 lineRegs/interviews は 0 固定。 */
+  available: boolean;
+  lineRegs: number;
+  interviews: number;
+}
+
+function summarizeSnsWeek(records: SnsWeeklyRecord[], weekStart: Date): WeeklySnsSummary {
+  const record = records.find((r) => isSameDay(r.weekStart, weekStart));
+  if (!record) return { available: false, lineRegs: 0, interviews: 0 };
+  return { available: true, lineRegs: record.lineRegs, interviews: record.interviews };
+}
+
+/** 面談実施が確実とみなせるか(月次の getReferralPartnerSummary と同じ判定基準)。 */
+function isReferralInterviewedForWeek(c: Candidate): boolean {
+  return REFERRAL_INTERVIEWED_STAGES.includes(c.stage) || (c.stage === "辞退" && c.interviewedAt !== undefined);
+}
+
+/**
+ * 送客パートナー費用(週次版)。月次の getReferralPartnerSummary と異なり、月の帰属に
+ * 登録日・更新日へフォールバックしない(面談日=interviewedAt が対象週内の人数のみをカウントする)。
+ */
+export function getReferralPartnerSummaryForWeek(
+  candidates: Candidate[],
+  referralRates: ReferralRate[],
+  weekStart: Date,
+): ReferralPartnerSummary[] {
+  return referralRates.map((rate) => {
+    const normalizedChannel = normalizeChannelText(rate.channel);
+    const count = candidates.filter((c) => {
+      if (!c.inflowChannel || !c.interviewedAt) return false;
+      if (!isReferralInterviewedForWeek(c)) return false;
+      if (!normalizeChannelText(c.inflowChannel).includes(normalizedChannel)) return false;
+      return isDateInWeek(c.interviewedAt, weekStart);
+    }).length;
+    return {
+      channel: rate.channel,
+      unitCostYen: rate.unitCostYen,
+      count,
+      costYen: rate.unitCostYen * count,
+    };
+  });
+}
+
+export interface MarketingWeeklySummary {
+  /** 対象週の月曜日(YYYY-MM-DD)。 */
+  weekStart: string;
+  /** 対象週の日曜日(YYYY-MM-DD)。 */
+  weekEnd: string;
+  /** アイドマ広告(Google広告+Meta広告)の週合計。 */
+  ad: WeeklyAdSummary;
+  /** SNS運用(リズリアライズ)の週次実績。取得できない週は available=false。 */
+  sns: WeeklySnsSummary;
+  /** 送客パートナー(週内に面談実施)の内訳。単価マスタ順、count=0の経路も含む。 */
+  referralPartners: ReferralPartnerSummary[];
+  /** 送客パートナー費用(週)合計(円)。 */
+  referralTotalYen: number;
+  /** LINE登録合計 = 広告 + (取得できた週のみ)SNS。 */
+  totalLineRegs: number;
+  /** 予約合計 = 広告のみ(送客パートナー・SNSは予約を計測しないため)。 */
+  totalReservations: number;
+  /** 面談実施数合計 = 広告 + 送客パートナー + (取得できた週のみ)SNS。 */
+  totalInterviews: number;
+  /** 週の費用 = 広告(Google+Meta)費用 + 送客パートナー費用。SNS運用の月額固定費は含まない。 */
+  totalCost: number;
+  /** 面談単価(週) = totalCost / totalInterviews(0件ならnull)。 */
+  costPerInterview: number | null;
+}
+
+/**
+ * 集客・広告データ(週次、月曜〜日曜)のまとめ。全体MTG(毎週木曜)向けの週次レポート専用。
+ * `weekStart` は対象週の月曜日(時刻は問わない。関数内で切り捨てる)。
+ */
+export function getMarketingWeeklySummary(
+  data: MarketingData,
+  referralCandidates: Candidate[],
+  referralRates: ReferralRate[],
+  weekStart: Date,
+): MarketingWeeklySummary {
+  const monday = startOfDay(weekStart);
+  const ad = summarizeAdWeek(data.adDaily, monday);
+  const sns = summarizeSnsWeek(data.snsWeekly, monday);
+  const referralPartners = getReferralPartnerSummaryForWeek(referralCandidates, referralRates, monday);
+  const referralTotalYen = referralPartners.reduce((sum, r) => sum + r.costYen, 0);
+  const referralCount = referralPartners.reduce((sum, r) => sum + r.count, 0);
+
+  const totalInterviews = ad.interviews + referralCount + (sns.available ? sns.interviews : 0);
+  const totalCost = ad.cost + referralTotalYen;
+
+  return {
+    weekStart: toDateKey(monday),
+    weekEnd: toDateKey(addDays(monday, 6)),
+    ad,
+    sns,
+    referralPartners,
+    referralTotalYen,
+    totalLineRegs: ad.lineRegs + (sns.available ? sns.lineRegs : 0),
+    totalReservations: ad.reservations,
+    totalInterviews,
+    totalCost,
+    costPerInterview: totalInterviews > 0 ? totalCost / totalInterviews : null,
+  };
+}
+
+// ─────────────────────────────────────────────
 // 送客パートナー請求書(Slack「#請求書」)の自動照合
 // ─────────────────────────────────────────────
 
