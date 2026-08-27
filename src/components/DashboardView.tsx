@@ -661,7 +661,7 @@ export default function DashboardView({
             accent
           />
           <KpiCard
-            label="面談単価(アイドマ広告)"
+            label="面談単価(昼職キャリア広告)"
             value={formatYenOrDash(
               (googleAd?.interviews ?? 0) + (metaAd?.interviews ?? 0) > 0
                 ? ((googleAd?.cost ?? 0) + (metaAd?.cost ?? 0)) /

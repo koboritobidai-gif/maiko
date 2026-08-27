@@ -247,7 +247,7 @@ export default function MarketingReportView({
               </tr>
               <tr className="border-b" style={borderColor}>
                 <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
-                  アイドマ広告
+                  昼職キャリア広告
                 </td>
                 <td className="py-1 pr-2 text-right tabular-nums">{formatYen(idoma.cost)}</td>
                 <td className="py-1 pr-2 text-right tabular-nums">{idoma.lineRegs.toLocaleString("ja-JP")}人</td>

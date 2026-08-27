@@ -261,7 +261,7 @@ candidateThreads は社内Slack「#求職者」チャンネル(1人の求職者�
 投稿者・日時・本文)が含まれます。candidates(シート台帳)とは別管理で、両方に同じ氏名が存在する場合は
 どちらの情報も自然に言及してください(シート台帳にのみ、またはSlackスレッドにのみ存在する求職者もいます)。
 
-marketingThisMonth には広告運用(アイドマ)シート・SNS運用(リズリアライズ)シートから集計した今月の集客・広告データが
+marketingThisMonth には広告運用(昼職キャリア広告)シート・SNS運用(リズリアライズ)シートから集計した今月の集客・広告データが
 含まれます(null の場合は集客データ未取得)。channels(Google広告・Meta広告、それぞれ費用/表示回数/クリック数/
 LINE登録数/面談予約数/面談実施数/CTR/遷移率regRate/予約率reserveRate/面談実行率execRate/登録単価cpa/面談単価
 costPerInterview)、sns(SNS運用の月額固定費用cost/再生数plays/プロフィール遷移profileVisits/LP閲覧lpViews/
