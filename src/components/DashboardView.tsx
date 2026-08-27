@@ -16,7 +16,7 @@ import type {
 import type { SalesMonthlyStats } from "@/lib/sales-stats";
 import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { sourceBadgeLabel } from "@/lib/source-status";
-import type { Candidate, SourceStatus } from "@/lib/types";
+import type { Candidate, ReferralInvoice, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
 
 /** 週開始日(YYYY-MM-DD)を「M/D週」表示に変換する。 */
@@ -224,6 +224,50 @@ function formatYenOrDash(amountYen: number | null): string {
   return amountYen === null ? "—" : formatYen(amountYen);
 }
 
+/** 請求書チェックカードの月内訳(スレッドごとの明細表示用)、1スレッド分。 */
+interface InvoiceThreadGroup {
+  /** グループ化キー(threadTitle。スレッド外は固定文字列)。 */
+  key: string;
+  /** 見出し表示テキスト。threadTitle が無い場合は「スレッド外」。 */
+  title: string;
+  invoices: ReferralInvoice[];
+  /** 金額を読み取れた請求書の合計(円)。 */
+  totalYen: number;
+  /** 件数(読取不可含む)。 */
+  count: number;
+  /** 金額を読み取れなかった件数。 */
+  unreadableCount: number;
+  /** STORY(別事業)スレッド由来など、画面の月合計・支出には含めない請求書のグループか。 */
+  excludedFromTotals: boolean;
+}
+
+/**
+ * 対象月の請求書を所属スレッド(threadTitle。飛び台(MKC含む)/翔び台/STORYの3系統)ごとに
+ * グループ化する(表示専用。集計値・既存の月合計には影響しない)。並びは金額合計の大きい順。
+ */
+function groupInvoicesByThread(invoices: ReferralInvoice[]): InvoiceThreadGroup[] {
+  const NO_THREAD_KEY = "__no_thread__";
+  const byThread = new Map<string, ReferralInvoice[]>();
+  for (const inv of invoices) {
+    const key = inv.threadTitle ?? NO_THREAD_KEY;
+    const list = byThread.get(key) ?? [];
+    list.push(inv);
+    byThread.set(key, list);
+  }
+  const groups: InvoiceThreadGroup[] = [...byThread.entries()].map(([key, list]) => ({
+    key,
+    title: key === NO_THREAD_KEY ? "スレッド外" : key,
+    invoices: list,
+    totalYen: list.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0),
+    count: list.length,
+    unreadableCount: list.filter((inv) => inv.amountYen === undefined).length,
+    // 同じスレッド(会社)の請求書は excludedFromTotals が揃っている想定だが、
+    // 念のため1件でも該当すればグループごと注記を出す(取りこぼし防止)。
+    excludedFromTotals: list.some((inv) => inv.excludedFromTotals),
+  }));
+  return groups.sort((a, b) => b.totalYen - a.totalYen);
+}
+
 /** デフォルト非表示の折りたたみ。ヘッダーの「＋/−」ボタンで開閉する。 */
 function Collapsible({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -319,6 +363,16 @@ export default function DashboardView({
   const [caMonthIdx, setCaMonthIdx] = useState(0);
   const [salesMonthIdx, setSalesMonthIdx] = useState(0);
   const [revenuePeriod, setRevenuePeriod] = useState<Period>("this");
+  // 請求書チェックカード: 月ごとの内訳(スレッド別)の開閉状態。開いている月キー(YYYY-MM)の集合。
+  const [openInvoiceMonths, setOpenInvoiceMonths] = useState<Set<string>>(new Set());
+  const toggleInvoiceMonth = (month: string) => {
+    setOpenInvoiceMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(month)) next.delete(month);
+      else next.add(month);
+      return next;
+    });
+  };
   const [candidateFunnelPeriod, setCandidateFunnelPeriod] = useState<Period>("this");
   const [corporateFunnelPeriod, setCorporateFunnelPeriod] = useState<Period>("this");
   // カテゴリタブ(全体/マーケティング/CA/RA)。データ再取得は行わず、表示するセクションだけを切り替える。
@@ -832,25 +886,124 @@ export default function DashboardView({
               接続エラーの内容: {invoiceErrorMessage}
             </p>
           )}
-          {/* 月ごとの支出合計だけをシンプルに表示する(1件ずつの明細・照合結果は「AIに聞く」で回答)。 */}
+          {/* 月ごとの支出合計をシンプルに表示する。＋ボタンで、その月の請求書をスレッド(会社)別に
+              グループ化した内訳を開閉できる(1件ずつの明細・照合結果は元々「AIに聞く」でも回答可)。 */}
           <div className="card p-3.5">
             <div className="flex flex-col divide-y" style={{ borderColor: "var(--color-border)" }}>
-              {invoiceMonthlyTotals.map((m) => (
-                <div key={m.month} className="flex items-baseline justify-between py-2">
-                  <span className="text-[12px] font-medium" style={{ color: "var(--color-navy)" }}>
-                    {formatMonthLabel(m.month)}の支払い(月末払い)
-                  </span>
-                  <span className="text-right">
-                    <span className="text-[16px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
-                      {formatYen(m.totalYen)}
-                    </span>
-                    <span className="ml-1.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                      ({m.count.toLocaleString("ja-JP")}件
-                      {m.unreadableCount > 0 ? `+読取不可${m.unreadableCount}件` : ""})
-                    </span>
-                  </span>
-                </div>
-              ))}
+              {invoiceMonthlyTotals.map((m) => {
+                const isOpen = openInvoiceMonths.has(m.month);
+                // その月の請求書はSTORY(別事業)分も含めて全件対象にする(スレッド別内訳・
+                // 全スレッド総計は画面の月合計と異なりSTORYも表示するため)。
+                const monthInvoices = isOpen
+                  ? invoiceChecks.map((row) => row.invoice).filter((inv) => inv.targetMonth === m.month)
+                  : [];
+                const threadGroups = groupInvoicesByThread(monthInvoices);
+                const grandTotalYen = threadGroups.reduce((sum, g) => sum + g.totalYen, 0);
+                return (
+                  <div key={m.month} className="py-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[12px] font-medium" style={{ color: "var(--color-navy)" }}>
+                        {formatMonthLabel(m.month)}の支払い(月末払い)
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-right">
+                          <span className="text-[16px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
+                            {formatYen(m.totalYen)}
+                          </span>
+                          <span className="ml-1.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                            ({m.count.toLocaleString("ja-JP")}件
+                            {m.unreadableCount > 0 ? `+読取不可${m.unreadableCount}件` : ""})
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleInvoiceMonth(m.month)}
+                          aria-label={
+                            isOpen
+                              ? `${formatMonthLabel(m.month)}の内訳を閉じる`
+                              : `${formatMonthLabel(m.month)}の内訳を開く`
+                          }
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded-full border text-base leading-none"
+                          style={{ borderColor: "var(--color-border)", color: "var(--color-navy)" }}
+                        >
+                          {isOpen ? "−" : "＋"}
+                        </button>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div
+                        className="mt-2 flex flex-col gap-3 rounded-lg border px-3 py-2.5"
+                        style={{ borderColor: "var(--color-border)" }}
+                      >
+                        {threadGroups.length === 0 && (
+                          <p className="text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+                            この月の請求書はまだありません。
+                          </p>
+                        )}
+                        {threadGroups.map((g) => (
+                          <div key={g.key} className="flex flex-col gap-1.5">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                              <span className="text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+                                {g.title}
+                              </span>
+                              <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                                合計 {formatYen(g.totalYen)}({g.count.toLocaleString("ja-JP")}件
+                                {g.unreadableCount > 0 ? `、うち読取不可${g.unreadableCount}件` : ""})
+                              </span>
+                            </div>
+                            {g.excludedFromTotals && (
+                              <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                                ※この分は上の月合計・支出には含めていません
+                              </p>
+                            )}
+                            <ul className="flex flex-col gap-1 overflow-x-auto">
+                              {g.invoices.map((inv, i) => (
+                                <li
+                                  key={i}
+                                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b py-1 text-[11px] last:border-b-0"
+                                  style={{ borderColor: "var(--color-border)" }}
+                                >
+                                  <span className="whitespace-nowrap font-medium" style={{ color: "var(--color-navy)" }}>
+                                    {inv.vendorName ?? "不明"}
+                                  </span>
+                                  <span
+                                    className="whitespace-nowrap"
+                                    style={{ color: inv.amountYen !== undefined ? "var(--color-text)" : "var(--color-bad)" }}
+                                  >
+                                    {inv.amountYen !== undefined ? formatYen(inv.amountYen) : "読取不可"}
+                                  </span>
+                                  <span
+                                    className="max-w-[220px] truncate"
+                                    style={{ color: "var(--color-text-muted)" }}
+                                    title={inv.fileName}
+                                  >
+                                    {inv.fileName}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                        {threadGroups.length > 0 && (
+                          <div className="border-t pt-2" style={{ borderColor: "var(--color-border)" }}>
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+                                全スレッド総計(STORY含む)
+                              </span>
+                              <span className="text-[13px] font-bold" style={{ color: "var(--color-kpi-value)" }}>
+                                {formatYen(grandTotalYen)}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+                              ※上の月合計はSTORY除外のため、この総計と一致しない場合があります。
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {invoiceMonthlyTotals.length === 0 && (
                 <p className="py-3 text-center text-[12px]" style={{ color: "var(--color-text-muted)" }}>
                   Slack「#請求書」から読み取れた請求書はまだありません。
