@@ -123,6 +123,14 @@ h2.sec-t{font-family:"Shippori Mincho B1","Yu Mincho",serif;font-weight:600;
 .slot p{margin:0;font-size:13px;line-height:1.75}
 .slot .where{color:var(--muted);font-size:12px;margin-top:5px;display:block}
 
+/* a placed photo */
+figure.shot{margin:14px 0 0}
+figure.shot img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;
+  border-radius:2px;border:1px solid var(--line)}
+figure.shot figcaption{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.6}
+figure.shot figcaption .credit{font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  display:block;margin-top:2px}
+
 .two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 
 /* tables */
@@ -219,7 +227,7 @@ footer a{color:var(--muted)}
         <li>対象分野：エネルギー、農業・食品加工、冶金、自動車製造、電機、建材、鉱業、繊維・軽工業</li>
       </ul>
       <div class="means"><b>What this means for owners</b>製造業の稼働は、その地域の雇用と人口を生みます。住宅の実需は最終的に「そこに働く場所があるか」で決まるため、産業案件の積み上がりは賃貸需要の土台になります。</div>
-      <div class="slot">
+      <div class="slot" data-photo="01">
         <p class="sh">Photo 01</p>
         <p>稼働式典で大統領が施設を視察している公式写真（8月25日撮影）</p>
         <span class="where">入手先：president.uz プレスサービス／gazeta.uz 掲載写真（要許諾）</span>
@@ -237,7 +245,7 @@ footer a{color:var(--muted)}
         <li>姉妹都市提携の締結、外務省間プログラムの調整</li>
       </ul>
       <div class="means"><b>What this means for owners</b>物流ルートの強化は、ウズベキスタンが「内陸国」という地理的な不利をどこまで解消できるかという長期テーマに直結します。輸出入コストの低下は、経済成長を通じて不動産市場の底上げにつながる方向の材料です。</div>
-      <div class="slot">
+      <div class="slot" data-photo="02">
         <p class="sh">Photo 02</p>
         <p>両首脳の署名式の公式写真（8月23日または24日撮影）</p>
         <span class="where">入手先：president.uz プレスサービス</span>
@@ -265,7 +273,7 @@ footer a{color:var(--muted)}
       <p>新タシュケントは、経済・投資政策・交通・教育・環境・デジタル技術を一つの空間に統合する新しい都市開発モデルとして紹介されました。</p>
       <div class="back"><b>背景（7月以前）</b>第1期は6,000ヘクタールの範囲で工事が進行中で、完了時点で60万人分の都市インフラが整う計画。全体では人口200万人規模を目指しています（大統領府 発表）。</div>
       <div class="means"><b>What this means for owners</b>「1万人が現に働いている」という数字は、計画の実行段階を測るうえで最も分かりやすい指標のひとつです。図面や完成予想図ではなく、いま現場が動いているという事実が第三国の元首の視察を通じて公表された点に意味があります。</div>
-      <div class="slot">
+      <div class="slot" data-photo="03">
         <p class="sh">Photo 03 ＋ 04</p>
         <p>①両大統領が新タシュケントの模型・パネルを視察している写真（8月23日撮影）　②同日の街区の全景</p>
         <span class="where">入手先：apa.az／Trend.az 掲載の公式写真、newtashkent.uz</span>
@@ -285,7 +293,7 @@ footer a{color:var(--muted)}
       <div class="back"><b>背景（8月以前）</b>2025年10月2日のFIFA理事会で、2027年U-20ワールドカップをウズベキスタンとアゼルバイジャンの共催で開催することが決定。両国3会場ずつで試合が行われます。スタジアムは2025年11月に着工し、事業費は約1億ドル、FIFA基準に準拠した国内最大規模の施設です。</div>
       <div class="note"><b>数字の出所について</b>　進捗65%という数値は8月の報道によるもので、公式発表として確認できていません。次号までに一次情報での確認を試みます。</div>
       <div class="means"><b>What this means for owners</b>国際大会には「動かせない開催日」があります。2027年の大会に間に合わせる必要があるため、周辺の道路・交通・宿泊インフラの整備が同じ期限に縛られます。新タシュケント全体の工程を後ろから押す要因として、進捗率は毎号追いかける価値があります。</div>
-      <div class="slot">
+      <div class="slot" data-photo="05">
         <p class="sh">Photo 05</p>
         <p>スタジアム建設現場の空撮または全景（8月撮影分）</p>
         <span class="where">入手先：newtashkent.uz 公式／uza.uz／qalampir.uz（報道写真は要許諾）</span>
@@ -314,7 +322,7 @@ footer a{color:var(--muted)}
       <div class="back"><b>背景（7月以前）</b>2026年6月17日にPPP契約が締結され、建設が始まりました。出資構成はビジョン・インベスト（サウジ）45%、<b>双日（日本）30%</b>、仁川国際空港公社（韓国）15%、ウズベキスタン・エアポーツ10%。完成時は年間旅客2,000万人規模。</div>
       <div class="note"><b>開港時期について</b>　情報源によって「2029年」と「2030年」の両方が報じられています。本号は8月20日付の最新報道にもとづき2030年としています。確定情報が出た号で改めてお知らせします。</div>
       <div class="means"><b>What this means for owners</b>ヒースローより広い敷地という規模感は、この空港が既存空港の置き換えではなく、都市の東側に新しい経済圏をつくる計画であることを示しています。日本の総合商社が3割を出資している点も、事業の実現可能性を測る材料としてご覧ください。</div>
-      <div class="slot">
+      <div class="slot" data-photo="06">
         <p class="sh">Photo 06</p>
         <p>空港の完成イメージパース、または建設予定地の空撮</p>
         <span class="where">入手先：Uzbekistan Airports 公式リリース、双日のニュースリリース（日本語）</span>
@@ -338,7 +346,7 @@ footer a{color:var(--muted)}
       <p>独立35周年に関連する発表のなかで、大統領は過去10年間にウズベキスタンが<b>1,600億ドルを超える海外投資</b>を集め、<b>経済規模が2.5倍以上に拡大</b>したことを表明しました。</p>
       <div class="back"><b>背景（7月以前）</b>2026年上半期の実質GDP成長率は8.5%（7月24日報道）。中央銀行は7月29日の会合で政策金利を14%に据え置き、2026年末のインフレ見通しを6.5%に維持しました。6月の年間インフレ率は6.4%です。</div>
       <div class="means"><b>What this means for owners</b>10年で経済規模が2.5倍という伸びは、住宅需要の土台そのものが厚くなっていることを意味します。この市場は国内の借入ではなく、外資の流入と人口集中が牽引しています。1,600億ドルという投資の累積は、その流れが続いていることの裏づけです。</div>
-      <div class="slot">
+      <div class="slot" data-photo="07">
         <p class="sh">Photo 07</p>
         <p>独立記念行事、またはタシュケント市街の全景（8月撮影分）</p>
         <span class="where">入手先：president.uz、または自社撮影</span>
@@ -362,7 +370,7 @@ footer a{color:var(--muted)}
         <h3>シルクロード金融・技術フォーラムがタシュケントで初開催</h3>
         <p>74か国から6,000人以上が参加する国際フォーラムが、タシュケントで初めて開催されました。テーマは、デジタル決済とインフラ、イスラム金融と新たな金融回廊、AIと新興技術、トークン化とデジタル資産、クロスボーダー金融と規制の5つです。</p>
         <div class="means"><b>What this means for owners</b>大型の国際会議が定着すると、ホテル・オフィス・サービスアパートメントの実需が生まれます。長期滞在の外国人が増える局面は、賃貸市場に直接効きます。</div>
-        <div class="slot">
+        <div class="slot" data-photo="08">
           <p class="sh">Photo 08</p>
           <p>フォーラム会場の全景（8月24〜26日撮影）</p>
           <span class="where">入手先：フォーラム公式のプレスキット</span>

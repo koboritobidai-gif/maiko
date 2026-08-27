@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Wrap the newsletter artifact HTML into print-ready documents (proof + distribution draft)."""
 import io
+import os
 import re
 import sys
 
@@ -67,6 +68,11 @@ footer p { margin-bottom: 5px; }
 footer h4 { font-size: 7.5pt; margin: 10px 0 5px; }
 footer li { font-size: 7pt; line-height: 1.5; margin-bottom: 1px; word-break: break-all; }
 
+figure.shot { margin-top: 8px; break-inside: avoid; page-break-inside: avoid; }
+figure.shot img { max-height: 68mm; object-fit: cover; }
+figure.shot figcaption { font-size: 8pt; margin-top: 4px; }
+figure.shot figcaption .credit { font-size: 7pt; }
+
 @media print { a { text-decoration: none; } }
 """
 
@@ -80,6 +86,49 @@ DIST_CSS = """
 .slot p { color: var(--muted); font-size: 8.4pt; }
 .slot p::before { content: "▢ 写真："; color: var(--accent); font-weight: 600; }
 """
+
+
+ASSET_DIR = "assets"
+ASSET_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def find_asset(photo_id):
+    """Return the path of assets/<id>.<ext> if a photo has been dropped in for this slot."""
+    for ext in ASSET_EXTS:
+        for name in (photo_id, photo_id.lstrip("0")):
+            path = os.path.join(ASSET_DIR, name + ext)
+            if os.path.isfile(path):
+                return os.path.abspath(path)
+    return None
+
+
+SLOT_RE = re.compile(
+    r'<div class="slot" data-photo="(?P<id>[^"]+)">(?P<inner>.*?)</div>', re.S
+)
+CAPTION_RE = re.compile(r'<p class="sh">.*?</p>\s*<p>(?P<cap>.*?)</p>', re.S)
+CREDIT_RE = re.compile(r'<span class="where">(?P<credit>.*?)</span>', re.S)
+
+
+def place_photos(html, with_credit):
+    """Swap each placeholder for the real photo when one exists in assets/."""
+    def repl(m):
+        path = find_asset(m.group("id"))
+        if not path:
+            return m.group(0)
+        inner = m.group("inner")
+        cap = CAPTION_RE.search(inner)
+        cap = cap.group("cap").strip() if cap else ""
+        credit = ""
+        if with_credit:
+            c = CREDIT_RE.search(inner)
+            if c:
+                credit = '<span class="credit">%s</span>' % c.group("credit").strip()
+        return (
+            '<figure class="shot"><img src="file://%s" alt="%s">'
+            '<figcaption>%s%s</figcaption></figure>' % (path, cap, cap, credit)
+        )
+
+    return SLOT_RE.sub(repl, html)
 
 
 def split_head_body(src):
@@ -102,6 +151,7 @@ def build(out_path, extra_css, title, strip_internal):
         if start == -1 or end == -1:
             sys.exit("could not locate internal section markers")
         b = b[:start] + b[end:]
+    b = place_photos(b, with_credit=not strip_internal)
     html = (
         "<!doctype html>\n"
         '<html lang="ja" data-theme="light">\n<head>\n'
