@@ -33,13 +33,14 @@ export function formatYenOrDash(amountYen: number | null): string {
 /**
  * セクション見出し(金色の縦バー付き)。全て同じ色・同じ大きさで読みにくいという経営者の
  * 指摘を受け、アプリ既存の配色(ネイビー+ゴールド)の範囲でメリハリを付ける。
+ * 全体MTGで画面共有しながら説明する資料のため、後方から見ても分かるよう大きめに表示する。
  */
 export function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="flex items-center gap-1.5 text-[13px] font-bold" style={navy}>
+    <h2 className="flex items-center gap-2 text-[16px] font-bold" style={navy}>
       <span
         aria-hidden
-        className="inline-block h-[14px] w-[3.5px] rounded-full"
+        className="inline-block h-[17px] w-[4px] rounded-full"
         style={{ background: "var(--color-gold)" }}
       />
       {children}
@@ -47,7 +48,11 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   );
 }
 
-/** 主要数値の比較表(1行分)。当期・前期(今月/先月、今週/先週)を並べる。 */
+/**
+ * 主要数値の比較表(1行分)。当期・前期(今月/先月、今週/先週)を並べる。
+ * 全体MTGでプロジェクタ越しに見ても読める大きさ(当期の数字を特に大きく)にし、
+ * 数値は桁を揃えて右揃えにする(tabular-nums)。
+ */
 export function CompareRow({
   label,
   current,
@@ -61,19 +66,20 @@ export function CompareRow({
 }) {
   return (
     <tr className="border-b" style={borderColor}>
-      <td className="py-1.5 pr-2 align-top font-medium" style={muted}>
+      <td className="py-3 pr-3 align-top text-[14px] font-medium" style={muted}>
         {label}
         {caption && (
-          <div className="text-[9px] font-normal" style={muted}>
+          <div className="mt-0.5 text-[11px] font-normal" style={muted}>
             {caption}
           </div>
         )}
       </td>
-      {/* 当期の数字が主役: 大きく・太く・ネイビー。前期は比較用に小さく控えめ。 */}
-      <td className="py-1.5 pr-2 text-right align-top text-[14px] font-bold" style={navy}>
+      {/* 当期の数字が主役: 大きく・太く・ネイビー。前期は比較用に控えめだが、
+          遠目からでも読める14pxを確保する。 */}
+      <td className="py-3 pr-3 text-right align-top text-[21px] font-bold tabular-nums" style={navy}>
         {current}
       </td>
-      <td className="py-1.5 text-right align-top text-[11px]" style={muted}>
+      <td className="py-3 text-right align-top text-[14px] tabular-nums" style={muted}>
         {last}
       </td>
     </tr>
