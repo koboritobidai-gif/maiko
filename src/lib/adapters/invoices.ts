@@ -171,19 +171,30 @@ function findPartnerChannel(...texts: string[]): string | undefined {
 
 /** 会社名らしい表記(前株・後株・合同/有限会社)。 */
 const VENDOR_NAME_RE = /(?:株式会社|合同会社|有限会社)[^\s、。,()()\n]{1,20}|[^\s、。,()()\n]{1,20}(?:株式会社|合同会社|有限会社)/g;
-/** 自社(請求書の宛先)を請求元と誤認しないための除外パターン。 */
-const SELF_COMPANY_RE = /翔び台|飛び台|トビダイ|tobidai/i;
+/**
+ * 自社グループ(請求書の宛先)を請求元と誤認しないための除外パターン。
+ * 翔び台のほか、グループ会社の 飛び台・STORY・MKC も宛名としてPDFに出てくる
+ * (STORY/MKCスレッドの請求書で「株式会社STORY」「株式会社MKC」を請求元と
+ * 誤表示した実例があった)ため、全グループ会社名を除外する。
+ */
+const SELF_COMPANY_RE = /翔び台|飛び台|トビダイ|tobidai|STORY|MKC/i;
 
 /**
  * 請求元の会社名を、PDFテキスト → ファイル名 → Slackメッセージ本文の順にヒューリスティックに探す。
- * 請求書の宛先である自社(翔び台)を最初に拾ってしまわないよう、自社名を含む候補は除外する。
+ * 請求書の宛先である自社グループを最初に拾ってしまわないよう、自社グループ名を含む候補は除外する。
+ * 「御請求書】株式会社」のような書類の定型語の断片も候補にしない(会社名部分が空になるため)。
  */
 function findVendorName(...texts: string[]): string | undefined {
   for (const text of texts) {
     VENDOR_NAME_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = VENDOR_NAME_RE.exec(text))) {
-      if (!SELF_COMPANY_RE.test(m[0])) return m[0];
+      const candidate = m[0];
+      if (SELF_COMPANY_RE.test(candidate)) continue;
+      // 「御請求書】株式会社」「請求書_株式会社」のような、会社名の実体が無い断片を除外する
+      // (書類タイトルの直後に法人格語だけがマッチするケース)。
+      if (/請求書|御中|様/.test(candidate)) continue;
+      return candidate;
     }
   }
   return undefined;
