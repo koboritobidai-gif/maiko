@@ -960,7 +960,15 @@ export function getMarketingWeeklySummary(
 // 送客パートナー請求書(Slack「#請求書」)の自動照合
 // ─────────────────────────────────────────────
 
-export type InvoiceCheckStatus = "match" | "mismatch" | "unreadable" | "unknown-partner" | "out-of-range";
+export type InvoiceCheckStatus =
+  | "match"
+  | "mismatch"
+  | "unreadable"
+  | "unknown-partner"
+  | "out-of-range"
+  // STORY(別事業)のスレッド由来など、画面の合計・差異判定には含めない請求書(invoice.excludedFromTotals)。
+  // 行自体は返す(「AIに聞く」の会社別・スレッド別集計で使うため)。
+  | "excluded";
 
 export interface InvoiceCheckRow {
   invoice: ReferralInvoice;
@@ -1000,6 +1008,9 @@ export interface InvoiceMonthTotal {
 export function getInvoiceMonthlyTotals(invoices: ReferralInvoice[]): InvoiceMonthTotal[] {
   const byMonth = new Map<string, InvoiceMonthTotal>();
   for (const inv of invoices) {
+    // STORY(別事業)のスレッド由来の請求書は、画面の支出合計には従来どおり含めない
+    // (経営者の指示。excludedFromTotals は adapters/invoices.ts が付与)。
+    if (inv.excludedFromTotals) continue;
     const entry = byMonth.get(inv.targetMonth) ?? {
       month: inv.targetMonth,
       totalYen: 0,
@@ -1121,8 +1132,9 @@ export function getPrimaryMonthSnapshots(
           ? `${ref.getMonth() + 1}月`
           : `${ref.getFullYear()}年${ref.getMonth() + 1}月`;
     const marketing = getMarketingSummary(marketingData, weeklyKpis, referralCandidates, referralRates, ref);
-    // #請求書のその月支払いの全請求書(パートナー請求書含む)。
-    const monthInvoices = invoices.filter((inv) => inv.targetMonth === monthKey);
+    // #請求書のその月支払いの全請求書(パートナー請求書含む)。STORY(別事業)スレッド由来の請求書
+    // (excludedFromTotals)は、経営者の指示により画面の支出合計・読取不可件数には従来どおり含めない。
+    const monthInvoices = invoices.filter((inv) => inv.targetMonth === monthKey && !inv.excludedFromTotals);
     // SNS運用のリズアライズは月固定費(MARKETING_SNS_MONTHLY_COST=¥495,000)として広告費側で
     // 既に計上済みで、同じ金額の請求書PDFが#請求書にも投稿される運用のため、支出の計算では
     // リズアライズの請求書を除外して二重計上を防ぐ(請求書チェックカードの合計はチャンネルの
@@ -1183,6 +1195,12 @@ export function getInvoiceChecks(
   return [...invoices]
     .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
     .map((invoice): InvoiceCheckRow => {
+      // STORY(別事業)のスレッド由来の請求書は、行自体は返す(「AIに聞く」の会社別・スレッド別
+      // 集計で使うため)が、差異判定・画面の合計には一切算入しない(経営者の指示。画面はSTORY除外の
+      // まま据え置く)。
+      if (invoice.excludedFromTotals) {
+        return { invoice, status: "excluded" };
+      }
       if (!invoice.partnerChannel) {
         return { invoice, status: "unknown-partner" };
       }

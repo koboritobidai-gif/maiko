@@ -192,12 +192,16 @@ export function buildAskSnapshot(
       })),
     })),
     // 送客パートナー請求書(Slack「#請求書」)の自動照合結果。経路/対象月/請求額/アプリ計算/判定。
+    // STORY(別事業)スレッド由来の請求書(excludedFromTotals: true)も行として含まれる
+    // (画面の合計には含まれないが、会社別・スレッド別の質問にはこちらで答える)。
     referralInvoiceChecks: invoiceChecks.map((row) => ({
       partnerChannel: row.invoice.partnerChannel ?? null,
       vendorName: row.invoice.vendorName ?? null,
       fileName: row.invoice.fileName,
       targetMonth: row.invoice.targetMonth,
       targetMonthIsEstimated: row.invoice.targetMonthIsEstimated,
+      threadTitle: row.invoice.threadTitle ?? null,
+      excludedFromTotals: row.invoice.excludedFromTotals ?? false,
       invoiceAmountYen: row.invoice.amountYen ?? null,
       computedAmountYen: row.computedYen ?? null,
       diffYen: row.diffYen ?? null,
@@ -310,14 +314,26 @@ appointmentRoutes(獲得経路の内訳、route/count、件数降順)・meetings
 
 referralInvoiceChecks は Slack「#請求書」チャンネルの請求書PDF(送客パートナー以外の支払いも含む)を
 読み取った結果で、vendorName(請求元の会社名)・fileName も含まれます。「請求書の内訳は?」「◯月の支出は?」
-のような質問には、支払月(targetMonth。「7月支払い」スレッドの月)ごとに合計と「会社名 金額」の内訳を答えてください。
+のような質問には、支払月(targetMonth。「7月支払い」スレッドの月)ごとに合計と「会社名 金額」の内訳を答えてください
+(この内訳・合計は excludedFromTotals: true の行を除いた、ダッシュボード画面と同じ集計です)。
 送客パートナー請求書PDFを自動照合した結果でもあり、
 経路(partnerChannel、特定できなければ null)・対象月(targetMonth、YYYY-MM形式)・請求額
 (invoiceAmountYen)・アプリの計算値(computedAmountYen)・差額(diffYen)・判定(status: match=一致/
-mismatch=差異あり/unreadable=金額読取不可/unknown-partner=経路不明/out-of-range=対象月が範囲外)が
-含まれます。「請求書は合っている?」「請求書の差異は?」のような質問には、mismatch のものを経路名・
-差額とともに具体的に答え、全件 match ならその旨を伝えてください。これは翔び台が送客パートナーへ
-「払う」費用の照合です。
+mismatch=差異あり/unreadable=金額読取不可/unknown-partner=経路不明/out-of-range=対象月が範囲外/
+excluded=画面の合計に含めない〈下記threadTitle参照〉)が含まれます。「請求書は合っている?」「請求書の
+差異は?」のような質問には、excluded を除いた mismatch のものを経路名・差額とともに具体的に答え、
+残りが全件 match ならその旨を伝えてください。これは翔び台が送客パートナーへ「払う」費用の照合です。
+
+threadTitle は、その請求書が投稿されたSlackスレッドの親メッセージ1行目です(例:「8月支払い 請求書
+【月末払い】」「【STORY】8月支払い 請求書【月末払い】」)。#請求書チャンネルは支払い元の会社ごとに
+スレッドが分かれる運用(飛び台/MKC・翔び台・STORYの3系統)で、スレッド返信ではなくトップレベル投稿
+由来の請求書は threadTitle が null です。excludedFromTotals が true の請求書(主にSTORY=別事業の
+スレッド)は、ダッシュボード画面の支出合計・請求書チェックには含まれていません(経営者の指示で
+画面はSTORY除外のまま据え置いています)が、この「AIに聞く」への回答では除外せず使ってください。
+「会社別の請求書合計は?」「スレッドごとの支払いは?」「◯月に払う3社の内訳は?」のような、
+会社別・スレッド別の支払合計を聞かれた質問には、対象月(指定が無ければ今月)の請求書を threadTitle
+ごとにグループ化し、スレッド名(threadTitle が無いものは「スレッド外」)ごとの合計金額・件数・
+読取不可件数を列挙して答えてください(STORY分も含めた全体を答えること)。
 
 referralRevenue は、referralInvoiceChecks(払う金額)とは逆方向の、翔び台が紹介先企業から「貰う」
 送客売上です(経営者が別途運用する売上シートの月別タブから取得。null の場合は未取得・未導入)。
@@ -597,7 +613,9 @@ function answerInvoiceBreakdown(invoiceChecks: InvoiceCheckRow[]): string {
   if (invoiceChecks.length === 0) {
     return "Slack「#請求書」から読み取れた請求書がまだありません。";
   }
-  const invoices = invoiceChecks.map((r) => r.invoice);
+  // STORY(別事業)スレッド由来の請求書(excludedFromTotals)は、ダッシュボード画面の支出合計と
+  // 揃えるためこの内訳からも除外する(会社別・スレッド別の合計は answerInvoiceByThread で回答する)。
+  const invoices = invoiceChecks.map((r) => r.invoice).filter((inv) => !inv.excludedFromTotals);
   const months = getInvoiceMonthlyTotals(invoices);
   const lines = months.map((m) => {
     const detail = invoices
@@ -611,16 +629,74 @@ function answerInvoiceBreakdown(invoiceChecks: InvoiceCheckRow[]): string {
   return `Slack「#請求書」の月別支出まとめです。\n${lines.join("\n")}`;
 }
 
+/** 質問文の「◯月」表記から対象の支払月(YYYY-MM)を求める(無ければ今月。年は今日に一番近い解釈)。 */
+function resolveTargetMonthFromText(text: string, now: Date): string {
+  const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const match = /(\d{1,2})\s*月/.exec(text);
+  if (!match) return currentKey;
+  const month = Number(match[1]);
+  if (month < 1 || month > 12) return currentKey;
+  const nowIndex = now.getFullYear() * 12 + now.getMonth();
+  let best: { year: number; distance: number } | null = null;
+  for (const year of [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1]) {
+    const distance = Math.abs(year * 12 + (month - 1) - nowIndex);
+    if (!best || distance < best.distance) best = { year, distance };
+  }
+  return `${best!.year}-${String(month).padStart(2, "0")}`;
+}
+
+/**
+ * 「会社別」「スレッド別」「会社ごと」等+「請求書/支払い」への回答: #請求書チャンネルは支払い元の
+ * 会社ごとにスレッドが分かれる運用(飛び台/MKC・翔び台・STORYの3系統)のため、対象月の請求書を
+ * threadTitle(スレッド)ごとに合計して答える。画面の支出合計とは異なりSTORY(別事業)分も含める
+ * (経営者が「8月末に支払う各会社ごとの合計金額」を把握できるようにするため)。
+ */
+function answerInvoiceByThread(invoiceChecks: InvoiceCheckRow[], text: string): string {
+  if (invoiceChecks.length === 0) {
+    return "Slack「#請求書」から読み取れた請求書がまだありません。";
+  }
+  const now = new Date();
+  const targetMonth = resolveTargetMonthFromText(text, now);
+  const invoices = invoiceChecks.map((r) => r.invoice).filter((inv) => inv.targetMonth === targetMonth);
+  if (invoices.length === 0) {
+    return `${formatMonthKey(targetMonth)}支払い分の請求書はまだありません。`;
+  }
+
+  const groups = new Map<string, { totalYen: number; count: number; unreadableCount: number }>();
+  for (const inv of invoices) {
+    const key = inv.threadTitle ?? "スレッド外";
+    const g = groups.get(key) ?? { totalYen: 0, count: 0, unreadableCount: 0 };
+    g.count += 1;
+    if (inv.amountYen !== undefined) g.totalYen += inv.amountYen;
+    else g.unreadableCount += 1;
+    groups.set(key, g);
+  }
+  const grandTotalYen = [...groups.values()].reduce((sum, g) => sum + g.totalYen, 0);
+  const lines = [...groups.entries()]
+    .sort((a, b) => b[1].totalYen - a[1].totalYen)
+    .map(([title, g]) => {
+      const unreadableNote = g.unreadableCount > 0 ? `、うち読取不可${g.unreadableCount}件` : "";
+      return `${title}: 合計${formatYenPlain(g.totalYen)}(${g.count}件${unreadableNote})`;
+    });
+  return (
+    `${formatMonthKey(targetMonth)}支払い分の請求書をスレッド(会社)ごとに合計しました` +
+    `(全体合計${formatYenPlain(grandTotalYen)})。\n${lines.join("\n")}`
+  );
+}
+
 /** 「請求書」を含む質問への回答: 送客パートナー請求書の自動照合結果のまとめ。 */
 function answerInvoiceChecks(invoiceChecks: InvoiceCheckRow[]): string {
   if (invoiceChecks.length === 0) {
     return "Slack「#請求書」から読み取れた請求書がまだありません。";
   }
-  const mismatches = invoiceChecks.filter((r) => r.status === "mismatch");
-  const unreadable = invoiceChecks.filter((r) => r.status === "unreadable");
-  const unknown = invoiceChecks.filter((r) => r.status === "unknown-partner");
+  // STORY(別事業)スレッド由来の請求書(status: "excluded")は送客パートナーの照合対象外のため、
+  // この判定・件数には含めない(会社別・スレッド別の合計は answerInvoiceByThread で回答する)。
+  const checkable = invoiceChecks.filter((r) => r.status !== "excluded");
+  const mismatches = checkable.filter((r) => r.status === "mismatch");
+  const unreadable = checkable.filter((r) => r.status === "unreadable");
+  const unknown = checkable.filter((r) => r.status === "unknown-partner");
   if (mismatches.length === 0 && unreadable.length === 0 && unknown.length === 0) {
-    return `直近の送客パートナー請求書${invoiceChecks.length}件は、すべてアプリの計算値と一致しています。`;
+    return `直近の送客パートナー請求書${checkable.length}件は、すべてアプリの計算値と一致しています。`;
   }
   const parts: string[] = [];
   if (mismatches.length > 0) {
@@ -1029,6 +1105,21 @@ export function answerWithRules(
   if (text.includes("ブロック率")) return answerBlockRateQuestion(bundle);
   if (text.includes("CPA") || text.includes("登録単価")) return answerCpa(marketingSummary);
   if (text.includes("広告費") || text.includes("広告金額")) return answerAdCost(marketingSummary);
+
+  // 4.54. 会社別/スレッド別の請求書合計(#請求書は支払い元の会社ごとにスレッドが分かれる運用
+  //       〈飛び台/MKC・翔び台・STORYの3系統〉のため、「会社別」「スレッド別」「会社ごと」「3社」等
+  //       +「請求書/支払い」を含む質問は、対象月の請求書をスレッド単位で合計して答える
+  //       〈STORY分も含む。画面のSTORY除外合計とは別物〉)。4.55より先に判定する。
+  if (
+    (text.includes("会社別") ||
+      text.includes("スレッド別") ||
+      text.includes("会社ごと") ||
+      text.includes("各社") ||
+      text.includes("3社")) &&
+    (text.includes("請求書") || text.includes("支払"))
+  ) {
+    return answerInvoiceByThread(invoiceChecks, text);
+  }
 
   // 4.55. 請求書(Slack「#請求書」)。「内訳」「いくら」「支出/支払」を含む質問は月別内訳、
   //       それ以外(「合ってる?」等)は送客パートナー請求書の照合結果を返す。

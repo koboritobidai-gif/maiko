@@ -337,9 +337,11 @@ export default function DashboardView({
   // 月ごとの支出合計(新しい月順)。
   const invoiceMonthlyTotals = getInvoiceMonthlyTotals(invoiceChecks.map((row) => row.invoice));
   // 金額を読み取れなかった請求書の一覧(理由と一緒に表示する。多すぎる場合は5件まで)。
+  // STORY(別事業)スレッド由来の請求書(excludedFromTotals)は画面の合計に含めない従来仕様のため、
+  // ここでも除外する(invoiceChecks には「AIに聞く」用にSTORY分の行も含まれるようになったため)。
   const unreadableInvoices = invoiceChecks
     .map((row) => row.invoice)
-    .filter((inv) => inv.amountYen === undefined);
+    .filter((inv) => inv.amountYen === undefined && !inv.excludedFromTotals);
   const unreadableInvoicesShown = unreadableInvoices.slice(0, 5);
   const revenueBadge = sourceBadgeLabel("revenue", revenueStatus);
   // 送客売上が1件も無く、かつ機能未設定(demo=REVENUE_SHEET_ID未設定 or デモモード)の場合は

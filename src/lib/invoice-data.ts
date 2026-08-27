@@ -63,6 +63,9 @@ const MANUAL_UNREADABLE_AMOUNTS: { month: string; amountYen: number }[] = [
 function applyManualInvoiceFixes(invoices: ReferralInvoice[]): ReferralInvoice[] {
   return invoices.map((inv) => {
     if (inv.amountYen !== undefined) return inv;
+    // 経営者確認済みの補正はSTORY(別事業)以外の読取不可PDFが対象のため、
+    // excludedFromTotals(STORYスレッド由来)の請求書には適用しない。
+    if (inv.excludedFromTotals) return inv;
     const fix = MANUAL_UNREADABLE_AMOUNTS.find((f) => f.month === inv.targetMonth);
     if (!fix) return inv;
     return {

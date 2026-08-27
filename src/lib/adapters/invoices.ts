@@ -128,11 +128,14 @@ function isPdfFile(file: SlackFile): boolean {
 // (実運用では月十数件の請求書が届くため、95日・50件で直近2〜3ヶ月分をカバーする。
 // 全件を並列ダウンロードするとサーバーレスの実行時間・メモリを圧迫するため、
 // DOWNLOAD_CONCURRENCY 件ずつに分けてダウンロードする)。
+// STORYスレッド分も読み込むようになった(excludedFromTotals フラグで画面の合計からは除外しつつ
+// 保持する)ため、飛び台/MKC・翔び台・STORYの3系統ぶんを賄えるよう上限を引き上げている。
 const RECENT_WINDOW_MS = 95 * 24 * 60 * 60 * 1000;
-const MAX_PDF_DOWNLOADS = 80;
+const MAX_PDF_DOWNLOADS = 110;
 const DOWNLOAD_CONCURRENCY = 6;
-/** 返信の中のPDFも読むスレッドの上限(実運用で月20枚前後の請求書がスレッドに分かれて届くため多めに取る)。 */
-const MAX_THREAD_FETCHES = 60;
+/** 返信の中のPDFも読むスレッドの上限(実運用で月20枚前後の請求書がスレッドに分かれて届くため多めに取る。
+ *  STORYスレッド分も読み込むようになったため従来より多めに確保している)。 */
+const MAX_THREAD_FETCHES = 80;
 // PDFダウンロードのサイズ上限。超過分はパース失敗として扱う(転送量抑制・タイムアウト防止)。
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 
@@ -245,10 +248,17 @@ function detectPaymentMonthFromContent(text: string, postedAt: Date): { month: s
 }
 
 /**
- * 集計から除外するスレッド・メッセージの表記。「【STORY】7月支払い 請求書【月末払い】」のような
- * STORY(別事業)の請求書スレッドは、翔び台本体の支払い合計に含めない(経営者の指示)。
+ * 画面の合計から除外するスレッド・メッセージの表記。「【STORY】7月支払い 請求書【月末払い】」のような
+ * STORY(別事業)の請求書は読み込みはするが、`excludedFromTotals: true` を付けて翔び台本体の
+ * 支払い合計には含めない(経営者の指示)。「AIに聞く」の会社別(スレッド別)集計ではこの分も使う。
  */
 const EXCLUDE_MESSAGE_RE = /STORY/i;
+
+/** テキストの1行目(前後空白除去)。空文字なら undefined。 */
+function firstLine(text: string): string | undefined {
+  const line = text.split("\n")[0]?.trim();
+  return line ? line : undefined;
+}
 
 /** スレッド親メッセージの「7月支払い 請求書【月末払い】」のような表記から支払月を求める。 */
 const PAYMENT_MONTH_RE = /(\d{1,2})\s*月\s*(?:末)?\s*(?:支払|払い)/;
@@ -401,6 +411,8 @@ export class SlackInvoiceSource implements InvoiceSource {
     file: SlackFile,
     permalinkBase?: string,
     threadPaymentMonth?: string,
+    threadTitle?: string,
+    excludedFromTotals?: boolean,
   ): Promise<ReferralInvoice> {
     const postedAt = tsToDate(message.ts);
     const fileName = file.name ?? "invoice.pdf";
@@ -433,7 +445,7 @@ export class SlackInvoiceSource implements InvoiceSource {
     }
 
     // パーマリンクはAPIを都度呼ばず、ワークスペースドメイン(permalinkBase)からURLを組み立てる
-    // (最大80件読むため、chat.getPermalink を件数分呼ぶとレート制限・実行時間を圧迫する)。
+    // (最大110件読むため、chat.getPermalink を件数分呼ぶとレート制限・実行時間を圧迫する)。
     const permalink = permalinkBase
       ? `${permalinkBase}${channelId}/p${message.ts.replace(".", "")}`
       : await this.fetchPermalink(botToken, channelId, message.ts);
@@ -448,6 +460,8 @@ export class SlackInvoiceSource implements InvoiceSource {
       postedAt,
       permalink,
       parseNote,
+      threadTitle,
+      excludedFromTotals: excludedFromTotals || undefined,
     };
   }
 
@@ -464,36 +478,51 @@ export class SlackInvoiceSource implements InvoiceSource {
     });
 
     const cutoff = Date.now() - RECENT_WINDOW_MS;
-    const pdfEntries: { message: SlackInvoiceMessage; file: SlackFile; paymentMonth?: string }[] = [];
-    const collectPdfFiles = (message: SlackInvoiceMessage, paymentMonth?: string) => {
+    const pdfEntries: {
+      message: SlackInvoiceMessage;
+      file: SlackFile;
+      paymentMonth?: string;
+      threadTitle?: string;
+      excludedFromTotals: boolean;
+    }[] = [];
+    const collectPdfFiles = (
+      message: SlackInvoiceMessage,
+      paymentMonth?: string,
+      threadTitle?: string,
+      excludedFromTotals = false,
+    ) => {
       if (!message.files || message.files.length === 0) return;
       if (tsToDate(message.ts).getTime() < cutoff) return;
       for (const file of message.files) {
-        if (isPdfFile(file)) pdfEntries.push({ message, file, paymentMonth });
+        if (isPdfFile(file)) pdfEntries.push({ message, file, paymentMonth, threadTitle, excludedFromTotals });
       }
     };
     for (const message of history.messages ?? []) {
-      // STORY(別事業)の請求書メッセージは集計から除外する。
-      if (EXCLUDE_MESSAGE_RE.test(message.text ?? "")) continue;
+      // STORY(別事業)のメッセージは読み込むが excludedFromTotals を付ける(画面の合計には含めない。
+      // トップレベル投稿由来のPDFのため threadTitle は付けない)。
+      const excluded = EXCLUDE_MESSAGE_RE.test(message.text ?? "");
       // メッセージ自身に「7月支払い」等の表記があればその月を採用する。
-      collectPdfFiles(message, detectPaymentMonthFromThreadTitle(message.text ?? "", tsToDate(message.ts)));
+      collectPdfFiles(
+        message,
+        detectPaymentMonthFromThreadTitle(message.text ?? "", tsToDate(message.ts)),
+        undefined,
+        excluded,
+      );
     }
 
     // スレッドの返信の中に添付されたPDFも読む(#請求書は「7月支払い 請求書【月末払い】」のような
     // 支払月ごとのスレッドに請求書PDFを集める運用のため。conversations.history はチャンネル直下しか
     // 返さないので、返信のあるスレッドを conversations.replies で個別に取得し、返信のPDFには
     // スレッド親の表記から求めた支払月を引き継ぐ。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
+    // STORY(別事業)のスレッドも読み込む(excludedFromTotals を付けて画面の合計からは除外しつつ、
+    // 「AIに聞く」の会社別集計では使えるようにする)。
     const threadParents = (history.messages ?? [])
-      .filter(
-        (m) =>
-          (m.reply_count ?? 0) > 0 &&
-          tsToDate(m.ts).getTime() >= cutoff &&
-          // STORY(別事業)のスレッドは返信内のPDFごと集計から除外する。
-          !EXCLUDE_MESSAGE_RE.test(m.text ?? ""),
-      )
+      .filter((m) => (m.reply_count ?? 0) > 0 && tsToDate(m.ts).getTime() >= cutoff)
       .slice(0, MAX_THREAD_FETCHES);
     for (const parent of threadParents) {
       const parentPaymentMonth = detectPaymentMonthFromThreadTitle(parent.text ?? "", tsToDate(parent.ts));
+      const parentExcluded = EXCLUDE_MESSAGE_RE.test(parent.text ?? "");
+      const parentThreadTitle = firstLine(parent.text ?? "");
       // 親の reply_count/latest_reply から鮮度キーを作る(sales-reports.ts と同じ方式)。キーが
       // あれば `_v` パラメータとしてURLに含め、Next.jsのデータキャッシュに30日保存する
       // (Slackは未知のパラメータを無視する。返信が増えるとキーが変わり自動的に取り直される)。
@@ -514,7 +543,7 @@ export class SlackInvoiceSource implements InvoiceSource {
         );
         for (const message of replies.messages ?? []) {
           if (message.ts === parent.ts) continue; // 親は上で走査済み
-          collectPdfFiles(message, parentPaymentMonth);
+          collectPdfFiles(message, parentPaymentMonth, parentThreadTitle, parentExcluded);
         }
       } catch (error) {
         // 1スレッドの取得失敗で全体を落とさない(親メッセージ直下のPDFだけでも表示する)。
@@ -538,8 +567,17 @@ export class SlackInvoiceSource implements InvoiceSource {
       const chunk = accepted.slice(i, i + DOWNLOAD_CONCURRENCY);
       invoices.push(
         ...(await Promise.all(
-          chunk.map(({ message, file, paymentMonth }) =>
-            this.buildInvoiceRecord(botToken, channelId, message, file, permalinkBase, paymentMonth),
+          chunk.map(({ message, file, paymentMonth, threadTitle, excludedFromTotals }) =>
+            this.buildInvoiceRecord(
+              botToken,
+              channelId,
+              message,
+              file,
+              permalinkBase,
+              paymentMonth,
+              threadTitle,
+              excludedFromTotals,
+            ),
           ),
         )),
       );
