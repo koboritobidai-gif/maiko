@@ -18,7 +18,10 @@ kun.uz（英語版が読みやすい）／gazeta.uz／daryo.uz／UzDaily.uz／Ta
 IMF（Article IV）／世界銀行／ADB（Asian Development Outlook）／Moody's・S&P・Fitch のソブリン格付リリース
 
 ### 日本関連
-JETRO ウズベキスタン／JICA／在ウズベキスタン日本国大使館／進出企業のIR・ニュースリリース（例：新タシュケント国際空港PPPに出資する双日）
+JETRO ウズベキスタン／JICA／在ウズベキスタン日本国大使館／進出企業のIR・ニュースリリース
+
+**双日** が最有力の情報源。新タシュケント国際空港PPPに30%出資しているほか、火力発電「シルダリヤ2」、ナボイ州の風力発電、サマルカンド州の総合病院建設を手がけ、2024年7月にタシケント駐在員事務所を開設している。
+`sojitz.com/jp/news/` のニュースリリースは**日本語の一次情報**で、数値の裏づけにも写真の入手先にも使える。海外報道より確度が高いことが多いため、日本企業が関わる案件は必ずここを当たること。
 
 ### 交通・インフラ専門
 International Railway Journal／Urban Transport Magazine／CAPA Centre for Aviation
