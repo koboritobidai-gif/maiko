@@ -78,7 +78,7 @@ export default function MarketingReportWeeklyView({
   const snsNote = snsAvailabilityNote(summary, summaryLastWeek);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-4 px-6 py-6 text-[13px] leading-snug print:max-w-none print:gap-2.5 print:px-0 print:py-0 print:text-[12px]">
+    <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-4 px-6 py-6 text-[13px] leading-snug print:max-w-none print:gap-2 print:px-0 print:py-0 print:text-[12px]">
       {/* 全体MTGで画面共有しながら説明する資料のため、印刷はA4横(landscape)に固定する。
           globals.css のグローバル印刷設定(A4縦・請求書/invoiceが使用)はこのページ内スタイルで
           上書きするだけで、globals.css 自体は変更しない。1ページに収まる密度で作る。 */}
@@ -106,7 +106,7 @@ export default function MarketingReportWeeklyView({
       </nav>
 
       {/* ヘッダー */}
-      <header className="report-section flex items-start justify-between gap-4 border-b pb-3" style={borderColor}>
+      <header className="report-section flex items-start justify-between gap-4 border-b pb-2.5" style={borderColor}>
         <div>
           <h1 className="text-[24px] font-bold" style={navy}>
             マーケティング週次報告
@@ -122,7 +122,7 @@ export default function MarketingReportWeeklyView({
       </header>
 
       {/* 1. 全体サマリー(広告+SNS+送客パートナー合算、今週/先週比較)。最上段・全幅で大きく表示する。 */}
-      <section className="report-section flex flex-col gap-2">
+      <section className="report-section flex flex-col gap-1.5">
         <SectionTitle>全体サマリー</SectionTitle>
         <table className="w-full text-left">
           <thead>
@@ -170,7 +170,7 @@ export default function MarketingReportWeeklyView({
       {/* 2. 内訳(送客パートナー・広告)は横2段組みにして、横幅を活かす。 */}
       <div className="grid grid-cols-2 gap-6 print:gap-4">
         {/* 2-1. 送客パートナー(成果報酬・今週) */}
-        <section className="report-section flex flex-col gap-2">
+        <section className="report-section flex flex-col gap-1.5">
           <SectionTitle>送客パートナー(今週)</SectionTitle>
           <table className="w-full text-left text-[13px]">
             <thead>
@@ -183,28 +183,28 @@ export default function MarketingReportWeeklyView({
             </thead>
             <tbody>
               <tr className="border-b" style={{ ...borderColor, ...totalRowBg, fontWeight: 700 }}>
-                <td className="py-2 pl-1 pr-2 whitespace-nowrap" style={navy}>
+                <td className="py-1 pl-1 pr-2 whitespace-nowrap" style={navy}>
                   合計
                 </td>
-                <td className="py-2 pr-2 text-right text-[14px] tabular-nums" style={navy}>{formatYenOrDash(referralUnitCost)}</td>
-                <td className="py-2 pr-2 text-right text-[14px] tabular-nums" style={navy}>{referralTotalCount.toLocaleString("ja-JP")}名</td>
-                <td className="py-2 pr-1 text-right text-[14px] tabular-nums" style={navy}>{formatYen(summary.referralTotalYen)}</td>
+                <td className="py-1 pr-2 text-right text-[14px] tabular-nums" style={navy}>{formatYenOrDash(referralUnitCost)}</td>
+                <td className="py-1 pr-2 text-right text-[14px] tabular-nums" style={navy}>{referralTotalCount.toLocaleString("ja-JP")}名</td>
+                <td className="py-1 pr-1 text-right text-[14px] tabular-nums" style={navy}>{formatYen(summary.referralTotalYen)}</td>
               </tr>
               {referralRows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-2 text-center" style={muted}>
+                  <td colSpan={4} className="py-1 text-center" style={muted}>
                     今週の対象者はいません
                   </td>
                 </tr>
               ) : (
                 referralRows.map((r) => (
                   <tr key={r.channel} className="border-b" style={borderColor}>
-                    <td className="py-2 pr-2 font-medium whitespace-nowrap" style={navy}>
+                    <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                       {r.channel}
                     </td>
-                    <td className="py-2 pr-2 text-right tabular-nums">{formatYen(r.unitCostYen)}</td>
-                    <td className="py-2 pr-2 text-right tabular-nums">{r.count.toLocaleString("ja-JP")}名</td>
-                    <td className="py-2 text-right tabular-nums">{formatYen(r.costYen)}</td>
+                    <td className="py-1 pr-2 text-right tabular-nums">{formatYen(r.unitCostYen)}</td>
+                    <td className="py-1 pr-2 text-right tabular-nums">{r.count.toLocaleString("ja-JP")}名</td>
+                    <td className="py-1 text-right tabular-nums">{formatYen(r.costYen)}</td>
                   </tr>
                 ))
               )}
@@ -213,7 +213,7 @@ export default function MarketingReportWeeklyView({
         </section>
 
         {/* 2-2. 広告内訳(アイドマ広告=Google+Meta / リズリアライズ=SNS運用、今週) */}
-        <section className="report-section flex flex-col gap-2">
+        <section className="report-section flex flex-col gap-1.5">
           <SectionTitle>広告内訳(今週)</SectionTitle>
           <table className="w-full text-left text-[13px]">
             <thead>
@@ -228,26 +228,26 @@ export default function MarketingReportWeeklyView({
             </thead>
             <tbody>
               <tr className={summary.sns.available ? "border-b" : undefined} style={borderColor}>
-                <td className="py-2 pr-2 font-medium whitespace-nowrap" style={navy}>
+                <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                   アイドマ広告
                 </td>
-                <td className="py-2 pr-2 text-right tabular-nums">{formatYen(summary.ad.cost)}</td>
-                <td className="py-2 pr-2 text-right tabular-nums">{summary.ad.lineRegs.toLocaleString("ja-JP")}人</td>
-                <td className="py-2 pr-2 text-right tabular-nums">{summary.ad.reservations.toLocaleString("ja-JP")}件</td>
-                <td className="py-2 pr-2 text-right tabular-nums">{summary.ad.interviews.toLocaleString("ja-JP")}件</td>
-                <td className="py-2 text-right tabular-nums">{formatYenOrDash(summary.ad.costPerInterview)}</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{formatYen(summary.ad.cost)}</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{summary.ad.lineRegs.toLocaleString("ja-JP")}人</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{summary.ad.reservations.toLocaleString("ja-JP")}件</td>
+                <td className="py-1 pr-2 text-right tabular-nums">{summary.ad.interviews.toLocaleString("ja-JP")}件</td>
+                <td className="py-1 text-right tabular-nums">{formatYenOrDash(summary.ad.costPerInterview)}</td>
               </tr>
               {summary.sns.available && (
                 <tr>
-                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={navy}>
+                  <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                     リズリアライズ
                   </td>
                   {/* 費用・予約・面談単価は週次では出せない指標(月額固定費/計測なし)のため「—」。 */}
-                  <td className="py-2 pr-2 text-right tabular-nums">—</td>
-                  <td className="py-2 pr-2 text-right tabular-nums">{summary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
-                  <td className="py-2 pr-2 text-right tabular-nums">—</td>
-                  <td className="py-2 pr-2 text-right tabular-nums">{summary.sns.interviews.toLocaleString("ja-JP")}件</td>
-                  <td className="py-2 text-right tabular-nums">—</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">—</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{summary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">—</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{summary.sns.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-1 text-right tabular-nums">—</td>
                 </tr>
               )}
             </tbody>

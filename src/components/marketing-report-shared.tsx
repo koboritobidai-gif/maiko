@@ -66,7 +66,7 @@ export function CompareRow({
 }) {
   return (
     <tr className="border-b" style={borderColor}>
-      <td className="py-3 pr-3 align-top text-[14px] font-medium" style={muted}>
+      <td className="py-2.5 pr-3 align-top text-[14px] font-medium" style={muted}>
         {label}
         {caption && (
           <div className="mt-0.5 text-[11px] font-normal" style={muted}>
@@ -76,10 +76,10 @@ export function CompareRow({
       </td>
       {/* 当期の数字が主役: 大きく・太く・ネイビー。前期は比較用に控えめだが、
           遠目からでも読める14pxを確保する。 */}
-      <td className="py-3 pr-3 text-right align-top text-[21px] font-bold tabular-nums" style={navy}>
+      <td className="py-2.5 pr-3 text-right align-top text-[21px] font-bold tabular-nums" style={navy}>
         {current}
       </td>
-      <td className="py-3 text-right align-top text-[14px] tabular-nums" style={muted}>
+      <td className="py-2.5 text-right align-top text-[14px] tabular-nums" style={muted}>
         {last}
       </td>
     </tr>
