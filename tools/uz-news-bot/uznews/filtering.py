@@ -18,23 +18,32 @@ from .sources import Post
 
 WEIGHTS = {"high": 3, "medium": 2, "low": 1}
 
+# Latin Uzbek writes o' / g' with any of several apostrophe-like characters
+# (ASCII ', U+02BB, U+02BC, U+2018, U+2019). Fold them to one form so a keyword
+# written with one variant still matches text written with another.
+_APOSTROPHES = str.maketrans({c: "'" for c in "ʻʼ‘’´`"})
+
+
+def normalize(text: str) -> str:
+    return text.translate(_APOSTROPHES).lower()
+
 
 def score_relevance(text: str, keywords: dict[str, list[str]]) -> tuple[int, list[str]]:
     """Sum keyword weights. Each keyword counts once, however often it appears."""
-    lowered = text.lower()
+    haystack = normalize(text)
     score = 0
     matched: list[str] = []
     for tier, weight in WEIGHTS.items():
         for kw in keywords.get(tier, []):
-            if kw.lower() in lowered:
+            if normalize(kw) in haystack:
                 score += weight
                 matched.append(kw)
     return score, matched
 
 
 def is_excluded(text: str, exclude: list[str]) -> bool:
-    lowered = text.lower()
-    return any(kw.lower() in lowered for kw in exclude)
+    haystack = normalize(text)
+    return any(normalize(kw) in haystack for kw in exclude)
 
 
 def apply(posts: list[Post], config: dict, seen: set[str]) -> tuple[list[Post], dict]:

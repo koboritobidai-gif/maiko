@@ -23,19 +23,28 @@ relevance:
   # 「日本人の不動産判断に効くか」が唯一の基準。
   keywords:
     high:     # +3
+      # ロシア語 / ウズベク語ラテン / ウズベク語キリル / 英語 を併記する
       - недвижимость
       - ko'chmas mulk
+      - кўчмас мулк
       - real estate
       - новостройк
       - ипотек
       - mortgage
       - Новый Ташкент
       - Yangi Toshkent
+      - Янги Тошкент
       - New Tashkent
       - застройщик
+      - quruvchi
+      - қурувчи
       - developer
       - аренда жиль
+      - ijara
+      - ижара
       - цены на кварти
+      - kvartira narx
+      - квартира нарх
     medium:   # +2
       - инвестиц
       - investitsiya
@@ -49,11 +58,14 @@ relevance:
       - so'm kursi
       - экономик
       - iqtisod
+      - иқтисод
       - бюджет
+      - byudjet
       - налог
       - soliq
       - виза
       - viza
+      - виза режими
       - Токио
       - Япони
       - Yaponiya
@@ -61,6 +73,7 @@ relevance:
     low:      # +1
       - Ташкент
       - Toshkent
+      - Тошкент
       - Tashkent
       - метро
       - metro
@@ -68,8 +81,10 @@ relevance:
       - инфраструктур
       - строительств
       - qurilish
+      - қурилиш
       - население
       - aholi
+      - аҳоли
 
   # これらが含まれる投稿は除外（スポーツ・芸能・事故など）
   exclude:
@@ -78,6 +93,7 @@ relevance:
     - матч
     - концерт
     - konsert
+    - концерт дастури
     - ДТП
     - погиб
     - задержан
