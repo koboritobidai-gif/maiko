@@ -1,0 +1,156 @@
+# ウズベキスタンNOW ニュース収集ボット 設定
+#
+# verified: true  = 実在とハンドルを確認済み
+# verified: false = 未確認。t.me/s/<name> をブラウザで開いて存在を確認してから true にする
+
+engagement:
+  # 「そのチャンネルの直近投稿の中央値ビュー数」に対する比率のしきい値。
+  # 1.5 = 中央値の150%以上バズっている投稿だけを通す。
+  # 上げるほど厳選（1.8〜2.0）、下げるほど本数が増える（1.2〜1.3）。
+  min_view_ratio: 1.5
+
+  # 相対比だけだと小規模チャンネルのノイズを拾うので、絶対数の下限も置く。
+  min_views_absolute: 3000
+
+  # 各チャンネルから何件さかのぼって中央値を計算するか。
+  baseline_window: 40
+
+  # 何時間以内の投稿を対象にするか（毎朝1回動かす前提で28時間）。
+  lookback_hours: 28
+
+relevance:
+  # 本文にこれらの語が含まれると加点。ウズベク語・ロシア語・英語を混在で持つ。
+  # 「日本人の不動産判断に効くか」が唯一の基準。
+  keywords:
+    high:     # +3
+      - недвижимость
+      - ko'chmas mulk
+      - real estate
+      - новостройк
+      - ипотек
+      - mortgage
+      - Новый Ташкент
+      - Yangi Toshkent
+      - New Tashkent
+      - застройщик
+      - developer
+      - аренда жиль
+      - цены на кварти
+    medium:   # +2
+      - инвестиц
+      - investitsiya
+      - investment
+      - ВВП
+      - YaIM
+      - GDP
+      - инфляц
+      - ставка
+      - курс сума
+      - so'm kursi
+      - экономик
+      - iqtisod
+      - бюджет
+      - налог
+      - soliq
+      - виза
+      - viza
+      - Токио
+      - Япони
+      - Yaponiya
+      - Japan
+    low:      # +1
+      - Ташкент
+      - Toshkent
+      - Tashkent
+      - метро
+      - metro
+      - аэропорт
+      - инфраструктур
+      - строительств
+      - qurilish
+      - население
+      - aholi
+
+  # これらが含まれる投稿は除外（スポーツ・芸能・事故など）
+  exclude:
+    - футбол
+    - futbol
+    - матч
+    - концерт
+    - konsert
+    - ДТП
+    - погиб
+    - задержан
+    - уголовн
+
+  # 関連度スコアの下限。これ未満はエンゲージメントが高くても捨てる。
+  min_score: 2
+
+selection:
+  # Claude に投げる候補の最大数（コスト制御）
+  max_candidates: 25
+  # 最終的に採用する本数
+  max_picks: 3
+
+sources:
+  # ─── 主要ニュース ───
+  - name: Kun.uz
+    channel: kunuz
+    category: news
+    verified: true
+  - name: Gazeta.uz
+    channel: gazetauznews
+    category: news
+    verified: true
+  - name: UzDaily (RU)
+    channel: UZDAILY
+    category: news
+    verified: true
+  - name: UzDaily (EN)
+    channel: UZDAILYNEWSEN
+    category: news
+    verified: true
+  - name: Spot.uz
+    channel: spotuz
+    category: business
+    verified: false      # ★ 要確認：spot.uz のサイトからTelegramリンクを取得すること
+  - name: Daryo
+    channel: daryouz
+    category: news
+    verified: false      # ★ 要確認
+
+  # ─── 金融・統計 ───
+  - name: Bank.uz
+    channel: bankuz_official
+    category: finance
+    verified: true
+  - name: Kapitalbank
+    channel: kapital24
+    category: finance
+    verified: true
+
+  # ─── 都市開発 ───
+  - name: Наблюдатель（タシケント都市ウォッチャー）
+    channel: tashkentobserver
+    category: city
+    verified: true
+
+  # ─── 不動産 ───
+  - name: Uybor.uz
+    channel: Uybor
+    category: realestate
+    verified: true
+  - name: Квартиры в Ташкенте
+    channel: Tashkentflat
+    category: realestate
+    verified: true
+
+  # ─── 政府 ───
+  - name: 大統領（Shavkat Mirziyoyev）
+    channel: shmirziyoyev
+    category: government
+    verified: true
+  - name: 政府ポータル
+    channel: portal_gov_uz
+    category: government
+    verified: true
