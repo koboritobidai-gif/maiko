@@ -80,6 +80,7 @@ def fetch_channel(
     source: dict,
     lookback_hours: int,
     baseline_window: int,
+    min_age_hours: float = 0.0,
     timeout: int = 20,
 ) -> list[Post]:
     """Fetch recent posts from one channel and attach each post's view ratio.
@@ -97,7 +98,12 @@ def fetch_channel(
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+    now = datetime.now(timezone.utc)
+    oldest = now - timedelta(hours=lookback_hours)
+    # A post published minutes ago has not accumulated views yet, so its ratio
+    # measures elapsed time rather than interest. Give every post the same head
+    # start before judging it.
+    newest = now - timedelta(hours=min_age_hours)
     posts: list[Post] = []
     all_views: list[int] = []
 
@@ -119,7 +125,7 @@ def fetch_channel(
         )
         all_views.append(views)
 
-        if published_at < cutoff:
+        if published_at < oldest or published_at > newest:
             continue
 
         text_node = node.select_one(".tgme_widget_message_text")
@@ -157,13 +163,18 @@ def _median_views(all_views: list[int], window: int) -> float:
     return statistics.median(sample) if sample else 0.0
 
 
-def fetch_all(sources: list[dict], lookback_hours: int, baseline_window: int) -> tuple[list[Post], list[str]]:
+def fetch_all(
+    sources: list[dict],
+    lookback_hours: int,
+    baseline_window: int,
+    min_age_hours: float = 0.0,
+) -> tuple[list[Post], list[str]]:
     """Fetch every configured channel. Returns (posts, error messages)."""
     posts: list[Post] = []
     errors: list[str] = []
     for source in sources:
         try:
-            posts.extend(fetch_channel(source, lookback_hours, baseline_window))
+            posts.extend(fetch_channel(source, lookback_hours, baseline_window, min_age_hours))
         except Exception as exc:  # one dead channel must not stop the run
             errors.append(f"{source['name']} (@{source['channel']}): {exc}")
     return posts, errors

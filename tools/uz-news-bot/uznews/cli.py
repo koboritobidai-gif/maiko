@@ -96,7 +96,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"[1/4] {len(channels)} チャンネルを取得中…")
-    posts, errors = sources.fetch_all(channels, eng["lookback_hours"], eng["baseline_window"])
+    posts, errors = sources.fetch_all(
+        channels, eng["lookback_hours"], eng["baseline_window"], eng.get("min_age_hours", 0)
+    )
     for err in errors:
         print(f"  ! 取得失敗: {err}", file=sys.stderr)
 

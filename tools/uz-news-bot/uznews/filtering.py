@@ -1,15 +1,21 @@
 """Narrow the day's posts down to a shortlist worth spending an API call on.
 
-Two gates, in order:
+Measured on real data (2026-08-31): Telegram view counts barely vary between
+posts on a large channel — Kun.uz ranged 9,580–10,700, a ±6% spread, because
+subscribers scroll past nearly everything. A "views must beat the median by X%"
+gate therefore selects noise at any threshold worth setting.
 
-1. Engagement — did the post outperform its own channel's median views?
-   This is the signal that locals actually cared, and it is scale-free, so a
-   500k-subscriber outlet and a 20k-subscriber one compete fairly.
-2. Relevance — does the text touch real estate, the economy, or the city, in
-   a way that could matter to a Japanese reader?
+So the two signals have different jobs:
 
-Both gates are cheap keyword/arithmetic work. Only the survivors are sent to
-Claude, which keeps the daily cost to roughly one request.
+1. Relevance is the hard gate — does the text touch real estate, the economy,
+   or the city, in a way that could matter to a Japanese reader?
+2. Engagement is a floor plus a tiebreaker — drop only the posts that clearly
+   underperformed their channel, then rank the survivors by how well they did.
+   The ratio is scale-free, so a 500k-subscriber outlet and a 20k-subscriber
+   one are compared fairly.
+
+Both are cheap keyword/arithmetic work. Only the survivors are sent to Claude,
+which keeps the daily cost to roughly one request.
 """
 
 from __future__ import annotations

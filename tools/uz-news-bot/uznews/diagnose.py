@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
 
-from .sources import PREVIEW_URL, USER_AGENT, _median_views, parse_count
+from .sources import PREVIEW_URL, USER_AGENT, _extract_reactions, _median_views, parse_count
 
 
 def diagnose_channel(source: dict, lookback_hours: int, baseline_window: int, verbose: bool) -> None:
@@ -59,11 +59,16 @@ def diagnose_channel(source: dict, lookback_hours: int, baseline_window: int, ve
         print(f"      HTMLサイズ: {len(resp.text):,} バイト")
         print(f"      閲覧数の生の値（先頭8件）: {raw_views[:8]}")
         print(f"      数値化した結果（先頭8件）: {parsed[:8]}")
+        reactions = [_extract_reactions(n) for n in nodes]
+        print(f"      リアクション数（先頭8件）: {reactions[:8]}")
         for node in nodes[-5:]:
             el = node.select_one(".tgme_widget_message_views")
             v = parse_count(el.get_text(strip=True) if el else None)
             ratio = (v / median) if median else 0.0
-            print(f"      最新側: {v:>9,} views  → 中央値の {ratio:.2f} 倍")
+            print(
+                f"      最新側: {v:>9,} views → 中央値の {ratio:.2f} 倍"
+                f" / リアクション {_extract_reactions(node)}"
+            )
 
 
 def run(sources: list[dict], lookback_hours: int, baseline_window: int) -> None:
