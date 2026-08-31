@@ -50,11 +50,25 @@ Claudeには「1本も選ばないことは正しい判断」と明示してあ�
 
 ## セットアップ
 
+**Mac / Linux**
+
 ```bash
 cd tools/uz-news-bot
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 export ANTHROPIC_API_KEY=...
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+cd tools\uz-news-bot
+py -m pip install -r requirements.txt
+$env:ANTHROPIC_API_KEY = "..."
+```
+
+以降のコマンド例は `python3` を Windows では `py` に読み替えてください。
+コンソールの文字コードは起動時に UTF-8 へ切り替えるので、
+日本語Windows (cp932) でもキリル文字の表示で落ちません。
 
 ## 使い方
 

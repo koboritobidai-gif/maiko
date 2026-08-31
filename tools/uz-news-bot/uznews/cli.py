@@ -18,6 +18,21 @@ DEFAULT_OUT = ROOT / "out"
 STATE_FILE = ROOT / "state" / "seen.json"
 
 
+def _force_utf8_console() -> None:
+    """Print Cyrillic and Japanese safely on a legacy Windows console.
+
+    Japanese Windows defaults stdout to cp932, which raises UnicodeEncodeError
+    the moment we echo a Russian or Uzbek headline. Reconfiguring to UTF-8 with
+    replacement keeps the run alive even on a console that cannot render a glyph.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def load_seen() -> set[str]:
     if not STATE_FILE.exists():
         return set()
@@ -32,6 +47,7 @@ def save_seen(seen: set[str], keep: int = 5000) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_console()
     parser = argparse.ArgumentParser(description="ウズベキスタン現地ニュースの収集と下書き生成")
     parser.add_argument(
         "--mode",
