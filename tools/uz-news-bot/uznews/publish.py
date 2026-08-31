@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from .judge import Draft, Selection
+from .judge import Cost, Draft, Selection
 from .sources import Post
 
 
@@ -16,6 +16,7 @@ def write_review_file(
     stats: dict,
     errors: list[str],
     out_dir: Path,
+    cost: Cost | None = None,
 ) -> Path:
     """Write the day's drafts as a Markdown file a human can review and copy from."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -27,6 +28,8 @@ def write_review_file(
         "",
         f"収集 {stats['fetched']} 件 → エンゲージメント通過後 {stats['shortlisted']} 件 "
         f"→ 採用 {len(selection.picks)} 件",
+        "",
+        f"API費用: {cost.summary()}" if cost else "",
         "",
         f"> {selection.note}",
         "",

@@ -113,10 +113,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"[3/4] Claude が {len(shortlist)} 件から最大 {config['selection']['max_picks']} 本を選定中…")
-    selection = select_and_draft(shortlist, config["selection"]["max_picks"])
+    selection, cost = select_and_draft(shortlist, config["selection"]["max_picks"])
+    print(f"      課金はここだけ: {cost.summary()}")
 
     posts_by_key = {p.key: p for p in shortlist}
-    path = publish.write_review_file(selection, posts_by_key, stats, errors, args.out)
+    path = publish.write_review_file(selection, posts_by_key, stats, errors, args.out, cost)
     print(f"[4/4] 下書きを書き出しました: {path}")
     print(f"      採用 {len(selection.picks)} 本 — {selection.note}")
 

@@ -6,6 +6,8 @@ validated JSON. Structured output means the caller never has to parse prose.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel, Field
 
 import anthropic
@@ -13,6 +15,34 @@ import anthropic
 from .sources import Post
 
 MODEL = "claude-opus-5"
+
+# USD per 1M tokens for claude-opus-5. Update if Anthropic changes pricing.
+PRICE_INPUT = 5.00
+PRICE_OUTPUT = 25.00
+PRICE_CACHE_READ = 0.50
+
+
+@dataclass
+class Cost:
+    """What the one Claude request of this run actually cost."""
+
+    input_tokens: int
+    output_tokens: int
+    cache_read_tokens: int = 0
+
+    @property
+    def usd(self) -> float:
+        return (
+            self.input_tokens / 1e6 * PRICE_INPUT
+            + self.output_tokens / 1e6 * PRICE_OUTPUT
+            + self.cache_read_tokens / 1e6 * PRICE_CACHE_READ
+        )
+
+    def summary(self, jpy_per_usd: float = 150.0) -> str:
+        return (
+            f"入力 {self.input_tokens:,} tok / 出力 {self.output_tokens:,} tok "
+            f"→ ${self.usd:.4f}（約{self.usd * jpy_per_usd:.1f}円 / 1ドル{jpy_per_usd:.0f}円換算）"
+        )
 
 SYSTEM = """\
 あなたは「ウズベキスタンNOW」という日本語メディアの編集者です。
@@ -88,10 +118,14 @@ def select_and_draft(
     posts: list[Post],
     max_picks: int,
     client: anthropic.Anthropic | None = None,
-) -> Selection:
-    """Pick up to `max_picks` posts and return ready-to-post Japanese drafts."""
+) -> tuple[Selection, Cost]:
+    """Pick up to `max_picks` posts and return the drafts plus what they cost.
+
+    This is the only place in the pipeline that spends money — fetching and
+    filtering are local work.
+    """
     if not posts:
-        return Selection(picks=[], note="候補が0件でした。")
+        return Selection(picks=[], note="候補が0件でした。"), Cost(0, 0)
 
     client = client or anthropic.Anthropic()
     prompt = (
@@ -110,4 +144,10 @@ def select_and_draft(
         messages=[{"role": "user", "content": prompt}],
         output_format=Selection,
     )
-    return response.parsed_output
+    usage = response.usage
+    cost = Cost(
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cache_read_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+    )
+    return response.parsed_output, cost
