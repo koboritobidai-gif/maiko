@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from . import filtering, publish, sources
+from . import diagnose, filtering, publish, sources
 from .judge import select_and_draft
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -73,6 +73,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Claude を呼ばず、絞り込み結果だけ表示する（無料）",
     )
+    parser.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="各チャンネルから閲覧数を読めているか確認する（無料）",
+    )
     args = parser.parse_args(argv)
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
@@ -85,6 +90,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     eng = config["engagement"]
+
+    if args.diagnose:
+        diagnose.run(channels, eng["lookback_hours"], eng["baseline_window"])
+        return 0
+
     print(f"[1/4] {len(channels)} チャンネルを取得中…")
     posts, errors = sources.fetch_all(channels, eng["lookback_hours"], eng["baseline_window"])
     for err in errors:
