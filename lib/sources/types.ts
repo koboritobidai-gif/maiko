@@ -45,6 +45,47 @@ export function looksLikeMinutes(text: string): boolean {
   return keywords.some((k) => target.includes(k.toLowerCase()));
 }
 
+/**
+ * 取り込み対象のメールを見分ける件名の目印。
+ *
+ * 議事録は内容を確認してから社内共有する運用なので、確認済みのものだけに
+ * この目印を付けて送ってもらい、アプリはその件名のメールだけを取り込む。
+ */
+export function subjectMarker(): string {
+  return process.env.MINUTES_SUBJECT_MARKER ?? "【議事録送付】";
+}
+
+export function isMinutesSubject(subject: string): boolean {
+  return (subject ?? "").includes(subjectMarker());
+}
+
+export interface SubjectInfo {
+  /** 目印と Re:/Fwd: を取り除いた件名 */
+  title: string;
+  /** 件名に含まれていた登録済みの会議名 */
+  meeting: string | null;
+  /** 件名に含まれていた開催日 */
+  date: string | null;
+}
+
+/**
+ * 件名から会議名と開催日を読み取る。
+ * 例：「Re: 【議事録送付】経営戦略会議 2026/09/01」→ 経営戦略会議 / 2026-09-01
+ */
+export function parseMinutesSubject(subject: string, meetings: string[]): SubjectInfo {
+  const cleaned = (subject ?? "")
+    .replace(/^\s*(?:re|fwd|fw)\s*:\s*/gi, "")
+    .replace(subjectMarker(), " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // 会議名は長いものから順に照合する（「経営協議会」と「協議会」のような重なりを避ける）。
+  const meeting =
+    [...meetings].sort((a, b) => b.length - a.length).find((name) => cleaned.includes(name)) ?? null;
+
+  return { title: cleaned || subjectMarker(), meeting, date: findMeetingDate(cleaned) };
+}
+
 /** 「2026年9月1日」「2026/09/01」などをタイトルや本文から拾う。 */
 export function findMeetingDate(text: string, fallback: string | null = null): string | null {
   const m = (text ?? "").match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?/);

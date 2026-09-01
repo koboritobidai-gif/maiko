@@ -1315,13 +1315,19 @@ function viewImport() {
          ${rows.filter((r) => r.include).length}件をタスクに登録する</button></div>`;
 
   const sources = [
-    { label: "メール", note: "件名に「議事録」を含むメールをまとめて取り込み。引用と署名は自動で除去" },
+    { label: "メール（件名に【議事録送付】）", note: "確認済みの議事録だけを取り込み。引用と署名は自動で除去し、件名の会議名で公開範囲も判定" },
     { label: "Slack", note: "指定チャンネルの議事録投稿。役員チャンネルは役員限定として取り込み" },
     { label: "Google ドライブ", note: "指定フォルダの Google ドキュメント" },
   ];
 
   return `
-  ${section("議事録を読み込む", "内容を確認してから登録します。自動では取り込みません", `<div class="card-pad">
+  <div class="notice" style="margin-bottom:16px">
+    <strong>取り込みの流れ</strong><br>
+    議事録の内容を確認 → 件名に <strong>【議事録送付】</strong> を付けて社内へメール送信 → アプリが毎朝そのメールだけを取り込みます。
+    件名に会議名を入れておくと、会議名と公開範囲も自動で決まります。<br>
+    その場で取り込みたいときは、下からファイルをドラッグ＆ドロップするか、本文を貼り付けてください。
+  </div>
+  ${section("議事録を読み込む", "いま手元にある議事録を取り込みます", `<div class="card-pad">
     <div class="toolbar">
       <div class="field grow"><label for="impMeeting">会議名</label>
         <select id="impMeeting">
@@ -1349,8 +1355,8 @@ function viewImport() {
     <button class="btn btn-primary" id="runExtract">タスクを抽出する</button>
     ${preview}
   </div>`)}
-  ${isAdmin ? section("取得元との連携（任意）", "自動では取り込みません。必要なときに管理者がまとめて取り込めます", `<div class="table-wrap">
-    <table class="data"><thead><tr><th style="width:150px">取得元</th><th style="width:100px">状態</th><th>取り込む対象</th></tr></thead>
+  ${isAdmin ? section("メール等からの取り込み", "件名に【議事録送付】が付いたメールだけを対象にします", `<div class="table-wrap">
+    <table class="data"><thead><tr><th style="width:200px">取得元</th><th style="width:100px">状態</th><th>取り込む対象</th></tr></thead>
     <tbody>${sources.map((s) => `<tr><td style="font-weight:600">${s.label}</td>
       <td><span class="badge st-not_started">未設定</span></td>
       <td style="color:var(--ink-soft)">${s.note}</td></tr>`).join("")}</tbody></table></div>`) : ""}`;

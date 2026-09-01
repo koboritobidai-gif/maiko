@@ -187,7 +187,7 @@ export async function syncSource(
   options: { days?: number; importedBy?: string | null } = {},
 ): Promise<SyncResult> {
   const source = findSource(name);
-  const label = SOURCE_LABELS[name];
+  const label = source?.label ?? SOURCE_LABELS[name];
   if (!source) return { source: name, label, documents: 0, createdTasks: 0, skipped: 0, error: "不明な取得元です。" };
   if (!source.configured()) {
     return {

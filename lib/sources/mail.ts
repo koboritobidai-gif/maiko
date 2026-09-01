@@ -1,11 +1,20 @@
 import { ImapFlow } from "imapflow";
-import { findMeetingDate, looksLikeMinutes, type MinutesDoc, type MinutesSource } from "./types.ts";
+import { listMeetingTypes } from "../meetings.ts";
+import {
+  isMinutesSubject,
+  parseMinutesSubject,
+  subjectMarker,
+  type MinutesDoc,
+  type MinutesSource,
+} from "./types.ts";
 
 /**
  * メールから議事録を取り込む。
  *
  * 社内ツールがメールなので、これが主な取得元になる。
- * 件名に「議事録」などが含まれるメールを、指定したフォルダから拾う。
+ * 議事録は内容を確認してから社内共有する運用のため、確認済みのものに
+ * 件名の目印（既定では【議事録送付】）を付けて送ってもらい、
+ * その件名のメールだけを取り込む。「議事録」を含むだけのメールは対象外。
  */
 
 function env(key: string, fallback = ""): string {
@@ -51,7 +60,7 @@ function execAddresses(): string[] {
 
 export const mailSource: MinutesSource = {
   name: "mail",
-  label: "メール",
+  label: `メール（件名に${subjectMarker()}）`,
   requirement: "MINUTES_IMAP_HOST / MINUTES_IMAP_USER / MINUTES_IMAP_PASSWORD",
   configured: () => Boolean(env("MINUTES_IMAP_HOST") && env("MINUTES_IMAP_USER")),
 
@@ -64,6 +73,8 @@ export const mailSource: MinutesSource = {
       logger: false,
     });
 
+    const meetings = await listMeetingTypes();
+    const meetingNames = meetings.map((m) => m.name);
     const docs: MinutesDoc[] = [];
     await client.connect();
     const lock = await client.getMailboxLock(env("MINUTES_IMAP_MAILBOX", "INBOX"));
@@ -71,26 +82,30 @@ export const mailSource: MinutesSource = {
       const since = new Date(Date.now() - days * 86_400_000);
       for await (const message of client.fetch({ since }, { envelope: true, source: true })) {
         const subject = message.envelope?.subject ?? "";
-        if (!looksLikeMinutes(subject)) continue;
+        if (!isMinutesSubject(subject)) continue;
 
         const raw = message.source?.toString("utf8") ?? "";
         const body = stripQuotedAndSignature(textFromSource(raw));
         if (!body) continue;
 
         const sent = message.envelope?.date ?? null;
+        const info = parseMinutesSubject(subject, meetingNames);
+        const matched = meetings.find((m) => m.name === info.meeting);
+
+        // 公開範囲は、件名の会議名（役員会など）か、役員向けの送信先で決める。
+        const toExecutives = execAddresses().some((address) =>
+          (message.envelope?.to ?? []).some((to) => to.address?.includes(address)),
+        );
+
         docs.push({
           source: "mail",
           externalId: message.envelope?.messageId ?? `uid:${message.uid}`,
-          title: subject.trim(),
-          meetingDate: findMeetingDate(subject, sent ? sent.toISOString().slice(0, 10) : null),
+          title: info.meeting ?? info.title,
+          meetingDate: info.date ?? (sent ? sent.toISOString().slice(0, 10) : null),
           url: "",
           author: message.envelope?.from?.[0]?.address ?? "",
           body,
-          // 役員向けの議事録を送るアドレスを指定しておくと、役員限定タスクとして取り込む。
-          visibility: execAddresses().some((a) => subject.includes(a) ||
-            (message.envelope?.to ?? []).some((t) => t.address?.includes(a)))
-            ? "executive"
-            : "all",
+          visibility: matched?.visibility === "executive" || toExecutives ? "executive" : "all",
         });
       }
     } finally {

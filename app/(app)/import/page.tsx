@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { formatShort, today } from "@/lib/date";
 import { listMinutes } from "@/lib/importer";
 import { listMeetingTypes } from "@/lib/meetings";
-import { SOURCES, SOURCE_LABELS } from "@/lib/sources";
+import { SOURCES, SOURCE_LABELS, subjectMarker } from "@/lib/sources";
 import { listUsers } from "@/lib/tasks";
 import { canSeeExecutive } from "@/lib/types";
 
@@ -48,9 +48,20 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
         </div>
       ) : null}
 
+      <div className="notice notice-info">
+        <strong>取り込みの流れ</strong>
+        <div style={{ marginTop: 4 }}>
+          議事録の内容を確認 → 件名に <strong>{subjectMarker()}</strong> を付けて社内へメール送信 →
+          アプリが毎朝そのメールだけを取り込みます。件名に会議名を入れておくと、会議名と公開範囲も自動で決まります。
+        </div>
+        <div style={{ marginTop: 4 }}>
+          その場で取り込みたいときは、下からファイルをドラッグ＆ドロップするか、本文を貼り付けてください。
+        </div>
+      </div>
+
       <SectionCard
         title="議事録を読み込む"
-        note="内容を確認してから登録します。自動では取り込みません"
+        note="いま手元にある議事録を取り込みます"
       >
         <div style={{ padding: 0 }}>
           <MinutesImporter
@@ -64,14 +75,14 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
 
       {isAdmin ? (
       <SectionCard
-        title="取得元との連携（任意）"
-        note="自動では取り込みません。設定しておくと、必要なときに管理者がまとめて取り込めます"
+        title="メール等からの取り込み"
+        note={`件名に ${subjectMarker()} が付いたメールだけを対象にします`}
       >
         <div className="table-wrap">
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: 150 }}>取得元</th>
+                <th style={{ width: 200 }}>取得元</th>
                 <th style={{ width: 110 }}>状態</th>
                 <th>必要な設定</th>
                 <th style={{ width: 120 }}></th>
