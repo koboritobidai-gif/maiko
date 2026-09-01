@@ -95,6 +95,26 @@ export function MinutesImporter({
     });
   }
 
+  /** PLAUD などから書き出した議事録ファイルを読み込む。 */
+  async function readFile(file: File | undefined) {
+    if (!file) return;
+    const text = await file.text();
+    setBody(text);
+    setRows(null);
+    // 「2026-09-01-経営戦略会議.md」のようなファイル名から日付とタイトルを拾う。
+    const name = file.name.replace(/\.(md|txt|markdown)$/i, "");
+    const matched = name.match(/^(\d{4}-\d{2}-\d{2})[-_ ](.+)$/);
+    if (matched) {
+      setMeetingDate(matched[1]);
+      setTitle(matched[2]);
+    } else if (!title) {
+      setTitle(name);
+    }
+    const heading = text.match(/^\s*#\s+(.+)$/m);
+    if (heading) setTitle(heading[1].trim());
+    setMessage(`${file.name} を読み込みました。内容を確認して「タスクを抽出する」を押してください。`);
+  }
+
   const selectedCount = (rows ?? []).filter((row) => row.include).length;
 
   return (
@@ -124,6 +144,19 @@ export function MinutesImporter({
             {canSetExecutive ? <option value="executive">役員のみ</option> : null}
           </select>
         </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="mfile">議事録ファイルから読み込む（任意）</label>
+        <input
+          id="mfile"
+          type="file"
+          accept=".txt,.md,.markdown,text/plain,text/markdown"
+          onChange={(e) => void readFile(e.target.files?.[0])}
+        />
+        <span className="hint">
+          PLAUD などで作った要約をテキスト／Markdown で書き出したファイルをそのまま読み込めます。
+        </span>
       </div>
 
       <div className="field">

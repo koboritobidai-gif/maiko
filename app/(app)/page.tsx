@@ -32,6 +32,9 @@ export default async function DashboardPage() {
 
   const mine = openTasks.filter((t) => t.ownerId === user.id);
 
+  // 議事録から取り込んだ直後は期限が入っていないことが多いので、独立した枠で促す。
+  const noDue = openTasks.filter((t) => t.dueDate === null);
+
   return (
     <>
       <section className="section">
@@ -54,6 +57,12 @@ export default async function DashboardPage() {
             value={metrics.dueThisWeek}
             note={`〜${formatShort(weekEnd)}`}
             tone={metrics.dueThisWeek ? "warn" : undefined}
+          />
+          <MetricCard
+            label="期限が未設定"
+            value={noDue.length}
+            note={noDue.length ? "リマインドの対象外です" : "すべて設定済み"}
+            tone={noDue.length ? "warn" : undefined}
           />
           <MetricCard
             label="状況が未報告"
@@ -82,6 +91,13 @@ export default async function DashboardPage() {
         note="ここが空になっている状態が理想です"
       >
         <TaskTable tasks={attention} base={base} emptyText="期限が迫っているタスクはありません。" />
+      </SectionCard>
+
+      <SectionCard
+        title="期限が未設定のタスク"
+        note="期限が入っていないとリマインドが送られません。担当者と相談して日付を入れてください"
+      >
+        <TaskTable tasks={noDue.slice(0, 12)} base={base} showMeeting emptyText="すべてのタスクに期限が入っています。" />
       </SectionCard>
 
       <SectionCard

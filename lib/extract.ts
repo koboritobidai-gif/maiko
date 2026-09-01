@@ -20,11 +20,22 @@ export interface ExtractedTask {
   confidence: "high" | "medium";
   /** 元の行。取り込み後に元表現をたどれるようにする */
   raw: string;
+  /** 主担当以外に名前が挙がっている関係者 */
+  participants: string[];
+  /** WHAT に書かれた実施内容。タスクの説明にする */
+  detail: string;
 }
 
 /** 「ここから下はタスク」と判断する見出し。 */
 const TODO_HEADING =
   /(to\s?do|ｔｏｄｏ|アクション\s?アイテム|アクションプラン|action\s*items?|next\s*steps?|やること|宿題|持ち帰り|タスク|課題と対応)/i;
+
+/**
+ * この見出しの下はタスクにしない。
+ * 決定事項や共有事項の箇条書きに日付が入っていても拾わないようにするため。
+ */
+const NON_TASK_HEADING =
+  /(決定事項|決定|共有事項|報告事項|議題|参加者|出席者|次回|前回|背景|補足|所感|重要なコメント|コメント|本質|まとめ)/;
 
 /** 見出しらしい行（Markdown 見出し・■●【】・末尾コロン）。 */
 const HEADING_LINE = /^\s*(?:#{1,6}\s*|[■●◆▼○◎]\s*|【[^】]{1,20}】|\d+[.．]\s*)?(.{1,30}?)\s*[:：]?\s*$/;
@@ -61,17 +72,47 @@ export function extractTasks(
 
   const results: ExtractedTask[] = [];
   const seen = new Set<string>();
-  let inTodoSection = false;
 
-  for (const line of lines) {
+  // 1) ネクストアクション形式（① + WHO/WHAT）をまとめて拾う。
+  const consumed = new Set<number>();
+  for (const block of findActionBlocks(lines)) {
+    for (let i = block.start; i < block.end; i += 1) consumed.add(i);
+
+    const names = splitNames(block.who ?? "");
+    const detail = block.detail.join("\n").trim();
+    const due = findDueInDetail(`${block.title}\n${detail}`);
+    const key = block.title.replace(/\s+/g, "");
+    if (!block.title || seen.has(key)) continue;
+    seen.add(key);
+
+    results.push({
+      title: block.title,
+      ownerHint: names[0] ?? null,
+      participants: names.slice(1),
+      detail,
+      dueDate: due ? resolveDate(due.value, base) : null,
+      dueHint: due ? due.value : null,
+      confidence: "high",
+      raw: block.raw.join("\n"),
+    });
+  }
+
+  // 2) 残りの行から、箇条書きのタスクを拾う。
+  let inTodoSection = false;
+  let inSkipSection = false;
+
+  for (const [index, line] of lines.entries()) {
+    if (consumed.has(index)) continue;
     if (!line.trim()) continue;
 
     const heading = headingText(line);
     if (heading !== null) {
       // 見出し行そのものはタスクにしない。ToDo 見出しなら以降を拾う。
       inTodoSection = TODO_HEADING.test(heading);
+      inSkipSection = !inTodoSection && NON_TASK_HEADING.test(heading);
       continue;
     }
+    if (inSkipSection) continue;
 
     const hasCheckbox = CHECKBOX.test(line);
     if (hasCheckbox && /\[(x|X|✓)\]/.test(line)) continue; // 済みのチェックは取り込まない
@@ -95,6 +136,8 @@ export function extractTasks(
     results.push({
       title,
       ownerHint: owner ? normalizeOwner(owner.value) : null,
+      participants: [],
+      detail: "",
       dueDate: due ? resolveDate(due.value, base) : null,
       dueHint: due ? due.value : null,
       confidence: hasCheckbox || owner || due ? "high" : "medium",
@@ -102,6 +145,84 @@ export function extractTasks(
     });
   }
   return results;
+}
+
+
+/* ── ネクストアクション形式（① … / WHO： / WHAT：）の抽出 ────────
+   議事録でよく使われる、番号付きの項目に WHO と WHAT を並べる書き方に対応する。 */
+
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+const ITEM_START = new RegExp(`^\\s*(?:[${CIRCLED}]|[（(]?\\d{1,2}[）).．、]\\s)\\s*(.+?)\\s*$`);
+const WHO_LINE = /^\s*[-*+・･\s]*(?:WHO|Who|who|ＷＨＯ|担当者?)\s*[:：]\s*(.+)$/;
+const WHAT_LINE = /^\s*[-*+・･\s]*(?:WHAT|What|what|ＷＨＡＴ|内容|実施事項)\s*[:：]\s*(.+)$/;
+
+/** 「文字さん＋友井さん＋商品部」→ ["文字", "友井", "商品部"] */
+function splitNames(value: string): string[] {
+  return value
+    .split(/[＋+、,／\/･・]+|\sと\s/)
+    .map((name) => name.trim().replace(/さん$|様$|氏$/, "").trim())
+    .filter(Boolean);
+}
+
+interface Block {
+  title: string;
+  who: string | null;
+  detail: string[];
+  raw: string[];
+  start: number;
+  end: number;
+}
+
+/** 番号付き項目のかたまりを取り出す。WHO が書かれている項目だけを対象にする。 */
+function findActionBlocks(lines: string[]): Block[] {
+  const blocks: Block[] = [];
+  let current: Block | null = null;
+
+  const close = (endIndex: number) => {
+    if (current && current.who) blocks.push({ ...current, end: endIndex });
+    current = null;
+  };
+
+  lines.forEach((line, index) => {
+    const item = line.match(ITEM_START);
+    // 「① タイトル」で新しい項目が始まる。箇条書きの WHO/WHAT 行は項目扱いしない。
+    if (item && !WHO_LINE.test(line) && !WHAT_LINE.test(line)) {
+      close(index);
+      current = { title: item[1].trim(), who: null, detail: [], raw: [line], start: index, end: index };
+      return;
+    }
+    if (!current) return;
+
+    if (!line.trim()) return;
+    const heading = headingText(line);
+    if (heading !== null && !WHO_LINE.test(line) && !WHAT_LINE.test(line)) {
+      close(index);
+      return;
+    }
+
+    current.raw.push(line);
+    const who = line.match(WHO_LINE);
+    if (who) {
+      current.who = who[1].trim();
+      return;
+    }
+    const what = line.match(WHAT_LINE);
+    current.detail.push((what ? what[1] : line).replace(/^\s*[-*+・･]\s*/, "").trim());
+  });
+  close(lines.length);
+  return blocks;
+}
+
+/** 実施内容から期限を読み取る。「10月以降」のような開始時期は期限としない。 */
+function findDueInDetail(text: string): { value: string; matched: string } | null {
+  const patterns: RegExp[] = [
+    /(?:期限|〆切|締切|納期)\s*[:：]?\s*(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?|\d{1,2}[-/月]\d{1,2}日?)/,
+    /(\d{1,2}月\d{1,2}日)(?:まで|までに|に)/,
+    /(\d{1,2}月末)(?!以降)(?:まで|までに|で|に)?/,
+    /(\d{1,2}月中)(?:に|まで|までに)?/,
+    /(今月末|来月末|今週中|来週中|月内)(?!以降)/,
+  ];
+  return matchFirst(text, patterns);
 }
 
 /** 見出し行ならその文言を、そうでなければ null を返す。 */
@@ -220,6 +341,16 @@ export function resolveDate(value: string, base: string): string | null {
     return candidate < base
       ? build(d.getUTCFullYear(), d.getUTCMonth() + 2, Number(dayOnly[1]))
       : candidate;
+  }
+
+  const monthEnd = text.match(/^(\d{1,2})月(末|中)$/);
+  if (monthEnd) {
+    const year = asDate(base).getUTCFullYear();
+    const month = Number(monthEnd[1]);
+    const d = new Date(Date.UTC(year, month, 0, 12));
+    const candidate = asYmd(d);
+    // 年をまたぐ場合（12月のMTGで1月末の期限など）は翌年として扱う。
+    return candidate < base ? asYmd(new Date(Date.UTC(year + 1, month, 0, 12))) : candidate;
   }
 
   if (/^(今日|本日)$/.test(text)) return base;

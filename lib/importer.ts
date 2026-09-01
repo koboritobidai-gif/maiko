@@ -162,10 +162,13 @@ export async function importMinutes(
 
 /** タスクの説明欄に、根拠となった議事録の行と出典を残す。 */
 function describe(item: ExtractedTask, doc: MinutesDoc): string {
-  const lines = [`議事録より自動作成: ${item.raw}`];
+  const lines: string[] = [];
+  if (item.detail) lines.push(item.detail, "");
+  if (item.participants.length) lines.push(`関係者: ${item.participants.join("、")}`);
   if (item.ownerHint) lines.push(`議事録の担当表記: ${item.ownerHint}`);
   if (item.dueHint && item.dueHint !== item.dueDate) lines.push(`議事録の期限表記: ${item.dueHint}`);
   lines.push(`出典: ${SOURCE_LABELS[doc.source]}「${doc.title}」${doc.url ? ` ${doc.url}` : ""}`);
+  if (!item.detail) lines.push(`議事録の記載: ${item.raw.split("\n")[0]}`);
   return lines.join("\n");
 }
 

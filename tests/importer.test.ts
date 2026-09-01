@@ -80,7 +80,7 @@ test("取り込んだタスクには出典と元の行が残る", async () => {
   assert.ok(task);
   assert.equal(task.meetingTitle, "商品開発会議");
   assert.equal(task.meetingDate, "2026-09-01");
-  assert.match(task.description, /議事録より自動作成/);
+  assert.match(task.description, /議事録の記載: .*容器デザイン案/);
   assert.match(task.description, /出典: 手動貼り付け/);
 });
 

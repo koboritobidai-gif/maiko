@@ -116,3 +116,94 @@ test("年をまたぐ期限は翌年として解決する", () => {
   assert.equal(resolveDate("2026-09-10", BASE), "2026-09-10");
   assert.equal(resolveDate("2月30日", BASE), null);
 });
+
+/* ── PLAUD などの要約でよく使われる、番号付き＋WHO/WHAT 形式 ── */
+
+test("ネクストアクション形式（① / WHO / WHAT）を1タスクとして拾う", () => {
+  const tasks = run(`
+【決定事項】
+
+1. 九州支社は現オフィスを解約し、アークビルへ移転する前提で進める。
+
+【ネクストアクション】
+① 九州支社移転
+
+* WHO：文字さん＋友井さん
+* WHAT：引越費用・原状回復費の正式見積を取得し、年間固定費削減額と合わせて最終判断する。
+
+② 楽楽精算の全社電子化
+
+* WHO：川村さん
+* WHAT：10月1日の全体導入に向け、9月中に差戻し・申請不備を分析し、運用ルールとマニュアルを完成させる。
+`);
+  assert.equal(tasks.length, 2);
+
+  assert.equal(tasks[0].title, "九州支社移転");
+  assert.equal(tasks[0].ownerHint, "文字");
+  assert.deepEqual(tasks[0].participants, ["友井"]);
+  assert.match(tasks[0].detail, /正式見積を取得/);
+
+  assert.equal(tasks[1].ownerHint, "川村");
+  // 「10月1日の全体導入に向け」は開始時期なので期限にせず、「9月中に」を期限にする。
+  assert.equal(tasks[1].dueDate, "2026-09-30");
+});
+
+test("WHATの見出しが無く、WHOの下に本文が続く形式にも対応する", () => {
+  const tasks = run(`
+【ネクストアクション】
+① 評価制度の新フォーマット作成・共有
+WHO：髙橋さん
+新しい成果評価表について、評価項目・点数基準を含めた原案を作成し、各部門へ共有する。
+`);
+  assert.equal(tasks.length, 1);
+  assert.equal(tasks[0].title, "評価制度の新フォーマット作成・共有");
+  assert.equal(tasks[0].ownerHint, "髙橋");
+  assert.match(tasks[0].detail, /原案を作成/);
+});
+
+test("決定事項の番号付き箇条書きはタスクにしない", () => {
+  const tasks = run(`
+【決定事項】
+
+1. 九州支社は現オフィスを解約し、アークビルへ移転する前提で進める。
+2. 梱包・同梱物の過剰品質を見直す。
+`);
+  assert.equal(tasks.length, 0);
+});
+
+test("「10月以降の運用を目指す」は期限として扱わない", () => {
+  const tasks = run(`
+【ネクストアクション】
+① 新規取引基準の策定
+* WHO：近安さん
+* WHAT：新規取引基準を策定し、10月以降の運用を目指す。
+`);
+  assert.equal(tasks[0].dueDate, null);
+});
+
+test("9月末で解約、のような表現を期限として読む", () => {
+  const tasks = run(`
+【ネクストアクション】
+① 外部相談窓口の解約
+* WHO：髙橋さん
+* WHAT：利用件数と費用対効果を踏まえ、9月末で解約手続きを行う。
+`);
+  assert.equal(tasks[0].dueDate, "2026-09-30");
+});
+
+test("決定事項に日付が含まれていてもタスクにしない", () => {
+  const tasks = run(`
+【決定事項】
+
+* 外部相談窓口「アンリ」は利用実績が少ないため、9月末で解約する方向とする。
+* 新評価制度の開始時期は10月に固執せず、現場への影響を確認したうえで最終決定する。
+
+【ネクストアクション】
+① 外部相談窓口「アンリ」の解約
+WHO：髙橋さん
+9月末で解約手続きを行う。
+`);
+  assert.equal(tasks.length, 1);
+  assert.equal(tasks[0].title, "外部相談窓口「アンリ」の解約");
+  assert.equal(tasks[0].dueDate, "2026-09-30");
+});
