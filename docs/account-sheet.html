@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><title>権限設計とアカウント一覧</title>
+<style>
+
+:root {
+  --navy: #4e5d7a; --navy-deep: #3e4c67; --gold: #b59a4e; --gold-light: #c9a961;
+  --gold-tint: #f6f1e4; --ink: #333333; --ink-heading: #3a4657; --ink-soft: #6b6b6b;
+  --ink-faint: #9a9a9a; --line: #e5e5e5; --line-strong: #d6d6d6; --soft: #fafafa;
+  --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--sans); font-size: 9.5pt; line-height: 1.75; color: var(--ink); }
+
+.cover-band {
+  background: var(--navy); color: #fff; border-bottom: 3px solid var(--gold);
+  padding: 12px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+}
+.logo { position: relative; font-family: var(--serif); font-size: 17pt; letter-spacing: .22em; line-height: 1; padding-right: 6px; }
+.logo::after { content: ""; position: absolute; top: -3px; left: 58%; width: 1px; height: calc(100% + 7px); background: var(--gold-light); transform: rotate(20deg); }
+.cover-band .sub { font-size: 8pt; letter-spacing: .12em; opacity: .85; border-left: 1px solid rgba(255,255,255,.35); padding-left: 14px; }
+
+h1 { font-family: var(--serif); font-size: 19pt; color: var(--gold); font-weight: 400; letter-spacing: .06em; margin: 0 0 4px; }
+.lead { font-size: 9pt; color: var(--ink-soft); margin: 0 0 4px; }
+.meta { font-size: 8.5pt; color: var(--ink-faint); margin-bottom: 20px; }
+
+h2 {
+  font-size: 11pt; color: var(--ink-heading); margin: 22px 0 9px;
+  border-left: 3px solid var(--gold); padding-left: 9px; break-after: avoid;
+}
+h3 { font-size: 9.5pt; color: var(--ink-heading); margin: 14px 0 5px; break-after: avoid; }
+p { margin: 0 0 8px; }
+section { break-inside: avoid; }
+
+table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 6px 0 10px; }
+th { background: var(--soft); color: var(--ink-soft); font-weight: 500; text-align: left;
+     padding: 6px 9px; border: 1px solid var(--line); font-size: 8.5pt; white-space: nowrap; }
+td { padding: 6px 9px; border: 1px solid var(--line); vertical-align: top; }
+td.mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.5pt; white-space: nowrap; }
+tr.exec td { background: var(--gold-tint); }
+
+ul { margin: 0 0 8px; padding-left: 1.15em; }
+li { margin-bottom: 3px; }
+
+.note {
+  border: 1px solid var(--line); border-left: 3px solid var(--navy);
+  background: var(--soft); padding: 9px 12px; font-size: 8.5pt; color: var(--ink-soft);
+  margin: 8px 0 12px;
+}
+.warn { border-left-color: var(--gold); background: var(--gold-tint); color: #6f5c2e; }
+
+.tag { display: inline-block; border: 1px solid var(--line-strong); border-radius: 2px;
+       padding: 0 6px; font-size: 8pt; background: #fff; }
+.tag-exec { background: var(--gold-tint); border-color: #ded0ab; color: #6f5c2e; }
+.tag-no { color: var(--ink-faint); }
+.ok { color: var(--navy); font-weight: 700; }
+.no { color: var(--ink-faint); }
+
+footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
+         font-size: 8pt; color: var(--ink-faint); }
+.pagebreak { break-before: page; }
+</style>
+</head>
+<body>
+
+<div class="cover-band">
+  <span class="logo">FAITH</span>
+  <span class="sub">株式会社フェース｜タスク管理ダッシュボード</span>
+</div>
+
+<h1>権限設計とアカウント一覧</h1>
+<p class="lead">役員と社員で見えるものを分ける仕組みと、発行したログインID・初期パスワードをまとめています。</p>
+<p class="meta">{{date}} 作成</p>
+
+<section>
+<h2>1. 権限は3段階</h2>
+<p>利用者を「管理者」「役員」「社員」の3つに分けています。役員は4名です。</p>
+<table>
+  <thead><tr><th style="width:80px">権限</th><th style="width:52px">人数</th><th>見えるもの・できること</th></tr></thead>
+  <tbody>
+    <tr><td>管理者</td><td>1名</td><td>すべての議事録・タスクに加えて、社員アカウント・会議名・メール通知の管理</td></tr>
+    <tr class="exec"><td>役員</td><td>4名</td><td>全社員向けの議事録・タスク＋<strong>役員限定の議事録・タスク</strong>。タスクの公開範囲を変更できる</td></tr>
+    <tr><td>社員</td><td>4名</td><td>全社員向けの議事録・タスクのみ</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section>
+<h2>2. 社員の画面から消えるもの</h2>
+<p>社員には「役員限定の情報が存在すること」自体がわからないようにしています。</p>
+<table>
+  <thead><tr><th>項目</th><th style="width:96px">役員・管理者</th><th style="width:96px">社員</th></tr></thead>
+  <tbody>
+    <tr><td>役員限定タスク（一覧・検索・ダッシュボードの集計）</td><td class="ok">表示</td><td class="no">表示しない</td></tr>
+    <tr><td>役員限定の議事録（取り込み済み一覧）</td><td class="ok">表示</td><td class="no">表示しない</td></tr>
+    <tr><td>サイドメニューの「役員」区分</td><td class="ok">表示</td><td class="no">表示しない</td></tr>
+    <tr><td>タスク登録・編集画面の「公開範囲」欄</td><td class="ok">表示</td><td class="no">表示しない</td></tr>
+    <tr><td>議事録取り込み画面の「公開範囲」欄</td><td class="ok">表示</td><td class="no">表示しない</td></tr>
+    <tr><td>役員限定タスクのURLを直接開いた場合</td><td class="ok">表示</td><td class="no">「見つかりません」</td></tr>
+    <tr><td>役員限定タスクのリマインドメール</td><td class="ok">届く</td><td class="no">届かない</td></tr>
+  </tbody>
+</table>
+<div class="note">
+  例：役員限定のタスクが2件登録されている場合、ダッシュボードの「未完了」は役員には18件、社員には16件と表示されます。
+  社員の集計からは役員限定タスクが除かれるため、件数から存在を推測されることもありません。
+</div>
+</section>
+
+<section>
+<h2>3. 分離をどう担保しているか</h2>
+<ul>
+  <li><strong>画面ではなくデータの取り出し方で制御しています。</strong>タスク・議事録を読み出すすべての処理が同じ判定を通るため、一覧・検索・詳細・進捗履歴・集計・メール通知のどこかだけ漏れる、ということが起きません。</li>
+  <li><strong>URL の直接入力は「見つかりません」で返します。</strong>「権限がありません」ではなく存在しない扱いにすることで、役員限定タスクがあること自体を伏せています。</li>
+  <li><strong>公開範囲を「役員のみ」に変更できるのは役員・管理者だけです。</strong>社員が誤って役員限定に切り替えることも、その逆もできません。</li>
+  <li><strong>リマインドメールも同じ判定を通ります。</strong>役員限定タスクの内容が、社員宛のメール本文に混ざることはありません。</li>
+</ul>
+</section>
+
+<section>
+<h2>4. 会議名と公開範囲の連動</h2>
+<p>会議名は自由入力ではなく、登録済みの一覧から選ぶ方式です。会議ごとに既定の公開範囲を持たせているため、選ぶだけで公開範囲が決まります。</p>
+<table>
+  <thead><tr><th>会議名</th><th style="width:150px">既定の公開範囲</th></tr></thead>
+  <tbody>
+    <tr class="exec"><td>役員会</td><td><span class="tag tag-exec">役員のみ</span></td></tr>
+    <tr><td>経営戦略会議 ／ 経営協議会</td><td><span class="tag">全社員</span></td></tr>
+    <tr><td>全体定例MTG ／ 商品開発会議 ／ 販促企画MTG ／ 部門ミーティング</td><td><span class="tag">全社員</span></td></tr>
+  </tbody>
+</table>
+<p>役員会の議事録を取り込むと、そこから作られたタスクは自動的に役員限定になります。会議名の追加や公開範囲の変更は、管理者が「社員・通知設定」画面から行えます。</p>
+</section>
+
+<div class="pagebreak"></div>
+
+<section>
+<h2>5. ログインIDと初期パスワード</h2>
+<p>ログインIDはメールアドレスです。初期パスワードは1人ずつ別の値を発行しています。</p>
+
+<h3>管理者・役員</h3>
+<table>
+  <thead><tr><th style="width:64px">権限</th><th style="width:86px">氏名</th><th>ログインID</th><th style="width:120px">初期パスワード</th></tr></thead>
+  <tbody>
+    <tr><td>管理者</td><td>長野種雅</td><td class="mono">nagano@faith.example.co.jp</td><td class="mono">{{nagano}}</td></tr>
+    <tr class="exec"><td>役員</td><td>髙橋</td><td class="mono">takahashi@faith.example.co.jp</td><td class="mono">{{takahashi}}</td></tr>
+    <tr class="exec"><td>役員</td><td>神山</td><td class="mono">kamiyama@faith.example.co.jp</td><td class="mono">{{kamiyama}}</td></tr>
+    <tr class="exec"><td>役員</td><td>森本</td><td class="mono">morimoto@faith.example.co.jp</td><td class="mono">{{morimoto}}</td></tr>
+    <tr class="exec"><td>役員</td><td>近安</td><td class="mono">chikayasu@faith.example.co.jp</td><td class="mono">{{chikayasu}}</td></tr>
+  </tbody>
+</table>
+
+<h3>社員</h3>
+<table>
+  <thead><tr><th style="width:64px">権限</th><th style="width:86px">区分</th><th>ログインID</th><th style="width:120px">初期パスワード</th></tr></thead>
+  <tbody>
+    <tr><td>社員</td><td>社員 ①</td><td class="mono">kawamura@faith.example.co.jp</td><td class="mono">{{kawamura}}</td></tr>
+    <tr><td>社員</td><td>社員 ②</td><td class="mono">tomoi@faith.example.co.jp</td><td class="mono">{{tomoi}}</td></tr>
+    <tr><td>社員</td><td>社員 ③</td><td class="mono">monji@faith.example.co.jp</td><td class="mono">{{monji}}</td></tr>
+    <tr><td>社員</td><td>社員 ④</td><td class="mono">sugai@faith.example.co.jp</td><td class="mono">{{sugai}}</td></tr>
+  </tbody>
+</table>
+<div class="note">
+  社員の氏名は本書では省略しています。アプリ上は、議事録に書かれた担当者名と自動で突き合わせるために氏名を登録しています。
+</div>
+
+<div class="note warn">
+  <strong>メールアドレスは仮の値です。</strong>リマインドメールの宛先になるため、運用開始前に管理画面から実際の社内アドレスへ変更してください。
+  変更してもタスクの担当や過去の履歴はそのまま引き継がれます。
+</div>
+</section>
+
+<section>
+<h2>6. 運用のきまり</h2>
+<ul>
+  <li><strong>初回ログイン後にパスワードを変更してください。</strong>初期パスワードは配布用の暫定値です。</li>
+  <li><strong>本書は社外秘です。</strong>初期パスワードを記載しているため、配布範囲を限定し、パスワード変更後は破棄してください。</li>
+  <li><strong>役員の増減は管理画面から変更できます。</strong>「社員・通知設定」画面で権限を切り替えると、その時点から見える範囲が変わります。アカウントを作り直す必要はありません。</li>
+  <li><strong>退職・異動時はアカウントを無効化します。</strong>担当していたタスクは残るため、引き継ぎ先を設定してください。</li>
+  <li><strong>パスワードは復元できない形で保存しています。</strong>忘れた場合は管理者が再発行します。</li>
+</ul>
+</section>
+
+<footer>
+  株式会社フェース タスク管理ダッシュボード｜権限設計とアカウント一覧　{{date}}　社外秘
+</footer>
+
+</body></html>

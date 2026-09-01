@@ -13,3 +13,7 @@ data/
 
 .DS_Store
 npm-debug.log*
+
+# 初期パスワードを含む配布用の資料は、リポジトリに置かない
+*.pdf
+initial-passwords.json

@@ -73,11 +73,18 @@ async function main(): Promise<void> {
     }
   }
 
-  // 初期パスワードは1人ずつ別にする。共通にしたい場合は SEED_ADMIN_PASSWORD を指定する。
+  // 初期パスワードは1人ずつ別にする。
+  //   SEED_ADMIN_PASSWORD  … 全員を同じパスワードにする
+  //   SEED_PASSWORDS_FILE  … {"nagano":"...", ...} の JSON で指定した値を使う
+  //   どちらも無ければランダムに発行して一覧を表示する
   const shared = process.env.SEED_ADMIN_PASSWORD;
+  const fixed: Record<string, string> = process.env.SEED_PASSWORDS_FILE
+    ? JSON.parse(readFileSync(process.env.SEED_PASSWORDS_FILE, "utf8"))
+    : {};
   const issued = new Map<string, string>();
   for (const member of members) {
-    const password = shared ?? `faith-${randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const password =
+      fixed[member.key] ?? shared ?? `faith-${randomUUID().replace(/-/g, "").slice(0, 8)}`;
     issued.set(member.key, password);
     await client.execute({
       sql: `INSERT INTO users (id, name, email, role, department, password_hash, active, created_at)

@@ -12,7 +12,8 @@
     "seed": "node --experimental-strip-types scripts/seed.ts",
     "remind": "node --experimental-strip-types scripts/remind.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "import": "node --experimental-strip-types scripts/import-minutes.ts"
+    "import": "node --experimental-strip-types scripts/import-minutes.ts",
+    "doc:accounts": "node docs/render-pdf.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.15.7",
@@ -27,6 +28,7 @@
     "@types/nodemailer": "^7.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "playwright": "^1.62.1",
     "typescript": "^5.8.3"
   }
 }
