@@ -253,7 +253,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <div class="banner">
   <b>デモ</b>
-  <span>株式会社フェース タスク管理ダッシュボード｜右上でログインユーザーを切り替えると、役員限定タスクの見え方が変わります。データはこのブラウザ内だけのサンプルです。</span>
+  <span>株式会社フェース タスク管理ダッシュボード｜2026/09/01 の経営戦略会議・経営協議会の議事録から取り込んだ18件を表示しています。右上でログインユーザーを切り替えると、役員限定タスク（評価制度の2件を例として設定）の見え方が変わります。操作内容はこのブラウザ内だけに残ります。</span>
 </div>
 
 <div class="shell">
@@ -312,51 +312,59 @@ const OPEN = ["not_started", "in_progress", "blocked"];
 const isOpen = (t) => OPEN.includes(t.status);
 
 const MEMBERS = [
-  { id: "nagano", name: "長野種雅", dept: "経営企画", role: "admin" },
-  { id: "kobori", name: "小堀 太一", dept: "取締役", role: "executive" },
-  { id: "tanaka", name: "田中 美咲", dept: "商品開発部", role: "member" },
-  { id: "sato", name: "佐藤 由紀", dept: "営業部", role: "member" },
-  { id: "suzuki", name: "鈴木 健一", dept: "マーケティング部", role: "member" },
-  { id: "nakamura", name: "中村 彩", dept: "サロン運営部", role: "member" },
+  { id: "nagano", name: "長野種雅", dept: "経営", role: "admin" },
+  { id: "takahashi", name: "髙橋", dept: "人事部", role: "executive" },
+  { id: "kamiyama", name: "神山", dept: "営業", role: "member" },
+  { id: "morimoto", name: "森本", dept: "営業", role: "member" },
+  { id: "chikayasu", name: "近安", dept: "営業", role: "member" },
+  { id: "kawamura", name: "川村", dept: "システム", role: "member" },
+  { id: "tomoi", name: "友井", dept: "業務・物流", role: "member" },
+  { id: "monji", name: "文字", dept: "九州支社", role: "member" },
+  { id: "sugai", name: "菅井", dept: "販促", role: "member" },
 ];
 const ROLE_LABEL = { admin: "管理者", executive: "役員", member: "社員" };
 const memberOf = (id) => MEMBERS.find((m) => m.id === id) || null;
 const canSeeExec = (u) => u.role === "executive" || u.role === "admin";
 
-/* due / meeting / reported は「今日からの日数」で持つ */
+/* 2026/09/01 の経営戦略会議・経営協議会の議事録から取り込んだタスク。
+   due / mtg / reported は「今日からの日数」で持つ。 */
 const TASKS = [
-  { code: "T-0001", title: "新美容液の販促スケジュール案を作成", owner: "suzuki", due: -4, status: "in_progress", vis: "all",
-    meeting: "販促企画MTG", mtg: -12, reported: 3,
-    desc: "10月発売の新美容液について、SNS・サロン店頭・DMの三本立てで販促案をまとめる。",
-    log: [{ by: "suzuki", d: 3, body: "SNS施策の骨子まで完成。店頭POPのデザイン待ちで止まっています。" }] },
-  { code: "T-0002", title: "サロン向け新商品説明会の日程確定", owner: "nakamura", due: -1, status: "not_started", vis: "all",
-    meeting: "全体定例MTG", mtg: -7, reported: 7,
-    desc: "全国4会場での説明会日程を確定し、サロンへ案内する。", log: [] },
-  { code: "T-0003", title: "秋冬向けスキンケアラインの処方最終確認", owner: "tanaka", due: 1, status: "in_progress", vis: "all",
-    meeting: "商品開発会議", mtg: -14, reported: 1,
-    desc: "研究所からの最終処方を確認し、安定性試験の結果とあわせて承認する。",
-    log: [{ by: "tanaka", d: 1, body: "安定性試験の結果を受領。明日中に確認を終えます。" },
-          { by: "tanaka", d: 9, body: "研究所へ最終処方を依頼しました。" }] },
-  { code: "T-0004", title: "大阪本社ショールームの改装見積もりを3社から取得", owner: "sato", due: 3, status: "blocked", vis: "all",
-    meeting: "全体定例MTG", mtg: -7, reported: 2,
-    desc: "内装業者3社から見積もりを取り、比較表を作成する。",
-    log: [{ by: "sato", d: 2, body: "2社から見積もり受領。1社が来週まで回答できないとのことで待ちです。" }] },
-  { code: "T-0005", title: "既存顧客へのリピート促進DMの原稿作成", owner: "suzuki", due: 6, status: "not_started", vis: "all",
-    meeting: "販促企画MTG", mtg: -12, reported: 12, desc: "", log: [] },
-  { code: "T-0006", title: "エステティシャン研修プログラムの改訂案をまとめる", owner: "nakamura", due: 20, status: "in_progress", vis: "all",
-    meeting: "全体定例MTG", mtg: -28, reported: 15,
-    desc: "新商品に対応した施術手順を研修カリキュラムに反映する。", log: [] },
-  { code: "T-0007", title: "OEM先の品質監査レポートを共有", owner: "tanaka", due: -9, status: "done", vis: "all",
-    meeting: "商品開発会議", mtg: -14, reported: 8, desc: "",
-    log: [{ by: "tanaka", d: 8, body: "監査レポートを全部署へ共有しました。" }] },
-  { code: "T-0008", title: "ECサイトの定期購入プラン改定を検討", owner: null, due: 10, status: "not_started", vis: "all",
-    meeting: "販促企画MTG", mtg: -12, reported: 12,
-    desc: "担当をどの部署が持つかMTGで決めきれず保留。", log: [] },
-  { code: "T-0009", title: "来期の役員報酬案の作成", owner: "kobori", due: 2, status: "in_progress", vis: "executive",
-    meeting: "役員会", mtg: -5, reported: 2, desc: "来期予算案とあわせて役員会に提出する。",
-    log: [{ by: "kobori", d: 2, body: "顧問税理士と一次案を確認済み。" }] },
-  { code: "T-0010", title: "サロン事業の再編案を精査", owner: "nagano", due: 9, status: "not_started", vis: "executive",
-    meeting: "役員会", mtg: -5, reported: 5, desc: "不採算店舗の扱いを含む再編案。公開前の検討段階。", log: [] },
+  { code: "T-0001", title: "評価制度の新フォーマット作成・共有", owner: "takahashi", due: null, status: "not_started", vis: "executive",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "評価項目・点数基準・ウェイト設定・自己評価欄を含めた原案を作成し、各部門へ共有する。次回経営協議会で議論できる状態にする。", log: [] },
+  { code: "T-0002", title: "各部門で新評価制度への移行可否を検証", owner: null, due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "現在の目標を新しい評価表へ落とし込めるか確認し、課題を人事部へフィードバックする。関係者: 各部門長", log: [] },
+  { code: "T-0003", title: "FMS/FNS廃止後の面談・目標管理方法を設計", owner: "takahashi", due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "書類作成は減らしつつ、期待役割・目標設定・振り返り・フィードバックが失われない運用ルールを設計する。関係者: 各部門長", log: [] },
+  { code: "T-0004", title: "9月の経営協議会で評価制度を確定", owner: "takahashi", due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "第1回で案を議論し各部門で検証、第2回で制度・運用方法・開始時期を確定する。関係者: 各部門長", log: [] },
+  { code: "T-0005", title: "外部相談窓口「アンリ」の解約", owner: "takahashi", due: 29, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "利用件数と費用対効果を踏まえ、9月末で解約手続きを行う。", log: [] },
+  { code: "T-0006", title: "評定会議の簡素化", owner: "takahashi", due: null, status: "not_started", vis: "executive",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "S4は各部門で評定を完結させ、全体評定会議はS5・S6を中心とする新運用へ変更する。関係者: 執行役員", log: [] },
+  { code: "T-0007", title: "保証金・連帯保証人ルールの整理", owner: "kamiyama", due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "預かり保証金総額・契約状況を確認のうえ、必要性・免除条件・新規契約時の統一ルールを決定し周知方法まで決める。関係者: 森本、近安、川村", log: [] },
+  { code: "T-0008", title: "ID・パスワード等の直接編集禁止を徹底", owner: "morimoto", due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "営業担当者による直接編集は認めないという既決事項を再周知し、運用を徹底する。関係者: 神山、近安、髙橋", log: [] },
+  { code: "T-0009", title: "次回経営戦略会議の議題設定", owner: "nagano", due: null, status: "not_started", vis: "all",
+    meeting: "経営協議会（評価制度）", mtg: 0, reported: 0, desc: "継続審議すべきテーマを整理し、事前に共有する。", log: [] },
+  { code: "T-0010", title: "九州支社移転", owner: "monji", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "引越費用・原状回復費の正式見積を取得し、年間固定費削減額と合わせて最終判断する。関係者: 友井", log: [] },
+  { code: "T-0011", title: "梱包・物流コスト削減", owner: "tomoi", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "緩衝材、個別包装、天板段ボール、小分け包装、配送サイズを見直し、項目別の年間削減額を算出。全社展開可否を決定する。関係者: 商品部（担当者アサイン待ち）", log: [] },
+  { code: "T-0012", title: "納品書・明細書のペーパーレス化", owner: "tomoi", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "メール・SMS・WEB明細等を比較し、全社共通方式と導入費・年間削減効果を提示する。関係者: 商品部、川村", log: [] },
+  { code: "T-0013", title: "販促物のペーパーレス化", owner: "tomoi", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "同梱物を精査しQRコードによるWEB閲覧へ切り替える。印刷費・同梱作業費を含めた削減額を算出する。関係者: 商品部、菅井", log: [] },
+  { code: "T-0014", title: "FAX発注の廃止", owner: "kamiyama", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "FAX限定の施策・業務を洗い出し、FMC等のWEB発注へ移行できるよう施策設計を変更する。関係者: 森本", log: [] },
+  { code: "T-0015", title: "WEB受発注システムの導入検討", owner: "takahashi", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "候補システムを比較し、現状工数→導入後工数、削減時間、削減人件費、投資額、回収期間を数値化して導入判断する。関係者: 神山、森本", log: [] },
+  { code: "T-0016", title: "楽楽精算の全社電子化", owner: "kawamura", due: 29, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "10月1日の全体導入に向け、9月中に差戻し・申請不備を分析し、運用ルールとマニュアルを完成させる。", log: [] },
+  { code: "T-0017", title: "新規得意先獲得3施策の効果測定", owner: "chikayasu", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "イベント・新規開拓代行・広告について、流入→接触→商談→契約→売上を月次でチャネル別に管理する。", log: [] },
+  { code: "T-0018", title: "新規取引先の審査基準策定", owner: "chikayasu", due: null, status: "not_started", vis: "all",
+    meeting: "経営戦略会議", mtg: 0, reported: 0, desc: "法人／個人事業主を含め、SNS活動実態・集客活動・販売意欲等を評価する新規取引基準を策定し、10月以降の運用を目指す。", log: [] },
 ];
 
 
@@ -427,6 +435,12 @@ function resolveDue(value, baseYmd) {
     const c = build(y, +m[1], +m[2]);
     return c && c < baseYmd ? build(y + 1, +m[1], +m[2]) : c;
   }
+  m = text.match(/^(\d{1,2})月(末|中)$/);
+  if (m) {
+    const y = base.getUTCFullYear();
+    const c = out(new Date(Date.UTC(y, +m[1], 0, 12)));
+    return c < baseYmd ? out(new Date(Date.UTC(y + 1, +m[1], 0, 12))) : c;
+  }
   if (/^(今日|本日)$/.test(text)) return baseYmd;
   if (text === "明日") return add(1);
   if (text === "明後日") return add(2);
@@ -441,15 +455,107 @@ function resolveDue(value, baseYmd) {
   return null;
 }
 
+
+const NON_TASK_HEADING = /(決定事項|決定|共有事項|報告事項|議題|参加者|出席者|次回|前回|背景|補足|所感|重要なコメント|コメント|本質|まとめ)/;
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+const ITEM_START = new RegExp(`^\\s*(?:[${CIRCLED}]|[（(]?\\d{1,2}[）).．、]\\s)\\s*(.+?)\\s*$`);
+const WHO_LINE = /^\s*[-*+・･\s]*(?:WHO|Who|who|ＷＨＯ|担当者?)\s*[:：]\s*(.+)$/;
+const WHAT_LINE = /^\s*[-*+・･\s]*(?:WHAT|What|what|ＷＨＡＴ|内容|実施事項)\s*[:：]\s*(.+)$/;
+
+/** 「文字さん＋友井さん」→ ["文字", "友井"] */
+function splitNames(value) {
+  return value.split(/[＋+、,／\/･・]+/)
+    .map((n) => n.trim().replace(/さん$|様$|氏$/, "").trim())
+    .filter(Boolean);
+}
+
+/** 番号付き項目（WHO が書かれているもの）をひとかたまりとして取り出す。 */
+function findActionBlocks(lines) {
+  const blocks = [];
+  let current = null;
+  const close = (end) => { if (current && current.who) blocks.push({ ...current, end }); current = null; };
+
+  lines.forEach((line, index) => {
+    const item = line.match(ITEM_START);
+    if (item && !WHO_LINE.test(line) && !WHAT_LINE.test(line)) {
+      close(index);
+      current = { title: item[1].trim(), who: null, detail: [], raw: [line], start: index, end: index };
+      return;
+    }
+    if (!current || !line.trim()) return;
+    const heading = headingOf(line);
+    if (heading !== null && !WHO_LINE.test(line) && !WHAT_LINE.test(line)) { close(index); return; }
+
+    current.raw.push(line);
+    const who = line.match(WHO_LINE);
+    if (who) { current.who = who[1].trim(); return; }
+    const what = line.match(WHAT_LINE);
+    current.detail.push((what ? what[1] : line).replace(/^\s*[-*+・･]\s*/, "").trim());
+  });
+  close(lines.length);
+  return blocks;
+}
+
+/** 実施内容から期限を読む。「10月以降」のような開始時期は期限にしない。 */
+function findDueInDetail(text) {
+  return firstMatch(text, [
+    /(?:期限|〆切|締切|納期)\s*[:：]?\s*(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?|\d{1,2}[-/月]\d{1,2}日?)/,
+    /(\d{1,2}月\d{1,2}日)(?:まで|までに|に)/,
+    /(\d{1,2}月末)(?!以降)(?:まで|までに|で|に)?/,
+    /(\d{1,2}月中)(?:に|まで|までに)?/,
+  ]);
+}
+
+function findMember(hint) {
+  if (!hint) return null;
+  const key = hint.replace(/\s/g, "");
+  return MEMBERS.find((m) => m.name.replace(/\s/g, "") === key)
+    || MEMBERS.find((m) => m.name.split(/\s/).some((part) => part === key))
+    || MEMBERS.find((m) => m.id === key.toLowerCase())
+    || MEMBERS.find((m) => m.name.replace(/\s/g, "").startsWith(key) && key.length >= 2)
+    || null;
+}
+
 function extractFromMinutes(text, baseYmd) {
+  const lines = (text || "").replace(/\r\n?/g, "\n").split("\n");
   const rows = [];
   const seen = new Set();
-  let inTodo = false;
 
-  for (const line of (text || "").replace(/\r\n?/g, "\n").split("\n")) {
-    if (!line.trim()) continue;
+  // 1) ネクストアクション形式（① + WHO/WHAT）をまとめて拾う。
+  const consumed = new Set();
+  for (const block of findActionBlocks(lines)) {
+    for (let i = block.start; i < block.end; i += 1) consumed.add(i);
+    const names = splitNames(block.who || "");
+    const detail = block.detail.join("\n").trim();
+    const due = findDueInDetail(block.title + "\n" + detail);
+    const key = block.title.replace(/\s+/g, "");
+    if (!block.title || seen.has(key)) continue;
+    seen.add(key);
+    const match = findMember(names[0]);
+    rows.push({
+      include: true,
+      title: block.title,
+      ownerId: match ? match.id : "",
+      ownerHint: names[0] || null,
+      due: due ? resolveDue(due.value, baseYmd) : null,
+      dueHint: due ? due.value : null,
+      raw: block.raw[0].trim(),
+    });
+  }
+
+  // 2) 残りの行から、箇条書きのタスクを拾う。
+  let inTodo = false;
+  let inSkip = false;
+
+  for (const [index, line] of lines.entries()) {
+    if (consumed.has(index) || !line.trim()) continue;
     const heading = headingOf(line);
-    if (heading !== null) { inTodo = TODO_HEADING.test(heading); continue; }
+    if (heading !== null) {
+      inTodo = TODO_HEADING.test(heading);
+      inSkip = !inTodo && NON_TASK_HEADING.test(heading);
+      continue;
+    }
+    if (inSkip) continue;
 
     const checkbox = CHECKBOX.test(line);
     if (checkbox && /\[(x|X|✓)\]/.test(line)) continue;
@@ -472,11 +578,7 @@ function extractFromMinutes(text, baseYmd) {
     seen.add(key);
 
     const hint = owner ? owner.value.replace(/さん$|様$|氏$/, "") : null;
-    const match = hint
-      ? MEMBERS.find((m) => m.name.replace(/\s/g, "") === hint.replace(/\s/g, "")) ||
-        MEMBERS.find((m) => m.name.split(/\s/).some((part) => part === hint)) ||
-        MEMBERS.find((m) => m.id === hint.toLowerCase())
-      : null;
+    const match = findMember(hint);
 
     rows.push({
       include: true,
@@ -491,21 +593,29 @@ function extractFromMinutes(text, baseYmd) {
   return rows;
 }
 
-const SAMPLE_MINUTES = `# 商品開発会議 議事録（2026年9月1日）
-参加者：長野、田中、鈴木、中村
+const SAMPLE_MINUTES = `# 経営戦略会議
 
-## 共有事項
-- 秋冬ラインの試作が完了
-- 大阪ショールームの来場者が前年比120%
+【決定事項】
 
-## ToDo
-- 秋冬ラインの容器デザイン案を3案作成（担当：田中、期限：9/12）
-- [ ] 販促用サンプルの数量を確定 担当:鈴木 期限:来週金曜
-- サロン向け説明会の会場を仮押さえ 担当:中村 期限:月末
-- 展示会の出展可否を検討
+1. 九州支社は現オフィスを解約し、アークビルへ移転する前提で進める。年間約110万円の固定費削減を見込む。
+2. 梱包・同梱物の過剰品質を見直し、全社展開を前提にコスト削減する。
 
-## 次回
-9月15日(月) 10:00-`;
+【ネクストアクション】
+
+① 九州支社移転
+
+* WHO：文字さん＋友井さん
+* WHAT：引越費用・原状回復費の正式見積を取得し、年間固定費削減額と合わせて最終判断する。
+
+② 梱包・物流コスト削減
+
+* WHO：友井さん＋商品部（髙橋さん：担当者アサインください）
+* WHAT：緩衝材、個別包装、配送サイズを見直し、項目別の年間削減額を算出。全社展開可否を決定する。
+
+⑦ 楽楽精算の全社電子化
+
+* WHO：川村さん
+* WHAT：10月1日の全体導入に向け、9月中に差戻し・申請不備を分析し、運用ルールとマニュアルを完成させる。`;
 
 /* ── 状態 ─────────────────────────────────────────────── */
 const state = {
@@ -515,7 +625,7 @@ const state = {
   meeting: null,
   openTask: null,
   importRows: null,
-  importTitle: "商品開発会議",
+  importTitle: "経営戦略会議",
   importBody: SAMPLE_MINUTES,
 };
 const user = () => memberOf(state.userId);
@@ -583,6 +693,8 @@ function viewDashboard() {
   const overdue = open.filter(isOverdue);
   const thisWeek = open.filter((t) => t.due !== null && t.due >= 0 && t.due <= 7);
   const stale = open.filter(isStale);
+  // 議事録から取り込んだ直後は期限が入っていないことが多いので、独立した枠で促す。
+  const noDue = open.filter((t) => t.due === null);
   const doneThisMonth = all.filter((t) => t.status === "done" && reportedDate(t).getMonth() === TODAY.getMonth());
   const mine = open.filter((t) => t.owner === state.userId);
 
@@ -603,6 +715,7 @@ function viewDashboard() {
       ${metric("未完了", open.length, `全${all.length}件中`)}
       ${metric("期限超過", overdue.length, overdue.length ? "至急フォローが必要" : "超過なし", overdue.length ? "alert" : "")}
       ${metric("今週が期限", thisWeek.length, `〜${fmtShort(shift(7))}`, thisWeek.length ? "warn" : "")}
+      ${metric("期限が未設定", noDue.length, noDue.length ? "リマインドの対象外です" : "すべて設定済み", noDue.length ? "warn" : "")}
       ${metric("状況が未報告", stale.length, `${STALE_DAYS}日以上更新なし`)}
       ${metric("今月の完了", doneThisMonth.length, "進捗の実績")}
     </div>
@@ -610,6 +723,7 @@ function viewDashboard() {
 
   ${section("自分のタスク", `未完了 ${mine.length}件`, taskTable(mine, { empty: "担当している未完了タスクはありません。" }))}
   ${section("期限超過・今週が期限のタスク", "ここが空になっている状態が理想です", taskTable(attention, { empty: "期限が迫っているタスクはありません。" }))}
+  ${section("期限が未設定のタスク", "期限が入っていないとリマインドが送られません。担当者と相談して日付を入れてください", taskTable(noDue.slice(0, 12), { empty: "すべてのタスクに期限が入っています。" }))}
   ${section(`${STALE_DAYS}日以上 状況が更新されていないタスク`, "「決めたのに、その後どうなったかわからない」を防ぐ一覧", taskTable(unreported, { empty: "全タスクの状況が更新されています。" }))}
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
