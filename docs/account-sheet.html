@@ -118,7 +118,19 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
 </section>
 
 <section>
-<h2>4. 会議名と公開範囲の連動</h2>
+<h2>4. 議事録の取り込み条件</h2>
+<p>議事録は、内容を確認したうえで社内へ送るメールから取り込みます。次の2つを<strong>どちらも満たすメールだけ</strong>が対象です。</p>
+<table>
+  <thead><tr><th style="width:96px">条件</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>差出人</td><td class="mono">nagano-t@faith-gr.co.jp</td></tr>
+    <tr><td>件名</td><td><strong>【議事録送付】</strong> を含むこと</td></tr>
+  </tbody>
+</table>
+<p>「議事録」という語を含むだけのメールや、他の差出人からのメールは取り込みません。
+確認前の下書きや、議事録について相談しているメールを誤って取り込まないためです。</p>
+
+<h2>5. 会議名と公開範囲の連動</h2>
 <p>会議名は自由入力ではなく、登録済みの一覧から選ぶ方式です。会議ごとに既定の公開範囲を持たせているため、選ぶだけで公開範囲が決まります。</p>
 <table>
   <thead><tr><th>会議名</th><th style="width:150px">既定の公開範囲</th></tr></thead>
@@ -128,24 +140,26 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
     <tr><td>全体定例MTG ／ 商品開発会議 ／ 販促企画MTG ／ 部門ミーティング</td><td><span class="tag">全社員</span></td></tr>
   </tbody>
 </table>
-<p>役員会の議事録を取り込むと、そこから作られたタスクは自動的に役員限定になります。会議名の追加や公開範囲の変更は、管理者が「社員・通知設定」画面から行えます。</p>
+<p>件名に会議名を入れておくと（例：<span class="mono">【議事録送付】役員会 2026/09/01</span>）、その会議の公開範囲が適用されます。
+役員会の議事録から作られたタスクは自動的に役員限定になり、社員の画面には出ません。
+会議名の追加や公開範囲の変更は、管理者が「社員・通知設定」画面から行えます。</p>
 </section>
 
 <div class="pagebreak"></div>
 
 <section>
-<h2>5. ログインIDと初期パスワード</h2>
+<h2>6. ログインIDと初期パスワード</h2>
 <p>ログインIDはメールアドレスです。初期パスワードは1人ずつ別の値を発行しています。</p>
 
 <h3>管理者・役員</h3>
 <table>
   <thead><tr><th style="width:64px">権限</th><th style="width:86px">氏名</th><th>ログインID</th><th style="width:120px">初期パスワード</th></tr></thead>
   <tbody>
-    <tr><td>管理者</td><td>長野種雅</td><td class="mono">nagano@faith.example.co.jp</td><td class="mono">{{nagano}}</td></tr>
-    <tr class="exec"><td>役員</td><td>髙橋</td><td class="mono">takahashi@faith.example.co.jp</td><td class="mono">{{takahashi}}</td></tr>
-    <tr class="exec"><td>役員</td><td>神山</td><td class="mono">kamiyama@faith.example.co.jp</td><td class="mono">{{kamiyama}}</td></tr>
-    <tr class="exec"><td>役員</td><td>森本</td><td class="mono">morimoto@faith.example.co.jp</td><td class="mono">{{morimoto}}</td></tr>
-    <tr class="exec"><td>役員</td><td>近安</td><td class="mono">chikayasu@faith.example.co.jp</td><td class="mono">{{chikayasu}}</td></tr>
+    <tr><td>管理者</td><td>長野種雅</td><td class="mono">nagano-t@faith-gr.co.jp</td><td class="mono">{{nagano}}</td></tr>
+    <tr class="exec"><td>役員</td><td>髙橋</td><td class="mono">takahashi@faith-gr.co.jp</td><td class="mono">{{takahashi}}</td></tr>
+    <tr class="exec"><td>役員</td><td>神山</td><td class="mono">kamiyama@faith-gr.co.jp</td><td class="mono">{{kamiyama}}</td></tr>
+    <tr class="exec"><td>役員</td><td>森本</td><td class="mono">morimoto@faith-gr.co.jp</td><td class="mono">{{morimoto}}</td></tr>
+    <tr class="exec"><td>役員</td><td>近安</td><td class="mono">chikayasu@faith-gr.co.jp</td><td class="mono">{{chikayasu}}</td></tr>
   </tbody>
 </table>
 
@@ -153,10 +167,10 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
 <table>
   <thead><tr><th style="width:64px">権限</th><th style="width:86px">区分</th><th>ログインID</th><th style="width:120px">初期パスワード</th></tr></thead>
   <tbody>
-    <tr><td>社員</td><td>社員 ①</td><td class="mono">kawamura@faith.example.co.jp</td><td class="mono">{{kawamura}}</td></tr>
-    <tr><td>社員</td><td>社員 ②</td><td class="mono">tomoi@faith.example.co.jp</td><td class="mono">{{tomoi}}</td></tr>
-    <tr><td>社員</td><td>社員 ③</td><td class="mono">monji@faith.example.co.jp</td><td class="mono">{{monji}}</td></tr>
-    <tr><td>社員</td><td>社員 ④</td><td class="mono">sugai@faith.example.co.jp</td><td class="mono">{{sugai}}</td></tr>
+    <tr><td>社員</td><td>社員 ①</td><td class="mono">kawamura@faith-gr.co.jp</td><td class="mono">{{kawamura}}</td></tr>
+    <tr><td>社員</td><td>社員 ②</td><td class="mono">tomoi@faith-gr.co.jp</td><td class="mono">{{tomoi}}</td></tr>
+    <tr><td>社員</td><td>社員 ③</td><td class="mono">monji@faith-gr.co.jp</td><td class="mono">{{monji}}</td></tr>
+    <tr><td>社員</td><td>社員 ④</td><td class="mono">sugai@faith-gr.co.jp</td><td class="mono">{{sugai}}</td></tr>
   </tbody>
 </table>
 <div class="note">
@@ -164,13 +178,15 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
 </div>
 
 <div class="note warn">
-  <strong>メールアドレスは仮の値です。</strong>リマインドメールの宛先になるため、運用開始前に管理画面から実際の社内アドレスへ変更してください。
+  <strong>長野種雅さん以外のメールアドレスは仮の値です。</strong>姓のローマ字で仮置きしているため、
+  実際のアドレス（例：<span style="font-family:monospace">nagano-t</span> のように名のイニシャルが付く形）と異なる可能性があります。
+  リマインドメールの宛先になるため、運用開始前に管理画面から実際のアドレスへ変更してください。
   変更してもタスクの担当や過去の履歴はそのまま引き継がれます。
 </div>
 </section>
 
 <section>
-<h2>6. 運用のきまり</h2>
+<h2>7. 運用のきまり</h2>
 <ul>
   <li><strong>初回ログイン後にパスワードを変更してください。</strong>初期パスワードは配布用の暫定値です。</li>
   <li><strong>本書は社外秘です。</strong>初期パスワードを記載しているため、配布範囲を限定し、パスワード変更後は破棄してください。</li>

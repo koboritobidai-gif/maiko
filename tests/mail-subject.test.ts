@@ -37,3 +37,23 @@ test("登録されていない会議名は null にする", () => {
   assert.equal(info.meeting, null);
   assert.equal(info.title, "臨時打ち合わせ");
 });
+
+test("差出人を限定できる", async (t) => {
+  const { isAllowedSender } = await import("../lib/sources/types.ts");
+  const original = process.env.MINUTES_MAIL_FROM;
+
+  // 未設定なら差出人では絞り込まない。
+  delete process.env.MINUTES_MAIL_FROM;
+  assert.ok(isAllowedSender("anyone@example.co.jp"));
+
+  process.env.MINUTES_MAIL_FROM = "nagano-t@faith-gr.co.jp";
+  assert.ok(isAllowedSender("nagano-t@faith-gr.co.jp"));
+  assert.ok(isAllowedSender("Nagano-T@Faith-GR.co.jp"));
+  // 似たアドレスや転送元は取り込まない。
+  assert.ok(!isAllowedSender("nagano-t@faith-gr.co.jp.example.com"));
+  assert.ok(!isAllowedSender("someone@faith-gr.co.jp"));
+  assert.ok(!isAllowedSender(undefined));
+
+  if (original === undefined) delete process.env.MINUTES_MAIL_FROM;
+  else process.env.MINUTES_MAIL_FROM = original;
+});

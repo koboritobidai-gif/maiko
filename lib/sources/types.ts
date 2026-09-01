@@ -59,6 +59,24 @@ export function isMinutesSubject(subject: string): boolean {
   return (subject ?? "").includes(subjectMarker());
 }
 
+/**
+ * 議事録を送る人のアドレス。ここに挙げたアドレスから届いたものだけを取り込む。
+ * 空にすると差出人では絞り込まない。
+ */
+export function allowedSenders(): string[] {
+  return (process.env.MINUTES_MAIL_FROM ?? "")
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAllowedSender(address: string | undefined | null): boolean {
+  const allowed = allowedSenders();
+  if (!allowed.length) return true;
+  const from = (address ?? "").toLowerCase();
+  return allowed.some((entry) => from === entry);
+}
+
 export interface SubjectInfo {
   /** 目印と Re:/Fwd: を取り除いた件名 */
   title: string;

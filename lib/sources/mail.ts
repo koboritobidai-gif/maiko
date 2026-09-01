@@ -1,6 +1,8 @@
 import { ImapFlow } from "imapflow";
 import { listMeetingTypes } from "../meetings.ts";
 import {
+  allowedSenders,
+  isAllowedSender,
   isMinutesSubject,
   parseMinutesSubject,
   subjectMarker,
@@ -15,6 +17,7 @@ import {
  * 議事録は内容を確認してから社内共有する運用のため、確認済みのものに
  * 件名の目印（既定では【議事録送付】）を付けて送ってもらい、
  * その件名のメールだけを取り込む。「議事録」を含むだけのメールは対象外。
+ * さらに MINUTES_MAIL_FROM で差出人を限定できる（なりすましや転送を取り込まないため）。
  */
 
 function env(key: string, fallback = ""): string {
@@ -60,7 +63,12 @@ function execAddresses(): string[] {
 
 export const mailSource: MinutesSource = {
   name: "mail",
-  label: `メール（件名に${subjectMarker()}）`,
+  get label(): string {
+    const senders = allowedSenders();
+    return senders.length
+      ? `メール（${senders.join("・")} からの${subjectMarker()}）`
+      : `メール（件名に${subjectMarker()}）`;
+  },
   requirement: "MINUTES_IMAP_HOST / MINUTES_IMAP_USER / MINUTES_IMAP_PASSWORD",
   configured: () => Boolean(env("MINUTES_IMAP_HOST") && env("MINUTES_IMAP_USER")),
 
@@ -83,6 +91,7 @@ export const mailSource: MinutesSource = {
       for await (const message of client.fetch({ since }, { envelope: true, source: true })) {
         const subject = message.envelope?.subject ?? "";
         if (!isMinutesSubject(subject)) continue;
+        if (!isAllowedSender(message.envelope?.from?.[0]?.address)) continue;
 
         const raw = message.source?.toString("utf8") ?? "";
         const body = stripQuotedAndSignature(textFromSource(raw));

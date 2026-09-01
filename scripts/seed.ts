@@ -16,7 +16,7 @@ import { importMinutes } from "../lib/importer.ts";
 import { hashPassword } from "../lib/password.ts";
 import { listUsers } from "../lib/tasks.ts";
 
-const DOMAIN = "faith.example.co.jp";
+const DOMAIN = "faith-gr.co.jp";
 const MINUTES_DIR = "minutes";
 
 /**
@@ -26,17 +26,21 @@ const MINUTES_DIR = "minutes";
  *
  * role は executive が役員（4名）、admin は全体を見られる管理者、member が社員。
  * 実際の役員が異なる場合は「社員・通知設定」画面から変更できます。
+ *
+ * login はメールアドレスのローカル部（＝ログインID）。長野さん以外は姓のローマ字で
+ * 仮置きしています。リマインドメールの宛先になるため、運用開始前に実際のアドレスへ
+ * 変更してください（管理画面から変更できます）。
  */
 const members = [
-  { key: "nagano", name: "長野種雅", dept: "経営", role: "admin" },
-  { key: "takahashi", name: "髙橋", dept: "人事部", role: "executive" },
-  { key: "kamiyama", name: "神山", dept: "営業", role: "executive" },
-  { key: "morimoto", name: "森本", dept: "営業", role: "executive" },
-  { key: "chikayasu", name: "近安", dept: "営業", role: "executive" },
-  { key: "kawamura", name: "川村", dept: "システム", role: "member" },
-  { key: "tomoi", name: "友井", dept: "業務・物流", role: "member" },
-  { key: "monji", name: "文字", dept: "九州支社", role: "member" },
-  { key: "sugai", name: "菅井", dept: "販促", role: "member" },
+  { key: "nagano", login: "nagano-t", name: "長野種雅", dept: "経営", role: "admin" },
+  { key: "takahashi", login: "takahashi", name: "髙橋", dept: "人事部", role: "executive" },
+  { key: "kamiyama", login: "kamiyama", name: "神山", dept: "営業", role: "executive" },
+  { key: "morimoto", login: "morimoto", name: "森本", dept: "営業", role: "executive" },
+  { key: "chikayasu", login: "chikayasu", name: "近安", dept: "営業", role: "executive" },
+  { key: "kawamura", login: "kawamura", name: "川村", dept: "システム", role: "member" },
+  { key: "tomoi", login: "tomoi", name: "友井", dept: "業務・物流", role: "member" },
+  { key: "monji", login: "monji", name: "文字", dept: "九州支社", role: "member" },
+  { key: "sugai", login: "sugai", name: "菅井", dept: "販促", role: "member" },
 ] as const;
 
 /** 会議名のマスタ。議事録の取り込みやタスク登録では、ここから選ぶ。 */
@@ -92,7 +96,7 @@ async function main(): Promise<void> {
       args: [
         randomUUID(),
         member.name,
-        `${member.key}@${DOMAIN}`,
+        `${member.login}@${DOMAIN}`,
         member.role,
         member.dept,
         hashPassword(password),
@@ -113,7 +117,7 @@ async function main(): Promise<void> {
   console.log("  氏名        権限     ログインID                        初期パスワード");
   for (const member of members) {
     const label = { admin: "管理者", executive: "役員　", member: "社員　" }[member.role];
-    const id = `${member.key}@${DOMAIN}`;
+    const id = `${member.login}@${DOMAIN}`;
     console.log(`  ${member.name.padEnd(6, "　")}  ${label}  ${id.padEnd(32)}  ${issued.get(member.key)}`);
   }
   console.log("\n  ※ 役員（4名）と管理者だけが、役員限定の議事録・タスクを閲覧できます。");
