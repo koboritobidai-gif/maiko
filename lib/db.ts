@@ -58,6 +58,21 @@ const SCHEMA = [
      status_to TEXT,
      created_at TEXT NOT NULL
    )`,
+  `CREATE TABLE IF NOT EXISTS minutes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     source TEXT NOT NULL,
+     external_id TEXT NOT NULL,
+     title TEXT NOT NULL,
+     meeting_date TEXT,
+     url TEXT NOT NULL DEFAULT '',
+     author TEXT NOT NULL DEFAULT '',
+     body TEXT NOT NULL,
+     visibility TEXT NOT NULL DEFAULT 'all',
+     imported_at TEXT NOT NULL,
+     imported_by TEXT,
+     task_count INTEGER NOT NULL DEFAULT 0,
+     UNIQUE(source, external_id)
+   )`,
   `CREATE TABLE IF NOT EXISTS reminder_log (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      task_id INTEGER NOT NULL,
@@ -75,7 +90,24 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date)`,
   `CREATE INDEX IF NOT EXISTS idx_updates_task ON task_updates(task_id)`,
   `CREATE INDEX IF NOT EXISTS idx_reminder_task ON reminder_log(task_id, kind)`,
+  `CREATE INDEX IF NOT EXISTS idx_minutes_imported ON minutes(imported_at)`,
 ];
+
+/** 既存の DB に後から足した列。すでにある場合は何もしない。 */
+const ADDED_COLUMNS: [table: string, column: string, definition: string][] = [
+  ["tasks", "minutes_id", "INTEGER REFERENCES minutes(id)"],
+  ["tasks", "source_line", "TEXT NOT NULL DEFAULT ''"],
+];
+
+async function addMissingColumns(c: Client): Promise<void> {
+  for (const [table, column, definition] of ADDED_COLUMNS) {
+    const info = await c.execute(`PRAGMA table_info(${table})`);
+    const exists = info.rows.some((row) => String(row.name) === column);
+    if (!exists) {
+      await c.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+}
 
 /** スキーマを用意した接続を返す。初期化は 1 回だけ走る。 */
 export async function db(): Promise<Client> {
@@ -86,6 +118,7 @@ export async function db(): Promise<Client> {
       for (const statement of SCHEMA) {
         await c.execute(statement);
       }
+      await addMissingColumns(c);
     })();
   }
   await ready;

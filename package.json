@@ -10,10 +10,12 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed": "node --experimental-strip-types scripts/seed.ts",
-    "remind": "node --experimental-strip-types scripts/remind.ts"
+    "remind": "node --experimental-strip-types scripts/remind.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.15.7",
+    "imapflow": "^1.7.7",
     "next": "^16.3.4",
     "nodemailer": "^9.1.0",
     "react": "^19.1.0",

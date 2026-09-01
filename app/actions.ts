@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { hashPassword, login, logout, requireAdmin, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nowIso } from "@/lib/date";
+import { importReviewedMinutes, syncSource, type ReviewedRow } from "@/lib/importer";
 import { sendReminders } from "@/lib/reminders";
+import type { SourceName } from "@/lib/sources";
 import {
   addProgressUpdate,
   createTask,
@@ -134,6 +136,46 @@ export async function deleteTaskAction(formData: FormData): Promise<void> {
   }
   revalidatePath("/");
   redirect("/tasks");
+}
+
+/** 取り込み画面で確認・修正した内容を登録する。 */
+export async function importReviewedAction(payload: string): Promise<void> {
+  const user = await requireUser();
+  const input = JSON.parse(payload) as {
+    title: string;
+    meetingDate: string;
+    visibility: "all" | "executive";
+    body: string;
+    rows: ReviewedRow[];
+  };
+
+  let result;
+  try {
+    result = await importReviewedMinutes(user, input, input.rows);
+  } catch (error) {
+    if (isRedirect(error)) throw error;
+    backWithError("/import", message(error));
+  }
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath("/import");
+  redirect(`/import?created=${result.created.length}&skipped=${result.skipped}`);
+}
+
+/** 連携している取得元から議事録を取り込む（管理者のみ）。 */
+export async function syncSourceAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const name = str(formData, "source") as SourceName;
+  const result = await syncSource(name, { days: Number(str(formData, "days")) || undefined });
+
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath("/import");
+  if (result.error) backWithError("/import", `${result.label}: ${result.error}`);
+  redirect(
+    `/import?synced=${encodeURIComponent(result.label)}&docs=${result.documents}` +
+      `&created=${result.createdTasks}&skipped=${result.skipped}`,
+  );
 }
 
 export async function createUserAction(formData: FormData): Promise<void> {

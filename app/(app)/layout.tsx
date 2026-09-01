@@ -24,6 +24,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ],
     },
     {
+      label: "取り込む",
+      items: [{ href: "/import", label: "議事録の取り込み", icon: "⇢" }],
+    },
+    {
       label: "把握する",
       items: [
         { href: "/members", label: "担当者別の進捗", icon: "◍" },

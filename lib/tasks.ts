@@ -1,6 +1,6 @@
 import type { InValue } from "@libsql/client";
-import { db } from "./db";
-import { nowIso, today } from "./date";
+import { db } from "./db.ts";
+import { nowIso, today } from "./date.ts";
 import {
   canSeeExecutive,
   isOpen,
@@ -10,7 +10,7 @@ import {
   type TaskUpdate,
   type User,
   type Visibility,
-} from "./types";
+} from "./types.ts";
 
 /**
  * タスクの読み書き。
@@ -164,6 +164,52 @@ async function nextCode(): Promise<string> {
   return `T-${String(n + 1).padStart(4, "0")}`;
 }
 
+export interface TaskSourceRef {
+  /** 元になった議事録の ID */
+  minutesId?: number | null;
+  /** 議事録内の元の行。何を根拠に作られたタスクかを残す */
+  sourceLine?: string;
+  createdBy?: string | null;
+}
+
+/** タスクを 1 件登録し、採番したコードを返す。手動作成と議事録取り込みで共有する。 */
+export async function insertTask(
+  input: TaskInput,
+  ref: TaskSourceRef = {},
+): Promise<string> {
+  const title = input.title.trim();
+  if (!title) throw new Error("タスク名を入力してください。");
+
+  const stamp = nowIso();
+  const code = await nextCode();
+  const client = await db();
+  await client.execute({
+    sql: `INSERT INTO tasks
+            (code, title, description, owner_id, due_date, status, visibility,
+             meeting_title, meeting_date, created_by, created_at, updated_at,
+             status_updated_at, minutes_id, source_line)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    args: [
+      code,
+      title,
+      input.description?.trim() ?? "",
+      input.ownerId || null,
+      input.dueDate || null,
+      input.status ?? "not_started",
+      input.visibility ?? "all",
+      input.meetingTitle?.trim() ?? "",
+      input.meetingDate || null,
+      ref.createdBy ?? null,
+      stamp,
+      stamp,
+      stamp,
+      ref.minutesId ?? null,
+      ref.sourceLine ?? "",
+    ],
+  });
+  return code;
+}
+
 export async function createTask(author: User, input: TaskInput): Promise<Task> {
   const title = input.title.trim();
   if (!title) throw new Error("タスク名を入力してください。");
@@ -173,30 +219,7 @@ export async function createTask(author: User, input: TaskInput): Promise<Task> 
     throw new Error("役員限定タスクを作成できるのは役員・管理者のみです。");
   }
 
-  const stamp = nowIso();
-  const code = await nextCode();
-  const client = await db();
-  await client.execute({
-    sql: `INSERT INTO tasks
-            (code, title, description, owner_id, due_date, status, visibility,
-             meeting_title, meeting_date, created_by, created_at, updated_at, status_updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    args: [
-      code,
-      title,
-      input.description?.trim() ?? "",
-      input.ownerId || null,
-      input.dueDate || null,
-      input.status ?? "not_started",
-      visibility,
-      input.meetingTitle?.trim() ?? "",
-      input.meetingDate || null,
-      author.id,
-      stamp,
-      stamp,
-      stamp,
-    ],
-  });
+  const code = await insertTask({ ...input, title, visibility }, { createdBy: author.id });
 
   const created = await getTask(author, code);
   if (!created) throw new Error("タスクの作成に失敗しました。");

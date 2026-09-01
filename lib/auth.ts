@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { db } from "./db";
-import { hashPassword, verifyPassword } from "./password";
-import { nowIso } from "./date";
-import type { Role, User } from "./types";
+import { db } from "./db.ts";
+import { hashPassword, verifyPassword } from "./password.ts";
+import { nowIso } from "./date.ts";
+import type { Role, User } from "./types.ts";
 
 /**
  * 認証まわり。外部の認証ライブラリは使わず、

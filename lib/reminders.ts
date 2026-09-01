@@ -1,8 +1,8 @@
-import { db } from "./db";
-import { daysBetween, formatLong, isoToYmd, today } from "./date";
-import { sendMail, isDryRun } from "./mail";
-import { listTasks, listUsers } from "./tasks";
-import { STATUS_LABELS, isOpen, canSeeExecutive, type Task, type User } from "./types";
+import { db } from "./db.ts";
+import { daysBetween, formatLong, isoToYmd, today } from "./date.ts";
+import { sendMail, isDryRun } from "./mail.ts";
+import { listTasks, listUsers } from "./tasks.ts";
+import { STATUS_LABELS, isOpen, canSeeExecutive, type Task, type User } from "./types.ts";
 
 /**
  * 期限が近づいたタスクのメール通知。
