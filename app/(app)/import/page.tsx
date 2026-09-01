@@ -113,7 +113,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: 96 }}>取得元</th>
+                  <th style={{ width: 112 }}>取得元</th>
                   <th>議事録</th>
                   <th style={{ width: 96 }}>開催日</th>
                   <th style={{ width: 96 }} className="num">
@@ -125,9 +125,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
               <tbody>
                 {minutes.map((record) => (
                   <tr key={record.id}>
-                    <td style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-                      {SOURCE_LABELS[record.source]}
-                    </td>
+                    <td className="code">{SOURCE_LABELS[record.source]}</td>
                     <td>
                       {record.url ? (
                         <a href={record.url} target="_blank" rel="noreferrer" className="task-link">

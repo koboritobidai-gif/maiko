@@ -14,7 +14,7 @@ export default async function LoginPage({
     <div className="login-wrap">
       <div className="card login-card">
         <div className="login-brand">
-          <div className="brand-mark">FAITH</div>
+          <span className="logo">FAITH</span>
           <div className="brand-sub">株式会社フェース｜タスク管理</div>
         </div>
 
