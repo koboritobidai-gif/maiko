@@ -1,0 +1,825 @@
+<title>フェース タスクボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f7f5f2;
+  --surface: #ffffff;
+  --surface-soft: #fbfaf8;
+  --line: #e7e1d9;
+  --line-strong: #d6cec2;
+  --ink: #2b2724;
+  --ink-soft: #6f6862;
+  --ink-faint: #9c948c;
+  --brand: #8c7853;
+  --brand-deep: #332e29;
+  --brand-tint: #f2ece1;
+  --on-deep: #ffffff;
+  --danger: #a8443a;  --danger-tint: #fbeeec;  --danger-line: #e8cdc8;
+  --warn: #a97c25;    --warn-tint: #fbf3e2;    --warn-line: #ecdcb9;
+  --ok: #4c7355;      --ok-tint: #edf3ee;      --ok-line: #cfe0d4;
+  --info: #4a6580;    --info-tint: #eef2f6;    --info-line: #cfdae5;
+  --track: #efece7;
+  --sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --serif: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(51,46,41,.05), 0 1px 14px rgba(51,46,41,.045);
+}
+:root:not([data-theme="light"]) { color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1b1917;
+    --surface: #232120;
+    --surface-soft: #292625;
+    --line: #37322d;
+    --line-strong: #4a433c;
+    --ink: #ece7e1;
+    --ink-soft: #b0a79e;
+    --ink-faint: #857d75;
+    --brand: #c3a97c;
+    --brand-deep: #ded5c6;
+    --brand-tint: #332d24;
+    --on-deep: #201d1a;
+    --danger: #e08a7e;  --danger-tint: #3a2521;  --danger-line: #5a3730;
+    --warn: #d8ab53;    --warn-tint: #362c18;    --warn-line: #56431f;
+    --ok: #8bbd97;      --ok-tint: #1f2c22;      --ok-line: #33492f;
+    --info: #92b2cf;    --info-tint: #1e2830;    --info-line: #2f4353;
+    --track: #34302c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 14px rgba(0,0,0,.22);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1b1917;
+  --surface: #232120;
+  --surface-soft: #292625;
+  --line: #37322d;
+  --line-strong: #4a433c;
+  --ink: #ece7e1;
+  --ink-soft: #b0a79e;
+  --ink-faint: #857d75;
+  --brand: #c3a97c;
+  --brand-deep: #ded5c6;
+  --brand-tint: #332d24;
+  --on-deep: #201d1a;
+  --danger: #e08a7e;  --danger-tint: #3a2521;  --danger-line: #5a3730;
+  --warn: #d8ab53;    --warn-tint: #362c18;    --warn-line: #56431f;
+  --ok: #8bbd97;      --ok-tint: #1f2c22;      --ok-line: #33492f;
+  --info: #92b2cf;    --info-tint: #1e2830;    --info-line: #2f4353;
+  --track: #34302c;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 14px rgba(0,0,0,.22);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.banner {
+  background: var(--brand-deep);
+  color: var(--on-deep);
+  font-size: 12px;
+  padding: 7px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+}
+.banner b { font-weight: 700; letter-spacing: .04em; }
+.banner span { opacity: .78; }
+
+.shell { display: flex; min-height: calc(100vh - 34px); }
+
+.sidebar {
+  width: 236px; flex: 0 0 236px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 22px 14px;
+}
+.brand { padding: 0 10px 20px; }
+.brand-mark {
+  font-family: var(--serif);
+  font-size: 21px; letter-spacing: .18em; color: var(--ink);
+}
+.brand-sub { font-size: 11px; color: var(--ink-faint); letter-spacing: .06em; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-label { font-size: 10.5px; letter-spacing: .12em; color: var(--ink-faint); padding: 14px 10px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--radius-sm);
+  color: var(--ink-soft); font-size: 13px;
+  background: none; border: 0; width: 100%; text-align: left; cursor: pointer;
+}
+.nav-item:hover { background: var(--surface-soft); color: var(--ink); }
+.nav-item[aria-current="page"] { background: var(--brand-deep); color: var(--on-deep); }
+.nav-item .ico { width: 16px; text-align: center; }
+.nav-item .count { margin-left: auto; font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.nav-item[aria-current="page"] .count { color: var(--on-deep); opacity: .72; }
+
+.main { flex: 1; min-width: 0; padding: 26px 30px 60px; }
+.topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.greeting { font-size: 17px; font-weight: 700; }
+.today { font-size: 12px; color: var(--ink-faint); }
+.userpick {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 5px 8px 5px 14px; font-size: 12px; background: var(--surface); color: var(--ink-soft);
+}
+.userpick select { border: 0; background: none; padding: 2px 4px; cursor: pointer; }
+
+.section { margin-bottom: 24px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.section-title { font-size: 14px; font-weight: 700; }
+.section-note { font-size: 11.5px; color: var(--ink-faint); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-pad { padding: 16px 18px; }
+
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(164px, 1fr)); gap: 12px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 13px 16px; box-shadow: var(--shadow); }
+.metric .label { font-size: 11.5px; color: var(--ink-soft); }
+.metric .value { font-size: 27px; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.metric .value i { font-size: 13px; font-weight: 500; font-style: normal; margin-left: 2px; }
+.metric .note { font-size: 11px; color: var(--ink-faint); }
+.metric.is-alert { background: var(--danger-tint); border-color: var(--danger-line); }
+.metric.is-alert .value, .metric.is-alert .note { color: var(--danger); }
+.metric.is-warn { background: var(--warn-tint); border-color: var(--warn-line); }
+.metric.is-warn .value { color: var(--warn); }
+
+.badge { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 11px; line-height: 1.7; white-space: nowrap; border: 1px solid transparent; }
+.st-not_started { background: var(--surface-soft); color: var(--ink-soft); border-color: var(--line-strong); }
+.st-in_progress { background: var(--info-tint); color: var(--info); border-color: var(--info-line); }
+.st-blocked { background: var(--warn-tint); color: var(--warn); border-color: var(--warn-line); }
+.st-done { background: var(--ok-tint); color: var(--ok); border-color: var(--ok-line); }
+.st-cancelled { background: var(--surface-soft); color: var(--ink-faint); border-color: var(--line); }
+.b-over { background: var(--danger-tint); color: var(--danger); border-color: var(--danger-line); }
+.b-soon { background: var(--warn-tint); color: var(--warn); border-color: var(--warn-line); }
+.b-exec { background: var(--brand-tint); color: var(--brand); border-color: var(--line-strong); }
+
+.table-wrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data th { text-align: left; font-size: 11.5px; font-weight: 500; color: var(--ink-faint); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.data td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+table.data tr:last-child td { border-bottom: 0; }
+table.data tbody tr:hover { background: var(--surface-soft); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.code { font-size: 11.5px; color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tlink { font-weight: 700; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; color: var(--ink); }
+.tlink:hover { color: var(--brand); text-decoration: underline; }
+.empty { padding: 26px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+
+.bar-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+.bar-name { width: 140px; flex: 0 0 140px; font-size: 12.5px; }
+.bar-track { flex: 1; height: 8px; background: var(--track); border-radius: 999px; overflow: hidden; display: flex; }
+.bar-track i { display: block; height: 100%; }
+.f-done { background: var(--ok); }
+.f-in_progress { background: var(--info); }
+.f-blocked { background: var(--warn); }
+.f-not_started { background: var(--line-strong); }
+.bar-value { width: 96px; text-align: right; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11.5px; color: var(--ink-soft); }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  padding: 7px 10px; background: var(--surface); min-width: 150px;
+}
+.field.grow { flex: 1; min-width: 200px; }
+.field.grow input { width: 100%; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 999px; padding: 5px 14px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
+.chip:hover { border-color: var(--brand); color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--brand-deep); border-color: var(--brand-deep); color: var(--on-deep); }
+
+.btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: var(--radius-sm); padding: 7px 15px; font-size: 13px; cursor: pointer; }
+.btn:hover { border-color: var(--brand); }
+.btn-primary { background: var(--brand-deep); border-color: var(--brand-deep); color: var(--on-deep); }
+.btn-sm { padding: 4px 11px; font-size: 12px; }
+
+.notice { border-radius: var(--radius-sm); padding: 10px 13px; font-size: 12.5px; border: 1px solid var(--info-line); background: var(--info-tint); color: var(--info); }
+
+.mail { background: var(--surface-soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; }
+.mail + .mail { margin-top: 12px; }
+.mail-head { font-size: 12px; color: var(--ink-faint); border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 10px; }
+.mail-head b { color: var(--ink); font-weight: 700; }
+.mail-body { white-space: pre-wrap; font-size: 12.5px; line-height: 1.9; }
+
+.timeline-item { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.timeline-item:last-child { border-bottom: 0; }
+.timeline-meta { font-size: 11.5px; color: var(--ink-faint); }
+.timeline-body { font-size: 13px; white-space: pre-wrap; }
+
+.kv { display: grid; grid-template-columns: 92px 1fr; gap: 5px 12px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--ink-faint); font-size: 12px; }
+.kv dd { margin: 0; }
+
+.overlay { position: fixed; inset: 0; background: rgba(30,26,23,.42); display: flex; justify-content: flex-end; z-index: 20; }
+.overlay[hidden] { display: none; }
+.drawer { width: min(480px, 100%); background: var(--surface); height: 100%; overflow-y: auto; padding: 22px 24px 40px; border-left: 1px solid var(--line); }
+.drawer h2 { font-family: var(--serif); font-size: 19px; margin: 6px 0 14px; text-wrap: balance; }
+.drawer-close { float: right; border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--ink-faint); line-height: 1; }
+.drawer-close:hover { color: var(--ink); }
+.drawer h3 { font-size: 12px; color: var(--ink-faint); font-weight: 500; margin: 20px 0 6px; letter-spacing: .04em; }
+.drawer textarea { width: 100%; min-height: 66px; resize: vertical; }
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--brand-deep); color: var(--on-deep);
+  padding: 9px 18px; border-radius: 999px; font-size: 12.5px; z-index: 40; box-shadow: var(--shadow);
+}
+.toast[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; flex: none; border-right: 0; border-bottom: 1px solid var(--line); }
+  .nav { flex-direction: row; flex-wrap: wrap; }
+  .nav-item { width: auto; }
+  .nav-label { display: none; }
+  .main { padding: 20px 16px 48px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="banner">
+  <b>デモ</b>
+  <span>株式会社フェース タスク管理ダッシュボード｜右上でログインユーザーを切り替えると、役員限定タスクの見え方が変わります。データはこのブラウザ内だけのサンプルです。</span>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">FAITH</div>
+      <div class="brand-sub">株式会社フェース｜タスク管理</div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="greeting" id="greeting"></div>
+        <div class="today" id="today"></div>
+      </div>
+      <label class="userpick">
+        ログイン中
+        <select id="userpick"></select>
+      </label>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+
+/* ── 基準日：実行日を「今日」として、期限を前後に散らす ───────────── */
+const TODAY = new Date();
+TODAY.setHours(12, 0, 0, 0);
+const DAY = 86400000;
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+
+const shift = (n) => new Date(TODAY.getTime() + n * DAY);
+const ymd = (d) => d.toISOString().slice(0, 10);
+const diffDays = (d) => Math.round((d.getTime() - TODAY.getTime()) / DAY);
+const fmtShort = (d) => (d ? `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})` : "未設定");
+const fmtLong = (d) =>
+  d ? `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}(${WD[d.getDay()]})` : "未設定";
+
+const STALE_DAYS = 7;
+const SOON_DAYS = 3;
+
+const STATUS = {
+  not_started: "未着手",
+  in_progress: "進行中",
+  blocked: "停滞",
+  done: "完了",
+  cancelled: "中止",
+};
+const OPEN = ["not_started", "in_progress", "blocked"];
+const isOpen = (t) => OPEN.includes(t.status);
+
+const MEMBERS = [
+  { id: "yamamoto", name: "山本 誠", dept: "経営企画", role: "admin" },
+  { id: "kobori", name: "小堀 太一", dept: "取締役", role: "executive" },
+  { id: "tanaka", name: "田中 美咲", dept: "商品開発部", role: "member" },
+  { id: "sato", name: "佐藤 由紀", dept: "営業部", role: "member" },
+  { id: "suzuki", name: "鈴木 健一", dept: "マーケティング部", role: "member" },
+  { id: "nakamura", name: "中村 彩", dept: "サロン運営部", role: "member" },
+];
+const ROLE_LABEL = { admin: "管理者", executive: "役員", member: "社員" };
+const memberOf = (id) => MEMBERS.find((m) => m.id === id) || null;
+const canSeeExec = (u) => u.role === "executive" || u.role === "admin";
+
+/* due / meeting / reported は「今日からの日数」で持つ */
+const TASKS = [
+  { code: "T-0001", title: "新美容液の販促スケジュール案を作成", owner: "suzuki", due: -4, status: "in_progress", vis: "all",
+    meeting: "販促企画MTG", mtg: -12, reported: 3,
+    desc: "10月発売の新美容液について、SNS・サロン店頭・DMの三本立てで販促案をまとめる。",
+    log: [{ by: "suzuki", d: 3, body: "SNS施策の骨子まで完成。店頭POPのデザイン待ちで止まっています。" }] },
+  { code: "T-0002", title: "サロン向け新商品説明会の日程確定", owner: "nakamura", due: -1, status: "not_started", vis: "all",
+    meeting: "全体定例MTG", mtg: -7, reported: 7,
+    desc: "全国4会場での説明会日程を確定し、サロンへ案内する。", log: [] },
+  { code: "T-0003", title: "秋冬向けスキンケアラインの処方最終確認", owner: "tanaka", due: 1, status: "in_progress", vis: "all",
+    meeting: "商品開発会議", mtg: -14, reported: 1,
+    desc: "研究所からの最終処方を確認し、安定性試験の結果とあわせて承認する。",
+    log: [{ by: "tanaka", d: 1, body: "安定性試験の結果を受領。明日中に確認を終えます。" },
+          { by: "tanaka", d: 9, body: "研究所へ最終処方を依頼しました。" }] },
+  { code: "T-0004", title: "大阪本社ショールームの改装見積もりを3社から取得", owner: "sato", due: 3, status: "blocked", vis: "all",
+    meeting: "全体定例MTG", mtg: -7, reported: 2,
+    desc: "内装業者3社から見積もりを取り、比較表を作成する。",
+    log: [{ by: "sato", d: 2, body: "2社から見積もり受領。1社が来週まで回答できないとのことで待ちです。" }] },
+  { code: "T-0005", title: "既存顧客へのリピート促進DMの原稿作成", owner: "suzuki", due: 6, status: "not_started", vis: "all",
+    meeting: "販促企画MTG", mtg: -12, reported: 12, desc: "", log: [] },
+  { code: "T-0006", title: "エステティシャン研修プログラムの改訂案をまとめる", owner: "nakamura", due: 20, status: "in_progress", vis: "all",
+    meeting: "全体定例MTG", mtg: -28, reported: 15,
+    desc: "新商品に対応した施術手順を研修カリキュラムに反映する。", log: [] },
+  { code: "T-0007", title: "OEM先の品質監査レポートを共有", owner: "tanaka", due: -9, status: "done", vis: "all",
+    meeting: "商品開発会議", mtg: -14, reported: 8, desc: "",
+    log: [{ by: "tanaka", d: 8, body: "監査レポートを全部署へ共有しました。" }] },
+  { code: "T-0008", title: "ECサイトの定期購入プラン改定を検討", owner: null, due: 10, status: "not_started", vis: "all",
+    meeting: "販促企画MTG", mtg: -12, reported: 12,
+    desc: "担当をどの部署が持つかMTGで決めきれず保留。", log: [] },
+  { code: "T-0009", title: "来期の役員報酬案の作成", owner: "kobori", due: 2, status: "in_progress", vis: "executive",
+    meeting: "役員会", mtg: -5, reported: 2, desc: "来期予算案とあわせて役員会に提出する。",
+    log: [{ by: "kobori", d: 2, body: "顧問税理士と一次案を確認済み。" }] },
+  { code: "T-0010", title: "サロン事業の再編案を精査", owner: "yamamoto", due: 9, status: "not_started", vis: "executive",
+    meeting: "役員会", mtg: -5, reported: 5, desc: "不採算店舗の扱いを含む再編案。公開前の検討段階。", log: [] },
+];
+
+/* ── 状態 ─────────────────────────────────────────────── */
+const state = {
+  userId: "yamamoto",
+  view: "dashboard",
+  filters: { q: "", owner: "", status: "open", vis: "" },
+  meeting: null,
+  openTask: null,
+};
+const user = () => memberOf(state.userId);
+
+/* 公開範囲の判定はここ 1 か所。役員限定タスクは役員・管理者以外に渡さない。 */
+const visible = () => TASKS.filter((t) => t.vis === "all" || canSeeExec(user()));
+
+const dueDate = (t) => (t.due === null ? null : shift(t.due));
+const reportedDate = (t) => shift(-t.reported);
+const isOverdue = (t) => isOpen(t) && t.due !== null && t.due < 0;
+const isStale = (t) => isOpen(t) && t.reported >= STALE_DAYS;
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ── 部品 ─────────────────────────────────────────────── */
+function duePhrase(t) {
+  if (t.due === null) return "期限なし";
+  if (t.due < 0) return `${-t.due}日超過`;
+  if (t.due === 0) return "本日期限";
+  return `あと${t.due}日`;
+}
+function dueCell(t) {
+  if (t.due === null) return '<span style="color:var(--ink-faint)">期限なし</span>';
+  const label = fmtShort(dueDate(t));
+  if (isOverdue(t)) return `${label} <span class="badge b-over">${duePhrase(t)}</span>`;
+  if (isOpen(t) && t.due <= SOON_DAYS) return `${label} <span class="badge b-soon">${duePhrase(t)}</span>`;
+  return `${label} <span style="color:var(--ink-faint);font-size:11.5px">${duePhrase(t)}</span>`;
+}
+const statusBadge = (t) => `<span class="badge st-${t.status}">${STATUS[t.status]}</span>`;
+const execBadge = (t) => (t.vis === "executive" ? ' <span class="badge b-exec">🔒 役員のみ</span>' : "");
+
+function taskTable(list, opts = {}) {
+  if (!list.length) return `<div class="empty">${esc(opts.empty || "該当するタスクはありません。")}</div>`;
+  const showMtg = opts.meeting !== false;
+  return `<div class="table-wrap"><table class="data">
+    <thead><tr>
+      <th style="width:66px">ID</th><th>タスク</th><th style="width:104px">担当</th>
+      <th style="width:150px">期限</th><th style="width:78px">状況</th>
+      ${showMtg ? '<th style="width:150px">決定したMTG</th>' : ""}
+      <th style="width:88px">最終更新</th>
+    </tr></thead><tbody>
+    ${list.map((t) => `<tr>
+      <td class="code">${t.code}</td>
+      <td><button class="tlink" data-task="${t.code}">${esc(t.title)}</button>${execBadge(t)}</td>
+      <td>${t.owner ? esc(memberOf(t.owner).name) : "—"}</td>
+      <td>${dueCell(t)}</td>
+      <td>${statusBadge(t)}</td>
+      ${showMtg ? `<td style="font-size:12px;color:var(--ink-soft)">${esc(t.meeting)}</td>` : ""}
+      <td class="code">${fmtShort(reportedDate(t))}</td>
+    </tr>`).join("")}
+    </tbody></table></div>`;
+}
+const metric = (label, value, note, tone) =>
+  `<div class="metric${tone ? " is-" + tone : ""}"><div class="label">${label}</div>
+   <div class="value">${value}<i>件</i></div><div class="note">${note}</div></div>`;
+const section = (title, note, body, action = "") =>
+  `<section class="section"><div class="section-head"><div><span class="section-title">${title}</span>
+   ${note ? ` <span class="section-note">${note}</span>` : ""}</div>${action}</div>
+   <div class="card">${body}</div></section>`;
+
+/* ── 画面 ─────────────────────────────────────────────── */
+function viewDashboard() {
+  const all = visible();
+  const open = all.filter(isOpen);
+  const overdue = open.filter(isOverdue);
+  const thisWeek = open.filter((t) => t.due !== null && t.due >= 0 && t.due <= 7);
+  const stale = open.filter(isStale);
+  const doneThisMonth = all.filter((t) => t.status === "done" && reportedDate(t).getMonth() === TODAY.getMonth());
+  const mine = open.filter((t) => t.owner === state.userId);
+
+  const attention = open.filter((t) => t.due !== null && t.due <= 7).sort((a, b) => a.due - b.due);
+  const unreported = stale.filter((t) => t.due === null || t.due > 7);
+
+  const progress = MEMBERS.map((m) => {
+    const owned = all.filter((t) => t.owner === m.id && t.status !== "cancelled");
+    return { m, owned, over: owned.filter(isOverdue).length };
+  }).filter((r) => r.owned.length).sort((a, b) => b.over - a.over || b.owned.length - a.owned.length);
+
+  const feed = all.flatMap((t) => t.log.map((l) => ({ t, l }))).sort((a, b) => a.l.d - b.l.d).slice(0, 6);
+
+  return `
+  <section class="section">
+    <div class="section-head"><span class="section-title">全社の状況（${fmtShort(TODAY)}時点）</span></div>
+    <div class="metrics">
+      ${metric("未完了", open.length, `全${all.length}件中`)}
+      ${metric("期限超過", overdue.length, overdue.length ? "至急フォローが必要" : "超過なし", overdue.length ? "alert" : "")}
+      ${metric("今週が期限", thisWeek.length, `〜${fmtShort(shift(7))}`, thisWeek.length ? "warn" : "")}
+      ${metric("状況が未報告", stale.length, `${STALE_DAYS}日以上更新なし`)}
+      ${metric("今月の完了", doneThisMonth.length, "進捗の実績")}
+    </div>
+  </section>
+
+  ${section("自分のタスク", `未完了 ${mine.length}件`, taskTable(mine, { empty: "担当している未完了タスクはありません。" }))}
+  ${section("期限超過・今週が期限のタスク", "ここが空になっている状態が理想です", taskTable(attention, { empty: "期限が迫っているタスクはありません。" }))}
+  ${section(`${STALE_DAYS}日以上 状況が更新されていないタスク`, "「決めたのに、その後どうなったかわからない」を防ぐ一覧", taskTable(unreported, { empty: "全タスクの状況が更新されています。" }))}
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+    ${section("担当者別の進捗", "完了／進行中／停滞／未着手", `<div class="card-pad">${
+      progress.map(({ m, owned, over }) => {
+        const seg = (s) => {
+          const n = owned.filter((t) => t.status === s).length;
+          return n ? `<i class="f-${s}" style="width:${(n / owned.length) * 100}%" title="${STATUS[s]} ${n}件"></i>` : "";
+        };
+        const done = owned.filter((t) => t.status === "done").length;
+        return `<div class="bar-row">
+          <div class="bar-name">${esc(m.name)}${over ? ` <span class="badge b-over">超過${over}</span>` : ""}</div>
+          <div class="bar-track">${["done", "in_progress", "blocked", "not_started"].map(seg).join("")}</div>
+          <div class="bar-value">完了 ${done}/${owned.length}</div>
+        </div>`;
+      }).join("")}</div>`)}
+
+    ${section("最近の進捗報告", "", `<div class="card-pad">${
+      feed.length ? feed.map(({ t, l }) => `<div class="timeline-item">
+        <div class="timeline-meta">${fmtShort(shift(-l.d))}　${esc(memberOf(l.by).name)}　<button class="tlink" data-task="${t.code}">#${t.code} ${esc(t.title)}</button></div>
+        <div class="timeline-body">${esc(l.body)}</div></div>`).join("")
+        : '<div class="empty">まだ進捗報告がありません。</div>'}</div>`)}
+  </div>`;
+}
+
+function viewTasks() {
+  const f = state.filters;
+  const list = visible().filter((t) => {
+    if (f.status === "open" ? !isOpen(t) : f.status !== "all" && t.status !== f.status) return false;
+    if (f.owner === "me" ? t.owner !== state.userId : f.owner && t.owner !== f.owner) return false;
+    if (f.q && !(t.title + t.meeting + t.desc).includes(f.q)) return false;
+    if (f.vis && t.vis !== f.vis) return false;
+    return true;
+  });
+  const opts = (sel) => MEMBERS.map((m) => `<option value="${m.id}"${sel === m.id ? " selected" : ""}>${esc(m.name)}</option>`).join("");
+
+  const execNotice = f.vis === "executive"
+    ? `<div class="notice" style="margin-bottom:14px">役員・管理者だけに表示されるタスクです。社員のアカウントでは一覧にも検索にも出てきません。</div>`
+    : "";
+
+  return `
+  ${execNotice}
+  <div class="toolbar">
+    <div class="field grow"><label for="fq">キーワード</label>
+      <input id="fq" type="search" value="${esc(f.q)}" placeholder="タスク名・MTG名で検索"></div>
+    <div class="field"><label for="fowner">担当者</label><select id="fowner">
+      <option value="">全員</option><option value="me"${f.owner === "me" ? " selected" : ""}>自分</option>${opts(f.owner)}
+    </select></div>
+    <div class="field"><label for="fstatus">状況</label><select id="fstatus">
+      <option value="open"${f.status === "open" ? " selected" : ""}>未完了のみ</option>
+      <option value="all"${f.status === "all" ? " selected" : ""}>すべて</option>
+      ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}"${f.status === k ? " selected" : ""}>${v}</option>`).join("")}
+    </select></div>
+    ${canSeeExec(user()) ? `<div class="field"><label for="fvis">公開範囲</label><select id="fvis">
+      <option value="">すべて</option>
+      <option value="all"${f.vis === "all" ? " selected" : ""}>全社員</option>
+      <option value="executive"${f.vis === "executive" ? " selected" : ""}>役員のみ</option>
+    </select></div>` : ""}
+  </div>
+  ${section("検索結果", `${list.length}件`, taskTable(list, { empty: "条件に合うタスクはありません。" }))}
+  ${section("MTGで決まったタスクを登録する", "デモでは登録内容をその場で一覧に追加します", `<div class="card-pad">
+    <div class="toolbar" style="margin:0">
+      <div class="field grow"><label for="nt">タスク名</label><input id="nt" type="text" placeholder="例：新商品の店頭POP案を作成"></div>
+      <div class="field"><label for="no">担当者</label><select id="no"><option value="">未定</option>${opts("")}</select></div>
+      <div class="field"><label for="nd">期限</label><input id="nd" type="date" value="${ymd(shift(7))}"></div>
+      <div class="field"><label for="nm">決定したMTG</label><input id="nm" type="text" value="全体定例MTG"></div>
+      ${canSeeExec(user()) ? `<div class="field"><label for="nv">公開範囲</label><select id="nv">
+        <option value="all">全社員</option><option value="executive">役員のみ</option></select></div>` : ""}
+      <button class="btn btn-primary" id="addTask">登録する</button>
+    </div></div>`)}`;
+}
+
+function viewMembers() {
+  const all = visible();
+  const rows = MEMBERS.map((m) => {
+    const open = all.filter((t) => t.owner === m.id && isOpen(t));
+    return { m, open: open.length, over: open.filter(isOverdue).length, stale: open.filter(isStale).length,
+             done: all.filter((t) => t.owner === m.id && t.status === "done").length };
+  }).sort((a, b) => b.over - a.over || b.open - a.open);
+  const unassigned = all.filter((t) => isOpen(t) && !t.owner);
+
+  return section("誰が・何件抱えているか", "期限超過が多い順", `<div class="table-wrap"><table class="data">
+    <thead><tr><th>担当者</th><th>部署</th><th>役割</th><th class="num">未完了</th>
+      <th class="num">期限超過</th><th class="num">${STALE_DAYS}日以上未報告</th><th class="num">完了</th></tr></thead>
+    <tbody>${rows.map(({ m, open, over, stale, done }) => `<tr>
+      <td style="font-weight:700">${esc(m.name)}</td>
+      <td style="color:var(--ink-soft)">${esc(m.dept)}</td>
+      <td style="color:var(--ink-soft)">${ROLE_LABEL[m.role]}</td>
+      <td class="num">${open}</td>
+      <td class="num">${over ? `<span class="badge b-over">${over}</span>` : "0"}</td>
+      <td class="num">${stale ? `<span class="badge b-soon">${stale}</span>` : "0"}</td>
+      <td class="num" style="color:var(--ink-faint)">${done}</td></tr>`).join("")}</tbody></table></div>`)
+    + section("担当者が決まっていないタスク", "MTGで決めたが担当が空のもの", taskTable(unassigned, { empty: "担当者未定のタスクはありません。" }));
+}
+
+function viewMeetings() {
+  const all = visible();
+  const names = [...new Set(all.map((t) => t.meeting))];
+  const current = names.includes(state.meeting) ? state.meeting : names[0];
+  const list = all.filter((t) => t.meeting === current);
+  const chips = names.map((n) => {
+    const open = all.filter((t) => t.meeting === n && isOpen(t)).length;
+    return `<button class="chip" data-meeting="${esc(n)}" aria-pressed="${n === current}">${esc(n)}${open ? `（未完了${open}）` : "（完了）"}</button>`;
+  }).join("");
+  const mtgDate = list.length ? fmtLong(shift(list[0].mtg)) : "";
+  return `<div class="chips">${chips}</div>` +
+    section(esc(current), `全${list.length}件　開催日 ${mtgDate}`, taskTable(list, { meeting: false }));
+}
+
+/* 期限が近づいたタスクを、担当者ごとに1通へまとめたリマインドメール */
+function planReminders() {
+  const kinds = { overdue: "期限超過", due_today: "本日が期限", due_soon: "期限が近い", stale: "状況が未報告" };
+  const order = ["overdue", "due_today", "due_soon", "stale"];
+  const classify = (t) => {
+    if (!isOpen(t)) return null;
+    if (t.due !== null) {
+      if (t.due < 0) return "overdue";
+      if (t.due === 0) return "due_today";
+      if (t.due <= SOON_DAYS) return "due_soon";
+    }
+    return t.reported >= STALE_DAYS ? "stale" : null;
+  };
+  const groups = new Map();
+  for (const t of TASKS) {
+    const kind = classify(t);
+    if (!kind || !t.owner) continue;
+    const owner = memberOf(t.owner);
+    /* 役員限定タスクは、担当者が役員・管理者のときだけ本文へ載せる */
+    if (t.vis === "executive" && !canSeeExec(owner)) continue;
+    if (!groups.has(owner.id)) groups.set(owner.id, { owner, items: [] });
+    groups.get(owner.id).items.push({ t, kind });
+  }
+  for (const g of groups.values()) g.items.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
+  return { groups: [...groups.values()], kinds, order };
+}
+
+function viewMail() {
+  const { groups: allGroups, kinds, order } = planReminders();
+  /* 管理者は全社分、それ以外は自分宛の通知だけを見る。
+     通知の一覧から役員限定タスクの内容が漏れないようにするため。 */
+  const isAdmin = user().role === "admin";
+  const groups = isAdmin ? allGroups : allGroups.filter((g) => g.owner.id === state.userId);
+  const body = groups.map(({ owner, items }) => {
+    const counts = order.map((k) => {
+      const n = items.filter((i) => i.kind === k).length;
+      return n ? `${kinds[k]}${n}件` : "";
+    }).filter(Boolean).join("・");
+
+    const text = [`${owner.name} さん`, "", "お疲れさまです。MTGで決まったタスクのうち、対応・状況共有をお願いしたいものです。", ""];
+    for (const k of order) {
+      const items_k = items.filter((i) => i.kind === k);
+      if (!items_k.length) continue;
+      text.push(`■ ${kinds[k]}（${items_k.length}件）`);
+      for (const { t } of items_k) {
+        text.push(`  #${t.code} ${t.title}`);
+        text.push(`    期限: ${fmtLong(dueDate(t))}（${duePhrase(t)}） / 状況: ${STATUS[t.status]} / 最終更新: ${fmtLong(reportedDate(t))}（${t.reported}日前）`);
+        text.push(`    決定したMTG: ${t.meeting}（${fmtLong(shift(t.mtg))}）`);
+      }
+      text.push("");
+    }
+    text.push("※このメールはタスク管理アプリから自動送信しています。");
+
+    return `<div class="mail">
+      <div class="mail-head">To: ${owner.id}@faith.example.co.jp<br>
+      Subject: <b>【タスク確認】${esc(owner.name)} さん / ${esc(counts)}</b></div>
+      <div class="mail-body">${esc(text.join("\n"))}</div></div>`;
+  }).join("");
+
+  return `<div class="notice" style="margin-bottom:16px">
+      毎朝9時に自動送信されます。1人につき1通へまとめるので、タスクが増えてもメールの通数は増えません。
+      同じ内容を毎日送らないよう、種別ごとに再送間隔（期限超過は1日、期限が近いは2日、状況未報告は7日）を空けています。
+    </div>` +
+    section(isAdmin ? "本日送信されるリマインドメール（全社）" : "本日あなたに届くリマインドメール", `${groups.length}通`, `<div class="card-pad">${
+      groups.length ? body
+        : `<div class="empty">${isAdmin ? "いま通知が必要なタスクはありません。" : "あなた宛の通知はいまありません。"}</div>`}</div>`);
+}
+
+/* ── 詳細ドロワー ─────────────────────────────────────── */
+function renderDrawer() {
+  const overlay = document.getElementById("overlay");
+  const t = TASKS.find((x) => x.code === state.openTask);
+  if (!t || (t.vis === "executive" && !canSeeExec(user()))) {
+    overlay.hidden = true;
+    overlay.innerHTML = "";
+    return;
+  }
+  overlay.hidden = false;
+  overlay.innerHTML = `<div class="drawer" role="dialog" aria-modal="true" aria-label="${esc(t.title)}">
+    <button class="drawer-close" id="closeDrawer" aria-label="閉じる">×</button>
+    <div class="code">${t.code}</div>
+    <h2>${esc(t.title)}${execBadge(t)}</h2>
+    <dl class="kv">
+      <dt>担当者</dt><dd>${t.owner ? esc(memberOf(t.owner).name) : "未定"}</dd>
+      <dt>期限</dt><dd>${fmtLong(dueDate(t))} <span style="color:var(--ink-faint);font-size:12px">${duePhrase(t)}</span></dd>
+      <dt>状況</dt><dd>${statusBadge(t)}</dd>
+      <dt>公開範囲</dt><dd>${t.vis === "executive" ? "役員のみ" : "全社員"}</dd>
+      <dt>決定したMTG</dt><dd>${esc(t.meeting)}（${fmtShort(shift(t.mtg))}）</dd>
+      <dt>最終更新</dt><dd>${fmtLong(reportedDate(t))}（${t.reported}日前）</dd>
+    </dl>
+    ${t.desc ? `<h3>詳細・決定事項</h3><div>${esc(t.desc)}</div>` : ""}
+    <h3>進捗を報告する</h3>
+    <div class="field"><textarea id="upBody" placeholder="例：先方の確認待ち。9/5に回答予定。"></textarea></div>
+    <div class="toolbar" style="margin-top:8px">
+      <div class="field"><label for="upStatus">状況</label><select id="upStatus">
+        ${Object.entries(STATUS).map(([k, v]) => `<option value="${k}"${t.status === k ? " selected" : ""}>${v}</option>`).join("")}
+      </select></div>
+      <button class="btn btn-primary" id="postUpdate">報告する</button>
+    </div>
+    <h3>進捗の履歴（${t.log.length}件）</h3>
+    ${t.log.length ? t.log.slice().sort((a, b) => a.d - b.d).map((l) => `<div class="timeline-item">
+        <div class="timeline-meta">${fmtLong(shift(-l.d))}　${esc(memberOf(l.by).name)}</div>
+        <div class="timeline-body">${esc(l.body)}</div></div>`).join("")
+      : '<div class="empty">まだ進捗報告がありません。</div>'}
+  </div>`;
+}
+
+/* ── 描画とイベント ───────────────────────────────────── */
+const VIEWS = {
+  dashboard: { label: "ダッシュボード", icon: "◎", render: viewDashboard },
+  tasks: { label: "タスク一覧", icon: "☰", render: viewTasks },
+  members: { label: "担当者別の進捗", icon: "◍", render: viewMembers },
+  meetings: { label: "MTG別", icon: "▤", render: viewMeetings },
+  mail: { label: "リマインドメール", icon: "✉", render: viewMail },
+};
+/* 管理者以外は自分宛の通知だけを見るので、ナビの文言を変える */
+const mailNavLabel = () => (user().role === "admin" ? "リマインドメール（全社）" : "自分に届くメール");
+
+function renderNav() {
+  const all = visible();
+  const open = all.filter(isOpen);
+  const mine = open.filter((t) => t.owner === state.userId).length;
+  const groups = [
+    { items: [["dashboard", null], ["tasks", open.length]] },
+    { label: "把握する", items: [["members", null], ["meetings", null]] },
+    { label: "通知", items: [["mail", null]] },
+  ];
+  let html = groups.map((g) => (g.label ? `<div class="nav-label">${g.label}</div>` : "") +
+    g.items.map(([key, count]) => `<button class="nav-item" data-view="${key}"${state.view === key ? ' aria-current="page"' : ""}>
+      <span class="ico" aria-hidden="true">${VIEWS[key].icon}</span><span>${key === "mail" ? mailNavLabel() : VIEWS[key].label}</span>
+      ${count !== null ? `<span class="count">${count}</span>` : ""}</button>`).join("")).join("");
+
+  if (canSeeExec(user())) {
+    const execCount = all.filter((t) => t.vis === "executive").length;
+    html += `<div class="nav-label">役員</div>
+      <button class="nav-item" data-exec="1"><span class="ico" aria-hidden="true">🔒</span><span>役員限定タスク</span>
+      <span class="count">${execCount}</span></button>`;
+  }
+  html += `<div class="nav-label">自分のタスク</div>
+    <button class="nav-item" data-mine="1"><span class="ico" aria-hidden="true">◇</span><span>自分の未完了</span>
+    <span class="count">${mine}</span></button>`;
+  document.getElementById("nav").innerHTML = html;
+}
+
+function render() {
+  const u = user();
+  document.getElementById("greeting").textContent = `こんにちは、${u.name} さん`;
+  const overdue = visible().filter(isOverdue).length;
+  document.getElementById("today").textContent =
+    fmtLong(TODAY) + (overdue ? `　･　期限を過ぎたタスクが ${overdue} 件あります` : "");
+  document.getElementById("userpick").innerHTML = MEMBERS.map((m) =>
+    `<option value="${m.id}"${m.id === state.userId ? " selected" : ""}>${esc(m.name)}（${ROLE_LABEL[m.role]}）</option>`).join("");
+  renderNav();
+  document.getElementById("view").innerHTML = VIEWS[state.view].render();
+  renderDrawer();
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
+}
+
+document.getElementById("userpick").addEventListener("change", (e) => {
+  state.userId = e.target.value;
+  state.openTask = null;
+  const u = user();
+  toast(`${u.name}（${ROLE_LABEL[u.role]}）に切り替えました`);
+  render();
+});
+
+document.addEventListener("click", (e) => {
+  const nav = e.target.closest("[data-view]");
+  if (nav) { state.view = nav.dataset.view; state.openTask = null; render(); return; }
+
+  if (e.target.closest("[data-exec]")) {
+    state.view = "tasks";
+    state.filters = { q: "", owner: "", status: "all", vis: "executive" };
+    render();
+    return;
+  }
+  if (e.target.closest("[data-mine]")) {
+    state.view = "tasks";
+    state.filters = { q: "", owner: "me", status: "open", vis: "" };
+    render();
+    return;
+  }
+
+  const chip = e.target.closest("[data-meeting]");
+  if (chip) { state.meeting = chip.dataset.meeting; render(); return; }
+
+  const link = e.target.closest("[data-task]");
+  if (link) { state.openTask = link.dataset.task; renderDrawer(); return; }
+
+  if (e.target.id === "closeDrawer" || e.target.id === "overlay") {
+    state.openTask = null;
+    renderDrawer();
+    return;
+  }
+
+  if (e.target.id === "postUpdate") {
+    const t = TASKS.find((x) => x.code === state.openTask);
+    const body = document.getElementById("upBody").value.trim();
+    const status = document.getElementById("upStatus").value;
+    if (!body && status === t.status) { toast("コメントか状況の変更を入力してください"); return; }
+    if (body) t.log.push({ by: state.userId, d: 0, body });
+    t.status = status;
+    t.reported = 0;
+    toast("進捗を報告しました");
+    render();
+    return;
+  }
+
+  if (e.target.id === "addTask") {
+    const title = document.getElementById("nt").value.trim();
+    if (!title) { toast("タスク名を入力してください"); return; }
+    const dueInput = document.getElementById("nd").value;
+    const due = dueInput ? Math.round((new Date(dueInput + "T12:00:00") - TODAY) / DAY) : null;
+    const visSel = document.getElementById("nv");
+    TASKS.push({
+      code: "T-" + String(TASKS.length + 1).padStart(4, "0"),
+      title, owner: document.getElementById("no").value || null, due,
+      status: "not_started", vis: visSel ? visSel.value : "all",
+      meeting: document.getElementById("nm").value.trim() || "（MTG未設定）",
+      mtg: 0, reported: 0, desc: "", log: [],
+    });
+    toast("タスクを登録しました");
+    render();
+  }
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "fq") {
+    state.filters.q = e.target.value;
+    const pos = e.target.selectionStart;
+    render();
+    const again = document.getElementById("fq");
+    again.focus();
+    again.setSelectionRange(pos, pos);
+  }
+});
+document.addEventListener("change", (e) => {
+  if (e.target.id === "fowner") { state.filters.owner = e.target.value; render(); }
+  if (e.target.id === "fstatus") { state.filters.status = e.target.value; render(); }
+  if (e.target.id === "fvis") { state.filters.vis = e.target.value; render(); }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.openTask) { state.openTask = null; renderDrawer(); }
+});
+
+render();
+</script>
