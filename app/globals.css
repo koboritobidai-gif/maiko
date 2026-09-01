@@ -464,8 +464,38 @@ textarea { resize: vertical; min-height: 76px; }
   .topband { padding: 8px 14px; gap: 12px; }
   .topband-title { padding-left: 12px; }
 }
-/* 携帯サイズでは目次を上に畳む。 */
+/* 携帯サイズでも左右の並びは変えず、目次と余白をさらに詰める。
+   目次を上に畳むと最初の画面が目次だけで埋まってしまうため。 */
 @media (max-width: 560px) {
-  .shell { flex-direction: column; }
-  .sidebar { width: 100%; flex: none; border-right: none; border-bottom: 1px solid var(--line); padding: 10px 14px 14px; }
+  .sidebar { width: 120px; flex: 0 0 120px; padding: 10px 6px 24px; }
+  .nav-item { font-size: 10.5px; line-height: 1.45; padding: 6px 2px 6px 0; gap: 4px; }
+  .nav-item .ico { width: 10px; font-size: 9px; }
+  .nav-item .count { font-size: 10px; }
+  .nav-label { font-size: 9.5px; padding: 10px 2px 3px; }
+  .main { padding: 12px 10px 36px; }
+
+  .topband { padding: 7px 10px; gap: 8px; flex-wrap: nowrap; }
+  .topband .logo { font-size: 15px; letter-spacing: .16em; }
+  .userpill { font-size: 10.5px; gap: 6px; }
+  .userpill button { padding: 2px 7px; font-size: 10.5px; }
+
+  .greeting { font-size: 14px; }
+  .page-title { font-size: 17px; }
+  .topbar { margin-bottom: 14px; padding-bottom: 10px; }
+  .section-title { font-size: 13px; }
+
+  .metrics { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+  .metric { padding: 9px 10px; }
+  .metric .value { font-size: 20px; }
+
+  /* 幅が足りないので、ID と担当も隠す。担当はタスクを開けば確認できる。 */
+  .col-id, .col-owner { display: none; }
+  table.data { min-width: 420px; }
+  table.data th, table.data td { padding: 8px 8px; }
+  .card-pad { padding: 12px 12px; }
+}
+
+/* 狭い画面では省く補足の文言。 */
+@media (max-width: 560px) {
+  .only-wide { display: none; }
 }

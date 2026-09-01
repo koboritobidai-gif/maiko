@@ -109,9 +109,9 @@ export function TaskTable({
       <table className="data">
         <thead>
           <tr>
-            <th style={{ width: 70 }}>ID</th>
+            <th className="col-id" style={{ width: 70 }}>ID</th>
             <th>タスク</th>
-            {showOwner ? <th style={{ width: 110 }}>担当</th> : null}
+            {showOwner ? <th className="col-owner" style={{ width: 110 }}>担当</th> : null}
             <th style={{ width: 160 }}>期限</th>
             <th style={{ width: 84 }}>状況</th>
             {showMeeting ? <th className="col-sub" style={{ width: 170 }}>決定したMTG</th> : null}
@@ -121,14 +121,14 @@ export function TaskTable({
         <tbody>
           {tasks.map((task) => (
             <tr key={task.code}>
-              <td className="code">{task.code}</td>
+              <td className="col-id code">{task.code}</td>
               <td>
                 <Link href={`/tasks/${task.code}`} className="task-link">
                   {task.title}
                 </Link>{" "}
                 <VisibilityBadge visibility={task.visibility} />
               </td>
-              {showOwner ? <td>{task.ownerName || "—"}</td> : null}
+              {showOwner ? <td className="col-owner">{task.ownerName || "—"}</td> : null}
               <td>
                 <DueCell task={task} base={base} />
               </td>

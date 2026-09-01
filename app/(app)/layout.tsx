@@ -57,7 +57,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <span className="spacer" />
         <div className="userpill">
           <span>
-            {user.name}（{ROLE_LABELS[user.role]}）としてログイン中
+            {user.name}（{ROLE_LABELS[user.role]}）
+            <span className="only-wide"> としてログイン中</span>
           </span>
           <form action={logoutAction}>
             <button type="submit">ログアウト</button>

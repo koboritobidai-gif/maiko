@@ -121,6 +121,7 @@ async function main(): Promise<void> {
     console.log(`  ${member.name.padEnd(6, "　")}  ${label}  ${id.padEnd(32)}  ${issued.get(member.key)}`);
   }
   console.log("\n  ※ 役員（4名）と管理者だけが、役員限定の議事録・タスクを閲覧できます。");
+  console.log("  ※ ここで作るのは議事録に名前が出てくる9名です。残りの社員は「社員・通知設定」画面から追加してください。");
 
   // minutes/ に置いた議事録を取り込む。
   const users = await listUsers();

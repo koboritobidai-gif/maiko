@@ -375,6 +375,22 @@ textarea { resize: vertical; min-height: 76px; }
 .btn-sm { padding: 5px 11px; font-size: 12px; }
 .btn-danger { color: var(--danger); border-color: var(--danger-line); background: var(--danger-tint); }
 
+/* 議事録ファイルの受け口。 */
+.dropzone {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  padding: 20px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  transition: border-color .15s, background .15s;
+}
+.dropzone.is-over { border-color: var(--gold); background: var(--gold-tint); }
+.dropzone-main { font-size: 13px; color: var(--ink-heading); font-weight: 600; }
+.dropzone-sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
+.dropzone-file { font-size: 11.5px; color: var(--ok); margin-top: 8px; }
+.dropzone .btn { display: inline-flex; }
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -429,10 +445,40 @@ textarea { resize: vertical; min-height: 76px; }
   .topband { padding: 8px 14px; gap: 12px; }
   .topband-title { padding-left: 12px; }
 }
-/* 携帯サイズでは目次を上に畳む。 */
+/* 携帯サイズでも左右の並びは変えず、目次と余白をさらに詰める。
+   目次を上に畳むと最初の画面が目次だけで埋まってしまうため。 */
 @media (max-width: 560px) {
-  .shell { flex-direction: column; }
-  .sidebar { width: 100%; flex: none; border-right: none; border-bottom: 1px solid var(--line); padding: 10px 14px 14px; }
+  .sidebar { width: 120px; flex: 0 0 120px; padding: 10px 6px 24px; }
+  .nav-item { font-size: 10.5px; line-height: 1.45; padding: 6px 2px 6px 0; gap: 4px; }
+  .nav-item .ico { width: 10px; font-size: 9px; }
+  .nav-item .count { font-size: 10px; }
+  .nav-label { font-size: 9.5px; padding: 10px 2px 3px; }
+  .main { padding: 12px 10px 36px; }
+
+  .topband { padding: 7px 10px; gap: 8px; flex-wrap: nowrap; }
+  .topband .logo { font-size: 15px; letter-spacing: .16em; }
+  .userpill { font-size: 10.5px; gap: 6px; }
+  .userpill button { padding: 2px 7px; font-size: 10.5px; }
+
+  .greeting { font-size: 14px; }
+  .page-title { font-size: 17px; }
+  .topbar { margin-bottom: 14px; padding-bottom: 10px; }
+  .section-title { font-size: 13px; }
+
+  .metrics { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+  .metric { padding: 9px 10px; }
+  .metric .value { font-size: 20px; }
+
+  /* 幅が足りないので、ID と担当も隠す。担当はタスクを開けば確認できる。 */
+  .col-id, .col-owner { display: none; }
+  table.data { min-width: 420px; }
+  table.data th, table.data td { padding: 8px 8px; }
+  .card-pad { padding: 12px 12px; }
+}
+
+/* 狭い画面では省く補足の文言。 */
+@media (max-width: 560px) {
+  .only-wide { display: none; }
 }
 :root:not([data-theme="light"]) { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
@@ -501,6 +547,7 @@ textarea { resize: vertical; min-height: 76px; }
   line-height: 1.7;
 }
 .banner b { letter-spacing: .08em; }
+@media (max-width: 560px) { .banner { font-size: 10.5px; padding: 6px 10px; line-height: 1.6; } }
 .banner span { opacity: .8; }
 
 .userpick { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,.9); }
@@ -586,7 +633,7 @@ textarea { resize: vertical; min-height: 76px; }
   <span class="topband-title">株式会社フェース｜タスク管理</span>
   <span class="spacer"></span>
   <label class="userpick">
-    ログイン中
+    <span class="only-wide">ログイン中</span>
     <select id="userpick"></select>
   </label>
 </header>
@@ -1003,15 +1050,15 @@ function taskTable(list, opts = {}) {
   const showMtg = opts.meeting !== false;
   return `<div class="table-wrap"><table class="data">
     <thead><tr>
-      <th style="width:66px">ID</th><th>タスク</th><th style="width:104px">担当</th>
+      <th class="col-id" style="width:66px">ID</th><th>タスク</th><th class="col-owner" style="width:104px">担当</th>
       <th style="width:150px">期限</th><th style="width:78px">状況</th>
       ${showMtg ? '<th class="col-sub" style="width:150px">決定したMTG</th>' : ""}
       <th class="col-sub" style="width:88px">最終更新</th>
     </tr></thead><tbody>
     ${list.map((t) => `<tr>
-      <td class="code">${t.code}</td>
+      <td class="col-id code">${t.code}</td>
       <td><button class="tlink" data-task="${t.code}">${esc(t.title)}</button>${execBadge(t)}</td>
-      <td>${t.owner ? esc(memberOf(t.owner).name) : "—"}</td>
+      <td class="col-owner">${t.owner ? esc(memberOf(t.owner).name) : "—"}</td>
       <td>${dueCell(t)}</td>
       <td>${statusBadge(t)}</td>
       ${showMtg ? `<td class="col-sub" style="font-size:12px;color:var(--ink-soft)">${esc(t.meeting)}</td>` : ""}

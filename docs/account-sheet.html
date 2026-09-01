@@ -75,15 +75,20 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
 
 <section>
 <h2>1. 権限は3段階</h2>
-<p>利用者を「管理者」「役員」「社員」の3つに分けています。役員は4名です。</p>
+<p>利用者を「管理者」「社員」の2つに分け、そのうち4名を「役員」としています。社員は人数の制限なく追加できます。</p>
 <table>
   <thead><tr><th style="width:80px">権限</th><th style="width:52px">人数</th><th>見えるもの・できること</th></tr></thead>
   <tbody>
     <tr><td>管理者</td><td>1名</td><td>すべての議事録・タスクに加えて、社員アカウント・会議名・メール通知の管理</td></tr>
     <tr class="exec"><td>役員</td><td>4名</td><td>全社員向けの議事録・タスク＋<strong>役員限定の議事録・タスク</strong>。タスクの公開範囲を変更できる</td></tr>
-    <tr><td>社員</td><td>4名</td><td>全社員向けの議事録・タスクのみ</td></tr>
+    <tr><td>社員</td><td>随時追加</td><td>全社員向けの議事録・タスクのみ</td></tr>
   </tbody>
 </table>
+<div class="note">
+  現在は、議事録に名前が出てくる9名（管理者1名・役員4名・社員4名）を登録しています。
+  残りの社員は、管理者が「社員・通知設定」画面の「社員アカウントを追加する」から追加できます。
+  追加時に氏名・メールアドレス・部署・権限・初期パスワードを設定します。人数の上限はありません。
+</div>
 </section>
 
 <section>
@@ -163,7 +168,7 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
   </tbody>
 </table>
 
-<h3>社員</h3>
+<h3>社員（登録済み）</h3>
 <table>
   <thead><tr><th style="width:64px">権限</th><th style="width:86px">区分</th><th>ログインID</th><th style="width:120px">初期パスワード</th></tr></thead>
   <tbody>
@@ -174,7 +179,8 @@ footer { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 8px;
   </tbody>
 </table>
 <div class="note">
-  社員の氏名は本書では省略しています。アプリ上は、議事録に書かれた担当者名と自動で突き合わせるために氏名を登録しています。
+  社員の氏名は本書では省略しています。アプリ上は、議事録に書かれた担当者名と自動で突き合わせるために氏名を登録しています。<br>
+  上記は現在登録している4名です。ほかの社員は管理者が「社員・通知設定」画面から追加し、その場でログインIDと初期パスワードを設定します。
 </div>
 
 <div class="note warn">
