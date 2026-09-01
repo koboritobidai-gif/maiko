@@ -312,7 +312,7 @@ const OPEN = ["not_started", "in_progress", "blocked"];
 const isOpen = (t) => OPEN.includes(t.status);
 
 const MEMBERS = [
-  { id: "yamamoto", name: "山本 誠", dept: "経営企画", role: "admin" },
+  { id: "nagano", name: "長野種雅", dept: "経営企画", role: "admin" },
   { id: "kobori", name: "小堀 太一", dept: "取締役", role: "executive" },
   { id: "tanaka", name: "田中 美咲", dept: "商品開発部", role: "member" },
   { id: "sato", name: "佐藤 由紀", dept: "営業部", role: "member" },
@@ -355,13 +355,13 @@ const TASKS = [
   { code: "T-0009", title: "来期の役員報酬案の作成", owner: "kobori", due: 2, status: "in_progress", vis: "executive",
     meeting: "役員会", mtg: -5, reported: 2, desc: "来期予算案とあわせて役員会に提出する。",
     log: [{ by: "kobori", d: 2, body: "顧問税理士と一次案を確認済み。" }] },
-  { code: "T-0010", title: "サロン事業の再編案を精査", owner: "yamamoto", due: 9, status: "not_started", vis: "executive",
+  { code: "T-0010", title: "サロン事業の再編案を精査", owner: "nagano", due: 9, status: "not_started", vis: "executive",
     meeting: "役員会", mtg: -5, reported: 5, desc: "不採算店舗の扱いを含む再編案。公開前の検討段階。", log: [] },
 ];
 
 /* ── 状態 ─────────────────────────────────────────────── */
 const state = {
-  userId: "yamamoto",
+  userId: "nagano",
   view: "dashboard",
   filters: { q: "", owner: "", status: "open", vis: "" },
   meeting: null,

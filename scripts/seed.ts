@@ -27,7 +27,7 @@ function iso(offsetDays: number): string {
 }
 
 const members = [
-  { key: "yamamoto", name: "山本 誠", dept: "経営企画", role: "admin" },
+  { key: "nagano", name: "長野種雅", dept: "経営企画", role: "admin" },
   { key: "kobori", name: "小堀 太一", dept: "取締役", role: "executive" },
   { key: "tanaka", name: "田中 美咲", dept: "商品開発部", role: "member" },
   { key: "sato", name: "佐藤 由紀", dept: "営業部", role: "member" },
@@ -163,7 +163,7 @@ const tasks: SeedTask[] = [
   },
   {
     title: "サロン事業の再編案を精査",
-    owner: "yamamoto",
+    owner: "nagano",
     due: 9,
     status: "not_started",
     visibility: "executive",
@@ -229,7 +229,7 @@ async function main(): Promise<void> {
         task.visibility,
         task.meeting,
         ymd(task.meetingDate),
-        ids.get("yamamoto")!,
+        ids.get("nagano")!,
         iso(task.meetingDate),
         iso(-task.reportedDaysAgo),
         iso(-task.reportedDaysAgo),
