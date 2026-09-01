@@ -114,8 +114,8 @@ export function TaskTable({
             {showOwner ? <th style={{ width: 110 }}>担当</th> : null}
             <th style={{ width: 160 }}>期限</th>
             <th style={{ width: 84 }}>状況</th>
-            {showMeeting ? <th style={{ width: 180 }}>決定したMTG</th> : null}
-            <th style={{ width: 96 }}>最終更新</th>
+            {showMeeting ? <th className="col-sub" style={{ width: 170 }}>決定したMTG</th> : null}
+            <th className="col-sub" style={{ width: 96 }}>最終更新</th>
           </tr>
         </thead>
         <tbody>
@@ -136,11 +136,11 @@ export function TaskTable({
                 <StatusBadge status={task.status} />
               </td>
               {showMeeting ? (
-                <td style={{ fontSize: 12, color: "var(--ink-soft)" }}>
+                <td className="col-sub" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
                   {task.meetingTitle || "—"}
                 </td>
               ) : null}
-              <td className="code">{formatShort(task.statusUpdatedAt.slice(0, 10))}</td>
+              <td className="col-sub code">{formatShort(task.statusUpdatedAt.slice(0, 10))}</td>
             </tr>
           ))}
         </tbody>
