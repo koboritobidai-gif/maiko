@@ -1,0 +1,29 @@
+{
+  "name": "maiko",
+  "version": "0.1.0",
+  "private": true,
+  "description": "株式会社フェース タスク管理ダッシュボード",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "seed": "node --experimental-strip-types scripts/seed.ts",
+    "remind": "node --experimental-strip-types scripts/remind.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.7",
+    "next": "^16.3.4",
+    "nodemailer": "^9.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.8.3"
+  }
+}

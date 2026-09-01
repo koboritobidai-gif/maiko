@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# ローカルの SQLite データと環境変数（機密情報を含むためコミットしない）
+data/
+.env
+.env.local
+.env*.local
+
+.DS_Store
+npm-debug.log*
