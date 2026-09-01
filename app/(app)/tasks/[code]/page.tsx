@@ -4,6 +4,7 @@ import { addUpdateAction, deleteTaskAction, updateTaskAction } from "@/app/actio
 import { SectionCard, StatusBadge, VisibilityBadge } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { duePhrase, formatLong, formatShort, today } from "@/lib/date";
+import { listMeetingTypes } from "@/lib/meetings";
 import { getTask, listTaskUpdates, listUsers } from "@/lib/tasks";
 import {
   ROLE_LABELS,
@@ -34,6 +35,7 @@ export default async function TaskDetailPage({
 
   const updates = await listTaskUpdates(task.id);
   const members = await listUsers();
+  const meetingTypes = await listMeetingTypes();
   const base = today();
 
   return (
@@ -127,8 +129,12 @@ export default async function TaskDetailPage({
                 <dd>
                   <StatusBadge status={task.status} />
                 </dd>
-                <dt>公開範囲</dt>
-                <dd>{VISIBILITY_LABELS[task.visibility]}</dd>
+                {canSeeExecutive(user.role) ? (
+                  <>
+                    <dt>公開範囲</dt>
+                    <dd>{VISIBILITY_LABELS[task.visibility]}</dd>
+                  </>
+                ) : null}
                 <dt>決定したMTG</dt>
                 <dd>
                   {task.meetingTitle || "—"}
@@ -185,26 +191,28 @@ export default async function TaskDetailPage({
                       ))}
                     </select>
                   </div>
-                  <div className="field">
-                    <label htmlFor="edit-visibility">公開範囲</label>
-                    <select
-                      id="edit-visibility"
-                      name="visibility"
-                      defaultValue={task.visibility}
-                      disabled={!canSeeExecutive(user.role)}
-                    >
-                      <option value="all">{VISIBILITY_LABELS.all}</option>
-                      <option value="executive">{VISIBILITY_LABELS.executive}</option>
-                    </select>
-                  </div>
+                  {canSeeExecutive(user.role) ? (
+                    <div className="field">
+                      <label htmlFor="edit-visibility">公開範囲</label>
+                      <select id="edit-visibility" name="visibility" defaultValue={task.visibility}>
+                        <option value="all">{VISIBILITY_LABELS.all}</option>
+                        <option value="executive">{VISIBILITY_LABELS.executive}</option>
+                      </select>
+                    </div>
+                  ) : null}
                   <div className="field">
                     <label htmlFor="edit-meeting">決定したMTG</label>
-                    <input
-                      id="edit-meeting"
-                      name="meetingTitle"
-                      type="text"
-                      defaultValue={task.meetingTitle}
-                    />
+                    <select id="edit-meeting" name="meetingTitle" defaultValue={task.meetingTitle}>
+                      <option value="">未設定</option>
+                      {meetingTypes.map((meeting) => (
+                        <option key={meeting.id} value={meeting.name}>
+                          {meeting.name}
+                        </option>
+                      ))}
+                      {task.meetingTitle && !meetingTypes.some((m) => m.name === task.meetingTitle) ? (
+                        <option value={task.meetingTitle}>{task.meetingTitle}</option>
+                      ) : null}
+                    </select>
                   </div>
                   <div className="field">
                     <label htmlFor="edit-meeting-date">MTG開催日</label>

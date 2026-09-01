@@ -6,6 +6,7 @@ import { hashPassword, login, logout, requireAdmin, requireUser } from "@/lib/au
 import { db } from "@/lib/db";
 import { nowIso } from "@/lib/date";
 import { importReviewedMinutes, syncSource, type ReviewedRow } from "@/lib/importer";
+import { addMeetingType, updateMeetingType } from "@/lib/meetings";
 import { sendReminders } from "@/lib/reminders";
 import type { SourceName } from "@/lib/sources";
 import {
@@ -176,6 +177,30 @@ export async function syncSourceAction(formData: FormData): Promise<void> {
     `/import?synced=${encodeURIComponent(result.label)}&docs=${result.documents}` +
       `&created=${result.createdTasks}&skipped=${result.skipped}`,
   );
+}
+
+export async function addMeetingTypeAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  try {
+    await addMeetingType(str(formData, "name"), str(formData, "visibility") === "executive" ? "executive" : "all");
+  } catch (error) {
+    if (isRedirect(error)) throw error;
+    backWithError("/admin", "同じ会議名が既に登録されています。");
+  }
+  revalidatePath("/admin");
+  revalidatePath("/import");
+  redirect("/admin");
+}
+
+export async function updateMeetingTypeAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  await updateMeetingType(Number(str(formData, "id")), {
+    visibility: str(formData, "visibility") === "executive" ? "executive" : "all",
+    active: str(formData, "active") === "1",
+  });
+  revalidatePath("/admin");
+  revalidatePath("/import");
+  redirect("/admin");
 }
 
 export async function createUserAction(formData: FormData): Promise<void> {

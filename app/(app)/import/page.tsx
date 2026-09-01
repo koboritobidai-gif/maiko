@@ -5,6 +5,7 @@ import { SectionCard } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatShort, today } from "@/lib/date";
 import { listMinutes } from "@/lib/importer";
+import { listMeetingTypes } from "@/lib/meetings";
 import { SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { listUsers } from "@/lib/tasks";
 import { canSeeExecutive } from "@/lib/types";
@@ -24,6 +25,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const query = await searchParams;
   const members = await listUsers();
   const minutes = await listMinutes(user);
+  const meetingTypes = await listMeetingTypes();
   const isAdmin = user.role === "admin";
 
   return (
@@ -47,21 +49,23 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       ) : null}
 
       <SectionCard
-        title="議事録を貼り付けて取り込む"
-        note="ToDo・アクションアイテムの行から、担当と期限を読み取ります"
+        title="議事録を読み込む"
+        note="内容を確認してから登録します。自動では取り込みません"
       >
         <div style={{ padding: 0 }}>
           <MinutesImporter
             members={members.map((m) => ({ id: m.id, name: m.name, department: m.department }))}
+            meetings={meetingTypes.map((m) => ({ name: m.name, visibility: m.visibility }))}
             canSetExecutive={canSeeExecutive(user.role)}
             today={today()}
           />
         </div>
       </SectionCard>
 
+      {isAdmin ? (
       <SectionCard
-        title="連携している取得元"
-        note={isAdmin ? "毎朝の定期取り込みに加えて、その場で取り込めます" : "取り込みの実行は管理者が行います"}
+        title="取得元との連携（任意）"
+        note="自動では取り込みません。設定しておくと、必要なときに管理者がまとめて取り込めます"
       >
         <div className="table-wrap">
           <table className="data">
@@ -70,7 +74,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
                 <th style={{ width: 150 }}>取得元</th>
                 <th style={{ width: 110 }}>状態</th>
                 <th>必要な設定</th>
-                {isAdmin ? <th style={{ width: 120 }}></th> : null}
+                <th style={{ width: 120 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -87,16 +91,14 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
                     <td className="code" style={{ whiteSpace: "normal" }}>
                       {source.requirement}
                     </td>
-                    {isAdmin ? (
-                      <td>
-                        <form action={syncSourceAction}>
-                          <input type="hidden" name="source" value={source.name} />
-                          <button type="submit" className="btn btn-sm" disabled={!ready}>
-                            いま取り込む
-                          </button>
-                        </form>
-                      </td>
-                    ) : null}
+                    <td>
+                      <form action={syncSourceAction}>
+                        <input type="hidden" name="source" value={source.name} />
+                        <button type="submit" className="btn btn-sm" disabled={!ready}>
+                          いま取り込む
+                        </button>
+                      </form>
+                    </td>
                   </tr>
                 );
               })}
@@ -104,6 +106,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
           </table>
         </div>
       </SectionCard>
+      ) : null}
 
       <SectionCard title="取り込み済みの議事録" note={`直近${minutes.length}件`}>
         {minutes.length === 0 ? (

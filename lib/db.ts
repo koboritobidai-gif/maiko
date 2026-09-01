@@ -73,6 +73,13 @@ const SCHEMA = [
      task_count INTEGER NOT NULL DEFAULT 0,
      UNIQUE(source, external_id)
    )`,
+  `CREATE TABLE IF NOT EXISTS meeting_types (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     name TEXT NOT NULL UNIQUE,
+     visibility TEXT NOT NULL DEFAULT 'all',
+     sort_order INTEGER NOT NULL DEFAULT 0,
+     active INTEGER NOT NULL DEFAULT 1
+   )`,
   `CREATE TABLE IF NOT EXISTS reminder_log (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      task_id INTEGER NOT NULL,

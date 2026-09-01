@@ -1,19 +1,25 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type DragEvent } from "react";
 import { importReviewedAction } from "@/app/actions";
 
 /**
- * 議事録を貼り付けてタスクを取り込む。
+ * 議事録を取り込む画面。
  *
- * 抽出結果はそのまま登録せず、必ず一覧で確認・修正してもらう。
- * 議事録の書き方は人によって違うので、自動抽出だけに任せると取りこぼしと誤検出が残るため。
+ * 議事録は内容を確認してから社内共有する運用のため、自動で取り込まず
+ * 「ファイルをドラッグ＆ドロップ」か「本文を貼り付け」で読み込む。
+ * 抽出結果もそのまま登録せず、担当・期限を確認・修正してから登録する。
  */
 
 interface Member {
   id: string;
   name: string;
   department: string;
+}
+
+interface MeetingType {
+  name: string;
+  visibility: "all" | "executive";
 }
 
 interface Row {
@@ -29,25 +35,72 @@ interface Row {
 
 export function MinutesImporter({
   members,
+  meetings,
   canSetExecutive,
   today,
 }: {
   members: Member[];
+  meetings: MeetingType[];
   canSetExecutive: boolean;
   today: string;
 }) {
-  const [title, setTitle] = useState("");
+  const [meeting, setMeeting] = useState("");
   const [meetingDate, setMeetingDate] = useState(today);
-  const [visibility, setVisibility] = useState("all");
+  const [visibility, setVisibility] = useState<"all" | "executive">("all");
   const [body, setBody] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  /** 会議を選ぶと、その会議の既定の公開範囲に合わせる（役員会なら役員限定）。 */
+  function chooseMeeting(name: string) {
+    setMeeting(name);
+    const selected = meetings.find((m) => m.name === name);
+    if (selected) setVisibility(selected.visibility);
+  }
+
+  async function readFile(file: File | undefined | null) {
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      setMessage("ファイルが大きすぎます。2MB以内のテキスト／Markdown を選んでください。");
+      return;
+    }
+    const text = await file.text();
+    setBody(text);
+    setRows(null);
+    setFileName(file.name);
+
+    // 「2026-09-01-経営戦略会議.md」のようなファイル名から日付と会議名を拾う。
+    const name = file.name.replace(/\.(md|txt|markdown)$/i, "");
+    const matched = name.match(/^(\d{4}-\d{2}-\d{2})[-_ ](.+)$/);
+    if (matched) {
+      setMeetingDate(matched[1]);
+      const hit = meetings.find((m) => matched[2].includes(m.name));
+      if (hit) chooseMeeting(hit.name);
+    }
+    if (!matched) {
+      const hit = meetings.find((m) => name.includes(m.name) || text.includes(m.name));
+      if (hit) chooseMeeting(hit.name);
+    }
+    setMessage(`${file.name} を読み込みました。内容を確認して「タスクを抽出する」を押してください。`);
+  }
+
+  function onDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragging(false);
+    void readFile(event.dataTransfer.files?.[0]);
+  }
+
   async function extract() {
     setMessage(null);
     if (!body.trim()) {
-      setMessage("議事録の本文を貼り付けてください。");
+      setMessage("議事録の本文を貼り付けるか、ファイルをドラッグ＆ドロップしてください。");
+      return;
+    }
+    if (!meeting) {
+      setMessage("会議名を選んでください。");
       return;
     }
     const response = await fetch("/api/extract", {
@@ -62,7 +115,7 @@ export function MinutesImporter({
     const data = (await response.json()) as { tasks: Omit<Row, "include">[] };
     setRows(data.tasks.map((task) => ({ ...task, include: true })));
     if (data.tasks.length === 0) {
-      setMessage("タスクらしい行が見つかりませんでした。「ToDo」「担当:」などの表記があると拾いやすくなります。");
+      setMessage("タスクらしい行が見つかりませんでした。「ネクストアクション」「WHO：」「担当:」などの表記があると拾いやすくなります。");
     }
   }
 
@@ -79,7 +132,7 @@ export function MinutesImporter({
       return;
     }
     const payload = JSON.stringify({
-      title,
+      title: meeting,
       meetingDate,
       visibility,
       body,
@@ -95,26 +148,6 @@ export function MinutesImporter({
     });
   }
 
-  /** PLAUD などから書き出した議事録ファイルを読み込む。 */
-  async function readFile(file: File | undefined) {
-    if (!file) return;
-    const text = await file.text();
-    setBody(text);
-    setRows(null);
-    // 「2026-09-01-経営戦略会議.md」のようなファイル名から日付とタイトルを拾う。
-    const name = file.name.replace(/\.(md|txt|markdown)$/i, "");
-    const matched = name.match(/^(\d{4}-\d{2}-\d{2})[-_ ](.+)$/);
-    if (matched) {
-      setMeetingDate(matched[1]);
-      setTitle(matched[2]);
-    } else if (!title) {
-      setTitle(name);
-    }
-    const heading = text.match(/^\s*#\s+(.+)$/m);
-    if (heading) setTitle(heading[1].trim());
-    setMessage(`${file.name} を読み込みました。内容を確認して「タスクを抽出する」を押してください。`);
-  }
-
   const selectedCount = (rows ?? []).filter((row) => row.include).length;
 
   return (
@@ -123,50 +156,75 @@ export function MinutesImporter({
 
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="mtitle">議事録のタイトル</label>
-          <input
-            id="mtitle"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例：全体定例MTG"
-          />
+          <label htmlFor="mmeeting">会議名</label>
+          <select id="mmeeting" value={meeting} onChange={(e) => chooseMeeting(e.target.value)}>
+            <option value="">選択してください</option>
+            {meetings.map((item) => (
+              <option key={item.name} value={item.name}>
+                {item.name}
+                {item.visibility === "executive" ? "（役員限定）" : ""}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label htmlFor="mdate">開催日</label>
           <input id="mdate" type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} />
           <span className="hint">「来週金曜」などの期限は、この日を基準に日付へ直します。</span>
         </div>
-        <div className="field">
-          <label htmlFor="mvis">公開範囲</label>
-          <select id="mvis" value={visibility} onChange={(e) => setVisibility(e.target.value)} disabled={!canSetExecutive}>
-            <option value="all">全社員</option>
-            {canSetExecutive ? <option value="executive">役員のみ</option> : null}
-          </select>
+        {canSetExecutive ? (
+          <div className="field">
+            <label htmlFor="mvis">公開範囲</label>
+            <select
+              id="mvis"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as "all" | "executive")}
+            >
+              <option value="all">全社員</option>
+              <option value="executive">役員のみ</option>
+            </select>
+            <span className="hint">会議名を選ぶと自動で切り替わります。</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* 議事録は内容を確認してから共有するため、読み込みは手動（D&D か貼り付け）にしている。 */}
+      <div
+        className={`dropzone${dragging ? " is-over" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+      >
+        <div className="dropzone-main">議事録ファイルをここにドラッグ＆ドロップ</div>
+        <div className="dropzone-sub">
+          テキスト／Markdown（.txt / .md）に対応。PLAUD などで作った要約を書き出したファイルをそのまま置けます。
         </div>
+        <label className="btn btn-sm" style={{ marginTop: 8 }}>
+          ファイルを選ぶ
+          <input
+            type="file"
+            accept=".txt,.md,.markdown,text/plain,text/markdown"
+            onChange={(e) => void readFile(e.target.files?.[0])}
+            style={{ display: "none" }}
+          />
+        </label>
+        {fileName ? <div className="dropzone-file">読み込み済み：{fileName}</div> : null}
       </div>
 
       <div className="field">
-        <label htmlFor="mfile">議事録ファイルから読み込む（任意）</label>
-        <input
-          id="mfile"
-          type="file"
-          accept=".txt,.md,.markdown,text/plain,text/markdown"
-          onChange={(e) => void readFile(e.target.files?.[0])}
-        />
-        <span className="hint">
-          PLAUD などで作った要約をテキスト／Markdown で書き出したファイルをそのまま読み込めます。
-        </span>
-      </div>
-
-      <div className="field">
-        <label htmlFor="mbody">議事録の本文</label>
+        <label htmlFor="mbody">議事録の本文（メールの文章を貼り付けても構いません）</label>
         <textarea
           id="mbody"
           value={body}
-          onChange={(e) => setBody(e.target.value)}
-          style={{ minHeight: 180, fontFamily: "inherit" }}
-          placeholder={"議事録をそのまま貼り付けてください。\n\n例：\n## ToDo\n- 販促スケジュール案を作成（担当：鈴木、期限：9/10）\n- [ ] 説明会の日程確定 担当:中村 期限:来週金曜"}
+          onChange={(e) => {
+            setBody(e.target.value);
+            setFileName(null);
+          }}
+          style={{ minHeight: 180 }}
+          placeholder={"議事録をそのまま貼り付けてください。\n\n例：\n【ネクストアクション】\n① 九州支社移転\n* WHO：文字さん＋友井さん\n* WHAT：正式見積を取得し、最終判断する。"}
         />
       </div>
 
@@ -175,7 +233,14 @@ export function MinutesImporter({
           タスクを抽出する
         </button>
         {rows ? (
-          <button type="button" className="btn" onClick={() => { setRows(null); setMessage(null); }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setRows(null);
+              setMessage(null);
+            }}
+          >
             やり直す
           </button>
         ) : null}
@@ -186,7 +251,9 @@ export function MinutesImporter({
           <div className="section-head" style={{ marginTop: 22 }}>
             <div>
               <span className="section-title">抽出結果</span>
-              <span className="section-note">　{rows.length}件見つかりました／登録対象 {selectedCount}件。担当と期限はここで直せます。</span>
+              <span className="section-note">
+                　{rows.length}件見つかりました／登録対象 {selectedCount}件。担当と期限はここで直せます。
+              </span>
             </div>
           </div>
           <div className="table-wrap">
@@ -213,11 +280,20 @@ export function MinutesImporter({
                       />
                     </td>
                     <td>
-                      <input type="text" value={row.title} onChange={(e) => update(index, { title: e.target.value })} />
-                      <div className="code" style={{ marginTop: 2 }}>{row.raw}</div>
+                      <input
+                        type="text"
+                        value={row.title}
+                        onChange={(e) => update(index, { title: e.target.value })}
+                      />
+                      <div className="code" style={{ marginTop: 2 }}>
+                        {row.raw.split("\n")[0]}
+                      </div>
                     </td>
                     <td>
-                      <select value={row.ownerId} onChange={(e) => update(index, { ownerId: e.target.value })}>
+                      <select
+                        value={row.ownerId}
+                        onChange={(e) => update(index, { ownerId: e.target.value })}
+                      >
                         <option value="">未定</option>
                         {members.map((member) => (
                           <option key={member.id} value={member.id}>
@@ -230,11 +306,19 @@ export function MinutesImporter({
                       ) : null}
                     </td>
                     <td>
-                      <input type="date" value={row.dueDate} onChange={(e) => update(index, { dueDate: e.target.value })} />
-                      {row.dueHint && !row.dueDate ? <div className="code">「{row.dueHint}」を解釈できず</div> : null}
+                      <input
+                        type="date"
+                        value={row.dueDate}
+                        onChange={(e) => update(index, { dueDate: e.target.value })}
+                      />
+                      {row.dueHint && !row.dueDate ? (
+                        <div className="code">「{row.dueHint}」を解釈できず</div>
+                      ) : null}
                     </td>
                     <td>
-                      <span className={`badge ${row.confidence === "high" ? "badge-done" : "badge-not_started"}`}>
+                      <span
+                        className={`badge ${row.confidence === "high" ? "badge-done" : "badge-not_started"}`}
+                      >
                         {row.confidence === "high" ? "高" : "要確認"}
                       </span>
                     </td>

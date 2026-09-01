@@ -373,6 +373,22 @@ textarea { resize: vertical; min-height: 76px; }
 .btn-sm { padding: 5px 11px; font-size: 12px; }
 .btn-danger { color: var(--danger); border-color: var(--danger-line); background: var(--danger-tint); }
 
+/* 議事録ファイルの受け口。 */
+.dropzone {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  padding: 20px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  transition: border-color .15s, background .15s;
+}
+.dropzone.is-over { border-color: var(--gold); background: var(--gold-tint); }
+.dropzone-main { font-size: 13px; color: var(--ink-heading); font-weight: 600; }
+.dropzone-sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
+.dropzone-file { font-size: 11.5px; color: var(--ok); margin-top: 8px; }
+.dropzone .btn { display: inline-flex; }
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

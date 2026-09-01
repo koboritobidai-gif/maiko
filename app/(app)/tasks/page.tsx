@@ -2,6 +2,7 @@ import { createTaskAction } from "@/app/actions";
 import { SectionCard, TaskTable } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { today } from "@/lib/date";
+import { listMeetingTypes } from "@/lib/meetings";
 import { listMeetings, listTasks, listUsers, type TaskFilters } from "@/lib/tasks";
 import {
   STATUS_LABELS,
@@ -34,6 +35,7 @@ export default async function TasksPage({
 
   const members = await listUsers();
   const meetings = await listMeetings(user);
+  const meetingTypes = await listMeetingTypes();
 
   // owner=me は自分の ID に読み替える。URL を短く保つため。
   const ownerId = query.owner === "me" ? user.id : query.owner || undefined;
@@ -146,33 +148,27 @@ export default async function TasksPage({
                   ))}
                 </select>
               </div>
-              <div className="field">
-                <label htmlFor="new-visibility">公開範囲</label>
-                <select
-                  id="new-visibility"
-                  name="visibility"
-                  defaultValue="all"
-                  disabled={!canSeeExecutive(user.role)}
-                >
-                  <option value="all">{VISIBILITY_LABELS.all}</option>
-                  {canSeeExecutive(user.role) ? (
+              {canSeeExecutive(user.role) ? (
+                <div className="field">
+                  <label htmlFor="new-visibility">公開範囲</label>
+                  <select id="new-visibility" name="visibility" defaultValue="all">
+                    <option value="all">{VISIBILITY_LABELS.all}</option>
                     <option value="executive">{VISIBILITY_LABELS.executive}</option>
-                  ) : null}
-                </select>
-                <span className="hint">
-                  {canSeeExecutive(user.role)
-                    ? "「役員のみ」にすると役員・管理者だけが閲覧できます。"
-                    : "役員限定タスクの作成は役員・管理者のみです。"}
-                </span>
-              </div>
+                  </select>
+                  <span className="hint">「役員のみ」にすると役員・管理者だけが閲覧できます。</span>
+                </div>
+              ) : null}
               <div className="field">
                 <label htmlFor="meetingTitle">決定したMTG</label>
-                <input id="meetingTitle" name="meetingTitle" type="text" placeholder="例：全体定例MTG" list="meeting-list" />
-                <datalist id="meeting-list">
-                  {meetings.map((meeting) => (
-                    <option key={meeting.title} value={meeting.title} />
+                <select id="meetingTitle" name="meetingTitle" defaultValue="">
+                  <option value="">選択してください</option>
+                  {meetingTypes.map((meeting) => (
+                    <option key={meeting.id} value={meeting.name}>
+                      {meeting.name}
+                      {meeting.visibility === "executive" ? "（役員限定）" : ""}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </div>
               <div className="field">
                 <label htmlFor="meetingDate">MTG開催日</label>

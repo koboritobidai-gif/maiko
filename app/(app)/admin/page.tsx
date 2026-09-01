@@ -1,4 +1,10 @@
-import { createUserAction, sendRemindersAction, setUserRoleAction } from "@/app/actions";
+import {
+  addMeetingTypeAction,
+  createUserAction,
+  sendRemindersAction,
+  setUserRoleAction,
+  updateMeetingTypeAction,
+} from "@/app/actions";
 import { SectionCard } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatShort, today } from "@/lib/date";
@@ -10,8 +16,9 @@ import {
   recentReminderLog,
   staleDays,
 } from "@/lib/reminders";
+import { listMeetingTypes } from "@/lib/meetings";
 import { listUsers } from "@/lib/tasks";
-import { ROLE_LABELS, type Role } from "@/lib/types";
+import { ROLE_LABELS, VISIBILITY_LABELS, type Role } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +36,7 @@ export default async function AdminPage({
   const members = await listUsers(true);
   const plans = await planReminders(base);
   const log = await recentReminderLog();
+  const meetingTypes = await listMeetingTypes(true);
 
   return (
     <>
@@ -132,7 +140,66 @@ export default async function AdminPage({
         )}
       </SectionCard>
 
-      <SectionCard title="社員アカウント" note="役員に設定した社員だけが役員限定タスクを閲覧できます">
+      <SectionCard
+        title="会議名"
+        note="議事録の取り込みやタスク登録では、ここに登録した会議名から選びます"
+      >
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr>
+                <th>会議名</th>
+                <th style={{ width: 150 }}>公開範囲</th>
+                <th style={{ width: 110 }}>表示</th>
+                <th style={{ width: 90 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {meetingTypes.map((meeting) => (
+                <tr key={meeting.id}>
+                  <td style={{ fontWeight: 600 }}>{meeting.name}</td>
+                  <td colSpan={3}>
+                    <form action={updateMeetingTypeAction} style={{ display: "flex", gap: 6 }}>
+                      <input type="hidden" name="id" value={meeting.id} />
+                      <select name="visibility" defaultValue={meeting.visibility}>
+                        <option value="all">{VISIBILITY_LABELS.all}</option>
+                        <option value="executive">{VISIBILITY_LABELS.executive}</option>
+                      </select>
+                      <select name="active" defaultValue={meeting.active ? "1" : "0"}>
+                        <option value="1">選択肢に表示</option>
+                        <option value="0">非表示</option>
+                      </select>
+                      <button type="submit" className="btn btn-sm">
+                        変更
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="card-pad" style={{ borderTop: "1px solid var(--line)" }}>
+          <form action={addMeetingTypeAction} className="toolbar" style={{ margin: 0 }}>
+            <div className="field grow">
+              <label htmlFor="meeting-name">会議名を追加</label>
+              <input id="meeting-name" name="name" type="text" required placeholder="例：商品戦略会議" />
+            </div>
+            <div className="field">
+              <label htmlFor="meeting-visibility">公開範囲</label>
+              <select id="meeting-visibility" name="visibility" defaultValue="all">
+                <option value="all">{VISIBILITY_LABELS.all}</option>
+                <option value="executive">{VISIBILITY_LABELS.executive}</option>
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary">
+              追加する
+            </button>
+          </form>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="社員アカウント" note="役員に設定した社員だけが役員限定の議事録・タスクを閲覧できます">
         <div className="table-wrap">
           <table className="data">
             <thead>

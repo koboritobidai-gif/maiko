@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "./db.ts";
 import { hashPassword, verifyPassword } from "./password.ts";
 import { nowIso } from "./date.ts";
-import type { Role, User } from "./types.ts";
+import { canSeeExecutive, type Role, type User } from "./types.ts";
 
 /**
  * 認証まわり。外部の認証ライブラリは使わず、
@@ -105,6 +105,13 @@ export async function currentUser(): Promise<User | null> {
 export async function requireUser(): Promise<User> {
   const user = await currentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** 役員専用ページ・操作。権限が無ければダッシュボードへ戻す。 */
+export async function requireExecutive(): Promise<User> {
+  const user = await requireUser();
+  if (!canSeeExecutive(user.role)) redirect("/");
   return user;
 }
 
