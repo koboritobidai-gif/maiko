@@ -359,6 +359,154 @@ const TASKS = [
     meeting: "役員会", mtg: -5, reported: 5, desc: "不採算店舗の扱いを含む再編案。公開前の検討段階。", log: [] },
 ];
 
+
+/* ── 議事録からタスクを抽出する ─────────────────────────
+   アプリ本体の lib/extract.ts をデモ用に移植したもの。判定ルールは同じ。 */
+const TODO_HEADING = /(to\s?do|アクション\s?アイテム|action\s*items?|next\s*steps?|やること|宿題|持ち帰り|タスク)/i;
+const BULLET = /^\s*(?:[-*+・･◦▪▸‣>＞]|\d+[.)．、]|[（(]\d+[）)])\s*/;
+const CHECKBOX = /^\s*(?:[-*+]\s*)?\[( |x|X|✓)\]\s*/;
+
+const OWNER_PATTERNS = [
+  /[（(]\s*担当者?\s*[:：]?\s*([^）)、,]{1,14}?)\s*[）)]/,
+  /担当者?\s*[:：]\s*([^\s、,。／\/（）()【】]{1,14})/,
+  /担当者?\s*[はが]?\s*([^\s、,。／\/（）()【】]{1,10})\s*さん/,
+  /(?:^|[\s（(【])@([^\s、,。）)】]{1,12})/,
+];
+const DUE_PATTERNS = [
+  /[（(]\s*(?:期限|〆切|締切|締め切り|納期)\s*[:：]?\s*([^）)]{1,16}?)\s*[）)]/,
+  /(?:期限|〆切|締切|締め切り|納期|提出日)\s*[:：]?\s*(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?|\d{1,2}[-/月]\d{1,2}日?|\d{1,2}日)/,
+  /(?:期限|〆切|締切|締め切り|納期|提出日)\s*[:：]?\s*([^\s、,。／\/（）()【】]{1,16})/,
+  /([0-9]{1,2}[\/月][0-9]{1,2}日?)\s*(?:まで|迄)/,
+  /(今日|本日|明日|明後日|今週中|今週末|来週[月火水木金土日]曜?日?|来週中|来週|再来週|週明け|月末|今月末|来月末)\s*(?:まで|迄)?/,
+];
+
+function headingOf(line) {
+  if (BULLET.test(line) || CHECKBOX.test(line)) return null;
+  if (/^\s*#{1,6}\s+/.test(line)) return line.replace(/^\s*#{1,6}\s+/, "").trim();
+  if (/^\s*[■●◆▼○◎]/.test(line)) return line.replace(/^\s*[■●◆▼○◎]\s*/, "").trim();
+  const bracket = line.match(/^\s*[【\[]([^】\]]{1,20})[】\]]\s*$/);
+  if (bracket) return bracket[1].trim();
+  const colon = line.match(/^\s*(.{1,20}?)\s*[:：]\s*$/);
+  if (colon) return colon[1].trim();
+  return null;
+}
+
+function firstMatch(line, patterns) {
+  for (const re of patterns) {
+    const m = line.match(re);
+    if (m && m[1] && m[1].trim()) return { value: m[1].trim(), matched: m[0] };
+  }
+  return null;
+}
+
+/** 「9/10」「来週金曜」「月末」などを基準日から日付に直す。 */
+function resolveDue(value, baseYmd) {
+  const base = new Date(baseYmd + "T12:00:00Z");
+  const out = (d) => d.toISOString().slice(0, 10);
+  const add = (n) => { const d = new Date(base); d.setUTCDate(d.getUTCDate() + n); return out(d); };
+  const build = (y, m, d) => {
+    const date = new Date(Date.UTC(y, m - 1, d, 12));
+    return date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? out(date) : null;
+  };
+  const eom = (offset) => {
+    const d = new Date(base);
+    d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + offset + 1); d.setUTCDate(0);
+    return out(d);
+  };
+  const nextWeekday = (target, weeksAhead) => {
+    const delta = ((target - base.getUTCDay() + 7) % 7) || 7;
+    return add(delta + (weeksAhead > 1 ? (weeksAhead - 1) * 7 : 0));
+  };
+  const text = (value || "").trim();
+
+  let m = text.match(/^(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?$/);
+  if (m) return build(+m[1], +m[2], +m[3]);
+  m = text.match(/^(\d{1,2})[-/月](\d{1,2})日?$/);
+  if (m) {
+    const y = base.getUTCFullYear();
+    const c = build(y, +m[1], +m[2]);
+    return c && c < baseYmd ? build(y + 1, +m[1], +m[2]) : c;
+  }
+  if (/^(今日|本日)$/.test(text)) return baseYmd;
+  if (text === "明日") return add(1);
+  if (text === "明後日") return add(2);
+  if (text === "週明け") return nextWeekday(1, 1);
+  if (/^(今週中|今週末)$/.test(text)) return nextWeekday(5, 1);
+  if (/^(月末|今月末)$/.test(text)) return eom(0);
+  if (text === "来月末") return eom(1);
+  if (/^(来週中|来週)$/.test(text)) return nextWeekday(5, 2);
+  if (text === "再来週") return add(14);
+  m = text.match(/^来週([日月火水木金土])曜?日?$/);
+  if (m) return nextWeekday("日月火水木金土".indexOf(m[1]), 2);
+  return null;
+}
+
+function extractFromMinutes(text, baseYmd) {
+  const rows = [];
+  const seen = new Set();
+  let inTodo = false;
+
+  for (const line of (text || "").replace(/\r\n?/g, "\n").split("\n")) {
+    if (!line.trim()) continue;
+    const heading = headingOf(line);
+    if (heading !== null) { inTodo = TODO_HEADING.test(heading); continue; }
+
+    const checkbox = CHECKBOX.test(line);
+    if (checkbox && /\[(x|X|✓)\]/.test(line)) continue;
+
+    const owner = firstMatch(line, OWNER_PATTERNS);
+    const due = firstMatch(line, DUE_PATTERNS);
+    const bullet = BULLET.test(line) || checkbox;
+    if (!((inTodo && bullet) || checkbox || owner || (bullet && due))) continue;
+
+    let title = line;
+    for (const f of [owner && owner.matched, due && due.matched]) if (f) title = title.replace(f, " ");
+    title = title.replace(CHECKBOX, "").replace(BULLET, "")
+      .replace(/[（(][\s、,・:：\-–—]*[）)]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[\s、,。・:：\-–—]+|[\s、,。・:：\-–—]+$/g, "").trim();
+    if (title.length < 3) continue;
+
+    const key = title.replace(/\s/g, "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const hint = owner ? owner.value.replace(/さん$|様$|氏$/, "") : null;
+    const match = hint
+      ? MEMBERS.find((m) => m.name.replace(/\s/g, "") === hint.replace(/\s/g, "")) ||
+        MEMBERS.find((m) => m.name.split(/\s/).some((part) => part === hint)) ||
+        MEMBERS.find((m) => m.id === hint.toLowerCase())
+      : null;
+
+    rows.push({
+      include: true,
+      title,
+      ownerId: match ? match.id : "",
+      ownerHint: hint,
+      due: due ? resolveDue(due.value, baseYmd) : null,
+      dueHint: due ? due.value : null,
+      raw: line.trim(),
+    });
+  }
+  return rows;
+}
+
+const SAMPLE_MINUTES = `# 商品開発会議 議事録（2026年9月1日）
+参加者：長野、田中、鈴木、中村
+
+## 共有事項
+- 秋冬ラインの試作が完了
+- 大阪ショールームの来場者が前年比120%
+
+## ToDo
+- 秋冬ラインの容器デザイン案を3案作成（担当：田中、期限：9/12）
+- [ ] 販促用サンプルの数量を確定 担当:鈴木 期限:来週金曜
+- サロン向け説明会の会場を仮押さえ 担当:中村 期限:月末
+- 展示会の出展可否を検討
+
+## 次回
+9月15日(月) 10:00-`;
+
 /* ── 状態 ─────────────────────────────────────────────── */
 const state = {
   userId: "nagano",
@@ -366,6 +514,9 @@ const state = {
   filters: { q: "", owner: "", status: "open", vis: "" },
   meeting: null,
   openTask: null,
+  importRows: null,
+  importTitle: "商品開発会議",
+  importBody: SAMPLE_MINUTES,
 };
 const user = () => memberOf(state.userId);
 
@@ -676,12 +827,71 @@ function renderDrawer() {
 }
 
 /* ── 描画とイベント ───────────────────────────────────── */
+
+/* 議事録を貼り付けてタスクを取り込む画面 */
+function viewImport() {
+  const baseYmd = ymd(TODAY);
+  const rows = state.importRows;
+  const memberOptions = (selected) =>
+    MEMBERS.map((m) => `<option value="${m.id}"${selected === m.id ? " selected" : ""}>${esc(m.name)}</option>`).join("");
+
+  const preview = rows === null ? "" : rows.length === 0
+    ? `<div class="empty">タスクらしい行が見つかりませんでした。「ToDo」「担当:」などの表記があると拾いやすくなります。</div>`
+    : `<div class="section-head" style="margin-top:20px"><div>
+         <span class="section-title">抽出結果</span>
+         <span class="section-note">　${rows.length}件見つかりました。担当と期限はここで直せます。</span></div></div>
+       <div class="table-wrap"><table class="data">
+         <thead><tr><th style="width:44px">登録</th><th>タスク名</th>
+           <th style="width:140px">担当</th><th style="width:150px">期限</th><th style="width:84px">確度</th></tr></thead>
+         <tbody>${rows.map((r, i) => `<tr>
+           <td><input type="checkbox" data-row="${i}" data-field="include"${r.include ? " checked" : ""}></td>
+           <td><input type="text" data-row="${i}" data-field="title" value="${esc(r.title)}" style="width:100%">
+               <div class="code" style="margin-top:2px">${esc(r.raw)}</div></td>
+           <td><select data-row="${i}" data-field="ownerId"><option value="">未定</option>${memberOptions(r.ownerId)}</select>
+               ${r.ownerHint && !r.ownerId ? `<div class="code">議事録の表記: ${esc(r.ownerHint)}</div>` : ""}</td>
+           <td><input type="date" data-row="${i}" data-field="due" value="${r.due || ""}">
+               ${r.dueHint && !r.due ? `<div class="code">「${esc(r.dueHint)}」を解釈できず</div>` : ""}</td>
+           <td><span class="badge ${r.ownerId || r.due ? "st-done" : "st-not_started"}">${r.ownerId || r.due ? "高" : "要確認"}</span></td>
+         </tr>`).join("")}</tbody></table></div>
+       <div style="margin-top:14px"><button class="btn btn-primary" id="commitImport">
+         ${rows.filter((r) => r.include).length}件をタスクに登録する</button></div>`;
+
+  const sources = [
+    { label: "メール", note: "件名に「議事録」を含むメールを取り込み。引用と署名は自動で除去" },
+    { label: "Slack", note: "指定チャンネルの議事録投稿。役員チャンネルは役員限定タスクとして取り込み" },
+    { label: "Google ドライブ", note: "指定フォルダの Google ドキュメント" },
+  ];
+
+  return `
+  <div class="notice" style="margin-bottom:16px">
+    メール・Slack・Google ドライブの議事録を毎晩取り込み、ToDo の行からタスクを自動で作ります。
+    その場で取り込みたいときは、下に議事録を貼り付けてください。
+  </div>
+  ${section("議事録を貼り付けて取り込む", "ToDo・アクションアイテムの行から、担当と期限を読み取ります", `<div class="card-pad">
+    <div class="toolbar">
+      <div class="field grow"><label for="impTitle">議事録のタイトル</label>
+        <input id="impTitle" type="text" value="${esc(state.importTitle)}"></div>
+      <div class="field"><label for="impDate">開催日</label><input id="impDate" type="date" value="${baseYmd}"></div>
+    </div>
+    <div class="field" style="margin-bottom:12px"><label for="impBody">議事録の本文</label>
+      <textarea id="impBody" style="width:100%;min-height:190px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:9px 11px;background:var(--surface);font-family:var(--sans);line-height:1.8">${esc(state.importBody)}</textarea></div>
+    <button class="btn btn-primary" id="runExtract">タスクを抽出する</button>
+    ${preview}
+  </div>`)}
+  ${section("連携している取得元", "毎晩の定期取り込みに加えて、管理画面からその場で取り込めます", `<div class="table-wrap">
+    <table class="data"><thead><tr><th style="width:150px">取得元</th><th style="width:100px">状態</th><th>取り込む対象</th></tr></thead>
+    <tbody>${sources.map((s) => `<tr><td style="font-weight:700">${s.label}</td>
+      <td><span class="badge st-done">連携済み</span></td>
+      <td style="color:var(--ink-soft)">${s.note}</td></tr>`).join("")}</tbody></table></div>`)}`;
+}
+
 const VIEWS = {
   dashboard: { label: "ダッシュボード", icon: "◎", render: viewDashboard },
   tasks: { label: "タスク一覧", icon: "☰", render: viewTasks },
   members: { label: "担当者別の進捗", icon: "◍", render: viewMembers },
   meetings: { label: "MTG別", icon: "▤", render: viewMeetings },
   mail: { label: "リマインドメール", icon: "✉", render: viewMail },
+  import: { label: "議事録の取り込み", icon: "⇢", render: viewImport },
 };
 /* 管理者以外は自分宛の通知だけを見るので、ナビの文言を変える */
 const mailNavLabel = () => (user().role === "admin" ? "リマインドメール（全社）" : "自分に届くメール");
@@ -692,6 +902,7 @@ function renderNav() {
   const mine = open.filter((t) => t.owner === state.userId).length;
   const groups = [
     { items: [["dashboard", null], ["tasks", open.length]] },
+    { label: "取り込む", items: [["import", null]] },
     { label: "把握する", items: [["members", null], ["meetings", null]] },
     { label: "通知", items: [["mail", null]] },
   ];
@@ -784,6 +995,43 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+
+  if (e.target.id === "runExtract") {
+    state.importTitle = document.getElementById("impTitle").value.trim() || "議事録";
+    state.importBody = document.getElementById("impBody").value;
+    const base = document.getElementById("impDate").value || ymd(TODAY);
+    state.importRows = extractFromMinutes(state.importBody, base);
+    render();
+    return;
+  }
+
+  if (e.target.id === "commitImport") {
+    const selected = (state.importRows || []).filter((r) => r.include && r.title.trim());
+    if (!selected.length) { toast("登録するタスクを選んでください"); return; }
+    const base = document.getElementById("impDate") ? document.getElementById("impDate").value : ymd(TODAY);
+    for (const row of selected) {
+      TASKS.push({
+        code: "T-" + String(TASKS.length + 1).padStart(4, "0"),
+        title: row.title.trim(),
+        owner: row.ownerId || null,
+        due: row.due ? Math.round((new Date(row.due + "T12:00:00Z") - TODAY) / DAY) : null,
+        status: "not_started",
+        vis: "all",
+        meeting: state.importTitle,
+        mtg: Math.round((new Date(base + "T12:00:00Z") - TODAY) / DAY),
+        reported: 0,
+        desc: "議事録より自動作成: " + row.raw,
+        log: [],
+      });
+    }
+    state.importRows = null;
+    toast(selected.length + "件のタスクを登録しました");
+    state.view = "tasks";
+    state.filters = { q: "", owner: "", status: "open", vis: "" };
+    render();
+    return;
+  }
+
   if (e.target.id === "addTask") {
     const title = document.getElementById("nt").value.trim();
     if (!title) { toast("タスク名を入力してください"); return; }
@@ -802,7 +1050,19 @@ document.addEventListener("click", (e) => {
   }
 });
 
+
+/* 抽出結果の編集。再描画で入力欄が作り直されるため、値は state に持たせる。 */
+function updateImportRow(el) {
+  const index = Number(el.dataset.row);
+  const field = el.dataset.field;
+  if (!state.importRows || !state.importRows[index]) return;
+  state.importRows[index][field] = el.type === "checkbox" ? el.checked : el.value;
+}
+
 document.addEventListener("input", (e) => {
+  if (e.target.dataset && e.target.dataset.row) { updateImportRow(e.target); return; }
+  if (e.target.id === "impBody") { state.importBody = e.target.value; return; }
+  if (e.target.id === "impTitle") { state.importTitle = e.target.value; return; }
   if (e.target.id === "fq") {
     state.filters.q = e.target.value;
     const pos = e.target.selectionStart;
@@ -813,6 +1073,7 @@ document.addEventListener("input", (e) => {
   }
 });
 document.addEventListener("change", (e) => {
+  if (e.target.dataset && e.target.dataset.row) { updateImportRow(e.target); return; }
   if (e.target.id === "fowner") { state.filters.owner = e.target.value; render(); }
   if (e.target.id === "fstatus") { state.filters.status = e.target.value; render(); }
   if (e.target.id === "fvis") { state.filters.vis = e.target.value; render(); }
