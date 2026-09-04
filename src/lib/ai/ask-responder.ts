@@ -471,10 +471,15 @@ function answerAdCost(marketingSummary: MarketingSummary | null): string {
   if (!marketingSummary) return "集客・広告データが取得できませんでした。";
   const google = marketingSummary.channels.find((c) => c.channel === "Google広告");
   const meta = marketingSummary.channels.find((c) => c.channel === "Meta広告");
+  // リズリアライズ(SNS運用)は2026年8月で契約終了。契約終了後は月額¥0を読み上げず、
+  // 「契約終了」の一言に置き換える。
+  const snsPart = marketingSummary.sns.contractEnded
+    ? "SNS運用(リズリアライズ)は2026年8月で契約終了"
+    : `SNS運用(リズリアライズ)月額 ${formatYenPlain(marketingSummary.sns.cost)}`;
   return (
     `今月の広告費用は合計${formatYenPlain(marketingSummary.totalCost)}です` +
     `(Google広告 ${formatYenPlain(google?.cost ?? 0)}、Meta広告 ${formatYenPlain(meta?.cost ?? 0)}、` +
-    `SNS運用(リズリアライズ)月額 ${formatYenPlain(marketingSummary.sns.cost)})。` +
+    `${snsPart})。` +
     `LINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件につながっています。`
   );
 }
@@ -485,10 +490,12 @@ function answerCpa(marketingSummary: MarketingSummary | null): string {
   const google = marketingSummary.channels.find((c) => c.channel === "Google広告");
   const meta = marketingSummary.channels.find((c) => c.channel === "Meta広告");
   const fmt = (v: number | null | undefined) => (v == null ? "算出できません(LINE登録0件)" : formatYenPlain(v));
-  return (
-    `今月の登録単価(CPA)は Google広告 ${fmt(google?.cpa)}、Meta広告 ${fmt(meta?.cpa)}、` +
-    `SNS運用(リズリアライズ) ${fmt(marketingSummary.sns.cpa)} です。`
-  );
+  // リズリアライズは2026年8月で契約終了。契約終了後はCPA(null)を「算出できません」ではなく
+  // 「契約終了」として案内する。
+  const snsPart = marketingSummary.sns.contractEnded
+    ? "SNS運用(リズリアライズ)は2026年8月で契約終了"
+    : `SNS運用(リズリアライズ) ${fmt(marketingSummary.sns.cpa)}`;
+  return `今月の登録単価(CPA)は Google広告 ${fmt(google?.cpa)}、Meta広告 ${fmt(meta?.cpa)}、${snsPart} です。`;
 }
 
 /** 「送客費用」「送客パートナー」への回答: 経路別の単価・人数・費用+合計(今月・先月)。 */

@@ -697,9 +697,9 @@ export default function DashboardView({
           <KpiCard
             label="広告費用合計"
             value={formatYen(mk.totalCost)}
-            caption={`広告 ${formatYen(
-              mk.channels.reduce((sum, c) => sum + c.cost, 0),
-            )} + SNS ${formatYen(mk.sns.cost)} + 送客 ${formatYen(mk.referralTotalYen)}`}
+            caption={`広告 ${formatYen(mk.channels.reduce((sum, c) => sum + c.cost, 0))}${
+              mk.sns.contractEnded ? "" : ` + SNS ${formatYen(mk.sns.cost)}`
+            } + 送客 ${formatYen(mk.referralTotalYen)}`}
             accent
           />
           <KpiCard label="LINE登録合計" value={`${mk.totalLineRegs.toLocaleString("ja-JP")}人`} />
@@ -726,11 +726,13 @@ export default function DashboardView({
             )}
             caption="Google+Meta広告の費用 ÷ 面談数"
           />
-          <KpiCard
-            label="面談単価(リズリアライズ)"
-            value={formatYenOrDash(mk.sns.costPerInterview)}
-            caption="SNS運用の費用 ÷ 面談数"
-          />
+          {!mk.sns.contractEnded && (
+            <KpiCard
+              label="面談単価(リズリアライズ)"
+              value={formatYenOrDash(mk.sns.costPerInterview)}
+              caption="SNS運用の費用 ÷ 面談数"
+            />
+          )}
         </div>
         <Collapsible title="媒体別">
           <table className="w-full min-w-[560px] text-left text-[12px]">
@@ -768,19 +770,26 @@ export default function DashboardView({
                 <td className="py-2 pr-2 text-right">{formatYenOrDash(metaAd?.cpa ?? null)}</td>
                 <td className="py-2 text-right">{formatYenOrDash(metaAd?.costPerInterview ?? null)}</td>
               </tr>
-              <tr>
-                <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
-                  SNS運用(リズリアライズ)
-                </td>
-                <td className="py-2 pr-2 text-right">{formatYen(mk.sns.cost)}</td>
-                <td className="py-2 pr-2 text-right">{mk.sns.lineRegs.toLocaleString("ja-JP")}人</td>
-                <td className="py-2 pr-2 text-right">—</td>
-                <td className="py-2 pr-2 text-right">{mk.sns.interviews.toLocaleString("ja-JP")}件</td>
-                <td className="py-2 pr-2 text-right">{formatYenOrDash(mk.sns.cpa)}</td>
-                <td className="py-2 text-right">{formatYenOrDash(mk.sns.costPerInterview)}</td>
-              </tr>
+              {!mk.sns.contractEnded && (
+                <tr>
+                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    SNS運用(リズリアライズ)
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatYen(mk.sns.cost)}</td>
+                  <td className="py-2 pr-2 text-right">{mk.sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">{mk.sns.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-2 pr-2 text-right">{formatYenOrDash(mk.sns.cpa)}</td>
+                  <td className="py-2 text-right">{formatYenOrDash(mk.sns.costPerInterview)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
+          {mk.sns.contractEnded && (
+            <p className="pt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              ※SNS運用(リズリアライズ)は2026年8月で契約終了
+            </p>
+          )}
         </Collapsible>
         <div className="flex flex-wrap gap-1.5">
           {transitionRates.clickToLineRegRatePercent !== null && (

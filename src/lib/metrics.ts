@@ -621,7 +621,13 @@ export interface SnsSummary {
   cpa: number | null;
   /** 面談単価(円) = 月額費用 / 面談(実) */
   costPerInterview: number | null;
+  /** リズリアライズ契約終了後の月(2026年9月以降)か。 */
+  contractEnded: boolean;
 }
+
+// リズリアライズ(SNS運用)との契約は2026年8月分で終了(経営者指示)。
+// 2026年9月以降の月は月額固定費を計上せず、単価もnullにする。
+const SNS_CONTRACT_LAST_MONTH = "2026-08";
 
 function summarizeSns(records: SnsWeeklyRecord[], monthlyCostYen: number, now: Date): SnsSummary {
   const inMonth = records.filter((r) => isSameMonth(r.weekStart, now));
@@ -630,8 +636,10 @@ function summarizeSns(records: SnsWeeklyRecord[], monthlyCostYen: number, now: D
   const lpViews = inMonth.reduce((sum, r) => sum + r.lpViews, 0);
   const lineRegs = inMonth.reduce((sum, r) => sum + r.lineRegs, 0);
   const interviews = inMonth.reduce((sum, r) => sum + r.interviews, 0);
+  const contractEnded = toMonthKey(now) > SNS_CONTRACT_LAST_MONTH;
+  const cost = contractEnded ? 0 : monthlyCostYen;
   return {
-    cost: monthlyCostYen,
+    cost,
     plays,
     profileVisits,
     lpViews,
@@ -639,8 +647,9 @@ function summarizeSns(records: SnsWeeklyRecord[], monthlyCostYen: number, now: D
     interviews,
     lpRate: rateOrNull(lpViews, plays),
     regRate: rateOrNull(lineRegs, lpViews),
-    cpa: divOrNull(monthlyCostYen, lineRegs),
-    costPerInterview: divOrNull(monthlyCostYen, interviews),
+    cpa: contractEnded ? null : divOrNull(cost, lineRegs),
+    costPerInterview: contractEnded ? null : divOrNull(cost, interviews),
+    contractEnded,
   };
 }
 
@@ -857,12 +866,15 @@ export interface WeeklySnsSummary {
   available: boolean;
   lineRegs: number;
   interviews: number;
+  /** リズリアライズ契約終了後の週(2026年9月以降)か。 */
+  contractEnded: boolean;
 }
 
 function summarizeSnsWeek(records: SnsWeeklyRecord[], weekStart: Date): WeeklySnsSummary {
+  const contractEnded = toMonthKey(weekStart) > SNS_CONTRACT_LAST_MONTH;
   const record = records.find((r) => isSameDay(r.weekStart, weekStart));
-  if (!record) return { available: false, lineRegs: 0, interviews: 0 };
-  return { available: true, lineRegs: record.lineRegs, interviews: record.interviews };
+  if (!record) return { available: false, lineRegs: 0, interviews: 0, contractEnded };
+  return { available: true, lineRegs: record.lineRegs, interviews: record.interviews, contractEnded };
 }
 
 /** 面談実施が確実とみなせるか(月次の getReferralPartnerSummary と同じ判定基準)。 */

@@ -58,6 +58,7 @@ function adSnsBreakdown(mk: MarketingSummary) {
     lineRegs: mk.sns.lineRegs,
     interviews: mk.sns.interviews,
     unitCost: mk.sns.costPerInterview,
+    contractEnded: mk.sns.contractEnded,
   };
   // 合計(広告Google+Meta+SNS運用)。面談・LINE登録・予約はいずれも getMarketingSummary の
   // 合計値(totalLineRegs/totalReservations/totalInterviews)と一致する(送客パートナー除く)。
@@ -255,18 +256,25 @@ export default function MarketingReportView({
                 <td className="py-1 pr-2 text-right tabular-nums">{idoma.interviews.toLocaleString("ja-JP")}件</td>
                 <td className="py-1 text-right tabular-nums">{formatYenOrDash(idoma.unitCost)}</td>
               </tr>
-              <tr>
-                <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
-                  リズリアライズ
-                </td>
-                <td className="py-1 pr-2 text-right tabular-nums">{formatYen(sns.cost)}</td>
-                <td className="py-1 pr-2 text-right tabular-nums">{sns.lineRegs.toLocaleString("ja-JP")}人</td>
-                <td className="py-1 pr-2 text-right tabular-nums">—</td>
-                <td className="py-1 pr-2 text-right tabular-nums">{sns.interviews.toLocaleString("ja-JP")}件</td>
-                <td className="py-1 text-right tabular-nums">{formatYenOrDash(sns.unitCost)}</td>
-              </tr>
+              {!sns.contractEnded && (
+                <tr>
+                  <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
+                    リズリアライズ
+                  </td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{formatYen(sns.cost)}</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{sns.lineRegs.toLocaleString("ja-JP")}人</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">—</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{sns.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-1 text-right tabular-nums">{formatYenOrDash(sns.unitCost)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
+          {sns.contractEnded && (
+            <p className="text-[11px]" style={muted}>
+              ※リズリアライズは2026年8月で契約終了
+            </p>
+          )}
         </section>
       </div>
 

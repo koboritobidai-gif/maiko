@@ -33,9 +33,11 @@ function referralCount(w: MarketingWeeklySummary): number {
  * LINE登録・面談実施数は取得できた週だけSNS分を合算しているため、その旨を正直に示す。
  */
 function snsAvailabilityNote(current: MarketingWeeklySummary, last: MarketingWeeklySummary): string | undefined {
+  // 契約終了後(2026年9月以降)の週はそもそも実績が無いのが正常な状態のため、
+  // 「シートに未入力」扱いにはしない(今週・先週で契約期間の内外が分かれるケースにも対応)。
   const missing: string[] = [];
-  if (!current.sns.available) missing.push("今週");
-  if (!last.sns.available) missing.push("先週");
+  if (!current.sns.contractEnded && !current.sns.available) missing.push("今週");
+  if (!last.sns.contractEnded && !last.sns.available) missing.push("先週");
   if (missing.length === 0) return undefined;
   return `※SNS(リズリアライズ)の週次実績が${missing.join("・")}分シートに未入力のため、広告分のみで集計しています`;
 }
@@ -237,7 +239,7 @@ export default function MarketingReportWeeklyView({
                 <td className="py-1 pr-2 text-right tabular-nums">{summary.ad.interviews.toLocaleString("ja-JP")}件</td>
                 <td className="py-1 text-right tabular-nums">{formatYenOrDash(summary.ad.costPerInterview)}</td>
               </tr>
-              {summary.sns.available && (
+              {!summary.sns.contractEnded && summary.sns.available && (
                 <tr>
                   <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                     リズリアライズ
@@ -253,9 +255,11 @@ export default function MarketingReportWeeklyView({
             </tbody>
           </table>
           <p className="text-[11px]" style={muted}>
-            {summary.sns.available
-              ? "※リズリアライズは月額固定費のため週次の費用・面談単価は算出していません。予約数も計測していません。"
-              : "※リズリアライズは今週分の週次実績がシートに未入力のため掲載していません。"}
+            {summary.sns.contractEnded
+              ? "※リズリアライズは2026年8月で契約終了"
+              : summary.sns.available
+                ? "※リズリアライズは月額固定費のため週次の費用・面談単価は算出していません。予約数も計測していません。"
+                : "※リズリアライズは今週分の週次実績がシートに未入力のため掲載していません。"}
           </p>
         </section>
       </div>
