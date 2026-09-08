@@ -6,7 +6,7 @@
 import type { SourceStatus } from "./types";
 
 const LABELS: Record<
-  "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales",
+  "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports",
   Record<SourceStatus, string>
 > = {
   sheets: {
@@ -39,11 +39,16 @@ const LABELS: Record<
     demo: "営業実績(デモ)",
     "live-error": "営業実績(接続エラー・デモ表示)",
   },
+  raReports: {
+    live: "営業日報(連携中)",
+    demo: "営業日報(デモ)",
+    "live-error": "営業日報(接続エラー・デモ表示)",
+  },
 };
 
 /** ダッシュボードのソースバッジに出す文言を返す。 */
 export function sourceBadgeLabel(
-  kind: "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales",
+  kind: "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports",
   status: SourceStatus,
 ): string {
   return LABELS[kind][status];

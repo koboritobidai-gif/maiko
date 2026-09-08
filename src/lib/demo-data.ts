@@ -16,6 +16,7 @@ import type {
   Member,
   Placement,
   Project,
+  RaDailyReport,
   ReferralInvoice,
   RevenueRecord,
   SalesDailyReport,
@@ -871,4 +872,177 @@ export const appointmentReports: AppointmentReport[] = appointmentReportSeeds.ma
   date: seed.date,
   authorName: seed.authorName,
   route: seed.route,
+}));
+
+// ─────────────────────────────────────────────
+// RA営業日報(Slack「#21_ra」の【営業日報】スレッドのデモ)
+// RA(望月・清本)の今月分を数日分ずつ用意する。実運用では投稿者ごとに集計するため、
+// ここでも架空のSlackユーザーID(authorId)を割り当てる。
+// ─────────────────────────────────────────────
+
+/** Date を RaDailyReport.date(YYYY-MM-DD)形式にする。 */
+function dateKeyOf(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+interface RaDailyReportSeed {
+  authorId: string;
+  authorName: string;
+  date: Date;
+  callDials?: number;
+  callConnected?: number;
+  callAppointments?: number;
+  dmSent?: number;
+  dmReplies?: number;
+  dmAppointments?: number;
+  eventCount?: number;
+  eventCardTarget?: number;
+  eventCardsExchanged?: number;
+  eventDecisionMakerCards?: number;
+  eventAppointments?: number;
+  eventFeeYen?: number;
+  referralObtained?: number;
+  referralAppointments?: number;
+  resultAppointments?: number;
+  resultMeetings?: number;
+  resultContracts?: number;
+}
+
+const raDailyReportSeeds: RaDailyReportSeed[] = [
+  // 望月愛
+  {
+    authorId: "U_DEMO_MOCHIZUKI",
+    authorName: "望月愛",
+    date: daysAgoInMonth(1, 19, 10),
+    callDials: 45,
+    callConnected: 28,
+    callAppointments: 2,
+    dmSent: 30,
+    dmReplies: 6,
+    dmAppointments: 1,
+    referralObtained: 1,
+    referralAppointments: 0,
+    resultAppointments: 3,
+    resultMeetings: 1,
+    resultContracts: 0,
+  },
+  {
+    authorId: "U_DEMO_MOCHIZUKI",
+    authorName: "望月愛",
+    date: daysAgoInMonth(3, 20, 0),
+    callDials: 38,
+    callConnected: 22,
+    callAppointments: 1,
+    dmSent: 25,
+    dmReplies: 3,
+    dmAppointments: 0,
+    eventCount: 1,
+    eventCardTarget: 20,
+    eventCardsExchanged: 17,
+    eventDecisionMakerCards: 6,
+    eventAppointments: 2,
+    eventFeeYen: 5_000,
+    resultAppointments: 2,
+    resultMeetings: 2,
+    resultContracts: 1,
+  },
+  {
+    authorId: "U_DEMO_MOCHIZUKI",
+    authorName: "望月愛",
+    date: daysAgoInMonth(6, 18, 40),
+    callDials: 50,
+    callConnected: 31,
+    callAppointments: 3,
+    dmSent: 20,
+    dmReplies: 5,
+    dmAppointments: 1,
+    referralObtained: 0,
+    referralAppointments: 0,
+    resultAppointments: 4,
+    resultMeetings: 1,
+    resultContracts: 0,
+  },
+  // 清本晋士
+  {
+    authorId: "U_DEMO_KIYOMOTO",
+    authorName: "清本晋士",
+    date: daysAgoInMonth(2, 19, 30),
+    callDials: 42,
+    callConnected: 27,
+    callAppointments: 2,
+    dmSent: 40,
+    dmReplies: 8,
+    dmAppointments: 2,
+    referralObtained: 1,
+    referralAppointments: 1,
+    resultAppointments: 4,
+    resultMeetings: 2,
+    resultContracts: 1,
+  },
+  {
+    authorId: "U_DEMO_KIYOMOTO",
+    authorName: "清本晋士",
+    date: daysAgoInMonth(5, 21, 0),
+    callDials: 33,
+    callConnected: 19,
+    callAppointments: 1,
+    dmSent: 15,
+    dmReplies: 2,
+    dmAppointments: 0,
+    eventCount: 1,
+    eventCardTarget: 15,
+    eventCardsExchanged: 12,
+    eventDecisionMakerCards: 3,
+    eventAppointments: 1,
+    eventFeeYen: 8_000,
+    resultAppointments: 2,
+    resultMeetings: 1,
+    resultContracts: 0,
+  },
+  {
+    authorId: "U_DEMO_KIYOMOTO",
+    authorName: "清本晋士",
+    date: daysAgoInMonth(8, 18, 50),
+    callDials: 47,
+    callConnected: 30,
+    callAppointments: 3,
+    dmSent: 35,
+    dmReplies: 4,
+    dmAppointments: 1,
+    eventCount: 1,
+    eventCardTarget: 20,
+    eventCardsExchanged: 20,
+    eventDecisionMakerCards: 9,
+    eventAppointments: 3,
+    eventFeeYen: 12_000,
+    referralObtained: 1,
+    referralAppointments: 0,
+    resultAppointments: 5,
+    resultMeetings: 2,
+    resultContracts: 1,
+  },
+];
+
+export const raDailyReports: RaDailyReport[] = raDailyReportSeeds.map((seed) => ({
+  date: dateKeyOf(seed.date),
+  authorId: seed.authorId,
+  authorName: seed.authorName,
+  postedAt: seed.date,
+  callDials: seed.callDials,
+  callConnected: seed.callConnected,
+  callAppointments: seed.callAppointments,
+  dmSent: seed.dmSent,
+  dmReplies: seed.dmReplies,
+  dmAppointments: seed.dmAppointments,
+  eventCount: seed.eventCount,
+  eventCardTarget: seed.eventCardTarget,
+  eventCardsExchanged: seed.eventCardsExchanged,
+  eventDecisionMakerCards: seed.eventDecisionMakerCards,
+  eventAppointments: seed.eventAppointments,
+  eventFeeYen: seed.eventFeeYen,
+  referralObtained: seed.referralObtained,
+  referralAppointments: seed.referralAppointments,
+  resultAppointments: seed.resultAppointments,
+  resultMeetings: seed.resultMeetings,
+  resultContracts: seed.resultContracts,
 }));

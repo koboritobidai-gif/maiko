@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
 import ProgressBar from "@/components/ProgressBar";
+import RaReportSection from "@/components/RaReportSection";
 import SourceBadge from "@/components/SourceBadge";
 import { getCandidatesByCa, getInvoiceMonthlyTotals, getReferralProfit, mondayOfWeek } from "@/lib/metrics";
 import type {
@@ -16,7 +17,7 @@ import type {
 import type { SalesMonthlyStats } from "@/lib/sales-stats";
 import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { sourceBadgeLabel } from "@/lib/source-status";
-import type { Candidate, ReferralInvoice, SourceStatus } from "@/lib/types";
+import type { Candidate, RaDailyReport, ReferralInvoice, SourceStatus } from "@/lib/types";
 import { getRoleProfile, useSession } from "@/store/session";
 
 /** 週開始日(YYYY-MM-DD)を「M/D週」表示に変換する。 */
@@ -329,6 +330,10 @@ interface DashboardViewProps {
   salesStats: SalesMonthlyStats[];
   salesStatus: SourceStatus;
   salesErrorMessage?: string;
+  /** RA営業日報(#21_raの【営業日報】スレッドから自動集計。直近120日分の全件、数値のみ)。 */
+  raReports: RaDailyReport[];
+  raReportStatus: SourceStatus;
+  raReportErrorMessage?: string;
 }
 
 export default function DashboardView({
@@ -355,6 +360,9 @@ export default function DashboardView({
   salesStats,
   salesStatus,
   salesErrorMessage,
+  raReports,
+  raReportStatus,
+  raReportErrorMessage,
 }: DashboardViewProps) {
   const { role } = useSession();
   // 主要指標・集客/広告・CA別実績・営業実績は直近6ヶ月から月を選択、送客売上・各ファネルは今月⇄先月を切り替えられる。
@@ -505,6 +513,8 @@ export default function DashboardView({
   ].filter((c) => c.show);
   // 全月0件(=live未導入)ならセクション自体を非表示にする(請求書チェック等と同じパターン)。
   const showSalesSection = salesStats.some((s) => s.rows.length > 0) || salesStatus !== "demo";
+  // RA営業日報も同様: SLACK_RA_CHANNEL未導入(live運用中だが0件・status "demo")ならセクション自体を非表示にする。
+  const showRaReportSection = raReports.length > 0 || raReportStatus !== "demo";
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 pt-4 lg:gap-8 lg:px-8 lg:pb-12 lg:pt-6">
@@ -1499,6 +1509,11 @@ export default function DashboardView({
             </p>
           </div>
         </section>
+      )}
+
+      {/* 3.7 営業日報(#21_raの【営業日報】スレッド)【RA】 */}
+      {group === "RA" && showRaReportSection && (
+        <RaReportSection reports={raReports} status={raReportStatus} errorMessage={raReportErrorMessage} />
       )}
 
       {/* 4. 週次推移(直近5週)・月次推移(直近6ヶ月、lgでは左右2カラム)【全体】 */}

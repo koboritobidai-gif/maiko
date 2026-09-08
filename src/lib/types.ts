@@ -121,6 +121,40 @@ export interface AppointmentReport {
   route: string;
 }
 
+/**
+ * RA(リクルーティングアドバイザー)営業日報1件分(Slack「#21_ra」の【営業日報】スレッドから抽出)。
+ * `SalesDailyReport`(架電数報告bot・業務報告スレッド)とは対象とする親メッセージの種類が異なる、
+ * 別集計の日報(タイトルが「【営業日報】M/D(曜)」形式、本文はスレッド返信または親メッセージ直書き)。
+ * 各数値は「記入なし・読み取れず」= undefined。集計時(ra-report-metrics.ts)は0扱いにする。
+ */
+export interface RaDailyReport {
+  /** 報告対象日(YYYY-MM-DD)。タイトルの「9/8」等から復元(年は投稿日時から推定) */
+  date: string;
+  /** SlackユーザーID */
+  authorId: string;
+  /** 表示名(「望月愛(Mochizuki Ai)」のような括弧書きは括弧前まで) */
+  authorName: string;
+  /** 投稿日時 */
+  postedAt: Date;
+  callDials?: number; // 架電数
+  callConnected?: number; // 本通(実際に話せた数)
+  callAppointments?: number; // 架電アポ獲得
+  dmSent?: number;
+  dmReplies?: number;
+  dmAppointments?: number;
+  eventCount?: number; // 交流会参加数
+  eventCardTarget?: number; // 名刺交換目標
+  eventCardsExchanged?: number; // 名刺交換数
+  eventDecisionMakerCards?: number; // 意思決定者の名刺数
+  eventAppointments?: number; // 交流会アポ獲得
+  eventFeeYen?: number; // 交流会参加費(円)
+  referralObtained?: number; // 紹介獲得数
+  referralAppointments?: number; // 紹介アポ獲得
+  resultAppointments?: number; // 本日の成果: アポイント数
+  resultMeetings?: number; // 商談実施数
+  resultContracts?: number; // 契約数
+}
+
 /** 成約(内定承諾・入社が確定した紹介実績)。 */
 export interface Placement {
   id: string;

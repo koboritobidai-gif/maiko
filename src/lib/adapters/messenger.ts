@@ -83,12 +83,17 @@ export class DemoSlackSource implements MessengerSource {
 
 const SLACK_API_BASE = "https://slack.com/api";
 
-interface SlackApiResponseBase {
+export interface SlackApiResponseBase {
   ok: boolean;
   error?: string;
 }
 
-async function slackGet<T extends SlackApiResponseBase>(
+/**
+ * Slack Web API の GET系メソッドを呼び出す共通ヘルパー(429リトライ・データキャッシュ対応)。
+ * ra-reports.ts など、他アダプタからも同じSlack取得パターンを再利用するために export している
+ * (重複実装を避けるため。ロジック自体はここでの既存動作を変えていない)。
+ */
+export async function slackGet<T extends SlackApiResponseBase>(
   botToken: string,
   method: string,
   params: Record<string, string>,
@@ -144,7 +149,7 @@ async function slackPostJson<T extends SlackApiResponseBase>(
   return json;
 }
 
-interface SlackUserInfoResponse extends SlackApiResponseBase {
+export interface SlackUserInfoResponse extends SlackApiResponseBase {
   user?: {
     name?: string;
     real_name?: string;
@@ -156,7 +161,7 @@ interface SlackChannelInfoResponse extends SlackApiResponseBase {
   channel?: { name?: string };
 }
 
-interface SlackMessage {
+export interface SlackMessage {
   ts: string;
   text?: string;
   user?: string;
@@ -183,12 +188,12 @@ const threadRepliesCache = new Map<string, { cacheKey: string; replies: Candidat
  */
 const REPLY_TIME_BUDGET_MS = 20_000;
 
-interface SlackHistoryResponse extends SlackApiResponseBase {
+export interface SlackHistoryResponse extends SlackApiResponseBase {
   messages?: SlackMessage[];
   response_metadata?: { next_cursor?: string };
 }
 
-interface SlackRepliesResponse extends SlackApiResponseBase {
+export interface SlackRepliesResponse extends SlackApiResponseBase {
   messages?: SlackMessage[];
 }
 

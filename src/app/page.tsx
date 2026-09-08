@@ -10,6 +10,7 @@ import {
   getPrimaryMonthSnapshots,
   getRevenueSummary,
 } from "@/lib/metrics";
+import { loadRaDailyReports, raReportDataTimeoutFallback } from "@/lib/ra-report-data";
 import { loadRevenueRecords, revenueDataTimeoutFallback } from "@/lib/revenue-data";
 import { loadSalesReports, salesDataTimeoutFallback } from "@/lib/sales-data";
 import { getSalesMonthlyStats } from "@/lib/sales-stats";
@@ -33,14 +34,16 @@ const LOADER_TIMEOUT_MS = 25_000;
 
 export default async function TodayDashboardPage() {
   const now = new Date();
-  const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult, salesResult] = await Promise.all([
-    withTimeout(loadDataBundle(), LOADER_TIMEOUT_MS, dataBundleTimeoutFallback),
-    withTimeout(loadMarketingData(), LOADER_TIMEOUT_MS, marketingDataTimeoutFallback),
-    withTimeout(loadCandidateThreads(), LOADER_TIMEOUT_MS, candidateThreadsTimeoutFallback),
-    withTimeout(loadReferralInvoices(), LOADER_TIMEOUT_MS, invoiceDataTimeoutFallback),
-    withTimeout(loadRevenueRecords(), LOADER_TIMEOUT_MS, revenueDataTimeoutFallback),
-    withTimeout(loadSalesReports(), LOADER_TIMEOUT_MS, salesDataTimeoutFallback),
-  ]);
+  const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult, salesResult, raReportResult] =
+    await Promise.all([
+      withTimeout(loadDataBundle(), LOADER_TIMEOUT_MS, dataBundleTimeoutFallback),
+      withTimeout(loadMarketingData(), LOADER_TIMEOUT_MS, marketingDataTimeoutFallback),
+      withTimeout(loadCandidateThreads(), LOADER_TIMEOUT_MS, candidateThreadsTimeoutFallback),
+      withTimeout(loadReferralInvoices(), LOADER_TIMEOUT_MS, invoiceDataTimeoutFallback),
+      withTimeout(loadRevenueRecords(), LOADER_TIMEOUT_MS, revenueDataTimeoutFallback),
+      withTimeout(loadSalesReports(), LOADER_TIMEOUT_MS, salesDataTimeoutFallback),
+      withTimeout(loadRaDailyReports(), LOADER_TIMEOUT_MS, raReportDataTimeoutFallback),
+    ]);
   const summary = getDashboardSummary(bundle, now);
   // 画面表示用: Slack「#求職者」スレッドの「面談実施」報告から面談日を補完(シートO列の手入力があれば優先)。
   const candidates = fillInterviewDatesFromSlack(bundle.candidates, threadsResult.threads);
@@ -168,6 +171,9 @@ export default async function TodayDashboardPage() {
       salesStats={salesStats}
       salesStatus={salesResult.status}
       salesErrorMessage={salesResult.errorMessage}
+      raReports={raReportResult.reports}
+      raReportStatus={raReportResult.status}
+      raReportErrorMessage={raReportResult.errorMessage}
     />
   );
 }
