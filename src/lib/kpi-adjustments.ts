@@ -56,3 +56,38 @@ export const MANUAL_EVENT_RESERVATIONS: EventReservationEntry[] = [
 export function withManualKpiAdjustments(records: WeeklyKpiRecord[]): WeeklyKpiRecord[] {
   return [...records, ...MANUAL_KPI_ADJUSTMENTS];
 }
+
+/** イベント出展費用の手動計上1件分。 */
+export interface EventCostEntry {
+  /** 費用を計上する月("YYYY-MM") */
+  month: string;
+  /** 費用(円) */
+  amountYen: number;
+  /** 請求元の会社名に一致する正規表現(#請求書の同社請求書を支出から除外して二重計上を防ぐ) */
+  vendorRe: RegExp;
+  /** その請求書の支払月("YYYY-MM")。この月の#請求書で vendorRe に一致する請求書を支出計算から除外する */
+  invoicePaymentMonth: string;
+  /** 金額一致フォールバック用(PDFから会社名が読み取れない場合に備え、同額の請求書1件を除外) */
+  invoiceAmountYen: number;
+  note: string;
+}
+
+/**
+ * イベント出展費用。経営者指示(2026-09-10)「イベント費用110万を反映して9月。10月末払いで
+ * 請求書も上げるけど二重で計算しないようにして。イベントの請求は学情」。
+ * 9/4・9/5開催の就職イベント(主催: 株式会社学情)の出展費用¥1,100,000を2026年9月の費用
+ * (マーケ支出)として計上する。請求書は10月末払いで#請求書に後日投稿される見込みのため、
+ * リズアライズ(SNS運用月額固定費)と同じ方式で、その支払月に投稿される同社請求書を支出計算
+ * から除外し、二重計上を防ぐ(metrics.ts の getPrimaryMonthSnapshots 参照)。
+ * 今後イベントがあればここに追記する。
+ */
+export const MANUAL_EVENT_COSTS: EventCostEntry[] = [
+  {
+    month: "2026-09",
+    amountYen: 1_100_000,
+    vendorRe: /学情|GAKUJO/i,
+    invoicePaymentMonth: "2026-10",
+    invoiceAmountYen: 1_100_000,
+    note: "9/4・9/5開催の就職イベント出展費(主催: 学情)。請求書は10月末払いで#請求書に投稿予定",
+  },
+];

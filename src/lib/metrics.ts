@@ -5,9 +5,9 @@
  * このファイル経由で集計し、実データ・デモデータの両方に同一ロジックを適用する)。
  */
 import { ALL_STAGES, PIPELINE_STAGES } from "./types";
-// イベント経由の面談予約の手動計上(定数)。データ取得ではなく経営者確認済みの固定値のため、
-// 純関数方針の例外としてここで直接参照する。
-import { MANUAL_EVENT_RESERVATIONS } from "./kpi-adjustments";
+// イベント経由の面談予約・出展費用の手動計上(定数)。データ取得ではなく経営者確認済みの固定値
+// のため、純関数方針の例外としてここで直接参照する。
+import { MANUAL_EVENT_RESERVATIONS, MANUAL_EVENT_COSTS } from "./kpi-adjustments";
 import type {
   AdDailyRecord,
   Candidate,
@@ -737,8 +737,13 @@ export interface MarketingSummary {
   referralPartnersLastMonth: ReferralPartnerSummary[];
   /** 送客パートナー費用の先月合計(円)。 */
   referralLastMonthTotalYen: number;
-  /** 広告費用合計(Google広告+Meta広告)+SNS月額+送客パートナー費用。 */
+  /** 広告費用合計(Google広告+Meta広告)+SNS月額+送客パートナー費用+イベント出展費。 */
   totalCost: number;
+  /**
+   * イベント出展費用(円、その月分の手動計上合計)。kpi-adjustments.ts の MANUAL_EVENT_COSTS
+   * 参照。0円ならイベント計上なし。
+   */
+  eventCostYen: number;
   totalLineRegs: number;
   /** 面談予約合計(Google広告+Meta広告。SNSは予約数を計測しないため含まない)。 */
   totalReservations: number;
@@ -790,6 +795,12 @@ export function getMarketingSummary(
   const eventReservations = MANUAL_EVENT_RESERVATIONS.filter((r) =>
     isSameMonth(weekStartToDate(r.weekStart), now),
   ).reduce((sum, r) => sum + r.count, 0);
+  // イベント出展費用(経営者指示 2026-09-10、kpi-adjustments.ts の MANUAL_EVENT_COSTS 参照)。
+  // 対象月一致分の合計を広告費・SNS・送客パートナー費用と合算して totalCost に含める。
+  const eventCostYen = MANUAL_EVENT_COSTS.filter((e) => e.month === monthKeyOf(now)).reduce(
+    (sum, e) => sum + e.amountYen,
+    0,
+  );
 
   return {
     channels: [google, meta],
@@ -798,7 +809,8 @@ export function getMarketingSummary(
     referralTotalYen,
     referralPartnersLastMonth,
     referralLastMonthTotalYen,
-    totalCost: google.cost + meta.cost + sns.cost + referralTotalYen,
+    totalCost: google.cost + meta.cost + sns.cost + referralTotalYen + eventCostYen,
+    eventCostYen,
     totalLineRegs: kpiLineRegs > 0 ? kpiLineRegs : adLineRegs + sns.lineRegs,
     totalReservations: adReservations + eventReservations,
     totalInterviews: kpiInterviews > 0 ? kpiInterviews : adInterviews + sns.interviews,
@@ -1221,6 +1233,29 @@ export function getPrimaryMonthSnapshots(
       );
       if (snsIndex >= 0) {
         dedupedInvoices = dedupedInvoices.filter((_, i) => i !== snsIndex);
+      }
+    }
+    // イベント出展費用(kpi-adjustments.ts の MANUAL_EVENT_COSTS)は経営者確認済みの計上月に
+    // 手動計上済みのため、その支払月(invoicePaymentMonth)に#請求書へ投稿される同社請求書は
+    // リズアライズと同じ方式で支出計算から除外し、二重計上を防ぐ。
+    for (const eventCost of MANUAL_EVENT_COSTS) {
+      if (eventCost.invoicePaymentMonth !== monthKey) continue;
+      const beforeCount = dedupedInvoices.length;
+      dedupedInvoices = dedupedInvoices.filter(
+        (inv) =>
+          !eventCost.vendorRe.test(
+            `${inv.vendorName ?? ""} ${inv.fileName} ${inv.threadTitle ?? ""}`,
+          ),
+      );
+      // 名前で特定できない場合の保険: 名前一致で1件も除外できなかった場合のみ、金額一致
+      // (かつ送客パートナー請求書ではない)請求書をその月1件だけ除外する(リズアライズと同じ方式)。
+      if (dedupedInvoices.length === beforeCount) {
+        const amountIndex = dedupedInvoices.findIndex(
+          (inv) => inv.amountYen === eventCost.invoiceAmountYen && !inv.partnerChannel,
+        );
+        if (amountIndex >= 0) {
+          dedupedInvoices = dedupedInvoices.filter((_, i) => i !== amountIndex);
+        }
       }
     }
     const invoicePaidYen = dedupedInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);

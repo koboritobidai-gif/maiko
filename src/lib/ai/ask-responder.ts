@@ -277,8 +277,10 @@ channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(�
 スレッドの「面談実施」報告から自動検出、それも無ければ登録日→更新日で近似〉)、
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
 (同じ課金ルールでの先月の経路別サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
-totalCost/totalLineRegs/totalReservations/totalInterviews
-(totalCost は広告+SNS+送客パートナー合算。totalLineRegs/totalInterviews は「基本KPI優先」の方針で、
+totalCost/eventCostYen/totalLineRegs/totalReservations/totalInterviews
+(totalCost は広告+SNS+送客パートナー+イベント出展費の合算。eventCostYen は経営者確認済みで手動計上
+したイベント出展費〈該当月のみ0円超。#請求書に同社の請求書が投稿されても支出への二重計上はされません〉。
+totalLineRegs/totalInterviews は「基本KPI優先」の方針で、
 週次KPI表にその月の実数があればそちらの値、無ければ広告+SNS合算にフォールバックした値です。
 totalReservations は経営者指示により常に「広告流入の面談予約+イベント経由の面談予約」の合計で、
 KPI表の面談予約数は使いません。usesKpiActuals が true の場合はKPI表の実数が使われているという意味
@@ -486,10 +488,16 @@ function answerAdCost(marketingSummary: MarketingSummary | null): string {
   const totalsPart = marketingSummary.usesKpiActuals
     ? `今月の実数はLINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件です(KPI表の実数。広告以外の経路・イベント流入含む)。`
     : `LINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件につながっています。`;
+  // イベント出展費(経営者確認済みの手動計上。kpi-adjustments.ts の MANUAL_EVENT_COSTS 参照)が
+  // 当月分に含まれる場合はその旨を明記する(二重計上ではなく手動計上である旨が伝わるように)。
+  const eventPart =
+    marketingSummary.eventCostYen > 0
+      ? `イベント出展費 ${formatYenPlain(marketingSummary.eventCostYen)}(学情)を含む。`
+      : "";
   return (
     `今月の広告費用は合計${formatYenPlain(marketingSummary.totalCost)}です` +
     `(Google広告 ${formatYenPlain(google?.cost ?? 0)}、Meta広告 ${formatYenPlain(meta?.cost ?? 0)}、` +
-    `${snsPart})。` +
+    `${snsPart})。${eventPart}` +
     totalsPart
   );
 }

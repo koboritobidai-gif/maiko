@@ -709,7 +709,9 @@ export default function DashboardView({
             value={formatYen(mk.totalCost)}
             caption={`広告 ${formatYen(mk.channels.reduce((sum, c) => sum + c.cost, 0))}${
               mk.sns.contractEnded ? "" : ` + SNS ${formatYen(mk.sns.cost)}`
-            } + 送客 ${formatYen(mk.referralTotalYen)}`}
+            } + 送客 ${formatYen(mk.referralTotalYen)}${
+              mk.eventCostYen > 0 ? ` + イベント ${formatYen(mk.eventCostYen)}` : ""
+            }`}
             accent
           />
           <KpiCard label="LINE登録合計" value={`${mk.totalLineRegs.toLocaleString("ja-JP")}人`} />
@@ -802,11 +804,29 @@ export default function DashboardView({
                   <td className="py-2 text-right">{formatYenOrDash(mk.sns.costPerInterview)}</td>
                 </tr>
               )}
+              {mk.eventCostYen > 0 && (
+                <tr>
+                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    イベント出展(学情)
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatYen(mk.eventCostYen)}</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 text-right">—</td>
+                </tr>
+              )}
             </tbody>
           </table>
           {mk.sns.contractEnded && (
             <p className="pt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
               ※SNS運用(リズリアライズ)は2026年8月で契約終了
+            </p>
+          )}
+          {mk.eventCostYen > 0 && (
+            <p className="pt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              ※イベント出展費(学情、9/4・9/5開催)。請求書は10月末払いで#請求書に投稿予定(支出への二重計上はなし)
             </p>
           )}
         </Collapsible>

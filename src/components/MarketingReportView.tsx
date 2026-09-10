@@ -26,7 +26,7 @@ function referralCount(mk: MarketingSummary): number {
 /**
  * 集客・広告(送客パートナー含む)の全体まとめ。
  * - 面談実施数 = 広告・SNS経由の面談(mk.totalInterviews)+ 送客パートナー経由の面談人数
- * - 全体費用 = mk.totalCost(広告+SNS+送客の合計。既存の getMarketingSummary の定義そのまま)
+ * - 全体費用 = mk.totalCost(広告+SNS+送客+イベント出展費の合計。既存の getMarketingSummary の定義そのまま)
  * - 面談単価(全体) = 全体費用 ÷ 面談実施数(0件なら null)
  */
 function overallTotals(mk: MarketingSummary): { interviews: number; cost: number; unitCost: number | null } {
@@ -168,7 +168,12 @@ export default function MarketingReportView({
               current={`${overall.interviews.toLocaleString("ja-JP")}件`}
               last={`${overallLastMonth.interviews.toLocaleString("ja-JP")}件`}
             />
-            <CompareRow label="全体費用" current={formatYen(overall.cost)} last={formatYen(overallLastMonth.cost)} />
+            <CompareRow
+              label="全体費用"
+              current={formatYen(overall.cost)}
+              last={formatYen(overallLastMonth.cost)}
+              caption={summary.eventCostYen > 0 ? "※イベント出展費含む" : undefined}
+            />
             <CompareRow
               label="面談単価(全体)"
               current={formatYenOrDash(overall.unitCost)}
