@@ -810,10 +810,17 @@ export default function DashboardView({
                     イベント出展(学情)
                   </td>
                   <td className="py-2 pr-2 text-right">{formatYen(mk.eventCostYen)}</td>
+                  <td className="py-2 pr-2 text-right">
+                    {mk.eventLineRegs > 0 ? `${mk.eventLineRegs.toLocaleString("ja-JP")}人` : "—"}
+                  </td>
+                  <td className="py-2 pr-2 text-right">
+                    {mk.eventReservations > 0 ? `${mk.eventReservations.toLocaleString("ja-JP")}件` : "—"}
+                  </td>
                   <td className="py-2 pr-2 text-right">—</td>
-                  <td className="py-2 pr-2 text-right">—</td>
-                  <td className="py-2 pr-2 text-right">—</td>
-                  <td className="py-2 pr-2 text-right">—</td>
+                  {/* CPA = 出展費 ÷ イベント経由LINE登録(他媒体の行と同じ計算式) */}
+                  <td className="py-2 pr-2 text-right">
+                    {formatYenOrDash(mk.eventLineRegs > 0 ? mk.eventCostYen / mk.eventLineRegs : null)}
+                  </td>
                   <td className="py-2 text-right">—</td>
                 </tr>
               )}

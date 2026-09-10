@@ -744,6 +744,13 @@ export interface MarketingSummary {
    * 参照。0円ならイベント計上なし。
    */
   eventCostYen: number;
+  /**
+   * イベント経由のLINE登録人数(その月分、媒体別テーブルの内訳表示・CPA算出用)。
+   * 全体のLINE登録合計(totalLineRegs)はKPI表の実数にイベント分が含まれるため、ここから加算はしない。
+   */
+  eventLineRegs: number;
+  /** イベント経由の面談予約数(その月分)。totalReservations には加算済み。 */
+  eventReservations: number;
   totalLineRegs: number;
   /** 面談予約合計(Google広告+Meta広告。SNSは予約数を計測しないため含まない)。 */
   totalReservations: number;
@@ -797,10 +804,10 @@ export function getMarketingSummary(
   ).reduce((sum, r) => sum + r.count, 0);
   // イベント出展費用(経営者指示 2026-09-10、kpi-adjustments.ts の MANUAL_EVENT_COSTS 参照)。
   // 対象月一致分の合計を広告費・SNS・送客パートナー費用と合算して totalCost に含める。
-  const eventCostYen = MANUAL_EVENT_COSTS.filter((e) => e.month === monthKeyOf(now)).reduce(
-    (sum, e) => sum + e.amountYen,
-    0,
-  );
+  const monthEventCosts = MANUAL_EVENT_COSTS.filter((e) => e.month === monthKeyOf(now));
+  const eventCostYen = monthEventCosts.reduce((sum, e) => sum + e.amountYen, 0);
+  // イベント経由のLINE登録(内訳表示用。KPI表の実数に含まれるため合計へは加算しない)。
+  const eventLineRegs = monthEventCosts.reduce((sum, e) => sum + (e.lineRegs ?? 0), 0);
 
   return {
     channels: [google, meta],
@@ -811,6 +818,8 @@ export function getMarketingSummary(
     referralLastMonthTotalYen,
     totalCost: google.cost + meta.cost + sns.cost + referralTotalYen + eventCostYen,
     eventCostYen,
+    eventLineRegs,
+    eventReservations,
     totalLineRegs: kpiLineRegs > 0 ? kpiLineRegs : adLineRegs + sns.lineRegs,
     totalReservations: adReservations + eventReservations,
     totalInterviews: kpiInterviews > 0 ? kpiInterviews : adInterviews + sns.interviews,

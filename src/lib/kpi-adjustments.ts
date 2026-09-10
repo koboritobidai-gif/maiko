@@ -69,6 +69,12 @@ export interface EventCostEntry {
   invoicePaymentMonth: string;
   /** 金額一致フォールバック用(PDFから会社名が読み取れない場合に備え、同額の請求書1件を除外) */
   invoiceAmountYen: number;
+  /**
+   * このイベント経由のLINE登録人数(媒体別テーブルの内訳表示・CPA算出用)。
+   * 全体のLINE登録合計はKPI表の実数(イベント分を含む)を使うため、ここから合計へは加算しない
+   * (加算すると二重計上になる)。
+   */
+  lineRegs?: number;
   note: string;
 }
 
@@ -88,6 +94,7 @@ export const MANUAL_EVENT_COSTS: EventCostEntry[] = [
     vendorRe: /学情|GAKUJO/i,
     invoicePaymentMonth: "2026-10",
     invoiceAmountYen: 1_100_000,
+    lineRegs: 50, // 9/4・9/5合計のLINE登録50名(経営者確認。KPI表の8/31週59人に含まれる)
     note: "9/4・9/5開催の就職イベント出展費(主催: 学情)。請求書は10月末払いで#請求書に投稿予定",
   },
 ];
