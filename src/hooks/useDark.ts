@@ -1,0 +1,14 @@
+import { useEffect, useState } from 'react';
+import { prefersDark } from '../theme';
+
+export function useDark(): boolean {
+  const [dark, setDark] = useState(prefersDark());
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const on = () => setDark(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return dark;
+}
