@@ -22,12 +22,31 @@ import type { WeeklyKpiRecord } from "./types";
 const EVENT_OWNER = "イベント";
 
 export const MANUAL_KPI_ADJUSTMENTS: WeeklyKpiRecord[] = [
-  // 9/4・9/5開催イベントからの流入(両日とも8/31週=月曜8/31〜日曜9/6に含まれるため、
-  // その週に計上する。cd6fd2d の帰属月ルールにより8/31週は9月に計上される)。
-  // LINE登録50名は経営者確認により「KPI表の8/31週のLINE登録人数59に既に含まれている」ため
-  // ここでは加算しない(加算すると二重計上になる)。面談予約30件はKPI表の同週9件に
-  // 含まれていない(9 < 30)ため、こちらのみ加算する。
-  { weekStart: "2026-08-31", category: "求職者", key: "面談予約数", value: 30, owner: EVENT_OWNER },
+  // 現在は空。経営者確認(2026-09-10)により:
+  // - イベント流入のLINE登録50名はKPI表の8/31週LINE登録人数(59)に既に含まれている → 加算しない
+  // - 面談予約は「イベント分+広告流入分の合計」をマーケ表示に使う方針になったため、週次KPI
+  //   レコードとしてではなく下の MANUAL_EVENT_RESERVATIONS で管理する(KPI表の面談予約数は
+  //   マーケ表示には使わない)。
+];
+
+/** イベント経由の面談予約の手動計上1件分。 */
+export interface EventReservationEntry {
+  /** 帰属週の月曜("YYYY-MM-DD")。月の帰属は metrics.ts の週帰属ルール(木曜日の月)に従う。 */
+  weekStart: string;
+  /** 面談予約数 */
+  count: number;
+  /** 何のイベントか(コード上の記録用) */
+  note: string;
+}
+
+/**
+ * イベント経由の面談予約。経営者指示(2026-09-10)「面談予約はイベントの30と昼職などの
+ * 広告流入での予約の合計にして。KPI表の9は含めなくてOK」。
+ * マーケティングタブ・月次/週次MTG資料の面談予約数 = 広告シートの面談予約数 + この配列の該当分。
+ * 今後イベントがあればここに追記する。
+ */
+export const MANUAL_EVENT_RESERVATIONS: EventReservationEntry[] = [
+  { weekStart: "2026-08-31", count: 30, note: "9/4・9/5開催イベントからの面談予約" },
 ];
 
 /**

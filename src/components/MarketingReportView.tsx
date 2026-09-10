@@ -176,11 +176,11 @@ export default function MarketingReportView({
             />
           </tbody>
         </table>
-        {/* 経営者指示(2026-09)「基本KPI優先」: KPI表にその月の実数があればLINE登録・面談予約・
-            面談実施数はそちらを表示している(usesKpiActuals)。印刷時も出す。 */}
+        {/* 経営者指示(2026-09)「基本KPI優先」: KPI表にその月の実数があればLINE登録・面談実施数は
+            そちらを表示している(usesKpiActuals)。面談予約は広告流入+イベント分の合計。印刷時も出す。 */}
         {summary.usesKpiActuals && (
           <p className="text-[11px]" style={muted}>
-            ※LINE登録・面談予約・面談実施数はKPI表の実数(広告以外の経路・イベント流入含む)
+            ※LINE登録・面談実施数はKPI表の実数(広告以外の経路含む)。面談予約は広告流入+イベント分の合計
           </p>
         )}
       </section>

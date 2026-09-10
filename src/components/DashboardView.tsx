@@ -717,12 +717,13 @@ export default function DashboardView({
           <KpiCard label="面談実績合計" value={`${mk.totalInterviews.toLocaleString("ja-JP")}件`} />
           <KpiCard label="面接回数" value={`${mk.interviewsCombined.toLocaleString("ja-JP")}件`} />
         </div>
-        {/* 経営者指示(2026-09)「基本KPI優先」: KPI表にその月の実数があればLINE登録・面談予約・
-            面談実施数はそちらを表示している(usesKpiActuals)。広告シート未入力月でも実態とずれない
-            ようにするための切り替えのため、その旨を小さく注記する。 */}
+        {/* 経営者指示(2026-09)「基本KPI優先」: KPI表にその月の実数があればLINE登録・面談実施数は
+            そちらを表示している(usesKpiActuals)。面談予約は広告流入の予約+イベント分の合計
+            (KPI表は使わない)。広告シート未入力月でも実態とずれないようにするための切り替えのため、
+            その旨を小さく注記する。 */}
         {mk.usesKpiActuals && (
           <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-            ※LINE登録・面談予約・面談実施数はKPI表の実数(広告以外の経路・イベント流入含む)
+            ※LINE登録・面談実施数はKPI表の実数(広告以外の経路含む)。面談予約は広告流入+イベント分の合計
           </p>
         )}
         {/* 面談単価カード: 全体 = 費用合計(広告+SNS+送客) ÷ 面談実績合計。

@@ -278,12 +278,12 @@ channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(�
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
 (同じ課金ルールでの先月の経路別サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
 totalCost/totalLineRegs/totalReservations/totalInterviews
-(totalCost は広告+SNS+送客パートナー合算。totalLineRegs/totalReservations/totalInterviews は
-「基本KPI優先」の方針で、週次KPI表(手動加算=イベント流入等を含む)にその月の実数があればそちらの値、
-無ければ広告+SNS合算にフォールバックした値です。usesKpiActuals が true の場合はKPI表の実数が
-使われているという意味なので、「広告経由で」のように断定せず「実数(KPI表、広告以外の経路・イベント
-流入含む)」のように答えてください)、transitionRates(遷移率まとめ。こちらは常に広告シート由来の
-参考値)が含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
+(totalCost は広告+SNS+送客パートナー合算。totalLineRegs/totalInterviews は「基本KPI優先」の方針で、
+週次KPI表にその月の実数があればそちらの値、無ければ広告+SNS合算にフォールバックした値です。
+totalReservations は経営者指示により常に「広告流入の面談予約+イベント経由の面談予約」の合計で、
+KPI表の面談予約数は使いません。usesKpiActuals が true の場合はKPI表の実数が使われているという意味
+なので、「広告経由で」のように断定せず「実数(KPI表、広告以外の経路含む)」のように答えてください)、
+transitionRates(遷移率まとめ。こちらは常に広告シート由来の参考値)が含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
 「送客費用は?」「送客パートナーは?」のような全体質問には経路別+合計を、「KANOAの費用/実績は?」
 「マホガニーは?」のような経路名を含む質問にはその経路の単価・人数・費用を個別に答えてください。
 

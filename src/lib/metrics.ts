@@ -5,6 +5,9 @@
  * このファイル経由で集計し、実データ・デモデータの両方に同一ロジックを適用する)。
  */
 import { ALL_STAGES, PIPELINE_STAGES } from "./types";
+// イベント経由の面談予約の手動計上(定数)。データ取得ではなく経営者確認済みの固定値のため、
+// 純関数方針の例外としてここで直接参照する。
+import { MANUAL_EVENT_RESERVATIONS } from "./kpi-adjustments";
 import type {
   AdDailyRecord,
   Candidate,
@@ -744,8 +747,9 @@ export interface MarketingSummary {
   interviewsCombined: number;
   transitionRates: MarketingTransitionRates;
   /**
-   * true の場合、totalLineRegs/totalReservations/totalInterviews のいずれかがKPI表(週次KPIタブ、
-   * 手動加算含む)の実数採用に切り替わっている(経営者指示 2026-09「基本KPI優先」。下記コメント参照)。
+   * true の場合、totalLineRegs/totalInterviews のいずれかがKPI表(週次KPIタブ)の実数採用に
+   * 切り替わっている(経営者指示 2026-09「基本KPI優先」。下記コメント参照)。
+   * totalReservations は常に「広告流入の予約 + イベント分」でKPI表は使わない。
    * 表示側はこのフラグが true のとき「KPI表の実数」である旨の注記を出す。
    */
   usesKpiActuals: boolean;
@@ -774,14 +778,18 @@ export function getMarketingSummary(
   const adReservations = google.reservations + meta.reservations;
   const adInterviews = google.interviews + meta.interviews;
 
-  // 経営者指示(2026-09)「基本KPI優先」: KPI表(週次KPIタブ。手動加算=イベント流入等を含む)に
-  // その月の実数が入っていればそちらを表示に採用し、無ければ従来どおり広告+SNS合算にフォールバックする
+  // 経営者指示(2026-09)「基本KPI優先」: KPI表(週次KPIタブ)にその月の実数が入っていれば
+  // LINE登録・面談実施数はそちらを表示に採用し、無ければ従来どおり広告+SNS合算にフォールバックする
   // (9月は広告数値管理シートがほぼ未入力で実態(KPI表)と大きくずれるため。過去月は広告シート由来の
   // 値のままでも大きくずれないことが多いので、フォールバックとして残す)。
+  // 面談予約だけは経営者指示(2026-09-10)により「広告流入の予約 + イベント分」の合計とし、
+  // KPI表の面談予約数は使わない(kpi-adjustments.ts の MANUAL_EVENT_RESERVATIONS 参照)。
   // 遷移率(transitionRates)・媒体別(channels)・CPA等の内訳計算は広告経由の参考値のため変更しない。
   const kpiLineRegs = getMonthlyKpiTotal(weeklyKpis, "求職者", "LINE登録人数", now);
-  const kpiReservations = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談予約数", now);
   const kpiInterviews = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談数", now);
+  const eventReservations = MANUAL_EVENT_RESERVATIONS.filter((r) =>
+    isSameMonth(weekStartToDate(r.weekStart), now),
+  ).reduce((sum, r) => sum + r.count, 0);
 
   return {
     channels: [google, meta],
@@ -792,7 +800,7 @@ export function getMarketingSummary(
     referralLastMonthTotalYen,
     totalCost: google.cost + meta.cost + sns.cost + referralTotalYen,
     totalLineRegs: kpiLineRegs > 0 ? kpiLineRegs : adLineRegs + sns.lineRegs,
-    totalReservations: kpiReservations > 0 ? kpiReservations : adReservations,
+    totalReservations: adReservations + eventReservations,
     totalInterviews: kpiInterviews > 0 ? kpiInterviews : adInterviews + sns.interviews,
     interviewsCombined: getCandidateFunnel(weeklyKpis, now).interviewsCombined,
     transitionRates: {
@@ -801,7 +809,7 @@ export function getMarketingSummary(
       reservationToInterviewRatePercent: rateOrNull(adInterviews, adReservations),
       snsPlayToLpRatePercent: sns.lpRate,
     },
-    usesKpiActuals: kpiLineRegs > 0 || kpiReservations > 0 || kpiInterviews > 0,
+    usesKpiActuals: kpiLineRegs > 0 || kpiInterviews > 0,
   };
 }
 
@@ -953,8 +961,9 @@ export interface MarketingWeeklySummary {
   /** 面談単価(週) = totalCost / totalInterviews(0件ならnull)。 */
   costPerInterview: number | null;
   /**
-   * true の場合、totalLineRegs/totalReservations/totalInterviews のいずれかが対象週の週次KPI行
-   * (手動加算含む)の実数採用に切り替わっている(getMarketingSummary と同じ「基本KPI優先」方針)。
+   * true の場合、totalLineRegs/totalInterviews のいずれかが対象週の週次KPI行の実数採用に
+   * 切り替わっている(getMarketingSummary と同じ「基本KPI優先」方針)。
+   * totalReservations は常に「広告流入の予約 + イベント分」でKPI表は使わない。
    */
   usesKpiActuals: boolean;
 }
@@ -981,18 +990,20 @@ export function getMarketingWeeklySummary(
   const adLineRegs = ad.lineRegs + (sns.available ? sns.lineRegs : 0);
   const adInterviews = ad.interviews + referralCount + (sns.available ? sns.interviews : 0);
 
-  // 経営者指示「基本KPI優先」の週次版: 対象週(weekStart一致)の週次KPI行(手動加算含む)の合計が
-  // >0ならそちらを採用する(月次の getMarketingSummary と同じ考え方)。
+  // 経営者指示「基本KPI優先」の週次版: 対象週(weekStart一致)の週次KPI行の合計が>0なら
+  // LINE登録・面談実施数はそちらを採用する(月次の getMarketingSummary と同じ考え方)。
+  // 面談予約だけは「広告流入の予約 + イベント分」の合計(KPI表の面談予約数は使わない)。
   const weeklyKpiSum = (key: CandidateKpiKey): number =>
     filterKpi(weeklyKpis, "求職者", key)
       .filter((r) => r.weekStart === weekStartKey)
       .reduce((sum, r) => sum + r.value, 0);
   const kpiLineRegs = weeklyKpiSum("LINE登録人数");
-  const kpiReservations = weeklyKpiSum("面談予約数");
   const kpiInterviews = weeklyKpiSum("面談数");
+  const eventReservations = MANUAL_EVENT_RESERVATIONS.filter((r) => r.weekStart === weekStartKey)
+    .reduce((sum, r) => sum + r.count, 0);
 
   const totalLineRegs = kpiLineRegs > 0 ? kpiLineRegs : adLineRegs;
-  const totalReservations = kpiReservations > 0 ? kpiReservations : ad.reservations;
+  const totalReservations = ad.reservations + eventReservations;
   const totalInterviews = kpiInterviews > 0 ? kpiInterviews : adInterviews;
   const totalCost = ad.cost + referralTotalYen;
 
@@ -1008,7 +1019,7 @@ export function getMarketingWeeklySummary(
     totalInterviews,
     totalCost,
     costPerInterview: totalInterviews > 0 ? totalCost / totalInterviews : null,
-    usesKpiActuals: kpiLineRegs > 0 || kpiReservations > 0 || kpiInterviews > 0,
+    usesKpiActuals: kpiLineRegs > 0 || kpiInterviews > 0,
   };
 }
 
