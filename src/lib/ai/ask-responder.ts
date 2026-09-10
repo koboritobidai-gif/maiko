@@ -278,8 +278,12 @@ channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(�
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
 (同じ課金ルールでの先月の経路別サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
 totalCost/totalLineRegs/totalReservations/totalInterviews
-(広告+SNS+送客パートナー合算。totalCost にのみ送客パートナー費用を含む)、transitionRates(遷移率まとめ)が
-含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
+(totalCost は広告+SNS+送客パートナー合算。totalLineRegs/totalReservations/totalInterviews は
+「基本KPI優先」の方針で、週次KPI表(手動加算=イベント流入等を含む)にその月の実数があればそちらの値、
+無ければ広告+SNS合算にフォールバックした値です。usesKpiActuals が true の場合はKPI表の実数が
+使われているという意味なので、「広告経由で」のように断定せず「実数(KPI表、広告以外の経路・イベント
+流入含む)」のように答えてください)、transitionRates(遷移率まとめ。こちらは常に広告シート由来の
+参考値)が含まれます。率・単価の値が null の場合は「分母が0のため算出できません」のように答えてください。
 「送客費用は?」「送客パートナーは?」のような全体質問には経路別+合計を、「KANOAの費用/実績は?」
 「マホガニーは?」のような経路名を含む質問にはその経路の単価・人数・費用を個別に答えてください。
 
@@ -476,11 +480,17 @@ function answerAdCost(marketingSummary: MarketingSummary | null): string {
   const snsPart = marketingSummary.sns.contractEnded
     ? "SNS運用(リズリアライズ)は2026年8月で契約終了"
     : `SNS運用(リズリアライズ)月額 ${formatYenPlain(marketingSummary.sns.cost)}`;
+  // LINE登録・面談実績は「基本KPI優先」でKPI表の実数に切り替わることがあり、その場合は
+  // 広告以外の経路・イベント流入も含むため、広告費の内訳に続けて「広告経由でつながった」と
+  // 断定しないよう文言を分ける(usesKpiActuals 参照)。
+  const totalsPart = marketingSummary.usesKpiActuals
+    ? `今月の実数はLINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件です(KPI表の実数。広告以外の経路・イベント流入含む)。`
+    : `LINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件につながっています。`;
   return (
     `今月の広告費用は合計${formatYenPlain(marketingSummary.totalCost)}です` +
     `(Google広告 ${formatYenPlain(google?.cost ?? 0)}、Meta広告 ${formatYenPlain(meta?.cost ?? 0)}、` +
     `${snsPart})。` +
-    `LINE登録${marketingSummary.totalLineRegs}人・面談実績${marketingSummary.totalInterviews}件につながっています。`
+    totalsPart
   );
 }
 

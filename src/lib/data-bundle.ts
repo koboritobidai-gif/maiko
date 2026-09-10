@@ -20,6 +20,7 @@ import type {
 } from "./types";
 import { DemoSpreadsheetSource, getSpreadsheetSource } from "./adapters/spreadsheet";
 import { DemoSlackSource } from "./adapters/messenger";
+import { withManualKpiAdjustments } from "./kpi-adjustments";
 import {
   candidates as demoCandidates,
   members as demoMembers,
@@ -71,7 +72,7 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
   }
   try {
     const source = getSpreadsheetSource();
-    const [candidates, placements, projects, members, settings, weeklyKpis] = await Promise.all([
+    const [candidates, placements, projects, members, settings, sheetWeeklyKpis] = await Promise.all([
       source.getCandidates(),
       source.getPlacements(),
       source.getProjects(),
@@ -79,6 +80,9 @@ async function loadSpreadsheetPart(): Promise<SpreadsheetPart> {
       source.getSettings(),
       source.getWeeklyKpis(),
     ]);
+    // イベント流入の手動加算(kpi-adjustments.ts 参照)。ライブ取得成功時のみ連結し、
+    // デモデータには混ぜない。供給口はここ一点のため、二重加算は起きない。
+    const weeklyKpis = withManualKpiAdjustments(sheetWeeklyKpis);
     return { candidates, placements, projects, members, settings, weeklyKpis, sourceStatus: "live" };
   } catch (error) {
     if (isNextDynamicUsageError(error)) throw error;

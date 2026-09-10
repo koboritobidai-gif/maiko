@@ -60,15 +60,17 @@ function adSnsBreakdown(mk: MarketingSummary) {
     unitCost: mk.sns.costPerInterview,
     contractEnded: mk.sns.contractEnded,
   };
-  // 合計(広告Google+Meta+SNS運用)。面談・LINE登録・予約はいずれも getMarketingSummary の
-  // 合計値(totalLineRegs/totalReservations/totalInterviews)と一致する(送客パートナー除く)。
+  // 合計(広告Google+Meta+SNS運用)。この表はあくまで広告シート由来の内訳のため、KPI優先
+  // (usesKpiActuals)時に置き換わる mk.totalLineRegs 等は使わず、内訳行(idoma/sns)の単純合算を
+  // 明示的に計算する(広告内訳の合計行が下の明細行と食い違って見えないようにするため)。
   const totalCost = idoma.cost + sns.cost;
+  const totalInterviews = idoma.interviews + sns.interviews;
   const total = {
     cost: totalCost,
-    lineRegs: mk.totalLineRegs,
-    reservations: mk.totalReservations,
-    interviews: mk.totalInterviews,
-    unitCost: mk.totalInterviews > 0 ? totalCost / mk.totalInterviews : null,
+    lineRegs: idoma.lineRegs + sns.lineRegs,
+    reservations: idoma.reservations,
+    interviews: totalInterviews,
+    unitCost: totalInterviews > 0 ? totalCost / totalInterviews : null,
   };
   return { idoma, sns, total };
 }
@@ -174,6 +176,13 @@ export default function MarketingReportView({
             />
           </tbody>
         </table>
+        {/* 経営者指示(2026-09)「基本KPI優先」: KPI表にその月の実数があればLINE登録・面談予約・
+            面談実施数はそちらを表示している(usesKpiActuals)。印刷時も出す。 */}
+        {summary.usesKpiActuals && (
+          <p className="text-[11px]" style={muted}>
+            ※LINE登録・面談予約・面談実施数はKPI表の実数(広告以外の経路・イベント流入含む)
+          </p>
+        )}
       </section>
 
       {/* 2. 内訳(送客パートナー・SNS広告)は横2段組みにして、横幅を活かす。 */}

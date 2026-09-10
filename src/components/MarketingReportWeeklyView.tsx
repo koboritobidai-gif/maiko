@@ -167,6 +167,13 @@ export default function MarketingReportWeeklyView({
         <p className="text-[11px]" style={muted}>
           ※SNS運用は月額固定のため週次費用には含めていません。
         </p>
+        {/* 経営者指示(2026-09)「基本KPI優先」: 対象週の週次KPI行に実数があればLINE登録・面談予約・
+            面談実施数はそちらを表示している(usesKpiActuals)。印刷時も出す。 */}
+        {summary.usesKpiActuals && (
+          <p className="text-[11px]" style={muted}>
+            ※LINE登録・面談予約・面談実施数はKPI表の実数(広告以外の経路・イベント流入含む)
+          </p>
+        )}
       </section>
 
       {/* 2. 内訳(送客パートナー・広告)は横2段組みにして、横幅を活かす。 */}

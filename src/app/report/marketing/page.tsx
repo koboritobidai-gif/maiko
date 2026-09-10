@@ -94,12 +94,14 @@ export default async function MarketingReportPage({
 
     const summary = getMarketingWeeklySummary(
       marketingResult.data,
+      bundle.weeklyKpis,
       referralCandidates,
       bundle.settings.referralRates,
       weekStart,
     );
     const summaryLastWeek = getMarketingWeeklySummary(
       marketingResult.data,
+      bundle.weeklyKpis,
       referralCandidates,
       bundle.settings.referralRates,
       lastWeekStart,

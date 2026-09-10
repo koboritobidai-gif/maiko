@@ -743,6 +743,12 @@ export interface MarketingSummary {
   /** 面接回数(週次KPIの1次〜最終前面接数+最終面接数、月内合計)。既存の getCandidateFunnel を再利用。 */
   interviewsCombined: number;
   transitionRates: MarketingTransitionRates;
+  /**
+   * true の場合、totalLineRegs/totalReservations/totalInterviews のいずれかがKPI表(週次KPIタブ、
+   * 手動加算含む)の実数採用に切り替わっている(経営者指示 2026-09「基本KPI優先」。下記コメント参照)。
+   * 表示側はこのフラグが true のとき「KPI表の実数」である旨の注記を出す。
+   */
+  usesKpiActuals: boolean;
 }
 
 /** 集客・広告データ(月内)のまとめ。ダッシュボード「集客・広告(月内)」セクション・AI応答の両方で使用する。 */
@@ -768,6 +774,15 @@ export function getMarketingSummary(
   const adReservations = google.reservations + meta.reservations;
   const adInterviews = google.interviews + meta.interviews;
 
+  // 経営者指示(2026-09)「基本KPI優先」: KPI表(週次KPIタブ。手動加算=イベント流入等を含む)に
+  // その月の実数が入っていればそちらを表示に採用し、無ければ従来どおり広告+SNS合算にフォールバックする
+  // (9月は広告数値管理シートがほぼ未入力で実態(KPI表)と大きくずれるため。過去月は広告シート由来の
+  // 値のままでも大きくずれないことが多いので、フォールバックとして残す)。
+  // 遷移率(transitionRates)・媒体別(channels)・CPA等の内訳計算は広告経由の参考値のため変更しない。
+  const kpiLineRegs = getMonthlyKpiTotal(weeklyKpis, "求職者", "LINE登録人数", now);
+  const kpiReservations = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談予約数", now);
+  const kpiInterviews = getMonthlyKpiTotal(weeklyKpis, "求職者", "面談数", now);
+
   return {
     channels: [google, meta],
     sns,
@@ -776,9 +791,9 @@ export function getMarketingSummary(
     referralPartnersLastMonth,
     referralLastMonthTotalYen,
     totalCost: google.cost + meta.cost + sns.cost + referralTotalYen,
-    totalLineRegs: adLineRegs + sns.lineRegs,
-    totalReservations: adReservations,
-    totalInterviews: adInterviews + sns.interviews,
+    totalLineRegs: kpiLineRegs > 0 ? kpiLineRegs : adLineRegs + sns.lineRegs,
+    totalReservations: kpiReservations > 0 ? kpiReservations : adReservations,
+    totalInterviews: kpiInterviews > 0 ? kpiInterviews : adInterviews + sns.interviews,
     interviewsCombined: getCandidateFunnel(weeklyKpis, now).interviewsCombined,
     transitionRates: {
       clickToLineRegRatePercent: rateOrNull(adLineRegs, adClicks),
@@ -786,6 +801,7 @@ export function getMarketingSummary(
       reservationToInterviewRatePercent: rateOrNull(adInterviews, adReservations),
       snsPlayToLpRatePercent: sns.lpRate,
     },
+    usesKpiActuals: kpiLineRegs > 0 || kpiReservations > 0 || kpiInterviews > 0,
   };
 }
 
@@ -936,6 +952,11 @@ export interface MarketingWeeklySummary {
   totalCost: number;
   /** 面談単価(週) = totalCost / totalInterviews(0件ならnull)。 */
   costPerInterview: number | null;
+  /**
+   * true の場合、totalLineRegs/totalReservations/totalInterviews のいずれかが対象週の週次KPI行
+   * (手動加算含む)の実数採用に切り替わっている(getMarketingSummary と同じ「基本KPI優先」方針)。
+   */
+  usesKpiActuals: boolean;
 }
 
 /**
@@ -944,32 +965,50 @@ export interface MarketingWeeklySummary {
  */
 export function getMarketingWeeklySummary(
   data: MarketingData,
+  weeklyKpis: WeeklyKpiRecord[],
   referralCandidates: Candidate[],
   referralRates: ReferralRate[],
   weekStart: Date,
 ): MarketingWeeklySummary {
   const monday = startOfDay(weekStart);
+  const weekStartKey = toDateKey(monday);
   const ad = summarizeAdWeek(data.adDaily, monday);
   const sns = summarizeSnsWeek(data.snsWeekly, monday);
   const referralPartners = getReferralPartnerSummaryForWeek(referralCandidates, referralRates, monday);
   const referralTotalYen = referralPartners.reduce((sum, r) => sum + r.costYen, 0);
   const referralCount = referralPartners.reduce((sum, r) => sum + r.count, 0);
 
-  const totalInterviews = ad.interviews + referralCount + (sns.available ? sns.interviews : 0);
+  const adLineRegs = ad.lineRegs + (sns.available ? sns.lineRegs : 0);
+  const adInterviews = ad.interviews + referralCount + (sns.available ? sns.interviews : 0);
+
+  // 経営者指示「基本KPI優先」の週次版: 対象週(weekStart一致)の週次KPI行(手動加算含む)の合計が
+  // >0ならそちらを採用する(月次の getMarketingSummary と同じ考え方)。
+  const weeklyKpiSum = (key: CandidateKpiKey): number =>
+    filterKpi(weeklyKpis, "求職者", key)
+      .filter((r) => r.weekStart === weekStartKey)
+      .reduce((sum, r) => sum + r.value, 0);
+  const kpiLineRegs = weeklyKpiSum("LINE登録人数");
+  const kpiReservations = weeklyKpiSum("面談予約数");
+  const kpiInterviews = weeklyKpiSum("面談数");
+
+  const totalLineRegs = kpiLineRegs > 0 ? kpiLineRegs : adLineRegs;
+  const totalReservations = kpiReservations > 0 ? kpiReservations : ad.reservations;
+  const totalInterviews = kpiInterviews > 0 ? kpiInterviews : adInterviews;
   const totalCost = ad.cost + referralTotalYen;
 
   return {
-    weekStart: toDateKey(monday),
+    weekStart: weekStartKey,
     weekEnd: toDateKey(addDays(monday, 6)),
     ad,
     sns,
     referralPartners,
     referralTotalYen,
-    totalLineRegs: ad.lineRegs + (sns.available ? sns.lineRegs : 0),
-    totalReservations: ad.reservations,
+    totalLineRegs,
+    totalReservations,
     totalInterviews,
     totalCost,
     costPerInterview: totalInterviews > 0 ? totalCost / totalInterviews : null,
+    usesKpiActuals: kpiLineRegs > 0 || kpiReservations > 0 || kpiInterviews > 0,
   };
 }
 
