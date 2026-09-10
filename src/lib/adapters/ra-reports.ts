@@ -214,7 +214,34 @@ export function parseRaReportText(rawText: string): RaParsedFields {
     if (a !== undefined) result[fields[0]] = a;
     if (b !== undefined) result[fields[1]] = b;
   }
+
+  // 表記ゆれ救済: 「架電数25／本通: 2／アポ1」のようにラベル側に数字が食い込む書き方(実例あり)だと
+  // 上のラベル一致では拾えないため、キーワードを含む行の数字を並び順で補完する
+  // (1つ目=架電数、2つ目=本通、3つ目があれば架電アポ獲得。専用ラベルで既に取れている値は上書きしない)。
+  if (result.callDials === undefined && result.callConnected === undefined) {
+    const line = lines.find((l) => l.includes("架電数") && l.includes("本通"));
+    if (line) {
+      const nums = extractNumbers(line);
+      if (nums.length >= 1) result.callDials = nums[0];
+      if (nums.length >= 2) result.callConnected = nums[1];
+      if (nums.length >= 3 && result.callAppointments === undefined) result.callAppointments = nums[2];
+    }
+  }
+  if (result.eventCardTarget === undefined && result.eventCardsExchanged === undefined) {
+    const line = lines.find((l) => l.includes("名刺交換目標"));
+    if (line) {
+      const nums = extractNumbers(line);
+      if (nums.length >= 1) result.eventCardTarget = nums[0];
+      if (nums.length >= 2) result.eventCardsExchanged = nums[1];
+    }
+  }
   return result;
+}
+
+/** 行内のすべての数値を出現順に取り出す(全角数字→半角、桁区切りカンマ対応)。 */
+function extractNumbers(line: string): number[] {
+  const half = toHalfWidthDigits(line).replace(/(\d),(?=\d{3}(\D|$))/g, "$1");
+  return [...half.matchAll(/\d+/g)].map((m) => Number(m[0]));
 }
 
 // ─────────────────────────────────────────────
@@ -231,7 +258,18 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-const TITLE_DATE_RE = /【営業日報】\s*(\d{1,2})\s*\/\s*(\d{1,2})/;
+// タイトルは「【営業日報】」のほか「【本日の営業日報】」のような表記ゆれがある(実例: 清本さん)。
+// 【…営業日報…】の形なら日報とみなす。ただしテンプレート案内・フォーマット修正のお知らせ投稿
+// (実例: 「【営業日報フォーマット 修正】」)は日報ではないため除外する。
+const TITLE_RE = /【[^】\n]*営業日報[^】\n]*】/;
+const TITLE_EXCLUDE_RE = /フォーマット|テンプレ|ここからコピー|見本|サンプル/;
+
+/** 親メッセージ本文が営業日報のタイトルか(テンプレ案内等は除外)。 */
+function isRaReportTitle(text: string): boolean {
+  return TITLE_RE.test(text) && !TITLE_EXCLUDE_RE.test(text);
+}
+
+const TITLE_DATE_RE = /【[^】\n]*営業日報[^】\n]*】\s*(\d{1,2})\s*\/\s*(\d{1,2})/;
 
 /**
  * 親メッセージ本文の「【営業日報】M/D」から報告対象日(YYYY-MM-DD)を復元する。
@@ -418,11 +456,13 @@ export class SlackRaReportSource implements RaReportSource {
       cursor = history.response_metadata?.next_cursor || undefined;
     } while (cursor && historyMessages.length < HISTORY_MAX_MESSAGES);
 
-    // 「【営業日報】」を含む親メッセージのみを対象にする(投稿者不明のbot投稿等は除外)。
+    // 【…営業日報…】のタイトルを持つ親メッセージのみを対象にする(投稿者不明のbot投稿・
+    // テンプレ/フォーマット案内投稿は除外。isRaReportTitle 参照)。
     const parents = historyMessages.filter(
       (m) =>
         (!m.subtype || m.subtype === "bot_message" || m.subtype === "thread_broadcast") &&
-        m.text?.includes("【営業日報】") &&
+        m.text &&
+        isRaReportTitle(m.text) &&
         m.user,
     );
 
