@@ -977,10 +977,19 @@ export interface MarketingWeeklySummary {
   totalReservations: number;
   /** 面談実施数合計 = 広告 + 送客パートナー + (取得できた週のみ)SNS。 */
   totalInterviews: number;
-  /** 週の費用 = 広告(Google+Meta)費用 + 送客パートナー費用。SNS運用の月額固定費は含まない。 */
+  /**
+   * 週の費用 = 広告(Google+Meta)費用 + 送客パートナー費用 + (開催週のみ)イベント出展費。
+   * SNS運用の月額固定費は含まない。
+   */
   totalCost: number;
   /** 面談単価(週) = totalCost / totalInterviews(0件ならnull)。 */
   costPerInterview: number | null;
+  /** イベント出展費(開催日が週内のもの。kpi-adjustments.ts の MANUAL_EVENT_COSTS 参照)。 */
+  eventCostYen: number;
+  /** イベント経由のLINE登録人数(内訳表示用。totalLineRegs のKPI実数に含まれるため加算はしない)。 */
+  eventLineRegs: number;
+  /** イベント経由の面談予約数。totalReservations には加算済み。 */
+  eventReservations: number;
   /**
    * true の場合、totalLineRegs/totalInterviews のいずれかが対象週の週次KPI行の実数採用に
    * 切り替わっている(getMarketingSummary と同じ「基本KPI優先」方針)。
@@ -1022,11 +1031,16 @@ export function getMarketingWeeklySummary(
   const kpiInterviews = weeklyKpiSum("面談数");
   const eventReservations = MANUAL_EVENT_RESERVATIONS.filter((r) => r.weekStart === weekStartKey)
     .reduce((sum, r) => sum + r.count, 0);
+  // イベント出展費・LINE登録(開催日が週内のもの)。費用は週の費用に計上する(月額固定のSNSと違い
+  // 開催週に帰属できる一時費用のため)。LINE登録はKPI週実数に含まれるため内訳表示のみ。
+  const weekEventCosts = MANUAL_EVENT_COSTS.filter((e) => e.weekStart === weekStartKey);
+  const eventCostYen = weekEventCosts.reduce((sum, e) => sum + e.amountYen, 0);
+  const eventLineRegs = weekEventCosts.reduce((sum, e) => sum + (e.lineRegs ?? 0), 0);
 
   const totalLineRegs = kpiLineRegs > 0 ? kpiLineRegs : adLineRegs;
   const totalReservations = ad.reservations + eventReservations;
   const totalInterviews = kpiInterviews > 0 ? kpiInterviews : adInterviews;
-  const totalCost = ad.cost + referralTotalYen;
+  const totalCost = ad.cost + referralTotalYen + eventCostYen;
 
   return {
     weekStart: weekStartKey,
@@ -1040,6 +1054,9 @@ export function getMarketingWeeklySummary(
     totalInterviews,
     totalCost,
     costPerInterview: totalInterviews > 0 ? totalCost / totalInterviews : null,
+    eventCostYen,
+    eventLineRegs,
+    eventReservations,
     usesKpiActuals: kpiLineRegs > 0 || kpiInterviews > 0,
   };
 }

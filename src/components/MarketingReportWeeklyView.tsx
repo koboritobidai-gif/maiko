@@ -156,6 +156,11 @@ export default function MarketingReportWeeklyView({
               label="週の費用"
               current={formatYen(summary.totalCost)}
               last={formatYen(summaryLastWeek.totalCost)}
+              caption={
+                summary.eventCostYen > 0 || summaryLastWeek.eventCostYen > 0
+                  ? "※イベント出展費含む"
+                  : undefined
+              }
             />
             <CompareRow
               label="面談単価(週)"
@@ -236,7 +241,10 @@ export default function MarketingReportWeeklyView({
               </tr>
             </thead>
             <tbody>
-              <tr className={summary.sns.available ? "border-b" : undefined} style={borderColor}>
+              <tr
+                className={summary.sns.available || summary.eventCostYen > 0 ? "border-b" : undefined}
+                style={borderColor}
+              >
                 <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                   昼職キャリア広告
                 </td>
@@ -247,7 +255,7 @@ export default function MarketingReportWeeklyView({
                 <td className="py-1 text-right tabular-nums">{formatYenOrDash(summary.ad.costPerInterview)}</td>
               </tr>
               {!summary.sns.contractEnded && summary.sns.available && (
-                <tr>
+                <tr className={summary.eventCostYen > 0 ? "border-b" : undefined} style={borderColor}>
                   <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
                     リズリアライズ
                   </td>
@@ -256,6 +264,26 @@ export default function MarketingReportWeeklyView({
                   <td className="py-1 pr-2 text-right tabular-nums">{summary.sns.lineRegs.toLocaleString("ja-JP")}人</td>
                   <td className="py-1 pr-2 text-right tabular-nums">—</td>
                   <td className="py-1 pr-2 text-right tabular-nums">{summary.sns.interviews.toLocaleString("ja-JP")}件</td>
+                  <td className="py-1 text-right tabular-nums">—</td>
+                </tr>
+              )}
+              {/* イベント出展(開催日が対象週内のもの)。LINE登録はKPI実数に含まれる内訳表示、
+                  予約は週の予約合計に計上済み(kpi-adjustments.ts 参照)。 */}
+              {summary.eventCostYen > 0 && (
+                <tr>
+                  <td className="py-1 pr-2 font-medium whitespace-nowrap" style={navy}>
+                    イベント出展(学情)
+                  </td>
+                  <td className="py-1 pr-2 text-right tabular-nums">{formatYen(summary.eventCostYen)}</td>
+                  <td className="py-1 pr-2 text-right tabular-nums">
+                    {summary.eventLineRegs > 0 ? `${summary.eventLineRegs.toLocaleString("ja-JP")}人` : "—"}
+                  </td>
+                  <td className="py-1 pr-2 text-right tabular-nums">
+                    {summary.eventReservations > 0
+                      ? `${summary.eventReservations.toLocaleString("ja-JP")}件`
+                      : "—"}
+                  </td>
+                  <td className="py-1 pr-2 text-right tabular-nums">—</td>
                   <td className="py-1 text-right tabular-nums">—</td>
                 </tr>
               )}
@@ -268,6 +296,11 @@ export default function MarketingReportWeeklyView({
                 ? "※リズリアライズは月額固定費のため週次の費用・面談単価は算出していません。予約数も計測していません。"
                 : "※リズリアライズは今週分の週次実績がシートに未入力のため掲載していません。"}
           </p>
+          {summary.eventCostYen > 0 && (
+            <p className="text-[11px]" style={muted}>
+              ※イベント出展(学情、9/4・9/5開催)。LINE登録はKPI表の実数に含まれる内訳表示です
+            </p>
+          )}
         </section>
       </div>
 

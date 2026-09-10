@@ -61,6 +61,8 @@ export function withManualKpiAdjustments(records: WeeklyKpiRecord[]): WeeklyKpiR
 export interface EventCostEntry {
   /** 費用を計上する月("YYYY-MM") */
   month: string;
+  /** 開催日が属する週の月曜("YYYY-MM-DD")。週次MTG資料の内訳表示・週次費用への計上に使う */
+  weekStart: string;
   /** 費用(円) */
   amountYen: number;
   /** 請求元の会社名に一致する正規表現(#請求書の同社請求書を支出から除外して二重計上を防ぐ) */
@@ -90,6 +92,7 @@ export interface EventCostEntry {
 export const MANUAL_EVENT_COSTS: EventCostEntry[] = [
   {
     month: "2026-09",
+    weekStart: "2026-08-31", // 開催日9/4(金)・9/5(土)が属する週
     amountYen: 1_100_000,
     vendorRe: /学情|GAKUJO/i,
     invoicePaymentMonth: "2026-10",
