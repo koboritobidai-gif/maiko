@@ -18,8 +18,8 @@
  */
 import type { WeeklyKpiRecord } from "./types";
 
-/** 手動加算の入力担当者名。実在のメンバー名(Member.name)と衝突しない専用の値。 */
-const EVENT_OWNER = "イベント";
+// 週次KPIレコードとして手動加算する場合、入力担当者(owner)には実在のメンバー名(Member.name)と
+// 衝突しない専用の値(例: "イベント")を使うこと(CA/RA個人別のKPI集計に混ざるのを防ぐため)。
 
 export const MANUAL_KPI_ADJUSTMENTS: WeeklyKpiRecord[] = [
   // 現在は空。経営者確認(2026-09-10)により:
