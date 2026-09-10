@@ -37,10 +37,15 @@ function isSameMonth(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
-/** `weekStart`("YYYY-MM-DD")を Date に変換する。月次集計は週の開始日(月曜)が属する月を採用する。 */
+/**
+ * `weekStart`("YYYY-MM-DD"、月曜)から月次集計上の「帰属月」を表す日付を返す。
+ * 月またぎの週(例: 8/31〜9/6)を月曜の月で数えると、週の大半が属する月(9月)に何も
+ * 計上されず実態とずれるため、週の過半数が属する月 = 木曜日(月曜+3日)の月に数える。
+ * 旧KPI表からの月次まとめ行はすべて月初週の日付のため、このルールでも帰属月は変わらない。
+ */
 function weekStartToDate(weekStart: string): Date {
   const [y, m, d] = weekStart.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1);
+  return new Date(y, (m ?? 1) - 1, (d ?? 1) + 3);
 }
 
 export interface CountAmount {
@@ -172,7 +177,7 @@ export function sumWeeklyKpi(records: WeeklyKpiRecord[], category: KpiCategory, 
   return filterKpi(records, category, key).reduce((sum, r) => sum + r.value, 0);
 }
 
-/** 今月合計(週の開始日=月曜が属する月で判定)。 */
+/** 今月合計(週の過半数が属する月=木曜日の月で判定。weekStartToDate 参照)。 */
 export function getMonthlyKpiTotal(
   records: WeeklyKpiRecord[],
   category: KpiCategory,
