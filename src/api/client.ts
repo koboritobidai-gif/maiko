@@ -64,7 +64,7 @@ type Options = {
 // uysot API uses — and credentials so the origin's whitelisted CORS applies.
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const token = opts.token ?? getToken();
-  const url = path.startsWith('http') ? path : `${PROXY_PREFIX}${path}`;
+  const url = path.startsWith('http') ? path : `${PROXY_PREFIX}?p=${encodeURIComponent(path)}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
