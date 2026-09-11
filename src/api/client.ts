@@ -4,6 +4,24 @@
 const PROXY_PREFIX = '/api/uysot';
 
 const TOKEN_STORAGE_KEY = 'jp-plaza-token';
+const PASS_STORAGE_KEY = 'jp-plaza-pass';
+
+export function getPass(): string {
+  try {
+    return localStorage.getItem(PASS_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setPass(pass: string): void {
+  try {
+    if (pass) localStorage.setItem(PASS_STORAGE_KEY, pass.trim());
+    else localStorage.removeItem(PASS_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 // Copy/paste often brings along surrounding quotes, "Bearer " prefixes,
 // or stray whitespace/newlines — any of which make the API reject the token.
@@ -64,11 +82,15 @@ type Options = {
 // uysot API uses — and credentials so the origin's whitelisted CORS applies.
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const token = opts.token ?? getToken();
+  const pass = getPass();
   const url = path.startsWith('http') ? path : `${PROXY_PREFIX}?p=${encodeURIComponent(path)}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Passphrase mode: proxy substitutes the server-stored token. Otherwise
+  // send the viewer's own Bearer token.
+  if (pass) headers['x-dash-pass'] = pass;
+  else if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let res: Response;
   try {

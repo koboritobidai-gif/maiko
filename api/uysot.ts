@@ -14,6 +14,15 @@
 const API_BASE = 'https://service.app.uysot.uz';
 const SPOOF_ORIGIN = 'https://app.uysot.uz';
 
+// Shared "passphrase" mode: when a viewer sends the correct passphrase, the
+// proxy uses a server-stored uysot token so the viewer never has to obtain a
+// token themselves. Both values come from Vercel environment variables and
+// are absent from the repository; if either is unset, this mode is disabled
+// and viewers must supply their own token.
+const SHARED_PASSWORD = process.env.DASH_PASSWORD || '';
+const SHARED_TOKEN = process.env.UYSOT_TOKEN || '';
+const SHARED_ENABLED = SHARED_PASSWORD.length > 0 && SHARED_TOKEN.length > 0;
+
 export default async function handler(req: any, res: any) {
   try {
     const q = req.query || {};
@@ -31,8 +40,22 @@ export default async function handler(req: any, res: any) {
       Origin: SPOOF_ORIGIN,
       Referer: `${SPOOF_ORIGIN}/`,
     };
+    // Auth resolution: shared passphrase (-> server token) first, else the
+    // viewer's own Bearer token passed from the client.
+    const passHeader = req.headers['x-dash-pass'];
+    const pass = Array.isArray(passHeader) ? passHeader[0] : passHeader;
     const auth = req.headers['authorization'];
-    if (auth) headers['Authorization'] = Array.isArray(auth) ? auth[0] : auth;
+    if (SHARED_ENABLED && pass && pass === SHARED_PASSWORD) {
+      headers['Authorization'] = `Bearer ${SHARED_TOKEN}`;
+    } else if (auth) {
+      headers['Authorization'] = Array.isArray(auth) ? auth[0] : auth;
+    } else if (pass && !SHARED_ENABLED) {
+      res.status(503).json({
+        message: '合言葉モードは未設定です（Vercelの環境変数 DASH_PASSWORD と UYSOT_TOKEN を設定してください）',
+        accept: false,
+      });
+      return;
+    }
     const fb = req.headers['firebasetoken'];
     if (fb) headers['firebaseToken'] = Array.isArray(fb) ? fb[0] : fb;
 

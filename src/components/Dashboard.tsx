@@ -10,7 +10,7 @@ import {
   type Named,
   type Pipe,
 } from '../api/uysot';
-import { setToken } from '../api/client';
+import { setPass, setToken } from '../api/client';
 import KpiCard from './KpiCard';
 import Diagnostics, { type DiagEntry } from './Diagnostics';
 import { FunnelChart, MonthlyCountsChart, MonthlyRevenueChart, type MonthlyPoint } from './charts';
@@ -263,6 +263,7 @@ export default function Dashboard({ onLogout }: Props) {
 
   const relog = () => {
     setToken('');
+    setPass('');
     onLogout();
   };
 

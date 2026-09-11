@@ -1,51 +1,29 @@
 import { useState } from 'react';
-import { apiFetch, setToken, unwrap } from '../api/client';
-import { ENDPOINTS } from '../api/endpoints';
-import { getRecaptchaToken } from '../auth/recaptcha';
+import { setPass, setToken } from '../api/client';
 
 interface Props {
-  onAuthenticated: (token: string) => void;
+  onAuthenticated: () => void;
 }
 
-type Tab = 'login' | 'token';
+type Tab = 'pass' | 'token';
 
 export default function Login({ onAuthenticated }: Props) {
-  const [tab, setTab] = useState<Tab>('login');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [tab, setTab] = useState<Tab>('pass');
+  const [passInput, setPassInput] = useState('');
   const [tokenInput, setTokenInput] = useState('');
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  async function doLogin(e: React.FormEvent) {
+  function usePassValue(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
-    setBusy(true);
-    try {
-      let recaptchaToken = '';
-      try {
-        recaptchaToken = await getRecaptchaToken('login');
-      } catch {
-        /* proceed without — backend may still accept, otherwise it errors */
-      }
-      const resp = await apiFetch(ENDPOINTS.auth.signIn, {
-        method: 'POST',
-        body: { username: username.trim(), password, recaptchaToken },
-        token: '',
-      });
-      const data = unwrap<{ accessToken?: string }>(resp);
-      const accessToken = data?.accessToken;
-      if (!accessToken) throw new Error('アクセストークンを取得できませんでした');
-      setToken(accessToken);
-      onAuthenticated(accessToken);
-    } catch (e2) {
-      const m = (e2 as Error).message || 'ログインに失敗しました';
-      setErr(
-        `${m}。\nこのドメインが reCAPTCHA に登録されていない場合、直接ログインはできません。右上の「トークン」タブをご利用ください。`,
-      );
-    } finally {
-      setBusy(false);
+    const p = passInput.trim();
+    if (!p) {
+      setErr('合言葉を入力してください');
+      return;
     }
+    setToken('');
+    setPass(p);
+    onAuthenticated();
   }
 
   function useTokenValue(e: React.FormEvent) {
@@ -56,8 +34,9 @@ export default function Login({ onAuthenticated }: Props) {
       setErr('トークンを貼り付けてください');
       return;
     }
+    setPass('');
     setToken(t);
-    onAuthenticated(t);
+    onAuthenticated();
   }
 
   return (
@@ -67,33 +46,30 @@ export default function Login({ onAuthenticated }: Props) {
         <p className="lead">ウズベキスタン・ジャパンプラザ 販売進捗の日本語ダッシュボード</p>
 
         <div className="tab-row">
-          <button className={tab === 'login' ? 'active' : ''} onClick={() => setTab('login')} type="button">
-            ログイン
+          <button className={tab === 'pass' ? 'active' : ''} onClick={() => setTab('pass')} type="button">
+            合言葉
           </button>
           <button className={tab === 'token' ? 'active' : ''} onClick={() => setTab('token')} type="button">
             トークン
           </button>
         </div>
 
-        {tab === 'login' ? (
-          <form onSubmit={doLogin}>
-            <label>ユーザー名</label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              placeholder="Okano1469"
-            />
-            <label>パスワード</label>
+        {tab === 'pass' ? (
+          <form onSubmit={usePassValue}>
+            <label>合言葉</label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
+              value={passInput}
+              onChange={(e) => setPassInput(e.target.value)}
+              placeholder="合言葉を入力"
+              autoFocus
             />
-            <button className="btn primary" disabled={busy} type="submit">
-              {busy ? '認証中…' : 'ログイン'}
+            <button className="btn primary" type="submit">
+              表示する
             </button>
+            <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
+              社内で共有された合言葉を入力してください。
+            </p>
           </form>
         ) : (
           <form onSubmit={useTokenValue}>
@@ -106,7 +82,7 @@ export default function Login({ onAuthenticated }: Props) {
             <button className="btn primary" type="submit">
               このトークンで表示
             </button>
-            <details className="help" open>
+            <details className="help">
               <summary>トークンの取得方法</summary>
               <ol>
                 <li>
@@ -114,21 +90,17 @@ export default function Login({ onAuthenticated }: Props) {
                 </li>
                 <li>キーボードで <code className="inline">F12</code>（開発者ツール）を開く</li>
                 <li>
-                  上のタブの <code className="inline">≫</code> →「アプリケーション」→「ローカル ストレージ」→ <code className="inline">app.uysot.uz</code> を開く
+                  上のタブの <code className="inline">≫</code> →「アプリケーション」→「ローカル ストレージ」→ <code className="inline">app.uysot.uz</code>
                 </li>
                 <li>
-                  キーが <code className="inline">token</code> の行をクリックし、下に出る値をコピーして上に貼り付け
+                  キーが <code className="inline">token</code> の行をクリックし、値をコピーして上に貼り付け
                 </li>
               </ol>
-              <p className="muted" style={{ marginTop: 8 }}>
-                ※ トークンには有効期限があります。「Access denied」が出たら、uysot にログインし直して新しい
-                トークンをコピーしてください。
-              </p>
             </details>
           </form>
         )}
 
-        {err && <div className="login-err" style={{ whiteSpace: 'pre-line' }}>{err}</div>}
+        {err && <div className="login-err">{err}</div>}
       </div>
     </div>
   );
