@@ -19,8 +19,17 @@ const SPOOF_ORIGIN = 'https://app.uysot.uz';
 // token themselves. Both values come from Vercel environment variables and
 // are absent from the repository; if either is unset, this mode is disabled
 // and viewers must supply their own token.
-const SHARED_PASSWORD = process.env.DASH_PASSWORD || '';
-const SHARED_TOKEN = process.env.UYSOT_TOKEN || '';
+// A pasted token can carry surrounding quotes, a "Bearer " prefix, or stray
+// whitespace/newlines — strip them so the stored value still works.
+function clean(v: string): string {
+  let t = (v || '').trim().replace(/^bearer\s+/i, '');
+  while (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) {
+    t = t.slice(1, -1).trim();
+  }
+  return t.replace(/\s+/g, '');
+}
+const SHARED_PASSWORD = (process.env.DASH_PASSWORD || '').trim();
+const SHARED_TOKEN = clean(process.env.UYSOT_TOKEN || '');
 const SHARED_ENABLED = SHARED_PASSWORD.length > 0 && SHARED_TOKEN.length > 0;
 
 export default async function handler(req: any, res: any) {
