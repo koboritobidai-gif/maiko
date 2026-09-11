@@ -17,25 +17,8 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121613;
-    --surface-1: #1a201d;
-    --surface-2: #202824;
-    --border: #2c342f;
-    --border-strong: #3a443e;
-    --text-primary: #f2f4f1;
-    --text-secondary: #b7c0ba;
-    --text-muted: #7f8a83;
-    --brand: #2fb89c;
-    --brand-weak: #16302a;
-    --good: #4ec07f;
-    --warn: #e0a63a;
-    --danger: #e5695a;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
-    color-scheme: dark;
-  }
-}
+/* Light-only theme: the dashboard always uses a white/light background,
+   regardless of the OS dark-mode setting, for readability. */
 
 * {
   box-sizing: border-box;

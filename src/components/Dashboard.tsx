@@ -351,8 +351,21 @@ export default function Dashboard({ onLogout }: Props) {
         </div>
       </div>
 
-      {refError && <div className="error">{refError}</div>}
-      {loadError && <div className="error">{loadError}</div>}
+      {(refError || loadError) && (
+        <div className="error" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <div>{loadError || refError}</div>
+          <button
+            className="btn primary"
+            type="button"
+            onClick={() => {
+              setToken('');
+              onLogout();
+            }}
+          >
+            新しいトークンを入れ直す
+          </button>
+        </div>
+      )}
 
       {/* ============ マーケティング ============ */}
       <section className="section">

@@ -114,10 +114,16 @@ export default function Login({ onAuthenticated }: Props) {
                 </li>
                 <li>キーボードで <code className="inline">F12</code>（開発者ツール）を開く</li>
                 <li>
-                  「Console（コンソール）」に <code className="inline">localStorage.getItem('token')</code> と入力して Enter
+                  上のタブの <code className="inline">≫</code> →「アプリケーション」→「ローカル ストレージ」→ <code className="inline">app.uysot.uz</code> を開く
                 </li>
-                <li>表示された文字列（引用符の中身）をコピーし、上に貼り付け</li>
+                <li>
+                  キーが <code className="inline">token</code> の行をクリックし、下に出る値をコピーして上に貼り付け
+                </li>
               </ol>
+              <p className="muted" style={{ marginTop: 8 }}>
+                ※ トークンには有効期限があります。「Access denied」が出たら、uysot にログインし直して新しい
+                トークンをコピーしてください。
+              </p>
             </details>
           </form>
         )}

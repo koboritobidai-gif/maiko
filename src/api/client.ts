@@ -2,9 +2,28 @@ import { API_BASE } from './endpoints';
 
 const TOKEN_STORAGE_KEY = 'jp-plaza-token';
 
+// Copy/paste often brings along surrounding quotes, "Bearer " prefixes,
+// or stray whitespace/newlines — any of which make the API reject the token.
+// Normalise defensively so a slightly messy paste still works.
+export function sanitizeToken(raw: string): string {
+  let t = (raw || '').trim();
+  // strip a leading "Bearer " if the user copied the whole header
+  t = t.replace(/^bearer\s+/i, '');
+  // strip surrounding single or double quotes (possibly repeated)
+  while (
+    t.length >= 2 &&
+    ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))
+  ) {
+    t = t.slice(1, -1).trim();
+  }
+  // remove any internal whitespace/newlines (JWTs contain none)
+  t = t.replace(/\s+/g, '');
+  return t;
+}
+
 export function getToken(): string {
   try {
-    return localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+    return sanitizeToken(localStorage.getItem(TOKEN_STORAGE_KEY) || '');
   } catch {
     return '';
   }
@@ -12,7 +31,8 @@ export function getToken(): string {
 
 export function setToken(token: string): void {
   try {
-    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    const t = sanitizeToken(token);
+    if (t) localStorage.setItem(TOKEN_STORAGE_KEY, t);
     else localStorage.removeItem(TOKEN_STORAGE_KEY);
   } catch {
     /* ignore */
