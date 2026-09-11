@@ -6,8 +6,6 @@ import {
   Legend,
   Line,
   ComposedChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,7 +14,7 @@ import {
 import { useDark } from '../hooks/useDark';
 import { seriesColor } from '../theme';
 import { formatNumber, formatCompact } from '../utils/format';
-import type { FunnelStage, SourceRow } from '../api/uysot';
+import type { FunnelStage } from '../api/uysot';
 
 function useAxis() {
   const dark = useDark();
@@ -86,68 +84,6 @@ export function FunnelChart({ stages }: { stages: FunnelStage[] }) {
             ))}
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-/* ---------- lead sources: leads per source ---------- */
-export function SourceLeadsChart({ rows }: { rows: SourceRow[] }) {
-  const a = useAxis();
-  if (!rows.length) return <div className="empty">データがありません</div>;
-  const data = rows.map((r, i) => ({ ...r, _i: i }));
-  return (
-    <div className="chart-wrap">
-      <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
-          <CartesianGrid horizontal={false} stroke={a.grid} />
-          <XAxis type="number" tick={{ fill: a.tick, fontSize: 11 }} stroke={a.grid} />
-          <YAxis
-            type="category"
-            dataKey="source"
-            width={110}
-            tick={{ fill: a.tick, fontSize: 11 }}
-            stroke={a.grid}
-          />
-          <Tooltip content={<TipBox unit=" 件" />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <Bar dataKey="leads" name="リスト数" radius={[0, 4, 4, 0]} maxBarSize={24} isAnimationActive={false}>
-            {data.map((d) => (
-              <Cell key={d._i} fill={seriesColor(d._i, a.dark)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-/* ---------- lead sources: share pie ---------- */
-export function SourcePie({ rows }: { rows: SourceRow[] }) {
-  const a = useAxis();
-  const data = rows.filter((r) => r.leads > 0);
-  if (!data.length) return <div className="empty">データがありません</div>;
-  return (
-    <div className="chart-wrap">
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="leads"
-            nameKey="source"
-            innerRadius="52%"
-            outerRadius="82%"
-            paddingAngle={2}
-            isAnimationActive={false}
-            stroke={a.surface}
-            strokeWidth={2}
-          >
-            {data.map((_, i) => (
-              <Cell key={i} fill={seriesColor(i, a.dark)} />
-            ))}
-          </Pie>
-          <Tooltip content={<TipBox unit=" 件" />} />
-          <Legend wrapperStyle={{ fontSize: 11, color: a.tick }} />
-        </PieChart>
       </ResponsiveContainer>
     </div>
   );

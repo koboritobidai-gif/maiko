@@ -1,4 +1,4 @@
-import { apiFetch, unwrap } from './client';
+import { apiFetch, ApiError, unwrap } from './client';
 import { ENDPOINTS } from './endpoints';
 
 /* ---------- shared types ---------- */
@@ -9,11 +9,10 @@ export interface Named {
 }
 
 export interface DateRange {
-  startDate: string; // YYYY-MM-DD
-  finishDate: string; // YYYY-MM-DD
+  fromDate: string; // YYYY-MM-DD
+  toDate: string; // YYYY-MM-DD
 }
 
-/** Loose object — analytics payloads vary, so we normalise defensively. */
 export type Loose = Record<string, unknown>;
 
 /* ---------- helpers ---------- */
@@ -29,171 +28,154 @@ function asArray(x: unknown): Loose[] {
   return [];
 }
 
-function firstString(o: Loose, keys: string[], fallback = ''): string {
-  for (const k of keys) {
-    const v = o[k];
-    if (typeof v === 'string' && v.trim()) return v;
-    if (typeof v === 'number') return String(v);
+// uysot localized-name object: { uz, ru, en, ... }
+function localized(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, string>;
+    return o.ru || o.en || o.uz || o.default || fallback;
   }
   return fallback;
 }
 
-function firstNumber(o: Loose, keys: string[], fallback = 0): number {
-  for (const k of keys) {
-    const v = o[k];
-    if (typeof v === 'number' && !Number.isNaN(v)) return v;
-    if (typeof v === 'string' && v.trim() && !Number.isNaN(Number(v))) return Number(v);
-  }
-  return fallback;
+function num(v: unknown): number {
+  if (typeof v === 'number' && !Number.isNaN(v)) return v;
+  if (typeof v === 'string' && v.trim() && !Number.isNaN(Number(v))) return Number(v);
+  return 0;
+}
+
+// Coerce a numeric string ("815") to a number; leave other ids as-is.
+function idVal(v: number | string): number | string {
+  if (typeof v === 'string' && v.trim() && !Number.isNaN(Number(v))) return Number(v);
+  return v;
+}
+
+/** True when the error is a uysot "no permission" response (HTTP 403). */
+export function isPermissionError(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 403;
 }
 
 /* ---------- reference data ---------- */
 
-export async function listBuildings(): Promise<Named[]> {
-  const resp = await apiFetch(ENDPOINTS.building.compact);
+export async function listHouses(): Promise<Named[]> {
+  const resp = await apiFetch(ENDPOINTS.house.compact);
   return asArray(unwrap(resp)).map((o) => ({
-    id: (o.id as number) ?? (o.buildingId as number),
-    name: firstString(o, ['name', 'title', 'buildingName'], '(名称なし)'),
+    id: (o.id as number) ?? 0,
+    name: localized(o.name, '(名称なし)'),
   }));
 }
 
-export async function listPipes(): Promise<Named[]> {
+export interface PipeStatusMeta {
+  id: number;
+  name: string;
+  order: number;
+}
+export interface Pipe extends Named {
+  statuses: PipeStatusMeta[];
+}
+
+export async function listPipes(): Promise<Pipe[]> {
   const resp = await apiFetch(ENDPOINTS.statistics.pipes);
-  // shape: { pipes: [...] } or { data: [...] }
-  const raw = unwrap<Loose>(resp);
-  const arr = Array.isArray(raw)
-    ? (raw as Loose[])
-    : asArray((raw as Loose)?.pipes ?? raw);
-  return arr.map((o) => ({
-    id: (o.id as number) ?? (o.pipeId as number),
-    name: firstString(o, ['name', 'title', 'pipeName'], '(パイプ)'),
-  }));
-}
-
-export async function listLeadSources(): Promise<Named[]> {
-  const resp = await apiFetch(ENDPOINTS.lead.sources);
   return asArray(unwrap(resp)).map((o) => ({
-    id: (o.id as number | string) ?? firstString(o, ['source', 'name']),
-    name: firstString(o, ['name', 'source', 'title'], '(不明)'),
+    id: (o.id as number) ?? 0,
+    name: localized(o.name, '(パイプ)'),
+    statuses: asArray(o.pipeStatuses).map((s) => ({
+      id: num(s.id),
+      name: localized(s.name),
+      order: num(s.order ?? s.orders),
+    })),
   }));
 }
 
 /* ---------- funnel (customer flow) ---------- */
 
 export interface FunnelStage {
+  id: number;
   name: string;
+  order: number;
   count: number;
-  day: number;
   countLeadPercent: number;
+  day: number;
 }
-
 export interface FunnelResult {
-  pipeName: string;
   averageDay: number;
   stages: FunnelStage[];
 }
 
-export async function getCustomerFlow(params: {
-  pipeId: number | string | null;
-  range: DateRange;
-  leadStatus?: string | null;
-  responsibleById?: number | null;
-}): Promise<FunnelResult> {
+export async function getCustomerFlow(pipeId: number | string, range: DateRange): Promise<FunnelResult> {
   const resp = await apiFetch(ENDPOINTS.statistics.customerFlow, {
     method: 'POST',
-    body: {
-      pipeId: params.pipeId || null,
-      startDate: params.range.startDate,
-      finishDate: params.range.finishDate,
-      leadStatus: params.leadStatus ?? null,
-      responsibleByIds: params.responsibleById ? [params.responsibleById] : null,
-    },
+    body: { pipeId: idVal(pipeId), fromDate: range.fromDate, toDate: range.toDate },
   });
   const data = unwrap<Loose>(resp);
-  const list = asArray((data as Loose)?.pipeStatusList ?? data);
+  const list = asArray((data as Loose)?.pipeStatusList);
   return {
-    pipeName: firstString(data as Loose, ['pipeName'], ''),
-    averageDay: firstNumber(data as Loose, ['averageDay'], 0),
+    averageDay: num((data as Loose)?.averageDay),
     stages: list.map((o) => ({
-      name: firstString(o, ['statusName', 'name', 'title', 'status'], ''),
-      count: firstNumber(o, ['count', 'countLead', 'leadCount', 'value'], 0),
-      day: firstNumber(o, ['day', 'averageDay', 'days'], 0),
-      countLeadPercent: firstNumber(o, ['countLeadPercent', 'percent'], 0),
+      id: num(o.id),
+      name: localized(o.name),
+      order: num(o.order ?? o.orders),
+      count: num(o.countLead ?? o.count),
+      countLeadPercent: num(o.countLeadPercent),
+      day: num(o.day),
     })),
   };
 }
 
-/* ---------- plan vs fact (leads + cost by source) ---------- */
-
-export interface SourceRow {
-  source: string;
-  leads: number;
-  cost: number;
-  contracts: number;
-  costPerLead: number;
-}
-
-/**
- * Marketing / lead breakdown by source. The plan-fact endpoints accept a
- * filter object; shapes vary between accounts, so we normalise heavily and
- * expose the raw response through the diagnostics panel.
- */
-export async function getPlanFactPipe(filter: Loose): Promise<{ rows: SourceRow[]; raw: unknown }> {
-  const resp = await apiFetch(ENDPOINTS.statistics.planFactPipe, { method: 'POST', body: filter });
-  const data = unwrap<Loose>(resp);
-  const list = asArray((data as Loose)?.sources ?? (data as Loose)?.rows ?? data);
-  const rows: SourceRow[] = list.map((o) => {
-    const leads = firstNumber(o, ['leadCount', 'countLead', 'leads', 'fact', 'count'], 0);
-    const cost = firstNumber(o, ['cost', 'amount', 'spend', 'factCost', 'sum'], 0);
-    const contracts = firstNumber(o, ['contractCount', 'contracts', 'saleCount'], 0);
-    return {
-      source: firstString(o, ['sourceName', 'source', 'name', 'title'], '(不明)'),
-      leads,
-      cost,
-      contracts,
-      costPerLead: leads > 0 ? Math.round(cost / leads) : 0,
-    };
-  });
-  return { rows, raw: resp };
-}
-
-export async function getPlanFactCost(filter: Loose): Promise<unknown> {
-  return apiFetch(ENDPOINTS.statistics.planFactCost, { method: 'POST', body: filter });
-}
-
 /* ---------- contracts & revenue ---------- */
 
-export interface ContractSummary {
-  count: number;
-  totalAmount: number;
+export interface Contract {
+  id: number;
+  number: string;
+  amount: number;
+  payedAmount: number;
+  residue: number;
+  discount: number;
+  status: string;
+  createdTimestamp: number; // unix seconds
+  deleted: boolean;
+  responsibleBy: string;
+  totalArea: number;
+}
+
+export interface ContractsResult {
+  contracts: Contract[];
   raw: unknown;
 }
 
-export async function getContracts(filter: Loose): Promise<ContractSummary> {
-  const resp = await apiFetch(ENDPOINTS.contract.filter, { method: 'POST', body: filter });
+export async function getContracts(houseId: number | string | null): Promise<ContractsResult> {
+  const body: Loose = { page: '1', size: '2000' };
+  if (houseId) body.houses = [idVal(houseId)];
+  const resp = await apiFetch(ENDPOINTS.contract.filter, { method: 'POST', body });
   const data = unwrap<Loose>(resp);
-  const list = asArray(data);
-  const count = firstNumber(data as Loose, ['count', 'totalElements', 'total'], list.length);
-  const totalAmount = list.reduce(
-    (s, o) => s + firstNumber(o, ['amount', 'totalAmount', 'price', 'sum', 'contractAmount'], 0),
-    0,
-  );
-  return { count, totalAmount, raw: resp };
+  const list = asArray((data as Loose)?.data ?? data);
+  const contracts: Contract[] = list.map((o) => ({
+    id: num(o.id),
+    number: String(o.number ?? ''),
+    amount: num(o.amount),
+    payedAmount: num(o.payedAmount),
+    residue: num(o.residue),
+    discount: num(o.discount),
+    status: String(o.status ?? ''),
+    createdTimestamp: num(o.createdTimestamp),
+    deleted: !!o.deletedTimestamp,
+    responsibleBy: String(o.responsibleBy ?? ''),
+    totalArea: num(o.totalArea),
+  }));
+  return { contracts, raw: resp };
 }
 
-export async function getContractAmount(filter: Loose): Promise<unknown> {
-  return apiFetch(ENDPOINTS.contract.amount, { method: 'POST', body: filter });
+/* ---------- lead sources ---------- */
+
+export async function listLeadSources(): Promise<Named[]> {
+  const resp = await apiFetch(ENDPOINTS.lead.sources);
+  return asArray(unwrap(resp)).map((o) => ({
+    id: String(o.key ?? o.id ?? ''),
+    name: localized(o.name, String(o.key ?? '不明')),
+  }));
 }
 
-export async function getPaymentSum(filter: Loose): Promise<unknown> {
-  return apiFetch(ENDPOINTS.contract.paymentFilterSum, { method: 'POST', body: filter });
-}
-
-export async function getSaleStats(filter: Loose): Promise<unknown> {
-  return apiFetch(ENDPOINTS.mobile.saleStats, { method: 'POST', body: filter });
-}
-
-/* ---------- generic diagnostics probe ---------- */
+/* ---------- diagnostics probe ---------- */
 
 export async function probe(
   path: string,

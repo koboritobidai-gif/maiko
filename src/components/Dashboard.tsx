@@ -2,36 +2,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   getContracts,
   getCustomerFlow,
-  getPaymentSum,
-  getPlanFactPipe,
-  listBuildings,
+  listHouses,
+  listLeadSources,
   listPipes,
+  type Contract,
   type FunnelResult,
   type Named,
-  type SourceRow,
+  type Pipe,
 } from '../api/uysot';
 import { setToken } from '../api/client';
 import KpiCard from './KpiCard';
 import Diagnostics, { type DiagEntry } from './Diagnostics';
-import {
-  FunnelChart,
-  MonthlyCountsChart,
-  MonthlyRevenueChart,
-  SourceLeadsChart,
-  SourcePie,
-  type MonthlyPoint,
-} from './charts';
-import { seriesColor } from '../theme';
-import { useDark } from '../hooks/useDark';
+import { FunnelChart, MonthlyCountsChart, MonthlyRevenueChart, type MonthlyPoint } from './charts';
 import { formatNumber, formatSom, formatPercent, formatCompact } from '../utils/format';
+import { translateStatus } from '../utils/status';
 import {
-  addMonths,
   endOfMonth,
   lastMonthsRange,
   monthsInRange,
   shortMonthLabel,
   startOfMonth,
   toISO,
+  ymFromUnix,
 } from '../utils/date';
 
 interface Props {
@@ -39,40 +31,46 @@ interface Props {
 }
 
 interface Prefs {
-  buildingId: string;
+  houseId: string;
   pipeId: string;
   months: number;
-  visitIdx: number;
-  contractIdx: number;
+  visitStageId: string;
 }
-
 const PREFS_KEY = 'jp-plaza-prefs';
 
 function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (raw) return { months: 6, visitIdx: 1, contractIdx: -1, buildingId: '', pipeId: '', ...JSON.parse(raw) };
+    if (raw) return { houseId: '', pipeId: '', months: 6, visitStageId: '', ...JSON.parse(raw) };
   } catch {
     /* ignore */
   }
-  return { buildingId: '', pipeId: '', months: 6, visitIdx: 1, contractIdx: -1 };
+  return { houseId: '', pipeId: '', months: 6, visitStageId: '' };
 }
 
 interface LoadResult {
   funnel: FunnelResult | null;
-  sourceRows: SourceRow[];
+  contracts: Contract[];
+  contractsAvailable: boolean;
   monthly: MonthlyPoint[];
-  contractsCount: number;
-  revenueTotal: number;
-  forecast: number | null;
+  sources: Named[];
+  spendAvailable: boolean;
   diag: DiagEntry[];
 }
 
+// pick a sensible default "visit" stage (商談設定 / meeting scheduled)
+function defaultVisitStageId(f: FunnelResult): string {
+  const byName = f.stages.find((s) => /uchrashuv|商談|meeting/i.test(s.name) || translateStatus(s.name) === '商談設定');
+  if (byName) return String(byName.id);
+  // else the stage before the closing ones
+  const mid = f.stages[Math.max(0, Math.floor(f.stages.length / 2))];
+  return mid ? String(mid.id) : '';
+}
+
 export default function Dashboard({ onLogout }: Props) {
-  const dark = useDark();
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
-  const [buildings, setBuildings] = useState<Named[]>([]);
-  const [pipes, setPipes] = useState<Named[]>([]);
+  const [houses, setHouses] = useState<Named[]>([]);
+  const [pipes, setPipes] = useState<Pipe[]>([]);
   const [refReady, setRefReady] = useState(false);
   const [refError, setRefError] = useState('');
 
@@ -81,7 +79,6 @@ export default function Dashboard({ onLogout }: Props) {
   const [loadError, setLoadError] = useState('');
   const loadSeq = useRef(0);
 
-  // persist prefs
   useEffect(() => {
     try {
       localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
@@ -92,15 +89,15 @@ export default function Dashboard({ onLogout }: Props) {
 
   const range = useMemo(() => lastMonthsRange(prefs.months), [prefs.months]);
 
-  /* ---- reference data ---- */
+  /* reference data */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [b, p] = await Promise.allSettled([listBuildings(), listPipes()]);
+      const [h, p] = await Promise.allSettled([listHouses(), listPipes()]);
       if (cancelled) return;
       let anyOk = false;
-      if (b.status === 'fulfilled') {
-        setBuildings(b.value);
+      if (h.status === 'fulfilled') {
+        setHouses(h.value);
         anyOk = true;
       }
       if (p.status === 'fulfilled') {
@@ -108,163 +105,166 @@ export default function Dashboard({ onLogout }: Props) {
         anyOk = true;
       }
       setRefReady(true);
-      if (!anyOk) {
-        const reason =
-          b.status === 'rejected' ? (b.reason as Error)?.message : (p as PromiseRejectedResult).reason?.message;
-        setRefError(reason || '基礎データを取得できませんでした（認証切れの可能性）');
-      }
+      if (!anyOk) setRefError('基礎データを取得できませんでした（トークンの有効期限切れの可能性）');
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // auto-select first pipe once loaded
+  // auto-select Japan Plaza / first entries
   useEffect(() => {
     if (pipes.length && !prefs.pipeId) {
-      setPrefs((p) => ({ ...p, pipeId: String(pipes[0].id) }));
+      const jp = pipes.find((p) => /japan/i.test(p.name)) || pipes[0];
+      setPrefs((p) => ({ ...p, pipeId: String(jp.id) }));
     }
   }, [pipes]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (houses.length && !prefs.houseId) {
+      const jp = houses.find((h) => /japan/i.test(h.name)) || houses[0];
+      setPrefs((p) => ({ ...p, houseId: String(jp.id) }));
+    }
+  }, [houses]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ---- main load ---- */
+  /* main load */
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
     setLoading(true);
     setLoadError('');
     const diag: DiagEntry[] = [];
-    const record = (label: string, path: string, ok: boolean, status: number, data: unknown) =>
+    const rec = (label: string, path: string, ok: boolean, status: number, data: unknown) =>
       diag.push({ label, path, ok, status, data });
 
-    const pipeId = prefs.pipeId || null;
-    const buildingId = prefs.buildingId || null;
-    const baseFilter: Record<string, unknown> = {
-      startDate: range.startDate,
-      finishDate: range.finishDate,
-    };
-    if (pipeId) baseFilter.pipeId = pipeId;
-    if (buildingId) baseFilter.buildingId = buildingId;
+    const pipeId = prefs.pipeId;
+    const houseId = prefs.houseId || null;
+    if (!pipeId) {
+      setLoading(false);
+      return;
+    }
 
     // 1. funnel
     let funnel: FunnelResult | null = null;
     try {
-      funnel = await getCustomerFlow({ pipeId, range });
-      record('ファネル（顧客フロー）', '/v1/statistics/customer-flow/v2', true, 200, funnel);
+      funnel = await getCustomerFlow(pipeId, range);
+      rec('ファネル（顧客フロー）', '/v1/statistics/customer-flow/v2', true, 200, funnel);
     } catch (e) {
       const err = e as { status?: number; body?: unknown; message?: string };
-      record('ファネル（顧客フロー）', '/v1/statistics/customer-flow/v2', false, err.status ?? 0, err.body ?? err.message);
+      rec('ファネル（顧客フロー）', '/v1/statistics/customer-flow/v2', false, err.status ?? 0, err.body ?? err.message);
     }
 
-    // 2. source breakdown (marketing)
-    let sourceRows: SourceRow[] = [];
+    // 2. contracts (revenue)
+    let contracts: Contract[] = [];
+    let contractsAvailable = false;
     try {
-      const r = await getPlanFactPipe(baseFilter);
-      sourceRows = r.rows;
-      record('流入経路・費用（プラン/実績）', '/v1/statistics/plan-fact-pipe', true, 200, r.raw);
+      const c = await getContracts(houseId);
+      // active contracts created within the selected range
+      const fromT = new Date(range.fromDate + 'T00:00:00').getTime() / 1000;
+      const toT = new Date(range.toDate + 'T23:59:59').getTime() / 1000;
+      contracts = c.contracts.filter((x) => !x.deleted && x.createdTimestamp >= fromT && x.createdTimestamp <= toT);
+      contractsAvailable = true;
+      rec('契約一覧（売上）', '/v1/contract/filter', true, 200, c.raw);
     } catch (e) {
       const err = e as { status?: number; body?: unknown; message?: string };
-      record('流入経路・費用（プラン/実績）', '/v1/statistics/plan-fact-pipe', false, err.status ?? 0, err.body ?? err.message);
+      rec('契約一覧（売上）', '/v1/contract/filter', false, err.status ?? 0, err.body ?? err.message);
     }
 
-    // 3. contracts overall (revenue)
-    let contractsCount = 0;
-    let revenueTotal = 0;
+    // 3. lead sources (list)
+    let sources: Named[] = [];
     try {
-      const c = await getContracts({ ...baseFilter, page: 0, size: 2000 });
-      contractsCount = c.count;
-      revenueTotal = c.totalAmount;
-      record('契約一覧（売上）', '/v1/contract/filter', true, 200, c.raw);
+      sources = await listLeadSources();
+      rec('流入経路（一覧）', '/v1/lead/sources', true, 200, sources);
     } catch (e) {
       const err = e as { status?: number; body?: unknown; message?: string };
-      record('契約一覧（売上）', '/v1/contract/filter', false, err.status ?? 0, err.body ?? err.message);
+      rec('流入経路（一覧）', '/v1/lead/sources', false, err.status ?? 0, err.body ?? err.message);
     }
 
-    // 4. monthly — reuse the confident funnel + contracts calls per month
+    // marketing spend is permission-gated (plan-fact) — probe once for the diagnostics
+    let spendAvailable = false;
+    try {
+      const { probe } = await import('../api/uysot');
+      const r = await probe('/v1/statistics/plan-fact-pipe', 'POST', {
+        pipeId,
+        fromDate: range.fromDate,
+        toDate: range.toDate,
+      });
+      spendAvailable = r.ok;
+      rec('広告費（プラン/実績）', '/v1/statistics/plan-fact-pipe', r.ok, r.status, r.data);
+    } catch {
+      /* ignore */
+    }
+
+    // 4. monthly — per-month funnel (leads/visits) + contracts (revenue/count)
     const months = monthsInRange(range);
+    const visitId = prefs.visitStageId || (funnel ? defaultVisitStageId(funnel) : '');
     const monthly: MonthlyPoint[] = [];
+    // contracts grouped by month
+    const cByMonth = new Map<string, { rev: number; cnt: number }>();
+    for (const c of contracts) {
+      const k = ymFromUnix(c.createdTimestamp);
+      const cur = cByMonth.get(k) || { rev: 0, cnt: 0 };
+      cur.rev += c.amount;
+      cur.cnt += 1;
+      cByMonth.set(k, cur);
+    }
     for (const ym of months) {
       const [y, m] = ym.split('-').map(Number);
-      const s = startOfMonth(new Date(y, m - 1, 1));
-      const e = endOfMonth(new Date(y, m - 1, 1));
-      const mRange = { startDate: toISO(s), finishDate: toISO(e) };
+      const mRange = {
+        fromDate: toISO(startOfMonth(new Date(y, m - 1, 1))),
+        toDate: toISO(endOfMonth(new Date(y, m - 1, 1))),
+      };
       const point: MonthlyPoint = { month: shortMonthLabel(ym), leads: 0, visits: 0, contracts: 0, revenue: 0 };
       try {
-        const f = await getCustomerFlow({ pipeId, range: mRange });
-        const st = f.stages;
-        if (st.length) {
-          point.leads = st[0]?.count ?? 0;
-          const vi = prefs.visitIdx < 0 ? st.length + prefs.visitIdx : prefs.visitIdx;
-          const ci = prefs.contractIdx < 0 ? st.length + prefs.contractIdx : prefs.contractIdx;
-          point.visits = st[Math.max(0, Math.min(st.length - 1, vi))]?.count ?? 0;
-          point.contracts = st[Math.max(0, Math.min(st.length - 1, ci))]?.count ?? 0;
+        const f = await getCustomerFlow(pipeId, mRange);
+        if (f.stages.length) {
+          point.leads = f.stages[0].count;
+          const vs = f.stages.find((s) => String(s.id) === visitId);
+          point.visits = vs ? vs.count : 0;
         }
       } catch {
         /* leave zeros */
       }
-      try {
-        const c = await getContracts({ ...baseFilter, startDate: mRange.startDate, finishDate: mRange.finishDate, page: 0, size: 2000 });
-        point.revenue = c.totalAmount;
-        if (!point.contracts) point.contracts = c.count;
-      } catch {
-        /* leave zero */
+      const cm = cByMonth.get(ym);
+      if (cm) {
+        point.revenue = cm.rev;
+        point.contracts = cm.cnt;
       }
       monthly.push(point);
     }
 
-    // 5. forecast — upcoming scheduled payments (best effort)
-    let forecast: number | null = null;
-    try {
-      const fStart = startOfMonth(addMonths(new Date(), 1));
-      const fEnd = endOfMonth(addMonths(new Date(), 12));
-      const raw = await getPaymentSum({
-        startDate: toISO(fStart),
-        finishDate: toISO(fEnd),
-        ...(buildingId ? { buildingId } : {}),
-      });
-      record('入金予定合計（見込み）', '/v1/contract/payment/filter/sum', true, 200, raw);
-      const data = (raw && typeof raw === 'object' && 'data' in raw ? (raw as any).data : raw) as any;
-      const val =
-        typeof data === 'number'
-          ? data
-          : data?.sum ?? data?.amount ?? data?.total ?? data?.totalAmount ?? null;
-      if (typeof val === 'number') forecast = val;
-    } catch (e) {
-      const err = e as { status?: number; body?: unknown; message?: string };
-      record('入金予定合計（見込み）', '/v1/contract/payment/filter/sum', false, err.status ?? 0, err.body ?? err.message);
+    if (seq !== loadSeq.current) return;
+    if (!funnel && !contractsAvailable) {
+      setLoadError('データを取得できませんでした。トークンの有効期限切れの可能性があります。');
     }
-
-    if (seq !== loadSeq.current) return; // superseded
-    if (!funnel && !sourceRows.length && !contractsCount && !revenueTotal) {
-      setLoadError('データを取得できませんでした。認証（トークン）の有効期限切れの可能性があります。');
-    }
-    setResult({ funnel, sourceRows, monthly, contractsCount, revenueTotal, forecast, diag });
+    setResult({ funnel, contracts, contractsAvailable, monthly, sources, spendAvailable, diag });
     setLoading(false);
-  }, [prefs.pipeId, prefs.buildingId, prefs.visitIdx, prefs.contractIdx, range]);
+  }, [prefs.pipeId, prefs.houseId, prefs.visitStageId, range]);
 
-  // initial + on-change load once a pipe is chosen
   useEffect(() => {
-    if (refReady) load();
-  }, [refReady, load]);
+    if (refReady && prefs.pipeId) load();
+  }, [refReady, prefs.pipeId, load]);
 
-  /* ---- derived KPIs ---- */
-  const stages = result?.funnel?.stages ?? [];
-  const totalLeadsFromSource = result?.sourceRows.reduce((s, r) => s + r.leads, 0) ?? 0;
-  const leadCount = totalLeadsFromSource || (stages[0]?.count ?? 0);
-  const spend = result?.sourceRows.reduce((s, r) => s + r.cost, 0) ?? 0;
-  const vi = prefs.visitIdx < 0 ? stages.length + prefs.visitIdx : prefs.visitIdx;
-  const ci = prefs.contractIdx < 0 ? stages.length + prefs.contractIdx : prefs.contractIdx;
-  const visits = stages.length ? stages[Math.max(0, Math.min(stages.length - 1, vi))]?.count ?? 0 : 0;
-  const contractsFromFunnel = stages.length
-    ? stages[Math.max(0, Math.min(stages.length - 1, ci))]?.count ?? 0
-    : 0;
-  const contracts = result?.contractsCount || contractsFromFunnel;
-  const revenue = result?.revenueTotal ?? 0;
-  const monthlyAvg = revenue && prefs.months ? revenue / prefs.months : 0;
-  const closeRate = leadCount ? (contracts / leadCount) * 100 : 0;
-  const costPerLead = leadCount && spend ? spend / leadCount : 0;
+  /* derived */
+  const funnel = result?.funnel;
+  const stages = funnel?.stages ?? [];
+  const leadCount = stages[0]?.count ?? 0;
+  const visitId = prefs.visitStageId || (funnel ? defaultVisitStageId(funnel) : '');
+  const visitStage = stages.find((s) => String(s.id) === visitId);
+  const visits = visitStage?.count ?? 0;
+  const contractCount = result?.contracts.length ?? 0;
+  const revenueTotal = result?.contracts.reduce((s, c) => s + c.amount, 0) ?? 0;
+  const payedTotal = result?.contracts.reduce((s, c) => s + c.payedAmount, 0) ?? 0;
+  const residueTotal = result?.contracts.reduce((s, c) => s + c.residue, 0) ?? 0;
+  const closeRate = leadCount ? (contractCount / leadCount) * 100 : 0;
+  const monthlyAvg = revenueTotal && prefs.months ? revenueTotal / prefs.months : 0;
 
   function setPref<K extends keyof Prefs>(k: K, v: Prefs[K]) {
     setPrefs((p) => ({ ...p, [k]: v }));
   }
+
+  const relog = () => {
+    setToken('');
+    onLogout();
+  };
 
   return (
     <div className="app-shell">
@@ -272,14 +272,7 @@ export default function Dashboard({ onLogout }: Props) {
         <div className="brand-dot">JP</div>
         <h1>ジャパンプラザ 販売進捗ダッシュボード</h1>
         <span className="spacer" />
-        <button
-          className="btn"
-          type="button"
-          onClick={() => {
-            setToken('');
-            onLogout();
-          }}
-        >
+        <button className="btn" type="button" onClick={relog}>
           ログアウト
         </button>
       </div>
@@ -287,12 +280,11 @@ export default function Dashboard({ onLogout }: Props) {
       {/* filters */}
       <div className="filters">
         <div className="field">
-          <label>物件（ビル）</label>
-          <select value={prefs.buildingId} onChange={(e) => setPref('buildingId', e.target.value)}>
-            <option value="">全物件</option>
-            {buildings.map((b) => (
-              <option key={b.id} value={String(b.id)}>
-                {b.name}
+          <label>物件</label>
+          <select value={prefs.houseId} onChange={(e) => setPref('houseId', e.target.value)}>
+            {houses.map((h) => (
+              <option key={h.id} value={String(h.id)}>
+                {h.name}
               </option>
             ))}
           </select>
@@ -300,7 +292,6 @@ export default function Dashboard({ onLogout }: Props) {
         <div className="field">
           <label>パイプライン</label>
           <select value={prefs.pipeId} onChange={(e) => setPref('pipeId', e.target.value)}>
-            <option value="">選択してください</option>
             {pipes.map((p) => (
               <option key={p.id} value={String(p.id)}>
                 {p.name}
@@ -317,31 +308,16 @@ export default function Dashboard({ onLogout }: Props) {
           </select>
         </div>
         {stages.length > 0 && (
-          <>
-            <div className="field">
-              <label>「来店」に対応する段階</label>
-              <select value={prefs.visitIdx} onChange={(e) => setPref('visitIdx', Number(e.target.value))}>
-                {stages.map((s, i) => (
-                  <option key={i} value={i}>
-                    {s.name || `段階${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>「契約」に対応する段階</label>
-              <select
-                value={prefs.contractIdx < 0 ? stages.length + prefs.contractIdx : prefs.contractIdx}
-                onChange={(e) => setPref('contractIdx', Number(e.target.value))}
-              >
-                {stages.map((s, i) => (
-                  <option key={i} value={i}>
-                    {s.name || `段階${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
+          <div className="field">
+            <label>「来店」に対応する段階</label>
+            <select value={visitId} onChange={(e) => setPref('visitStageId', e.target.value)}>
+              {stages.map((s) => (
+                <option key={s.id} value={String(s.id)}>
+                  {translateStatus(s.name)}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
         <div className="field">
           <label>&nbsp;</label>
@@ -351,112 +327,107 @@ export default function Dashboard({ onLogout }: Props) {
         </div>
       </div>
 
-      {(refError || loadError) && (
+      {refError && (
         <div className="error" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-          <div>{loadError || refError}</div>
-          <button
-            className="btn primary"
-            type="button"
-            onClick={() => {
-              setToken('');
-              onLogout();
-            }}
-          >
+          <div>{refError}</div>
+          <button className="btn primary" type="button" onClick={relog}>
+            新しいトークンを入れ直す
+          </button>
+        </div>
+      )}
+      {loadError && (
+        <div className="error" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <div>{loadError}</div>
+          <button className="btn primary" type="button" onClick={relog}>
             新しいトークンを入れ直す
           </button>
         </div>
       )}
 
-      {/* ============ マーケティング ============ */}
+      {/* ===== マーケティング ===== */}
       <section className="section">
         <div className="section-head">
           <span className="pill">マーケティング</span>
           <span className="hint">
-            {range.startDate} 〜 {range.finishDate}
+            {range.fromDate} 〜 {range.toDate}
           </span>
         </div>
         <div className="kpi-grid">
-          <KpiCard label="使った金額（広告費）" value={spend ? formatCompact(spend) : '—'} unit={spend ? 'soʼm' : ''} sub={spend ? formatSom(spend) : '費用データ未取得'} />
-          <KpiCard label="リスト数（獲得数）" value={formatNumber(leadCount)} unit="件" />
-          <KpiCard label="リスト単価（CPL）" value={costPerLead ? formatCompact(costPerLead) : '—'} unit={costPerLead ? 'soʼm' : ''} sub="広告費 ÷ リスト数" />
-          <KpiCard label="流入経路数" value={formatNumber(result?.sourceRows.length ?? 0)} unit="種" />
+          <KpiCard
+            label="使った金額（広告費）"
+            value={result?.spendAvailable ? '—' : '権限なし'}
+            sub={result?.spendAvailable ? '' : 'uysotの統計権限が必要です'}
+          />
+          <KpiCard label="リスト数（獲得数）" value={formatNumber(leadCount)} unit="件" sub={stages[0] ? translateStatus(stages[0].name) : ''} />
+          <KpiCard label="有効リード（連絡済み〜）" value={formatNumber(stages.filter((s) => s.order >= 4).reduce((a, b) => a + b.count, 0))} unit="件" />
+          <KpiCard label="流入経路（登録数）" value={formatNumber(result?.sources.length ?? 0)} unit="種" sub="経路別件数は権限が必要" />
         </div>
       </section>
 
-      {/* ============ 営業 ============ */}
+      {/* ===== 営業 ===== */}
       <section className="section">
         <div className="section-head">
           <span className="pill">営業</span>
-          <span className="hint">パイプライン: {result?.funnel?.pipeName || pipes.find((p) => String(p.id) === prefs.pipeId)?.name || '—'}</span>
+          <span className="hint">パイプライン: {pipes.find((p) => String(p.id) === prefs.pipeId)?.name || '—'}</span>
         </div>
         <div className="kpi-grid">
-          <KpiCard label="来店数" value={formatNumber(visits)} unit="件" sub={stages[Math.max(0, Math.min(stages.length - 1, vi))]?.name} />
-          <KpiCard label="契約数" value={formatNumber(contracts)} unit="件" accent />
+          <KpiCard label="来店数（商談）" value={formatNumber(visits)} unit="件" sub={visitStage ? translateStatus(visitStage.name) : ''} />
+          <KpiCard label="契約数" value={formatNumber(contractCount)} unit="件" accent sub="成約した契約書" />
           <KpiCard label="成約率" value={formatPercent(closeRate, 1)} sub="契約 ÷ リスト" />
-          <KpiCard label="平均リードタイム" value={result?.funnel?.averageDay ? formatNumber(result.funnel.averageDay) : '—'} unit={result?.funnel?.averageDay ? '日' : ''} />
+          <KpiCard label="平均リードタイム" value={funnel?.averageDay ? formatNumber(funnel.averageDay) : '—'} unit={funnel?.averageDay ? '日' : ''} />
         </div>
 
         <div className="cards" style={{ marginTop: 14 }}>
           <div className="card">
             <h3>案件ごとの状況（パイプライン段階別 件数）</h3>
-            <FunnelChart stages={stages} />
+            <FunnelChart stages={stages.map((s) => ({ ...s, name: translateStatus(s.name) }))} />
           </div>
           <div className="card">
-            <h3>流入経路（リスト数の内訳）</h3>
-            {result?.sourceRows.length ? <SourcePie rows={result.sourceRows} /> : <SourceLeadsChart rows={result?.sourceRows ?? []} />}
-          </div>
-        </div>
-
-        {result?.sourceRows.length ? (
-          <div className="card" style={{ marginTop: 14 }}>
-            <h3>流入経路 詳細</h3>
+            <h3>各段階の詳細</h3>
             <div className="tbl-wrap">
               <table className="data">
                 <thead>
                   <tr>
-                    <th>流入経路</th>
-                    <th>リスト数</th>
-                    <th>広告費</th>
-                    <th>リスト単価</th>
-                    <th>契約数</th>
+                    <th>段階</th>
+                    <th>件数</th>
+                    <th>割合</th>
+                    <th>平均日数</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {result.sourceRows.map((r, i) => (
-                    <tr key={i}>
-                      <td>
-                        <span className="swatch" style={{ background: seriesColor(i, dark) }} />
-                        {r.source}
-                      </td>
-                      <td>{formatNumber(r.leads)}</td>
-                      <td>{r.cost ? formatSom(r.cost) : '—'}</td>
-                      <td>{r.costPerLead ? formatSom(r.costPerLead) : '—'}</td>
-                      <td>{formatNumber(r.contracts)}</td>
+                  {stages.map((s) => (
+                    <tr key={s.id}>
+                      <td>{translateStatus(s.name)}</td>
+                      <td>{formatNumber(s.count)}</td>
+                      <td>{formatPercent(s.countLeadPercent, 1)}</td>
+                      <td>{s.day ? formatNumber(s.day) : '—'}</td>
                     </tr>
                   ))}
+                  {!stages.length && (
+                    <tr>
+                      <td colSpan={4} className="muted" style={{ textAlign: 'center' }}>
+                        データがありません
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
-        ) : null}
+        </div>
       </section>
 
-      {/* ============ 売上 ============ */}
+      {/* ===== 売上 ===== */}
       <section className="section">
         <div className="section-head">
           <span className="pill">売上</span>
-          <span className="hint">売上の認識はマーケ・営業と同一期間</span>
+          <span className="hint">対象物件の契約ベース（{range.fromDate} 〜 {range.toDate}）</span>
         </div>
         <div className="kpi-grid">
-          <KpiCard label="トータル売上（期間内）" value={revenue ? formatCompact(revenue) : '—'} unit={revenue ? 'soʼm' : ''} sub={revenue ? formatSom(revenue) : '売上データ未取得'} accent />
+          <KpiCard label="トータル売上（契約額）" value={revenueTotal ? formatCompact(revenueTotal) : '—'} unit={revenueTotal ? 'soʼm' : ''} sub={revenueTotal ? formatSom(revenueTotal) : ''} accent />
+          <KpiCard label="回収済み金額" value={payedTotal ? formatCompact(payedTotal) : '—'} unit={payedTotal ? 'soʼm' : ''} sub={payedTotal ? formatSom(payedTotal) : ''} />
+          <KpiCard label="次月以降の入金見込み（残額）" value={residueTotal ? formatCompact(residueTotal) : '—'} unit={residueTotal ? 'soʼm' : ''} sub={residueTotal ? formatSom(residueTotal) : ''} />
           <KpiCard label="月平均売上" value={monthlyAvg ? formatCompact(monthlyAvg) : '—'} unit={monthlyAvg ? 'soʼm' : ''} />
-          <KpiCard label="契約件数" value={formatNumber(contracts)} unit="件" />
-          <KpiCard
-            label="次月以降の売上見込み"
-            value={result?.forecast != null ? formatCompact(result.forecast) : '—'}
-            unit={result?.forecast != null ? 'soʼm' : ''}
-            sub={result?.forecast != null ? '入金予定ベース' : '見込みデータ未取得'}
-          />
         </div>
 
         <div className="cards" style={{ marginTop: 14 }}>
@@ -504,9 +475,9 @@ export default function Dashboard({ onLogout }: Props) {
       {result && <Diagnostics entries={result.diag} />}
 
       <p className="footnote">
-        データ提供: uysot CRM（api.service.app.uysot.uz）／ このダッシュボードはブラウザから直接 API を呼び出します。
+        データ提供: uysot CRM（service.app.uysot.uz）／ このダッシュボードは中継サーバー経由で API を呼び出します。
         <br />
-        数値が実際と異なる場合は「接続診断」で生データを確認し、段階の対応付けを調整してください。
+        「使った金額」「流入経路別の件数」は uysot の統計権限が必要です（現在のアカウントでは権限なし）。
       </p>
     </div>
   );

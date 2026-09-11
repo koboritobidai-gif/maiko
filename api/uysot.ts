@@ -10,7 +10,8 @@
 // The client's `Authorization: Bearer <token>` header (the user's own uysot
 // access token) is passed straight through.
 
-const API_BASE = 'https://api.service.app.uysot.uz';
+// The uysot web app's main REST API host (NOT the api.* open-api host).
+const API_BASE = 'https://service.app.uysot.uz';
 const SPOOF_ORIGIN = 'https://app.uysot.uz';
 
 export default async function handler(req: any, res: any) {
