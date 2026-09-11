@@ -1,4 +1,7 @@
-import { API_BASE } from './endpoints';
+// All API calls go through our own same-origin serverless proxy
+// (/api/uysot/*), which forwards to the uysot API with an app.uysot.uz
+// Origin/Referer. This avoids browser CORS and origin-based rejection.
+const PROXY_PREFIX = '/api/uysot';
 
 const TOKEN_STORAGE_KEY = 'jp-plaza-token';
 
@@ -61,7 +64,7 @@ type Options = {
 // uysot API uses — and credentials so the origin's whitelisted CORS applies.
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const token = opts.token ?? getToken();
-  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const url = path.startsWith('http') ? path : `${PROXY_PREFIX}${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -72,7 +75,6 @@ export async function apiFetch<T = unknown>(path: string, opts: Options = {}): P
     res = await fetch(url, {
       method: opts.method ?? 'GET',
       headers,
-      credentials: 'include',
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
       signal: opts.signal,
     });
