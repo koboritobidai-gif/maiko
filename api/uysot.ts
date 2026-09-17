@@ -10,27 +10,37 @@
 // The client's `Authorization: Bearer <token>` header (the user's own uysot
 // access token) is passed straight through.
 
+import { cleanToken as clean, kvGet } from '../lib/kv';
+
 // The uysot web app's main REST API host (NOT the api.* open-api host).
 const API_BASE = 'https://service.app.uysot.uz';
 const SPOOF_ORIGIN = 'https://app.uysot.uz';
 
-// Shared "passphrase" mode: when a viewer sends the correct passphrase, the
-// proxy uses a server-stored uysot token so the viewer never has to obtain a
-// token themselves. Both values come from Vercel environment variables and
-// are absent from the repository; if either is unset, this mode is disabled
-// and viewers must supply their own token.
-// A pasted token can carry surrounding quotes, a "Bearer " prefix, or stray
-// whitespace/newlines — strip them so the stored value still works.
-function clean(v: string): string {
-  let t = (v || '').trim().replace(/^bearer\s+/i, '');
-  while (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) {
-    t = t.slice(1, -1).trim();
-  }
-  return t.replace(/\s+/g, '');
-}
+// Shared "passphrase" mode: a viewer sends the passphrase and the proxy uses
+// a server-stored uysot token so they never need a token themselves. The
+// passphrase comes from an env var; the token is read from KV (owner can
+// refresh it from inside the dashboard) with the env var as a fallback.
 const SHARED_PASSWORD = (process.env.DASH_PASSWORD || '').trim();
-const SHARED_TOKEN = clean(process.env.UYSOT_TOKEN || '');
-const SHARED_ENABLED = SHARED_PASSWORD.length > 0 && SHARED_TOKEN.length > 0;
+const ENV_TOKEN = clean(process.env.UYSOT_TOKEN || '');
+const SHARED_ENABLED = SHARED_PASSWORD.length > 0;
+
+// Cache the shared token briefly to avoid a KV read on every request.
+let cachedToken = '';
+let cachedAt = 0;
+async function sharedToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedToken && now - cachedAt < 30000) return cachedToken;
+  let t = '';
+  try {
+    t = (await kvGet('uysot_token')) || '';
+  } catch {
+    /* ignore */
+  }
+  t = clean(t) || ENV_TOKEN;
+  cachedToken = t;
+  cachedAt = now;
+  return t;
+}
 
 export default async function handler(req: any, res: any) {
   try {
@@ -55,12 +65,20 @@ export default async function handler(req: any, res: any) {
     const pass = Array.isArray(passHeader) ? passHeader[0] : passHeader;
     const auth = req.headers['authorization'];
     if (SHARED_ENABLED && pass && pass === SHARED_PASSWORD) {
-      headers['Authorization'] = `Bearer ${SHARED_TOKEN}`;
+      const tk = await sharedToken();
+      if (!tk) {
+        res.status(503).json({
+          message: 'サーバーにトークンが未設定です。管理者がダッシュボードでトークンを更新してください。',
+          accept: false,
+        });
+        return;
+      }
+      headers['Authorization'] = `Bearer ${tk}`;
     } else if (auth) {
       headers['Authorization'] = Array.isArray(auth) ? auth[0] : auth;
     } else if (pass && !SHARED_ENABLED) {
       res.status(503).json({
-        message: '合言葉モードは未設定です（Vercelの環境変数 DASH_PASSWORD と UYSOT_TOKEN を設定してください）',
+        message: '合言葉モードは未設定です（Vercelの環境変数 DASH_PASSWORD を設定してください）',
         accept: false,
       });
       return;

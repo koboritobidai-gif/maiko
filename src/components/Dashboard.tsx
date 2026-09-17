@@ -13,6 +13,7 @@ import {
 import { setPass, setToken } from '../api/client';
 import KpiCard from './KpiCard';
 import Diagnostics, { type DiagEntry } from './Diagnostics';
+import AdminPanel from './AdminPanel';
 import { FunnelChart, MonthlyCountsChart, MonthlyRevenueChart, type MonthlyPoint } from './charts';
 import { formatNumber, formatSom, formatPercent, formatCompact } from '../utils/format';
 import { translateStatus } from '../utils/status';
@@ -474,6 +475,8 @@ export default function Dashboard({ onLogout }: Props) {
       </section>
 
       {result && <Diagnostics entries={result.diag} />}
+
+      <AdminPanel />
 
       <p className="footnote">
         データ提供: uysot CRM（service.app.uysot.uz）／ このダッシュボードは中継サーバー経由で API を呼び出します。
