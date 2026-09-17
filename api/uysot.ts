@@ -10,11 +10,31 @@
 // The client's `Authorization: Bearer <token>` header (the user's own uysot
 // access token) is passed straight through.
 
-import { cleanToken as clean, kvGet } from '../lib/kv';
-
 // The uysot web app's main REST API host (NOT the api.* open-api host).
 const API_BASE = 'https://service.app.uysot.uz';
 const SPOOF_ORIGIN = 'https://app.uysot.uz';
+
+// --- inlined helpers (kept self-contained so the function always bundles) ---
+function clean(v: string): string {
+  let t = (v || '').trim().replace(/^bearer\s+/i, '');
+  while (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) {
+    t = t.slice(1, -1).trim();
+  }
+  return t.replace(/\s+/g, '');
+}
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
+async function kvGet(key: string): Promise<string | null> {
+  if (!KV_URL || !KV_TOKEN) return null;
+  const r = await fetch(KV_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(['GET', key]),
+  });
+  if (!r.ok) return null;
+  const j: any = await r.json();
+  return j && typeof j.result === 'string' ? j.result : null;
+}
 
 // Shared "passphrase" mode: a viewer sends the passphrase and the proxy uses
 // a server-stored uysot token so they never need a token themselves. The
