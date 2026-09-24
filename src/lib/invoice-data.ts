@@ -49,7 +49,8 @@ async function loadDemoInvoices(status: SourceStatus): Promise<InvoiceDataResult
 /**
  * 手動補正: 金額を読み取れないPDF(スキャン画像等)に、経営者確認済みの金額を割り当てる。
  * 経営者確認済み: 2026年5月支払いの読取不可1件(¥16,500)、6月・7月・8月支払いの読取不可各2件
- * (いずれも¥16,500、各月計¥33,000)。
+ * (いずれも¥16,500、各月計¥33,000)、9月支払いの読取不可2件(SSマーケット・楽天モバイル、
+ * いずれも¥16,500。経営者確認 2026-09-24)。
  * 対象月の読取不可PDFすべてに一律で適用されるため、その月に新たな読取不可PDFが増えた場合は
  * この補正を見直すこと。
  */
@@ -58,6 +59,7 @@ const MANUAL_UNREADABLE_AMOUNTS: { month: string; amountYen: number }[] = [
   { month: "2026-06", amountYen: 16_500 },
   { month: "2026-07", amountYen: 16_500 },
   { month: "2026-08", amountYen: 16_500 },
+  { month: "2026-09", amountYen: 16_500 },
 ];
 
 function applyManualInvoiceFixes(invoices: ReferralInvoice[]): ReferralInvoice[] {
