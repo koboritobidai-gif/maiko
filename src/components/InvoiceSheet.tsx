@@ -1,7 +1,7 @@
 /**
  * 請求書の見た目そのもの(実物PDFを再現したA4請求書1枚)。
  * DOM構造・CSSは経営者が実物の請求書PDF(スキャン)を基に作った雛形をほぼそのまま移植している
- * (文言・固定情報も雛形通り)。編集できるのは呼び出し元(InvoiceCreatorView)経由の7項目だけで、
+ * (文言・固定情報も雛形通り)。編集できるのは呼び出し元(InvoiceCreatorView)経由の項目(宛先・明細行・請求No.・日付)だけで、
  * 登録番号・発行元住所・TEL・メール・担当・振込先・備考文はここに固定で埋め込む。
  *
  * 印刷余白について: globals.css の @media print は @page margin 10mm(A4、他ページと共用のため
@@ -10,13 +10,10 @@
  * 使いつつ、印刷時だけ .invoice-sheet の幅・パディングを縮小し、188mm(190mmに少し余裕を持たせた値)
  * に収める。中身の固定幅要素(宛先88mm+請求情報72mm等)は変えていないため、見た目はほぼ変わらない。
  */
-import { splitTaxIncluded, formatYen } from "@/lib/invoice-calc";
+import { splitTaxIncludedLines, formatYen } from "@/lib/invoice-calc";
 
-export interface InvoiceSheetProps {
-  /** 宛先会社名 */
-  companyName: string;
-  /** 宛名2行目(既定「ご担当者」) */
-  honorificLine: string;
+/** 請求書の明細1行(求職者1名ぶん)。同じ会社への請求を1枚にまとめるため複数行を持てる。 */
+export interface InvoiceSheetItem {
   /** 求職者名(摘要「【◯◯様】人材紹介費用」に使う) */
   candidateName: string;
   /**
@@ -26,6 +23,15 @@ export interface InvoiceSheetProps {
   breakdownNote: string;
   /** 金額(税込)。売上シートの金額そのもの。 */
   totalYen: number;
+}
+
+export interface InvoiceSheetProps {
+  /** 宛先会社名 */
+  companyName: string;
+  /** 宛名2行目(既定「ご担当者」) */
+  honorificLine: string;
+  /** 明細行(1行以上)。合計・小計・消費税は各行の税込から invoice-calc で算出する。 */
+  items: InvoiceSheetItem[];
   /** 請求No.(空欄可。空欄ならそのまま空欄で印字する) */
   invoiceNo: string;
   /** 請求日の表示文字列(例: 「2026年9月1日」) */
@@ -34,7 +40,6 @@ export interface InvoiceSheetProps {
   dueDateLabel: string;
 }
 
-/** 品目欄の空行数(雛形通り、記入欄の見た目を保つための余白行)。 */
 /**
  * 会社名の文字サイズ(px)を社名の長さから決める。長い社名でも必ず1行に収める(経営者の指示。
  * 「株式会社インバウンドホールディングス」のような長い社名が2行に折り返した実例があった)。
@@ -46,24 +51,32 @@ function companyNameFontSize(companyName: string): number {
   return Math.min(14, Math.max(9, Math.floor(213 / length)));
 }
 
+/**
+ * 品目欄の空行数(雛形通り、記入欄の見た目を保つための余白行)。明細が1行のときは8行。
+ * 明細が増えたぶん空行を減らし、品目欄全体の行数(=A4での縦の高さ)が1行のときと変わらないようにする
+ * (明細9行以上は空行なし)。
+ */
 const EMPTY_ITEM_ROW_COUNT = 8;
+
+/** 明細がこの行数以上のとき、印刷時だけ明細行の余白を詰めてA4・1枚に収める(1〜3行は従来どおり)。 */
+const INVOICE_DENSE_ITEM_COUNT = 4;
 
 export default function InvoiceSheet({
   companyName,
   honorificLine,
-  candidateName,
-  breakdownNote,
-  totalYen,
+  items,
   invoiceNo,
   issueDateLabel,
   dueDateLabel,
 }: InvoiceSheetProps) {
-  const tax = splitTaxIncluded(totalYen);
+  // 小計=各行税抜の合計、合計=各行税込の合計、消費税=合計−小計(合計が必ず一致する)。
+  const tax = splitTaxIncludedLines(items.map((item) => item.totalYen));
+  const emptyRowCount = Math.max(EMPTY_ITEM_ROW_COUNT - (items.length - 1), 0);
 
   return (
     <>
       <style>{INVOICE_SHEET_CSS}</style>
-      <div className="invoice-sheet">
+      <div className={items.length >= INVOICE_DENSE_ITEM_COUNT ? "invoice-sheet invoice-dense" : "invoice-sheet"}>
         <div className="invoice-title">請 求 書</div>
 
         <div className="invoice-top">
@@ -163,21 +176,23 @@ export default function InvoiceSheet({
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="no">1</td>
-              <td>
-                【{candidateName}様】人材紹介費用
-                {/* 内訳(任意)は摘要の2行目に。改行入力もそのまま反映する。 */}
-                {breakdownNote.trim() !== "" && (
-                  <div style={{ whiteSpace: "pre-line" }}>{breakdownNote}</div>
-                )}
-              </td>
-              <td className="qty">1　名</td>
-              <td className="price">{formatYen(tax.subtotalYen)}</td>
-              <td className="amt">{formatYen(tax.subtotalYen)}</td>
-            </tr>
-            {Array.from({ length: EMPTY_ITEM_ROW_COUNT }).map((_, i) => (
-              <tr key={i}>
+            {items.map((item, i) => (
+              <tr key={i} className="itemrow">
+                <td className="no">{i + 1}</td>
+                <td>
+                  【{item.candidateName}様】人材紹介費用
+                  {/* 内訳(任意)は摘要の2行目に。改行入力もそのまま反映する。 */}
+                  {item.breakdownNote.trim() !== "" && (
+                    <div style={{ whiteSpace: "pre-line" }}>{item.breakdownNote}</div>
+                  )}
+                </td>
+                <td className="qty">1　名</td>
+                <td className="price">{formatYen(tax.lines[i].subtotalYen)}</td>
+                <td className="amt">{formatYen(tax.lines[i].subtotalYen)}</td>
+              </tr>
+            ))}
+            {Array.from({ length: emptyRowCount }).map((_, i) => (
+              <tr key={`empty-${i}`}>
                 <td className="empty" />
                 <td />
                 <td />
@@ -339,5 +354,10 @@ const INVOICE_SHEET_CSS = `
   .invoice-items td.empty { height: 6mm; }
   .invoice-notes { margin-top: 4mm; }
   .invoice-notes .invoice-notes-v { min-height: 12mm; }
+  /* 明細が4行以上のときだけ、行が増えたぶんの高さを吸収するため明細行の余白と空行をさらに詰める
+     (内訳が2行になる明細が5行ほど並んでもA4・1枚に収める。1〜3行のときは適用されない)。 */
+  .invoice-dense .invoice-title { margin-bottom: 5mm; }
+  .invoice-dense .invoice-items tr.itemrow td { padding-top: 1.1mm; padding-bottom: 1.1mm; }
+  .invoice-dense .invoice-items td.empty { height: 5mm; }
 }
 `;

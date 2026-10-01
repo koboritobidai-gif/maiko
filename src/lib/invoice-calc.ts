@@ -148,6 +148,33 @@ export function splitTaxIncluded(totalYen: number): InvoiceTaxBreakdown {
   return { totalYen, subtotalYen, taxYen };
 }
 
+export interface InvoiceLineTax {
+  /** この明細行の税込金額 */
+  totalYen: number;
+  /** この明細行の税抜(単価・金額) = Math.round(行の税込 ÷ 1.1) */
+  subtotalYen: number;
+}
+
+export interface InvoiceMultiLineTaxBreakdown extends InvoiceTaxBreakdown {
+  /** 明細行ごとの税込・税抜(入力と同じ順) */
+  lines: InvoiceLineTax[];
+}
+
+/**
+ * 明細が複数行の請求書(同じ会社への請求を1枚にまとめる場合)の税計算。
+ * - 各行の税抜 = その行の税込から splitTaxIncluded と同じ方式で算出
+ * - 小計 = 各行税抜の合計
+ * - 合計(税込) = 各行税込の合計(売上シートの金額の合算そのまま)
+ * - 消費税 = 合計(税込) − 小計(差額方式。「小計+消費税=合計」が必ず成り立つ)
+ * 1行だけの場合は splitTaxIncluded と完全に同じ結果になる。
+ */
+export function splitTaxIncludedLines(lineTotalsYen: number[]): InvoiceMultiLineTaxBreakdown {
+  const lines = lineTotalsYen.map((totalYen) => ({ totalYen, subtotalYen: splitTaxIncluded(totalYen).subtotalYen }));
+  const totalYen = lines.reduce((sum, l) => sum + l.totalYen, 0);
+  const subtotalYen = lines.reduce((sum, l) => sum + l.subtotalYen, 0);
+  return { lines, totalYen, subtotalYen, taxYen: totalYen - subtotalYen };
+}
+
 /** 円額を「¥123,456」形式で表示する(アプリ既存の表記に合わせる)。 */
 export function formatYen(amountYen: number): string {
   return `¥${Math.round(amountYen).toLocaleString("ja-JP")}`;
