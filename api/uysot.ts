@@ -57,18 +57,23 @@ const SHARED_ENABLED = SHARED_PASSWORD.length > 0;
 
 // Exchange a stored refreshToken cookie for a fresh access token.
 // The refreshToken can come from an env var (simplest: set it once) or KV.
+// Some tenants also require the X-Session-Key cookie on refresh.
 const ENV_REFRESH = clean(process.env.UYSOT_REFRESH_TOKEN || '');
+const ENV_SESSION_KEY = clean(process.env.UYSOT_SESSION_KEY || '');
 async function refreshAccessToken(): Promise<string> {
   let rt = ENV_REFRESH;
   if (!rt) rt = clean((await kvGet('refresh_token')) || '');
   if (!rt) return '';
+  let cookie = `refreshToken=${rt}`;
+  const sk = ENV_SESSION_KEY || clean((await kvGet('session_key')) || '');
+  if (sk) cookie += `; X-Session-Key=${sk}`;
   const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
     method: 'GET',
     headers: {
       Origin: SPOOF_ORIGIN,
       Referer: `${SPOOF_ORIGIN}/`,
       Accept: 'application/json',
-      Cookie: `refreshToken=${rt}`,
+      Cookie: cookie,
     },
   });
   if (!r.ok) return '';

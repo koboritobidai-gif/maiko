@@ -5,6 +5,7 @@ interface Status {
   present: boolean;
   exp: number | null;
   refreshPresent?: boolean;
+  refresh?: { tried: boolean; ok: boolean; status: number; exp: number | null; detail: string };
 }
 
 function expLabel(exp: number | null): string {
@@ -87,10 +88,15 @@ export default function AdminPanel() {
         <div className="card">
           {status && (
             <p className="muted" style={{ marginTop: 0, fontSize: 12 }}>
-              {status.kvEnabled ? 'データ保存: 接続済み' : 'データ保存(KV): 未接続 — Vercelでの初期設定が必要です'}
+              {status.kvEnabled ? 'データ保存: 接続済み' : 'データ保存(KV): 未接続'}
               {' ／ '}
-              自動更新(refreshToken): {status.refreshPresent ? '設定済み ✓' : '未設定'}
-              {status.present ? ` ／ 予備トークン期限 ${expLabel(status.exp ?? null)}` : ''}
+              自動更新(refreshToken): {status.refreshPresent ? '設定済み' : '未設定'}
+              <br />
+              {status.refresh && (
+                <span style={{ color: status.refresh.ok ? 'var(--good)' : 'var(--danger)' }}>
+                  更新テスト: {status.refresh.ok ? `成功 ✓（期限 ${expLabel(status.refresh.exp ?? null)}）` : `失敗（${status.refresh.status}）: ${status.refresh.detail}`}
+                </span>
+              )}
             </p>
           )}
 

@@ -44,6 +44,41 @@ function jwtExp(token: string): number | null {
   }
 }
 
+const API_BASE = 'https://service.app.uysot.uz';
+const ENV_REFRESH = cleanToken(process.env.UYSOT_REFRESH_TOKEN || '');
+const ENV_SESSION_KEY = cleanToken(process.env.UYSOT_SESSION_KEY || '');
+// Try a refresh and report what happened (for the status panel).
+async function testRefresh(): Promise<{ tried: boolean; ok: boolean; status: number; exp: number | null; detail: string }> {
+  let rt = ENV_REFRESH;
+  let sk = ENV_SESSION_KEY;
+  try {
+    if (!rt) rt = cleanToken((await kvGet('refresh_token')) || '');
+    if (!sk) sk = cleanToken((await kvGet('session_key')) || '');
+  } catch {
+    /* ignore */
+  }
+  if (!rt) return { tried: false, ok: false, status: 0, exp: null, detail: 'refreshToken未設定' };
+  let cookie = `refreshToken=${rt}`;
+  if (sk) cookie += `; X-Session-Key=${sk}`;
+  try {
+    const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
+      method: 'GET',
+      headers: { Origin: 'https://app.uysot.uz', Referer: 'https://app.uysot.uz/', Accept: 'application/json', Cookie: cookie },
+    });
+    const text = await r.text();
+    let tok = '';
+    try {
+      const j = JSON.parse(text);
+      tok = j?.data?.data?.accessToken || j?.data?.accessToken || '';
+    } catch {
+      /* ignore */
+    }
+    return { tried: true, ok: !!tok, status: r.status, exp: tok ? jwtExp(tok) : null, detail: tok ? 'OK' : text.slice(0, 160) };
+  } catch (e: any) {
+    return { tried: true, ok: false, status: 0, exp: null, detail: String(e?.message || e) };
+  }
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -57,11 +92,12 @@ export default async function handler(req: any, res: any) {
         const t = await kvGet('uysot_token');
         present = !!t;
         if (t) exp = jwtExp(t);
-        refreshPresent = !!(await kvGet('refresh_token'));
+        refreshPresent = !!ENV_REFRESH || !!(await kvGet('refresh_token'));
       } catch {
         /* ignore */
       }
-      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp, refreshPresent });
+      const refresh = await testRefresh();
+      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp, refreshPresent, refresh });
       return;
     }
 
