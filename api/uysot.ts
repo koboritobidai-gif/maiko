@@ -56,8 +56,11 @@ const ENV_TOKEN = clean(process.env.UYSOT_TOKEN || '');
 const SHARED_ENABLED = SHARED_PASSWORD.length > 0;
 
 // Exchange a stored refreshToken cookie for a fresh access token.
+// The refreshToken can come from an env var (simplest: set it once) or KV.
+const ENV_REFRESH = clean(process.env.UYSOT_REFRESH_TOKEN || '');
 async function refreshAccessToken(): Promise<string> {
-  const rt = clean((await kvGet('refresh_token')) || '');
+  let rt = ENV_REFRESH;
+  if (!rt) rt = clean((await kvGet('refresh_token')) || '');
   if (!rt) return '';
   const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
     method: 'GET',
