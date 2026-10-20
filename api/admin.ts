@@ -52,14 +52,16 @@ export default async function handler(req: any, res: any) {
     if (method === 'GET') {
       let present = false;
       let exp: number | null = null;
+      let refreshPresent = false;
       try {
         const t = await kvGet('uysot_token');
         present = !!t;
         if (t) exp = jwtExp(t);
+        refreshPresent = !!(await kvGet('refresh_token'));
       } catch {
         /* ignore */
       }
-      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp });
+      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp, refreshPresent });
       return;
     }
 
@@ -80,13 +82,23 @@ export default async function handler(req: any, res: any) {
       });
       return;
     }
+
+    // Preferred: store the refreshToken cookie so the server self-renews.
+    const refreshToken = cleanToken(String(body.refreshToken || ''));
+    if (refreshToken) {
+      await kvSet('refresh_token', refreshToken);
+      res.status(200).json({ ok: true, mode: 'refresh' });
+      return;
+    }
+
+    // Fallback: store a plain access token (expires in ~2 days).
     const token = cleanToken(String(body.token || ''));
     if (!token || token.split('.').length < 3) {
-      res.status(400).json({ message: '正しいトークンを貼り付けてください', accept: false });
+      res.status(400).json({ message: '正しいトークン、またはrefreshToken(Cookie)を貼り付けてください', accept: false });
       return;
     }
     await kvSet('uysot_token', token);
-    res.status(200).json({ ok: true, exp: jwtExp(token) });
+    res.status(200).json({ ok: true, mode: 'token', exp: jwtExp(token) });
   } catch (e: any) {
     res.status(500).json({ message: String(e?.message || e), accept: false });
   }

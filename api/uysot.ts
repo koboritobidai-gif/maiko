@@ -35,30 +35,67 @@ async function kvGet(key: string): Promise<string | null> {
   const j: any = await r.json();
   return j && typeof j.result === 'string' ? j.result : null;
 }
+function jwtExpMs(token: string): number {
+  try {
+    const p = token.split('.')[1];
+    const json = Buffer.from(p.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const exp = JSON.parse(json)?.exp;
+    return typeof exp === 'number' ? exp * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
 
 // Shared "passphrase" mode: a viewer sends the passphrase and the proxy uses
 // a server-stored uysot token so they never need a token themselves. The
-// passphrase comes from an env var; the token is read from KV (owner can
-// refresh it from inside the dashboard) with the env var as a fallback.
+// passphrase comes from an env var; the access token is derived automatically
+// from a stored `refreshToken` cookie (uysot's refresh endpoint, no reCAPTCHA)
+// so it self-renews, with a stored static token / env var as fallbacks.
 const SHARED_PASSWORD = (process.env.DASH_PASSWORD || '').trim();
 const ENV_TOKEN = clean(process.env.UYSOT_TOKEN || '');
 const SHARED_ENABLED = SHARED_PASSWORD.length > 0;
 
-// Cache the shared token briefly to avoid a KV read on every request.
+// Exchange a stored refreshToken cookie for a fresh access token.
+async function refreshAccessToken(): Promise<string> {
+  const rt = clean((await kvGet('refresh_token')) || '');
+  if (!rt) return '';
+  const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
+    method: 'GET',
+    headers: {
+      Origin: SPOOF_ORIGIN,
+      Referer: `${SPOOF_ORIGIN}/`,
+      Accept: 'application/json',
+      Cookie: `refreshToken=${rt}`,
+    },
+  });
+  if (!r.ok) return '';
+  const j: any = await r.json();
+  const tok = j?.data?.data?.accessToken || j?.data?.accessToken || '';
+  return clean(tok);
+}
+
+// Cache the derived access token until shortly before it expires.
 let cachedToken = '';
-let cachedAt = 0;
+let cachedExpMs = 0;
 async function sharedToken(): Promise<string> {
   const now = Date.now();
-  if (cachedToken && now - cachedAt < 30000) return cachedToken;
+  if (cachedToken && cachedExpMs - now > 60000) return cachedToken;
   let t = '';
   try {
-    t = (await kvGet('uysot_token')) || '';
+    t = await refreshAccessToken();
   } catch {
     /* ignore */
   }
-  t = clean(t) || ENV_TOKEN;
+  if (!t) {
+    try {
+      t = clean((await kvGet('uysot_token')) || '') || ENV_TOKEN;
+    } catch {
+      t = ENV_TOKEN;
+    }
+  }
   cachedToken = t;
-  cachedAt = now;
+  const exp = jwtExpMs(t);
+  cachedExpMs = exp > now ? exp : now + 60000;
   return t;
 }
 
