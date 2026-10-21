@@ -95,3 +95,5 @@ Vercel では `vercel.json` の設定でそのままビルド・配信されま�
 認証は `Authorization: Bearer <accessToken>` ヘッダーで行います。
 
 <!-- redeploy 20261021T005523Z -->
+
+<!-- redeploy 20261021T011823Z -->
