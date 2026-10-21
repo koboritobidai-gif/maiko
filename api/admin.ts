@@ -43,6 +43,18 @@ function jwtExp(token: string): number | null {
     return null;
   }
 }
+function findJwt(v: any): string {
+  if (typeof v === 'string') {
+    return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(v) ? v : '';
+  }
+  if (v && typeof v === 'object') {
+    for (const k of Object.keys(v)) {
+      const f = findJwt(v[k]);
+      if (f) return f;
+    }
+  }
+  return '';
+}
 
 const API_BASE = 'https://service.app.uysot.uz';
 const ENV_REFRESH = cleanToken(process.env.UYSOT_REFRESH_TOKEN || '');
@@ -68,12 +80,11 @@ async function testRefresh(): Promise<{ tried: boolean; ok: boolean; status: num
     const text = await r.text();
     let tok = '';
     try {
-      const j = JSON.parse(text);
-      tok = j?.data?.data?.accessToken || j?.data?.accessToken || '';
+      tok = findJwt(JSON.parse(text));
     } catch {
       /* ignore */
     }
-    return { tried: true, ok: !!tok, status: r.status, exp: tok ? jwtExp(tok) : null, detail: tok ? 'OK' : text.slice(0, 160) };
+    return { tried: true, ok: !!tok, status: r.status, exp: tok ? jwtExp(tok) : null, detail: tok ? 'OK' : text.slice(0, 200) };
   } catch (e: any) {
     return { tried: true, ok: false, status: 0, exp: null, detail: String(e?.message || e) };
   }

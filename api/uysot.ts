@@ -78,8 +78,21 @@ async function refreshAccessToken(): Promise<string> {
   });
   if (!r.ok) return '';
   const j: any = await r.json();
-  const tok = j?.data?.data?.accessToken || j?.data?.accessToken || '';
+  const tok = findJwt(j);
   return clean(tok);
+}
+// Recursively find a JWT (the access token) anywhere in the response.
+function findJwt(v: any): string {
+  if (typeof v === 'string') {
+    return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(v) ? v : '';
+  }
+  if (v && typeof v === 'object') {
+    for (const k of Object.keys(v)) {
+      const found = findJwt(v[k]);
+      if (found) return found;
+    }
+  }
+  return '';
 }
 
 // Cache the derived access token until shortly before it expires.
