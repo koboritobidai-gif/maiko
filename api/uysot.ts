@@ -22,8 +22,17 @@ function clean(v: string): string {
   }
   return t.replace(/\s+/g, '');
 }
-const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
-const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
+// Resolve KV connection from env regardless of the integration's prefix
+// (e.g. STORAGE_KV_REST_API_URL). Match by suffix.
+function kvEnv(kind: 'url' | 'token'): string {
+  const re = kind === 'url' ? /(REST_API_URL|REDIS_REST_URL)$/ : /(REST_API_TOKEN|REDIS_REST_TOKEN)$/;
+  for (const k of Object.keys(process.env)) {
+    if (re.test(k) && process.env[k]) return process.env[k] as string;
+  }
+  return '';
+}
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || kvEnv('url');
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || kvEnv('token');
 const KV_ENABLED = !!(KV_URL && KV_TOKEN);
 async function kvCmd(args: string[]): Promise<any> {
   const r = await fetch(KV_URL, {
