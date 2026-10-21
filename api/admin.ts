@@ -1,9 +1,9 @@
-// Owner-only endpoint to refresh the shared uysot token from inside the
+// Owner-only endpoint to seed the shared uysot credentials from inside the
 // dashboard (no Vercel visit / redeploy needed). GET returns status; POST
-// with the correct passphrase stores a new token in KV.
+// with the correct passphrase stores a fresh refreshToken (+ X-Session-Key)
+// or a plain access token in KV.
 const PASSWORD = (process.env.DASH_PASSWORD || '').trim();
 
-// --- inlined KV helpers (self-contained so the function always bundles) ---
 const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
 const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const KV_ENABLED = !!(KV_URL && KV_TOKEN);
@@ -43,52 +43,8 @@ function jwtExp(token: string): number | null {
     return null;
   }
 }
-function findJwt(v: any): string {
-  if (typeof v === 'string') {
-    return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(v) ? v : '';
-  }
-  if (v && typeof v === 'object') {
-    for (const k of Object.keys(v)) {
-      const f = findJwt(v[k]);
-      if (f) return f;
-    }
-  }
-  return '';
-}
 
-const API_BASE = 'https://service.app.uysot.uz';
 const ENV_REFRESH = cleanToken(process.env.UYSOT_REFRESH_TOKEN || '');
-const ENV_SESSION_KEY = cleanToken(process.env.UYSOT_SESSION_KEY || '');
-// Try a refresh and report what happened (for the status panel).
-async function testRefresh(): Promise<{ tried: boolean; ok: boolean; status: number; exp: number | null; detail: string }> {
-  let rt = ENV_REFRESH;
-  let sk = ENV_SESSION_KEY;
-  try {
-    if (!rt) rt = cleanToken((await kvGet('refresh_token')) || '');
-    if (!sk) sk = cleanToken((await kvGet('session_key')) || '');
-  } catch {
-    /* ignore */
-  }
-  if (!rt) return { tried: false, ok: false, status: 0, exp: null, detail: 'refreshToken未設定' };
-  let cookie = `refreshToken=${rt}`;
-  if (sk) cookie += `; X-Session-Key=${sk}`;
-  try {
-    const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
-      method: 'GET',
-      headers: { Origin: 'https://app.uysot.uz', Referer: 'https://app.uysot.uz/', Accept: 'application/json', Cookie: cookie },
-    });
-    const text = await r.text();
-    let tok = '';
-    try {
-      tok = findJwt(JSON.parse(text));
-    } catch {
-      /* ignore */
-    }
-    return { tried: true, ok: !!tok, status: r.status, exp: tok ? jwtExp(tok) : null, detail: tok ? 'OK' : text.slice(0, 200) };
-  } catch (e: any) {
-    return { tried: true, ok: false, status: 0, exp: null, detail: String(e?.message || e) };
-  }
-}
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
@@ -96,6 +52,8 @@ export default async function handler(req: any, res: any) {
     const method = (req.method || 'GET').toUpperCase();
 
     if (method === 'GET') {
+      // Status only — do NOT perform a refresh here (it would consume the
+      // single-use refreshToken). Verify by loading data in passphrase mode.
       let present = false;
       let exp: number | null = null;
       let refreshPresent = false;
@@ -107,8 +65,7 @@ export default async function handler(req: any, res: any) {
       } catch {
         /* ignore */
       }
-      const refresh = await testRefresh();
-      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp, refreshPresent, refresh });
+      res.status(200).json({ kvEnabled: KV_ENABLED, present, exp, refreshPresent });
       return;
     }
 
@@ -124,16 +81,19 @@ export default async function handler(req: any, res: any) {
     }
     if (!KV_ENABLED) {
       res.status(503).json({
-        message: 'データ保存(KV)が未設定です。VercelでKVストアを接続してください。',
+        message: 'データ保存(KV)が未接続です。VercelのStorageでKV(Upstash)を接続してください。',
         accept: false,
       });
       return;
     }
 
-    // Preferred: store the refreshToken cookie so the server self-renews.
+    // Preferred: store the refreshToken (+ X-Session-Key) so the server
+    // self-renews and persists the rotated values on each refresh.
     const refreshToken = cleanToken(String(body.refreshToken || ''));
+    const sessionKey = cleanToken(String(body.sessionKey || ''));
     if (refreshToken) {
       await kvSet('refresh_token', refreshToken);
+      if (sessionKey) await kvSet('session_key', sessionKey);
       res.status(200).json({ ok: true, mode: 'refresh' });
       return;
     }
@@ -141,7 +101,7 @@ export default async function handler(req: any, res: any) {
     // Fallback: store a plain access token (expires in ~2 days).
     const token = cleanToken(String(body.token || ''));
     if (!token || token.split('.').length < 3) {
-      res.status(400).json({ message: '正しいトークン、またはrefreshToken(Cookie)を貼り付けてください', accept: false });
+      res.status(400).json({ message: '正しいトークン、またはrefreshToken/X-Session-Keyを貼り付けてください', accept: false });
       return;
     }
     await kvSet('uysot_token', token);

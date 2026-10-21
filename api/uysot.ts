@@ -24,16 +24,24 @@ function clean(v: string): string {
 }
 const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
 const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
-async function kvGet(key: string): Promise<string | null> {
-  if (!KV_URL || !KV_TOKEN) return null;
+const KV_ENABLED = !!(KV_URL && KV_TOKEN);
+async function kvCmd(args: string[]): Promise<any> {
   const r = await fetch(KV_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
+    body: JSON.stringify(args),
   });
   if (!r.ok) return null;
-  const j: any = await r.json();
+  return r.json();
+}
+async function kvGet(key: string): Promise<string | null> {
+  if (!KV_ENABLED) return null;
+  const j: any = await kvCmd(['GET', key]);
   return j && typeof j.result === 'string' ? j.result : null;
+}
+async function kvSet(key: string, value: string): Promise<void> {
+  if (!KV_ENABLED) return;
+  await kvCmd(['SET', key, value]);
 }
 function jwtExpMs(token: string): number {
   try {
@@ -55,30 +63,34 @@ const SHARED_PASSWORD = (process.env.DASH_PASSWORD || '').trim();
 const ENV_TOKEN = clean(process.env.UYSOT_TOKEN || '');
 const SHARED_ENABLED = SHARED_PASSWORD.length > 0;
 
-// Exchange a stored refreshToken cookie for a fresh access token.
-// The refreshToken can come from an env var (simplest: set it once) or KV.
-// Some tenants also require the X-Session-Key cookie on refresh.
+// Exchange the current refreshToken cookie for a fresh access token.
+// uysot rotates the refreshToken (single-use), so the new one (and the new
+// X-Session-Key carried in the access token header) are persisted to KV for
+// the next call. KV is required for this to keep working; the env vars only
+// seed the very first refresh.
 const ENV_REFRESH = clean(process.env.UYSOT_REFRESH_TOKEN || '');
 const ENV_SESSION_KEY = clean(process.env.UYSOT_SESSION_KEY || '');
 async function refreshAccessToken(): Promise<string> {
-  let rt = ENV_REFRESH;
-  if (!rt) rt = clean((await kvGet('refresh_token')) || '');
+  const rt = clean((await kvGet('refresh_token')) || '') || ENV_REFRESH;
   if (!rt) return '';
+  const sk = clean((await kvGet('session_key')) || '') || ENV_SESSION_KEY;
   let cookie = `refreshToken=${rt}`;
-  const sk = ENV_SESSION_KEY || clean((await kvGet('session_key')) || '');
   if (sk) cookie += `; X-Session-Key=${sk}`;
   const r = await fetch(`${API_BASE}/v1/auth/refresh`, {
     method: 'GET',
-    headers: {
-      Origin: SPOOF_ORIGIN,
-      Referer: `${SPOOF_ORIGIN}/`,
-      Accept: 'application/json',
-      Cookie: cookie,
-    },
+    headers: { Origin: SPOOF_ORIGIN, Referer: `${SPOOF_ORIGIN}/`, Accept: 'application/json', Cookie: cookie },
   });
   if (!r.ok) return '';
   const j: any = await r.json();
   const tok = findJwt(j);
+  if (!tok) return '';
+  // Persist the rotated secrets for the next refresh.
+  if (KV_ENABLED) {
+    const newRt = findByKey(j, 'refreshToken');
+    if (newRt) await kvSet('refresh_token', clean(newRt));
+    const newSk = jwtHeaderField(tok, 'X-Session-Key');
+    if (newSk) await kvSet('session_key', clean(newSk));
+  }
   return clean(tok);
 }
 // Recursively find a JWT (the access token) anywhere in the response.
@@ -93,6 +105,28 @@ function findJwt(v: any): string {
     }
   }
   return '';
+}
+// Recursively find the first string value stored under a given key.
+function findByKey(v: any, key: string): string {
+  if (v && typeof v === 'object') {
+    for (const k of Object.keys(v)) {
+      if (k === key && typeof v[k] === 'string') return v[k];
+      const f = findByKey(v[k], key);
+      if (f) return f;
+    }
+  }
+  return '';
+}
+// Read a field from a JWT's header (first segment).
+function jwtHeaderField(tok: string, field: string): string {
+  try {
+    const h = tok.split('.')[0];
+    const json = Buffer.from(h.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const v = JSON.parse(json)?.[field];
+    return typeof v === 'string' ? v : '';
+  } catch {
+    return '';
+  }
 }
 
 // Cache the derived access token until shortly before it expires.
