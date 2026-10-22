@@ -274,15 +274,20 @@ const EXCLUDE_MESSAGE_RE = /STORY/i;
  */
 const UNPAID_REMINDER_RE = /払えてない/;
 
+/** 「10月支払い」のような「◯月」+「支払い」の表記(過去の「2月払い 請求書」表記も許容するため「支」は任意)。 */
+const PAYMENT_MONTH_TITLE_RE = /\d{1,2}\s*月\s*支?払い/;
+
 /**
  * 返信のPDFを読む対象スレッドの条件。経営者指示(2026-10-22)「10月請求書、会社名が書いてあるものだけ
- * 反映して」により、親メッセージ本文に「請求書」を含むスレッド(現行の運用タイトルは
- * 「10月支払い 請求書 【月末払い】 翔び台」、過去は「7月支払い 請求書【月末払い】」
- * 「【STORY】8月支払い 請求書【月末払い】」等。いずれも「請求書」を含む)に限定する。
- * 督促スレッド(UNPAID_REMINDER_RE)は、仮にタイトルに「請求書」を含んでいても対象外とする。
+ * 反映して」「『◯月支払い』と『請求書』の両方をタイトルに含むスレッドのみ」により、親メッセージ本文に
+ * 「◯月支払い」と「請求書」の両方を含むスレッドに限定する(読みたいのは「◯月支払い 請求書 【月末払い】 ◯◯」
+ * 形式のスレッド)。過去スレッドには【月末払い】や末尾の会社名が無いもの
+ * (「7月支払い 請求書【月末払い】」「【STORY】5月支払い 請求書 【月末払い】」
+ * 「【翔び台】6月支払い 請求書【月末以外】」等)があるため、判定は「月+支払い」「請求書」の2要素のみとする。
+ * 督促スレッド(UNPAID_REMINDER_RE)は、仮にタイトルに両方を含んでいても対象外とする。
  */
 export function isInvoiceThreadTitle(text: string): boolean {
-  return text.includes("請求書") && !UNPAID_REMINDER_RE.test(text);
+  return PAYMENT_MONTH_TITLE_RE.test(text) && text.includes("請求書") && !UNPAID_REMINDER_RE.test(text);
 }
 
 /** 督促スレッド・メッセージ(「払えてない」「支払えてない」)か。該当するPDFは一切読み込まない。 */
@@ -554,7 +559,7 @@ export class SlackInvoiceSource implements InvoiceSource {
     // スレッド親の表記から求めた支払月を引き継ぐ。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
     // STORY(別事業)のスレッドも読み込む(excludedFromTotals を付けて画面の合計からは除外しつつ、
     // 「AIに聞く」の会社別集計では使えるようにする)。
-    // 返信を読むのは、親タイトルに「請求書」を含むスレッドだけ。督促スレッド(「払えてない」等)は
+    // 返信を読むのは、親タイトルに「◯月支払い」と「請求書」の両方を含むスレッドだけ。督促スレッド(「払えてない」等)は
     // 計上済みの請求書の貼り直しで二重計上になるため除外する(経緯は isInvoiceThreadTitle 参照)。
     const threadParents = (history.messages ?? [])
       .filter(
