@@ -265,6 +265,31 @@ function detectPaymentMonthFromContent(text: string, postedAt: Date): { month: s
  */
 const EXCLUDE_MESSAGE_RE = /STORY/i;
 
+/**
+ * 督促スレッドの表記。#請求書の「払えてない」「支払えてない」(2026-10-05 / 2026-08-24)は、
+ * 9月支払いなどで計上済みの請求書PDFを督促用に貼り直したスレッドのため、読み込むと二重計上になる。
+ * 経営者指示(2026-10-22)「払えてないがタイトルのやつはアプリに反映しなくてOK」により、
+ * 親メッセージ本文にこの表記を含むものは、親直下のPDFもスレッド返信のPDFも一切読み込まない。
+ * (「支払えてない」も「払えてない」を部分文字列として含むため、実質は1つのパターンで両方に一致する。)
+ */
+const UNPAID_REMINDER_RE = /払えてない/;
+
+/**
+ * 返信のPDFを読む対象スレッドの条件。経営者指示(2026-10-22)「10月請求書、会社名が書いてあるものだけ
+ * 反映して」により、親メッセージ本文に「請求書」を含むスレッド(現行の運用タイトルは
+ * 「10月支払い 請求書 【月末払い】 翔び台」、過去は「7月支払い 請求書【月末払い】」
+ * 「【STORY】8月支払い 請求書【月末払い】」等。いずれも「請求書」を含む)に限定する。
+ * 督促スレッド(UNPAID_REMINDER_RE)は、仮にタイトルに「請求書」を含んでいても対象外とする。
+ */
+export function isInvoiceThreadTitle(text: string): boolean {
+  return text.includes("請求書") && !UNPAID_REMINDER_RE.test(text);
+}
+
+/** 督促スレッド・メッセージ(「払えてない」「支払えてない」)か。該当するPDFは一切読み込まない。 */
+export function isUnpaidReminderText(text: string): boolean {
+  return UNPAID_REMINDER_RE.test(text);
+}
+
 /** テキストの1行目(前後空白除去)。空文字なら undefined。 */
 function firstLine(text: string): string | undefined {
   const line = text.split("\n")[0]?.trim();
@@ -509,6 +534,8 @@ export class SlackInvoiceSource implements InvoiceSource {
       }
     };
     for (const message of history.messages ?? []) {
+      // 督促スレッド(「払えてない」等)の親直下のPDFは二重計上になるため読み込まない。
+      if (isUnpaidReminderText(message.text ?? "")) continue;
       // STORY(別事業)のメッセージは読み込むが excludedFromTotals を付ける(画面の合計には含めない。
       // トップレベル投稿由来のPDFのため threadTitle は付けない)。
       const excluded = EXCLUDE_MESSAGE_RE.test(message.text ?? "");
@@ -527,8 +554,15 @@ export class SlackInvoiceSource implements InvoiceSource {
     // スレッド親の表記から求めた支払月を引き継ぐ。API呼び出し数抑制のため直近 MAX_THREAD_FETCHES 件まで)。
     // STORY(別事業)のスレッドも読み込む(excludedFromTotals を付けて画面の合計からは除外しつつ、
     // 「AIに聞く」の会社別集計では使えるようにする)。
+    // 返信を読むのは、親タイトルに「請求書」を含むスレッドだけ。督促スレッド(「払えてない」等)は
+    // 計上済みの請求書の貼り直しで二重計上になるため除外する(経緯は isInvoiceThreadTitle 参照)。
     const threadParents = (history.messages ?? [])
-      .filter((m) => (m.reply_count ?? 0) > 0 && tsToDate(m.ts).getTime() >= cutoff)
+      .filter(
+        (m) =>
+          (m.reply_count ?? 0) > 0 &&
+          tsToDate(m.ts).getTime() >= cutoff &&
+          isInvoiceThreadTitle(m.text ?? ""),
+      )
       .slice(0, MAX_THREAD_FETCHES);
     for (const parent of threadParents) {
       const parentPaymentMonth = detectPaymentMonthFromThreadTitle(parent.text ?? "", tsToDate(parent.ts));

@@ -7,8 +7,12 @@
  * デモ段階は DemoMarketingSource が直近2ヶ月分のデモデータを返す。
  * 実連携は GoogleSheetsMarketingSource が adapters/spreadsheet.ts の認証(RS256 JWT)・
  * batchGet 呼び出しを再利用し、2つのシートをそれぞれ読み取る。
+ * 広告代理店の変更に伴い、広告費は新シート「【昼職キャリア翔び台】広告数値管理_新」
+ * (`MARKETING_AD_SHEET_ID_NEW`、未設定時は既定ID)のタブ「キャンペーン別_日次」からも読み取り、
+ * 旧シート(アイドマ)の日次実績に連結する。
  */
 import type { AdDailyRecord, MarketingData, SnsWeeklyRecord } from "../types";
+import { isNextDynamicUsageError } from "../next-dynamic-usage-error";
 import {
   fetchSheetsValuesBatchGet,
   fetchSheetTabTitles,
@@ -28,6 +32,16 @@ const SHEET_MISMATCH_HINT =
   "アイドマ/リズリアライズのシートIDが入れ替わっていないか確認してください。";
 
 export const DEFAULT_SNS_MONTHLY_COST_YEN = 495_000;
+
+/**
+ * 新しい広告数値管理シート(「【昼職キャリア翔び台】広告数値管理_新」)のID。
+ * 環境変数 `MARKETING_AD_SHEET_ID_NEW` が未設定でも動くよう、既定値としてコードに持つ
+ * (シートIDは秘密情報ではない。権限はサービスアカウントへの共有で制御する)。
+ */
+export const DEFAULT_NEW_AD_SHEET_ID = "1uO6VSx0HkMPMFi9nDtLOS_s79eN8-SpmPOBjmMC4ew4";
+
+/** 新広告シートの日次実績タブ名。 */
+const NEW_AD_SHEET_TAB = "キャンペーン別_日次";
 
 // ─────────────────────────────────────────────
 // デモ実装
@@ -147,13 +161,13 @@ function isBlankRow(row: SheetValuesRow): boolean {
   return row.every((cell) => cellToString(cell) === "");
 }
 
-/** 空欄・「—」等は 0 として扱う(数値化できない値も 0 扱い)。 */
+/** 空欄・「—」等は 0 として扱う(数値化できない値も 0 扱い)。「¥12,682」「￥12,682」等の通貨記号付き文字列も数値化する。 */
 function toNumberOrZero(cell: unknown): number {
   if (cell === undefined || cell === null) return 0;
   if (typeof cell === "number") return Number.isFinite(cell) ? cell : 0;
   const raw = String(cell).trim();
   if (raw === "" || raw === "—" || raw === "-" || raw === "―") return 0;
-  const n = Number(raw.replace(/,/g, ""));
+  const n = Number(raw.replace(/[,¥￥]/g, ""));
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -304,6 +318,53 @@ function parseAdSheetRows(
   return records;
 }
 
+/**
+ * 新広告シートのタブ「キャンペーン別_日次」を AdDailyRecord[] にパースする。
+ * ヘッダー: 日付 / キャンペーン / 費用 / クリック / LINE登録 / 登録CPA / 面談予約数 / 面談実施数 / メモ。
+ * 1日につきキャンペーンごとに複数行ある(AdDailyRecord にキャンペーン軸は無いため1行=1レコードとし、
+ * 同一日付×同一キャンペーンの行が複数あっても集計側で単純合算される=日次合計として扱う)。
+ * - 日付として読めない行・空行はスキップ
+ * - 媒体(channel)は、キャンペーン名に /meta/i が含まれれば「Meta広告」、それ以外は「Google広告」
+ * - 表示回数の列は無いので 0
+ * - LINE登録/面談予約数/面談実施数に「貴社入力」等の文字列が入っていても 0 として扱う(toNumberOrZero)
+ */
+export function parseCampaignDailyRows(rows: SheetValuesRow[]): AdDailyRecord[] {
+  const headerIdx = findHeaderRowIndex(rows, ["日付", "キャンペーン", "費用"]);
+  if (headerIdx < 0) {
+    throw new MarketingParseError(
+      `タブ「${NEW_AD_SHEET_TAB}」でヘッダー行(「日付」「キャンペーン」「費用」を含む行)が見つかりません。`,
+    );
+  }
+  const header = rows[headerIdx] ?? [];
+  const dateIdx = findColumnIndex(header, (t) => t.includes("日付"));
+  const campaignIdx = findColumnIndex(header, (t) => t.includes("キャンペーン"));
+  const costIdx = findColumnIndex(header, (t) => t.includes("費用"));
+  const clicksIdx = findColumnIndex(header, (t) => t.includes("クリック"));
+  const lineRegsIdx = findColumnIndex(header, (t) => t.includes("LINE登録"));
+  const reservationsIdx = findColumnIndex(header, (t) => t.includes("面談予約"));
+  const interviewsIdx = findColumnIndex(header, (t) => t.includes("面談実施"));
+
+  const records: AdDailyRecord[] = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    if (isBlankRow(row)) continue;
+    const date = parseFlexibleDate(row[dateIdx]);
+    if (!date) continue; // 日付として読めない行(集計行・注記行など)はスキップ
+    const campaign = cellToString(row[campaignIdx]);
+    records.push({
+      channel: /meta/i.test(campaign) ? "Meta広告" : "Google広告",
+      date,
+      cost: toNumberOrZero(row[costIdx]),
+      impressions: 0,
+      clicks: clicksIdx >= 0 ? toNumberOrZero(row[clicksIdx]) : 0,
+      lineRegs: lineRegsIdx >= 0 ? toNumberOrZero(row[lineRegsIdx]) : 0,
+      reservations: reservationsIdx >= 0 ? toNumberOrZero(row[reservationsIdx]) : 0,
+      interviews: interviewsIdx >= 0 ? toNumberOrZero(row[interviewsIdx]) : 0,
+    });
+  }
+  return records;
+}
+
 const PERIOD_RE = /^(\d{1,2})\/(\d{1,2})\s*[-〜~]\s*(\d{1,2})\/(\d{1,2})$/;
 
 /** SNS運用シート「週次トラッキング」タブを SnsWeeklyRecord[] にパースする。 */
@@ -360,6 +421,8 @@ function parseSnsWeeklyRows(rows: SheetValuesRow[], startYear: number): SnsWeekl
 interface GoogleSheetsMarketingConfig {
   serviceAccountJson?: string;
   adSheetId?: string;
+  /** 新広告シート(キャンペーン別_日次)のID。未指定なら新シートは読まない。 */
+  newAdSheetId?: string;
   snsSheetId?: string;
   snsMonthlyCostYen: number;
 }
@@ -382,6 +445,32 @@ export class GoogleSheetsMarketingSource implements MarketingSource {
       });
     }
     return this.loadingPromise;
+  }
+
+  /**
+   * 新広告シートのタブ「キャンペーン別_日次」を読む。新シートがまだサービスアカウントに
+   * 共有されていない(403)等で取得に失敗しても、ページを落とさず console.warn して空配列を返す
+   * (旧シート分のみで表示を続ける)。旧シートの取得失敗は従来どおり load() 側でそのままエラーになる。
+   */
+  private async loadNewAdDaily(accessToken: string): Promise<AdDailyRecord[]> {
+    const sheetId = this.config.newAdSheetId;
+    if (!sheetId) return [];
+    try {
+      const [rows] = await fetchSheetsValuesBatchGet(
+        sheetId,
+        [`${quoteSheetTitle(NEW_AD_SHEET_TAB)}!A1:Z5000`],
+        accessToken,
+        "UNFORMATTED_VALUE",
+      );
+      return parseCampaignDailyRows(rows ?? []);
+    } catch (error) {
+      if (isNextDynamicUsageError(error)) throw error;
+      console.warn(
+        "[marketing] 新広告シート(広告数値管理_新)の取得に失敗したため、旧シート分のみで表示します:",
+        error,
+      );
+      return [];
+    }
   }
 
   private async load(): Promise<MarketingData> {
@@ -409,10 +498,14 @@ export class GoogleSheetsMarketingSource implements MarketingSource {
       "Meta広告",
       "アイドマ(広告運用)シート",
     );
-    const adDaily = [
+    const oldAdDaily = [
       ...parseAdSheetRows(googleTab.rows, "Google広告", googleTab.title),
       ...parseAdSheetRows(metaTab.rows, "Meta広告", metaTab.title),
     ];
+    // 新広告シートの日次実績を連結する(広告代理店の変更に伴う追加)。旧シートの実データは
+    // 2026-09-03で止まり、新シートは2026-09-07開始のため実データの重複は無い。
+    // 同じ日付の費用が両方に入ると二重計上になるので注意。
+    const adDaily = [...oldAdDaily, ...(await this.loadNewAdDaily(accessToken))];
 
     // リズリアライズ(SNS運用)シート: 週次トラッキングタブ
     const snsTitles = await fetchSheetTabTitles(this.config.snsSheetId, accessToken);
@@ -452,6 +545,7 @@ export function getMarketingSource(): MarketingSource {
     return new GoogleSheetsMarketingSource({
       serviceAccountJson: undefined,
       adSheetId: process.env.MARKETING_AD_SHEET_ID,
+      newAdSheetId: process.env.MARKETING_AD_SHEET_ID_NEW || DEFAULT_NEW_AD_SHEET_ID,
       snsSheetId: process.env.MARKETING_SNS_SHEET_ID,
       snsMonthlyCostYen: resolveSnsMonthlyCostYen(),
     });
