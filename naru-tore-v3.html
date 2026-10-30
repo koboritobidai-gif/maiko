@@ -661,7 +661,7 @@ const LEVEL_SHORT = {easy:"無理なく始める",normal:"標準ペース",hard:
    状態
    ========================================================================= */
 const KEY = "naru-tore-v3";
-let S = {profile:null, logs:[], checks:{}, level:null, sets:{}};
+let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[]};
 const app = document.getElementById("app");
 const backdrop = document.getElementById("backdrop");
 
@@ -681,19 +681,87 @@ function place(){ return (S.profile && S.profile.place) || "home"; }
 function goal(){ return (S.profile && S.profile.goal) || "tone"; }
 function weekTarget(){ return (S.profile && S.profile.days) || 3; }
 
-/* 何日目のメニューか。完了した回数で進む */
-function dayNumber(){ return S.logs.length + 1; }
-function todayProgram(){
-  const order = GOAL_ORDER[goal()] || GOAL_ORDER.tone;
-  const list = DAYS[place()];
-  return list[ order[(dayNumber()-1) % order.length] % list.length ];
-}
-function programAt(n){
-  const order = GOAL_ORDER[goal()] || GOAL_ORDER.tone;
-  const list = DAYS[place()];
-  return list[ order[(n-1) % order.length] % list.length ];
-}
+/* 何日目か。買った2週間の開始日からの日数で進む（1〜14） */
+function dayNumber(){ return cycleDay(); }
+function todayProgram(){ return programOf(planAt(cycleDay())); }   // null = 休養日
+function programAt(n){ return programOf(planAt(n)); }
 function doseOf(item){ return item[level()==="easy"?"e":level()==="hard"?"h":"n"]; }
+
+/* ---- 2週間（14日）サイクル -------------------------------------------- */
+const CYCLE = 14;
+
+/* クールダウンの日。ストレッチとモビリティだけで組む */
+const COOL_DAY = { t:"Recovery Day", f:"MOBILITY", parts:[
+  {k:"COOL DOWN", r:2, items:[
+    I("cat-cow","40 sec","50 sec","60 sec"),
+    I("world-greatest","30 sec","40 sec","50 sec"),
+    I("hamstring-stretch","40 sec","50 sec","60 sec"),
+    I("quad-stretch","40 sec","50 sec","60 sec"),
+    I("pigeon","40 sec","50 sec","60 sec"),
+    I("child-pose","50 sec","60 sec","60 sec")
+  ]}
+]};
+
+/* 14日の割り振り。naruさんの監修が来たらここを差し替える（今は暫定）
+   t:"train" … m は DAYS[場所] の何番目のメニューか
+   t:"cool"  … クールダウンの日
+   t:"rest"  … 完全休養（振り替えのバッファになる） */
+const PLAN = {
+  gym : [{t:"train",m:0},{t:"train",m:1},{t:"rest"},{t:"train",m:2},{t:"cool"},
+         {t:"train",m:3},{t:"rest"},{t:"train",m:4},{t:"train",m:5},{t:"rest"},
+         {t:"train",m:0},{t:"cool"},{t:"train",m:1},{t:"rest"}],
+  home: [{t:"train",m:0},{t:"train",m:1},{t:"rest"},{t:"train",m:2},{t:"cool"},
+         {t:"train",m:3},{t:"rest"},{t:"train",m:4},{t:"train",m:5},{t:"rest"},
+         {t:"train",m:0},{t:"cool"},{t:"train",m:1},{t:"rest"}]
+};
+
+const addDays = (k,n) => { const d=new Date(k+"T00:00:00"); d.setDate(d.getDate()+n); return dkey(d); };
+const dayDiff = (a,b) => Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000);
+
+function newCycle(start){
+  return { start:start, place:place(), plan:PLAN[place()].map(e=>Object.assign({},e)) };
+}
+/* 今日がどのサイクルの何日目か。14日を過ぎていたら次のサイクルへ送る */
+function ensureCycle(){
+  let moved=false;
+  if(!S.cycle || !S.cycle.start || S.cycle.place!==place()){ S.cycle=newCycle(todayKey()); moved=true; }
+  let d=dayDiff(S.cycle.start, todayKey());
+  if(d<0){ S.cycle=newCycle(todayKey()); d=0; moved=true; }
+  let guard=0;
+  while(d>=CYCLE && guard++<400){
+    S.cycles=S.cycles||[]; S.cycles.push(cycleSummary());
+    S.cycle=newCycle(addDays(S.cycle.start,CYCLE));
+    d=dayDiff(S.cycle.start, todayKey()); moved=true;
+  }
+  if(moved) save();
+}
+function cycleDates(){ return Array.from({length:CYCLE},(_,i)=>addDays(S.cycle.start,i)); }
+function cycleSummary(){
+  const need=S.cycle.plan.filter(e=>e.t!=="rest").length;
+  const did=cycleDates().filter(k=>S.logs.some(l=>l.date===k)).length;
+  return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE-1), need:need, did:did};
+}
+function cycleDay(){ ensureCycle(); return dayDiff(S.cycle.start,todayKey())+1; }
+function planAt(n){ ensureCycle(); return (n>=1 && n<=CYCLE) ? S.cycle.plan[n-1] : null; }
+function programOf(e){
+  if(!e) return null;
+  if(e.t==="train") return DAYS[S.cycle.place][e.m];
+  if(e.t==="cool")  return COOL_DAY;
+  return null;                       // 休養日
+}
+const dayTitle = e => !e ? "" : e.t==="rest" ? "休養日" : programOf(e).t;
+
+/* 今日より後ろにある休養日。これが振り替えの残り回数になる */
+function restAhead(){
+  const n=cycleDay(), out=[];
+  for(let i=n+1;i<=CYCLE;i++) if(S.cycle.plan[i-1].t==="rest") out.push(i);
+  return out;
+}
+function swapToRest(){
+  const n=cycleDay(), t=restAhead()[0]; if(!t) return;
+  const p=S.cycle.plan, tmp=p[n-1]; p[n-1]=p[t-1]; p[t-1]=tmp;
+  save(); render();
+}
 
 /* ---- 事業者情報（ここだけ直せば書類に反映される） --------------------- */
 const BIZ = {
@@ -973,7 +1041,8 @@ function viewOB(){
    ホーム
    ========================================================================= */
 function viewHome(){
-  const p = todayProgram(), n = dayNumber(), lv = level();
+  const n = cycleDay(), pe = planAt(n), p = programOf(pe), lv = level();
+  const ra = restAhead(), cs = cycleSummary();
   const doneToday = S.logs.some(l=>l.date===todayKey());
   const wk = thisWeekCount(), tgt = weekTarget();
   const now = new Date(); const wd=["日","月","火","水","木","金","土"];
@@ -988,14 +1057,27 @@ function viewHome(){
       <div class="pad">
         <h1 style="margin:2px 0 12px;font-size:25px;font-weight:800;letter-spacing:-.02em">Hello</h1>
 
+        ${pe && pe.t==="rest" ? `
+        <div class="hero rest">
+          <div class="day">DAY ${n} / ${CYCLE}</div>
+          <h2>休養日</h2>
+          <p>今日は空けておく日です。回復もプログラムのうちなので、予定どおり休んでください。<br>
+             ${n+1>CYCLE ? "明日から、次の2週間が始まります。"
+                           : `次は DAY ${n+1}・${esc(dayTitle(planAt(n+1)))} です。`}</p>
+        </div>` : `
         <div class="hero">
           <div class="orb"></div>
-          <div class="day">DAY ${n}</div>
-          <h2>${esc(p.t)}</h2>
+          <div class="day">DAY ${n} / ${CYCLE}${pe&&pe.t==="cool"?" · RECOVERY":""}</div>
+          <h2>${esc(p?p.t:"")}</h2>
           <div class="by">Coaching by <b>NARU</b></div>
           <button class="btn btn-orange" style="margin-top:14px" data-go="train">
             🔥 Today's Training &nbsp;→</button>
         </div>
+        ${doneToday ? "" : ra.length ? `
+          <button class="btn btn-ghost" style="margin-top:9px" data-swap>
+            今日は休む（DAY ${ra[0]} の休養日と振り替える）</button>
+          <p class="swapnote left">振り替えできるのは、あと ${ra.length} 日ぶんです</p>` : `
+          <p class="swapnote out">休養日を使い切りました。今日やらないと、この2週間では取り返せません。</p>`}`}
 
         <div class="seg">
           ${LEVELS.map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">
@@ -1004,7 +1086,7 @@ function viewHome(){
 
         <div class="stats">
           <div class="stat"><div class="v tnum">${streak()}</div><div class="k">STREAK 🔥</div></div>
-          <div class="stat"><div class="v tnum">${wk}<small>/${tgt}</small></div><div class="k">THIS WEEK</div></div>
+          <div class="stat"><div class="v tnum">${cs.did}<small>/${cs.need}</small></div><div class="k">THIS CYCLE</div></div>
           <div class="stat"><div class="v tnum">${S.logs.length}</div><div class="k">TOTAL</div></div>
         </div>
 
@@ -1024,7 +1106,9 @@ function viewHome(){
         </div>
 
         <p class="sub" style="text-align:center;margin-top:14px">
-          次の予定：DAY ${n+1} ${esc(programAt(n+1).t)}
+          ${n>=CYCLE
+            ? `この2週間は今日で最終日です（${cs.did} / ${cs.need} 日 実施）`
+            : `次の予定：DAY ${n+1} ${esc(dayTitle(planAt(n+1)))}`}
         </p>
       </div>
     </div>
@@ -1033,6 +1117,7 @@ function viewHome(){
 }
 
 function coachNote(p, lv, doneToday){
+  if(!p) return "今日は休む日。トレーニングは休んでいる間に効いてくるから、ここで無理をしないのが一番伸びる。";
   if(doneToday) return "今日はもう終えてるね。おつかれさま。回復も練習のうち、しっかり食べて寝よう。";
   const base = {
     easy:"フォーム第一。回数より“効かせる”意識でいこう。",
@@ -1067,7 +1152,20 @@ function videoBlock(exId){
    TRAIN（メニュー表示）
    ========================================================================= */
 function viewTrain(){
-  const p = todayProgram(), lv = level(), n = dayNumber();
+  const p = todayProgram(), lv = level(), n = cycleDay();
+  if(!p){
+    const ra = restAhead();
+    return `<div class="screen on">${topbar()}<div class="scroll"><div class="pad">
+      <div class="hero rest" style="margin-top:4px">
+        <div class="day">DAY ${n} / ${CYCLE}</div>
+        <h2>休養日</h2>
+        <p>今日はメニューがありません。<br>
+          ${ra.length?`どうしても動きたいときは、ホームから ${ra[0]} 日目と振り替えられます。`
+                     :"この2週間の休養日はここが最後です。"}</p>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
+    </div></div>${nav("train")}</div>`;
+  }
   return `<div class="screen on">
     ${topbar()}
     <div class="scroll">
@@ -1569,6 +1667,9 @@ function bind(){
   /* 書類 */
   on("[data-legal]",el=>openLegal(el.dataset.legal));
 
+  /* 休養日との振り替え */
+  on("[data-swap]",()=>swapToRest());
+
   /* チェックリスト */
   on("[data-check]",(el,e)=>{
     // 「?」を押したときは解説を開く（チェックしない）
@@ -1603,7 +1704,7 @@ function bind(){
   });
   on("[data-reset]",()=>{
     if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
-      S={profile:null,logs:[],checks:{},level:null,sets:{}};
+      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[]};
       try{ localStorage.removeItem(KEY); }catch(e){}
       go("lp");
     }
@@ -1654,6 +1755,13 @@ render();
 .setlog input:focus{outline:none}
 .setlog input::placeholder{color:var(--ink-mute);font-weight:700}
 .setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
+.hero.rest{background:var(--surface-alt);color:var(--ink);border:1px solid rgba(34,37,29,.08)}
+.hero.rest .day{color:var(--olive)}
+.hero.rest h2{color:var(--ink)}
+.hero.rest p{margin:9px 0 0;font-size:13px;line-height:1.75;color:var(--ink-soft)}
+.swapnote{text-align:center;margin-top:7px;font-size:12px;line-height:1.6}
+.swapnote.left{color:var(--ink-mute)}
+.swapnote.out{color:#a8431a;font-weight:700}
 .lnk{display:block;width:100%;text-align:left;font-size:13.5px;font-weight:700;
   color:var(--olive-dark);padding:11px 0;border-top:1px solid rgba(34,37,29,.08)}
 .lnk.first{border-top:0}
