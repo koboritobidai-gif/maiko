@@ -695,6 +695,97 @@ function programAt(n){
 }
 function doseOf(item){ return item[level()==="easy"?"e":level()==="hard"?"h":"n"]; }
 
+/* ---- 事業者情報（ここだけ直せば書類に反映される） --------------------- */
+const BIZ = {
+  name : "杉田 成美",
+  email: null,                                   // m2 で作る問い合わせ用アドレス
+  site : null,                                   // 公開後のアプリURL
+  pay  : "https://buy.stripe.com/8x2eVfbugc0e6cw4GF87K00",
+  price: "2週間 3,500円（税込）",
+  made : "2026年10月30日"
+};
+const TBD = t => `<mark>${t}</mark>`;            // 未確定の箇所を目立たせる
+
+const LEGAL = {
+  tokushoho: { t:"特定商取引法に基づく表記", body: () => `
+    <table class="tbl">
+      <tr><th>販売事業者</th><td>${esc(BIZ.name)}</td></tr>
+      <tr><th>運営責任者</th><td>${esc(BIZ.name)}</td></tr>
+      <tr><th>所在地</th><td>ご請求をいただいた場合、遅滞なく開示いたします</td></tr>
+      <tr><th>電話番号</th><td>ご請求をいただいた場合、遅滞なく開示いたします</td></tr>
+      <tr><th>メール</th><td>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</td></tr>
+      <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
+      <tr><th>販売価格</th><td>${esc(BIZ.price)}<br>表示価格はすべて税込です</td></tr>
+      <tr><th>商品代金以外の<br>必要料金</th><td>インターネットの接続料金および通信料金は、お客様のご負担となります</td></tr>
+      <tr><th>支払方法</th><td>クレジットカード（Visa／Mastercard／American Express／JCB ほか）<br>
+        決済代行：Stripe, Inc.</td></tr>
+      <tr><th>支払時期</th><td>お申し込み時に初回分を決済し、以後2週間ごとに自動で決済されます</td></tr>
+      <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
+      <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
+        次回の更新日の前に解約していただくと、以後の課金は停止します。<br>
+        解約の手続きは ${TBD("解約ページのURL")} から行えます。</td></tr>
+      <tr><th>動作環境</th><td>インターネットに接続されたスマートフォン・タブレット・パソコン、
+        および最新版のWebブラウザ</td></tr>
+    </table>` },
+
+  privacy: { t:"プライバシーポリシー", body: () => `
+    <h5>1. 端末内に保存される情報</h5>
+    <p>本アプリは、お客様が入力されたトレーニングの記録（目的・強度などのプロフィール、
+      実施日、種目ごとの重量と回数）を、<b>お客様ご自身の端末内にのみ保存します。</b>
+      これらが当方のサーバーや第三者へ送信されることはありません。</p>
+    <h5>2. 決済に関する情報</h5>
+    <p>お申し込みの決済は Stripe, Inc. が提供する決済ページで行われます。
+      クレジットカード番号などの決済情報は同社が取得・管理し、<b>当方がこれを受け取ることはありません。</b>
+      当方は同社を通じて、お客様の氏名・メールアドレス、および課金の状況を確認します。</p>
+    <h5>3. 利用目的</h5>
+    <p>氏名およびメールアドレスは、会員資格の確認、有料コンテンツの提供に必要なご連絡、
+      ならびにお問い合わせへの対応にのみ利用します。</p>
+    <h5>4. 第三者への提供</h5>
+    <p>法令に基づく場合を除き、お客様の個人情報を第三者に提供することはありません。</p>
+    <h5>5. 保存期間</h5>
+    <p>端末内の記録は、アプリの「診断をやり直す（データ消去）」を実行されるか、
+      ブラウザのデータを消去された時点で削除されます。
+      当方が保有する会員情報は、法令で定められた期間を保存したのち削除します。</p>
+    <h5>6. お問い合わせ</h5>
+    <p>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</p>
+    <h5>7. 改定</h5>
+    <p>本ポリシーは必要に応じて改定することがあります。
+      改定後の内容は、本アプリ上に掲示した時点から効力を生じます。</p>
+    <p class="upd">制定 ${esc(BIZ.made)}　／　事業者 ${esc(BIZ.name)}</p>` },
+
+  notice: { t:"ご利用にあたって", body: () => `
+    <h5>体調について</h5>
+    <p>本アプリが提供するのはトレーニングのプログラムであり、医療行為ではありません。
+      治療中の病気やけががある方、妊娠中の方、医師から運動を止められている方は、
+      <b>必ず主治医にご相談のうえ</b>ご利用ください。</p>
+    <h5>無理をしないでください</h5>
+    <p>痛み、めまい、強い息切れ、気分の悪さを感じた場合は、
+      <b>ただちに中止してください。</b> 表示される重量や回数はあくまで目安です。
+      その日の体調に合わせて、ご自身の判断で軽くしてください。</p>
+    <h5>免責</h5>
+    <p>本アプリの利用によって生じたけがや体調の不良について、
+      当方は責任を負いかねます。安全な環境で、ご自身の責任のもとでお取り組みください。
+      器具を扱う種目では、周囲の安全と器具の固定を必ずご確認ください。</p>
+    <h5>記録の保存について</h5>
+    <p>トレーニングの記録はお使いの端末内にのみ保存されます。
+      <b>機種変更やブラウザのデータ消去を行うと記録は失われます。</b>
+      また、別の端末から同じ記録を見ることはできません。</p>
+    <p class="upd">制定 ${esc(BIZ.made)}</p>` }
+};
+
+function openLegal(k){
+  const d = LEGAL[k]; if(!d) return;
+  if(current==="timer") T.paused=true;
+  backdrop.className="backdrop on";
+  backdrop.innerHTML=`<div class="sheet">
+    <div class="grab"></div>
+    <div class="eyebrow">LEGAL</div>
+    <h2 style="margin:5px 0 12px;font-size:19px;font-weight:800">${esc(d.t)}</h2>
+    <div class="legal">${d.body()}</div>
+    <button class="btn btn-ghost" style="margin-top:20px" data-close>閉じる</button>
+  </div>`;
+}
+
 /* ---- 重量・回数の記録 ------------------------------------------------- */
 /* S.sets = { 種目ID: [ {d:"2026-10-30", w:120, r:6}, ... ] } */
 
@@ -1366,6 +1457,13 @@ function viewSettings(){
           </p>
         </div>
 
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:4px">このアプリについて</div>
+          <button class="lnk first" data-legal="tokushoho">特定商取引法に基づく表記</button>
+          <button class="lnk" data-legal="privacy">プライバシーポリシー</button>
+          <button class="lnk" data-legal="notice">ご利用にあたって（安全のために）</button>
+        </div>
+
         <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
         <button class="btn btn-ghost" style="margin-top:9px;color:#a4442c" data-reset>診断をやり直す（データ消去）</button>
       </div>
@@ -1468,6 +1566,9 @@ function bind(){
   /* 種目詳細 */
   on("[data-ex]",el=>openExercise(el.dataset.ex));
 
+  /* 書類 */
+  on("[data-legal]",el=>openLegal(el.dataset.legal));
+
   /* チェックリスト */
   on("[data-check]",(el,e)=>{
     // 「?」を押したときは解説を開く（チェックしない）
@@ -1553,6 +1654,20 @@ render();
 .setlog input:focus{outline:none}
 .setlog input::placeholder{color:var(--ink-mute);font-weight:700}
 .setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
+.lnk{display:block;width:100%;text-align:left;font-size:13.5px;font-weight:700;
+  color:var(--olive-dark);padding:11px 0;border-top:1px solid rgba(34,37,29,.08)}
+.lnk.first{border-top:0}
+.legal{font-size:13px;line-height:1.85}
+.legal h5{font-size:12.5px;font-weight:800;margin:17px 0 5px;color:var(--olive-dark);
+  letter-spacing:.02em}
+.legal p{margin:0 0 9px}
+.legal .tbl{width:100%;border-collapse:collapse;margin-top:2px}
+.legal .tbl th{width:8.6em;text-align:left;font-weight:700;color:var(--ink-soft);
+  vertical-align:top;padding:8px 10px 8px 0;border-top:1px solid rgba(34,37,29,.08);font-size:12.5px}
+.legal .tbl td{padding:8px 0;border-top:1px solid rgba(34,37,29,.08);vertical-align:top}
+.legal .tbl tr:first-child th,.legal .tbl tr:first-child td{border-top:0}
+.legal mark{background:#f3dfc9;color:#8a4a1d;padding:1px 4px;border-radius:3px;font-weight:700}
+.legal .upd{margin-top:18px;font-size:11.5px;color:var(--ink-mute)}
 .hist{width:100%;border-collapse:collapse;font-size:13px}
 .hist td{padding:6px 0;border-top:1px solid rgba(34,37,29,.08);vertical-align:top;line-height:1.7}
 .hist tr:first-child td{border-top:0}
