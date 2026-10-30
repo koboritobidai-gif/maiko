@@ -105,9 +105,9 @@ export interface PlacementForecastRow {
 export interface PlacementMonthGroup {
   payMonth: string;
   rows: PlacementForecastRow[];
-  /** 月小計(請求書手配済みの行を除く、金額が確定している行の合計)。 */
+  /** 月小計(金額が確定している行の合計。売上シート記載分も含む=経営者指示 2026-10-30)。 */
   subtotalYen: number;
-  /** 小計に含められていない行数(要確認・金額未確定。請求書手配済みは除く)。 */
+  /** 小計に含められていない行数(要確認・金額未確定)。 */
   undeterminedCount: number;
   invoicedCount: number;
 }
@@ -609,7 +609,12 @@ export function markInvoicedPlacements(
   });
 }
 
-/** 入金予定月ごとにグループ化し、月小計を求める(入金月の昇順、月内は入社日順)。 */
+/**
+ * 入金予定月ごとにグループ化し、月小計を求める(入金月の昇順、月内は入社日順)。
+ * 経営者指示(2026-10-30)により、売上シート記載分(invoiced)の金額も月小計に含める
+ * (その月に入ってくる紹介売上の合計として見たいとのこと。同じ金額はトップの入金予定
+ * (金色バー)にも計上されている)。
+ */
 export function groupPlacementsByMonth(rows: PlacementForecastRow[]): PlacementMonthGroup[] {
   const byMonth = new Map<string, PlacementForecastRow[]>();
   for (const row of rows) {
@@ -621,13 +626,12 @@ export function groupPlacementsByMonth(rows: PlacementForecastRow[]): PlacementM
       const sorted = [...monthRows].sort((a, b) =>
         a.hireDate === b.hireDate ? a.name.localeCompare(b.name, "ja") : a.hireDate < b.hireDate ? -1 : 1,
       );
-      const counted = sorted.filter((r) => !r.invoiced);
       return {
         payMonth,
         rows: sorted,
-        subtotalYen: counted.reduce((sum, r) => sum + (r.feeYen ?? 0), 0),
-        undeterminedCount: counted.filter((r) => r.feeYen === undefined).length,
-        invoicedCount: sorted.length - counted.length,
+        subtotalYen: sorted.reduce((sum, r) => sum + (r.feeYen ?? 0), 0),
+        undeterminedCount: sorted.filter((r) => r.feeYen === undefined).length,
+        invoicedCount: sorted.filter((r) => r.invoiced).length,
       };
     });
 }
