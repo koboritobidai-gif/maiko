@@ -29,8 +29,35 @@ export function resolveKpiXlsxFileId(): string {
   return process.env.KPI_XLSX_FILE_ID || DEFAULT_KPI_XLSX_FILE_ID;
 }
 
-/** Drive API でxlsxのバイナリを取得する(バイナリのため data cache は使わず no-store。5分キャッシュは呼び出し側)。 */
+/**
+ * 認証なしの公開ダウンロード(drive.google.com/uc)でxlsxを取得する。
+ * KPI表.xlsxは「リンクを知っている全員」に共有されているため、サービスアカウント・Drive APIの
+ * 有効化なしで取得できる(実地確認済み 2026-10-30)。成功判定はxlsx(zip)のマジックバイト "PK"。
+ * HTMLのログインページ等が返ってきた場合は null を返し、呼び出し側がDrive APIにフォールバックする。
+ */
+async function downloadKpiXlsxPublic(fileId: string): Promise<ArrayBuffer | null> {
+  try {
+    const url = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+    const res = await fetch(url, { cache: "no-store", redirect: "follow" });
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const head = new Uint8Array(buf.slice(0, 2));
+    if (head[0] === 0x50 && head[1] === 0x4b) return buf; // "PK" = zip(xlsx)
+    return null;
+  } catch (error) {
+    console.warn("[kpi-xlsx] 公開ダウンロードに失敗したためDrive APIにフォールバックします:", error);
+    return null;
+  }
+}
+
+/**
+ * KPI表.xlsxのバイナリを取得する(バイナリのため data cache は使わず no-store。5分キャッシュは呼び出し側)。
+ * まず認証なしの公開ダウンロードを試し、ダメなら Drive API(files.get?alt=media)にフォールバックする。
+ */
 export async function downloadKpiXlsx(accessToken: string, fileId: string): Promise<ArrayBuffer> {
+  const publicBuf = await downloadKpiXlsxPublic(fileId);
+  if (publicBuf) return publicBuf;
+
   const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(
     fileId,
   )}?alt=media&supportsAllDrives=true`;
