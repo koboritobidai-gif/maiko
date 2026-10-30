@@ -18,6 +18,7 @@ import { loadCompanyData } from "@/lib/company-data";
 import { loadDataBundle } from "@/lib/data-bundle";
 import { loadReferralInvoices } from "@/lib/invoice-data";
 import { loadMarketingData } from "@/lib/marketing-data";
+import { loadPlacementForecast } from "@/lib/placement-data";
 import { loadRaDailyReports } from "@/lib/ra-report-data";
 import { loadRevenueRecords } from "@/lib/revenue-data";
 import { loadSalesReports } from "@/lib/sales-data";
@@ -61,16 +62,26 @@ export async function GET() {
   // 他のローダーも合わせて温める。1つが失敗・時間切れでも他へ影響しないよう個別に実行する。
   // RA営業日報(#21_raの【営業日報】スレッド)は通常20秒の時間予算で打ち切るが、ここでは45秒かけて
   // 未読分のスレッド返信をより深く読み込ませる(#求職者スレッドと同じ考え方)。
-  const [bundleResult, marketingResult, invoiceResult, revenueResult, salesResult, raReportResult, companyResult] =
-    await Promise.allSettled([
-      loadDataBundle(true),
-      loadMarketingData(true),
-      loadReferralInvoices(true),
-      loadRevenueRecords(true),
-      loadSalesReports(true),
-      loadRaDailyReports(true, { timeBudgetMs: 45_000 }),
-      loadCompanyData(true),
-    ]);
+  // 入社決定の入金予定は、上で読み込み済みの求職者スレッドを使って年収の読取まで温める。
+  const [
+    bundleResult,
+    marketingResult,
+    invoiceResult,
+    revenueResult,
+    salesResult,
+    raReportResult,
+    companyResult,
+    placementResult,
+  ] = await Promise.allSettled([
+    loadDataBundle(true),
+    loadMarketingData(true),
+    loadReferralInvoices(true),
+    loadRevenueRecords(true),
+    loadSalesReports(true),
+    loadRaDailyReports(true, { timeBudgetMs: 45_000 }),
+    loadCompanyData(true),
+    loadPlacementForecast(async () => threadsResult, true),
+  ]);
 
   return NextResponse.json({
     ok: true,
@@ -90,5 +101,8 @@ export async function GET() {
     raReportsSkipped: raReportResult.status === "fulfilled" ? raReportResult.value.skippedCount : 0,
     companyStatus: statusOf(companyResult, (v) => v.status),
     contractsStatus: statusOf(companyResult, (v) => v.contracts.status),
+    // 入社決定の入金予定は件数・ステータスのみ(氏名・金額などの業務データは返さない)。
+    placementStatus: statusOf(placementResult, (v) => v.status),
+    placementCount: placementResult.status === "fulfilled" ? placementResult.value.rows.length : 0,
   });
 }

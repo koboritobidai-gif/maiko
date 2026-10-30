@@ -6,7 +6,7 @@
 import type { SourceStatus } from "./types";
 
 const LABELS: Record<
-  "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports",
+  "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports" | "placements",
   Record<SourceStatus, string>
 > = {
   sheets: {
@@ -44,11 +44,17 @@ const LABELS: Record<
     demo: "営業日報(デモ)",
     "live-error": "営業日報(接続エラー・デモ表示)",
   },
+  placements: {
+    live: "入社決定(連携中)",
+    demo: "入社決定(デモ)",
+    // 入社決定の入金予定は業務金額のため、エラー時はデモで埋めず空表示にする(他と文言が異なる)。
+    "live-error": "入社決定(未取得)",
+  },
 };
 
 /** ダッシュボードのソースバッジに出す文言を返す。 */
 export function sourceBadgeLabel(
-  kind: "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports",
+  kind: "sheets" | "slack" | "marketing" | "invoices" | "revenue" | "sales" | "raReports" | "placements",
   status: SourceStatus,
 ): string {
   return LABELS[kind][status];

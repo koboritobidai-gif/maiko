@@ -88,9 +88,10 @@ interface SlackPermalinkResponse extends SlackApiResponseBase {
   permalink?: string;
 }
 
-interface SlackFile {
+export interface SlackFile {
   id?: string;
   name?: string;
+  title?: string;
   filetype?: string;
   size?: number;
   url_private?: string;
@@ -119,7 +120,7 @@ function tsToDate(ts: string): Date {
   return new Date(Number(ts.split(".")[0]) * 1000);
 }
 
-function isPdfFile(file: SlackFile): boolean {
+export function isPdfFile(file: SlackFile): boolean {
   if (file.filetype === "pdf") return true;
   return (file.name ?? "").toLowerCase().endsWith(".pdf");
 }
@@ -367,6 +368,46 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string | null> {
   }
 }
 
+/**
+ * SlackのPDFのダウンロード+テキスト抽出を、Next.jsのデータキャッシュ(`unstable_cache`)に30日保存する。
+ * SlackのPDFはファイルIDに対して内容が不変(同じファイルが差し替わることはない)なため、
+ * 一度読めたPDFはコールドスタートのたびに再ダウンロード・再パースする必要がない。
+ * バイナリそのものはキャッシュに入れず(データキャッシュの2MBサイズ制限があるため)、
+ * 抽出後のテキスト(小さいデータ)だけを保存する。
+ * キャッシュキーには `file.id`(無ければURL)のみを使い、Bot Token はこの関数のクロージャで
+ * 参照するだけでキャッシュ関数の引数には渡さない(unstable_cacheは引数もキーの一部にするため、
+ * 秘密情報をキャッシュキーに含めないための工夫)。
+ * ダウンロード・抽出に失敗した場合はエラーをそのまま投げ、キャッシュには保存しない
+ * (失敗結果が30日居座って再取得できなくなるのを避ける)。
+ * 請求書(SlackInvoiceSource)のほか、入社決定の入金予定(労働条件通知書の年収読取。
+ * adapters/placement-income.ts)からも共用する。
+ */
+export function getCachedSlackPdfText(file: SlackFile, url: string, botToken: string): Promise<string | null> {
+  const fileKey = file.id ?? url;
+  const download = unstable_cache(
+    async (): Promise<string | null> => {
+      if (file.size && file.size > MAX_PDF_BYTES) {
+        throw new Error(`ファイルサイズが上限(8MB)を超えています(${file.size}バイト)。`);
+      }
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${botToken}` },
+        cache: "no-store", // ダウンロード自体はfetchキャッシュを使わず、抽出結果側をunstable_cacheで保存する
+      });
+      if (!res.ok) {
+        throw new Error(`ファイルのダウンロードに失敗しました(status ${res.status})。`);
+      }
+      const buffer = await res.arrayBuffer();
+      if (buffer.byteLength > MAX_PDF_BYTES) {
+        throw new Error(`ファイルサイズが上限(8MB)を超えています(${buffer.byteLength}バイト)。`);
+      }
+      return extractPdfText(buffer);
+    },
+    ["invoice-pdf-text", fileKey],
+    { revalidate: 30 * 24 * 60 * 60 },
+  );
+  return download();
+}
+
 interface SlackInvoiceConfig {
   botToken?: string;
   /** #請求書チャンネルのID */
@@ -405,42 +446,9 @@ export class SlackInvoiceSource implements InvoiceSource {
     }
   }
 
-  /**
-   * PDFのダウンロード+テキスト抽出を、Next.jsのデータキャッシュ(`unstable_cache`)に30日保存する。
-   * SlackのPDFはファイルIDに対して内容が不変(同じファイルが差し替わることはない)なため、
-   * 一度読めたPDFはコールドスタートのたびに再ダウンロード・再パースする必要がない。
-   * バイナリそのものはキャッシュに入れず(データキャッシュの2MBサイズ制限があるため)、
-   * 抽出後のテキスト(小さいデータ)だけを保存する。
-   * キャッシュキーには `file.id`(無ければURL)のみを使い、Bot Token はこの関数のクロージャで
-   * 参照するだけでキャッシュ関数の引数には渡さない(unstable_cacheは引数もキーの一部にするため、
-   * 秘密情報をキャッシュキーに含めないための工夫)。
-   * ダウンロード・抽出に失敗した場合はエラーをそのまま投げ、キャッシュには保存しない
-   * (失敗結果が30日居座って再取得できなくなるのを避ける)。
-   */
+  /** PDFのダウンロード+テキスト抽出(30日キャッシュ)。実体はモジュール関数 getCachedSlackPdfText。 */
   private getCachedPdfText(file: SlackFile, url: string, botToken: string): Promise<string | null> {
-    const fileKey = file.id ?? url;
-    const download = unstable_cache(
-      async (): Promise<string | null> => {
-        if (file.size && file.size > MAX_PDF_BYTES) {
-          throw new Error(`ファイルサイズが上限(8MB)を超えています(${file.size}バイト)。`);
-        }
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${botToken}` },
-          cache: "no-store", // ダウンロード自体はfetchキャッシュを使わず、抽出結果側をunstable_cacheで保存する
-        });
-        if (!res.ok) {
-          throw new Error(`ファイルのダウンロードに失敗しました(status ${res.status})。`);
-        }
-        const buffer = await res.arrayBuffer();
-        if (buffer.byteLength > MAX_PDF_BYTES) {
-          throw new Error(`ファイルサイズが上限(8MB)を超えています(${buffer.byteLength}バイト)。`);
-        }
-        return extractPdfText(buffer);
-      },
-      ["invoice-pdf-text", fileKey],
-      { revalidate: 30 * 24 * 60 * 60 },
-    );
-    return download();
+    return getCachedSlackPdfText(file, url, botToken);
   }
 
   /** 1件のPDFファイルを ReferralInvoice に変換する。ダウンロード・解析に失敗してもエラーにせず、

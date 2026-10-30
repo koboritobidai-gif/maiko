@@ -10,6 +10,8 @@ import {
   getPrimaryMonthSnapshots,
   getRevenueSummary,
 } from "@/lib/metrics";
+import { markInvoicedPlacements } from "@/lib/placement-calc";
+import { loadPlacementForecast, placementDataTimeoutFallback } from "@/lib/placement-data";
 import { loadRaDailyReports, raReportDataTimeoutFallback } from "@/lib/ra-report-data";
 import { loadRevenueRecords, revenueDataTimeoutFallback } from "@/lib/revenue-data";
 import { loadSalesReports, salesDataTimeoutFallback } from "@/lib/sales-data";
@@ -34,16 +36,28 @@ const LOADER_TIMEOUT_MS = 25_000;
 
 export default async function TodayDashboardPage() {
   const now = new Date();
-  const [bundle, marketingResult, threadsResult, invoicesResult, revenueResult, salesResult, raReportResult] =
-    await Promise.all([
-      withTimeout(loadDataBundle(), LOADER_TIMEOUT_MS, dataBundleTimeoutFallback),
-      withTimeout(loadMarketingData(), LOADER_TIMEOUT_MS, marketingDataTimeoutFallback),
-      withTimeout(loadCandidateThreads(), LOADER_TIMEOUT_MS, candidateThreadsTimeoutFallback),
-      withTimeout(loadReferralInvoices(), LOADER_TIMEOUT_MS, invoiceDataTimeoutFallback),
-      withTimeout(loadRevenueRecords(), LOADER_TIMEOUT_MS, revenueDataTimeoutFallback),
-      withTimeout(loadSalesReports(), LOADER_TIMEOUT_MS, salesDataTimeoutFallback),
-      withTimeout(loadRaDailyReports(), LOADER_TIMEOUT_MS, raReportDataTimeoutFallback),
-    ]);
+  // 求職者スレッドの読み込みは、入社決定の入金予定(労働条件通知書の年収読取)でも使うため、
+  // Promiseを共有して二重にSlackを読みに行かないようにする。
+  const threadsPromise = withTimeout(loadCandidateThreads(), LOADER_TIMEOUT_MS, candidateThreadsTimeoutFallback);
+  const [
+    bundle,
+    marketingResult,
+    threadsResult,
+    invoicesResult,
+    revenueResult,
+    salesResult,
+    raReportResult,
+    placementResult,
+  ] = await Promise.all([
+    withTimeout(loadDataBundle(), LOADER_TIMEOUT_MS, dataBundleTimeoutFallback),
+    withTimeout(loadMarketingData(), LOADER_TIMEOUT_MS, marketingDataTimeoutFallback),
+    threadsPromise,
+    withTimeout(loadReferralInvoices(), LOADER_TIMEOUT_MS, invoiceDataTimeoutFallback),
+    withTimeout(loadRevenueRecords(), LOADER_TIMEOUT_MS, revenueDataTimeoutFallback),
+    withTimeout(loadSalesReports(), LOADER_TIMEOUT_MS, salesDataTimeoutFallback),
+    withTimeout(loadRaDailyReports(), LOADER_TIMEOUT_MS, raReportDataTimeoutFallback),
+    withTimeout(loadPlacementForecast(() => threadsPromise), LOADER_TIMEOUT_MS, placementDataTimeoutFallback),
+  ]);
   const summary = getDashboardSummary(bundle, now);
   // 画面表示用: Slack「#求職者」スレッドの「面談実施」報告から面談日を補完(シートO列の手入力があれば優先)。
   const candidates = fillInterviewDatesFromSlack(bundle.candidates, threadsResult.threads);
@@ -92,6 +106,9 @@ export default async function TodayDashboardPage() {
   ]
     .map(([monthKey, totalYen]) => ({ monthKey, totalYen }))
     .sort((a, b) => (a.monthKey < b.monthKey ? -1 : 1));
+  // 入社決定の入金予定(見込み)。売上シートの同じ入金月に同じ求職者名があれば「請求書手配済み」とする
+  // (二重に期待しないよう月小計から除く)。
+  const placementRows = markInvoicedPlacements(placementResult.rows, revenueResult.records);
   // CA別の月次実績・面談数(#求職者スレッドから自動集計。直近6ヶ月・今月が先頭。対象CAは CA_NAMES
   // 固定リスト)。コールドスタート等でスレッド読み込みが不完全なとき(0件へ落ち込むのを防ぐため)は
   // 最後に完全読み込みできたときの最終確定値(thread-stats.ts)へフォールバックする。
@@ -166,6 +183,13 @@ export default async function TodayDashboardPage() {
       upcomingRevenue={upcomingRevenue}
       revenueStatus={revenueResult.status}
       revenueErrorMessage={revenueResult.errorMessage}
+      placements={{
+        rows: placementRows,
+        status: placementResult.status,
+        shareNeeded: placementResult.shareNeeded,
+        warnings: placementResult.warnings,
+        errorMessage: placementResult.errorMessage,
+      }}
       primaryMonths={primaryMonths}
       caStats={caStats}
       salesStats={salesStats}

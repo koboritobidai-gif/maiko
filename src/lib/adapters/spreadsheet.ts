@@ -189,7 +189,9 @@ function buildSignedJwt(key: GoogleServiceAccountKey): string {
     // 企業・求人ページ(送客可能企業リスト)の状態更新・行追加をアプリから書き込むため、読み取り専用
     // scope(spreadsheets.readonly)から書き込み可能な scope に変更している。閲覧者権限しか無い
     // シート(求人マトリックス等、読み取り専用のシート)への読み取りは従来どおり可能。
-    scope: "https://www.googleapis.com/auth/spreadsheets",
+    // drive.readonly は、Drive上のExcelファイル(KPI表.xlsx。adapters/kpi-xlsx.ts)をダウンロードするために追加
+    // (複数scopeはスペース区切り。Sheetsの読み書きには影響しない。サービスアカウント側のDrive API有効化が必要)。
+    scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly",
     aud: "https://oauth2.googleapis.com/token",
     iat: nowSec,
     exp: nowSec + 3600,

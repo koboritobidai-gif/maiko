@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import KpiCard from "@/components/KpiCard";
+import PlacementForecastSection from "@/components/PlacementForecastSection";
 import ProgressBar from "@/components/ProgressBar";
 import RaReportSection from "@/components/RaReportSection";
 import SourceBadge from "@/components/SourceBadge";
@@ -14,6 +15,7 @@ import type {
   PrimaryMonthSnapshot,
   RevenueMonthSummary,
 } from "@/lib/metrics";
+import type { PlacementForecastRow } from "@/lib/placement-calc";
 import type { SalesMonthlyStats } from "@/lib/sales-stats";
 import type { CaMonthlyStats } from "@/lib/slack-ca-stats";
 import { sourceBadgeLabel } from "@/lib/source-status";
@@ -322,6 +324,14 @@ interface DashboardViewProps {
   upcomingRevenue: { monthKey: string; totalYen: number }[];
   revenueStatus: SourceStatus;
   revenueErrorMessage?: string;
+  /** 入社決定の入金予定(見込み)。KPI表.xlsxの入社日確定者×企業一覧の契約条件×労働条件通知書の年収。 */
+  placements: {
+    rows: PlacementForecastRow[];
+    status: SourceStatus;
+    shareNeeded: boolean;
+    warnings: string[];
+    errorMessage?: string;
+  };
   /** 主要指標セクションの月選択用スナップショット(直近6ヶ月、今月が先頭)。 */
   primaryMonths: PrimaryMonthSnapshot[];
   /** CA別の月次実績(#求職者スレッドから自動集計。直近6ヶ月、今月が先頭)。 */
@@ -355,6 +365,7 @@ export default function DashboardView({
   upcomingRevenue,
   revenueStatus,
   revenueErrorMessage,
+  placements,
   primaryMonths,
   caStats,
   salesStats,
@@ -664,6 +675,17 @@ export default function DashboardView({
           </div>
         )}
       </section>
+      )}
+
+      {/* 1.2 入社決定の入金予定(見込み)。入金予定(金色バー)の直下に常時表示する【全体】 */}
+      {group === "全体" && (
+        <PlacementForecastSection
+          rows={placements.rows}
+          status={placements.status}
+          shareNeeded={placements.shareNeeded}
+          warnings={placements.warnings}
+          errorMessage={placements.errorMessage}
+        />
       )}
 
       {/* 1.5 集客・広告(直近6ヶ月の月選択)【マーケティング】 */}
