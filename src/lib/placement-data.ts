@@ -12,6 +12,11 @@
  * 接続エラー)は、業務金額をデモで埋めると誤認を招くため、デモへは逃がさず「空+status: live-error」
  * とし(console.warn はするがページは落とさない)、画面側が共有案内などを控えめに表示する。
  * 企業一覧シート・Slackだけが読めない場合は、読めた範囲(入社日確定者の一覧)を出しつつ警告を添える。
+ *
+ * 見込み報酬の決定優先順位: ①アプリ上で選択して確定した内容(placement-decisions.ts。連携シートに保存)
+ * > ②placement-fee-overrides.ts(コード内手動補正) > ③契約条件・年収からの自動判定。
+ * ①は5分キャッシュの外側で毎回重ねる(キャッシュするのは①を含まない行)。選択の保存直後に、
+ * KPI表・Slackを読み直さず(=時間予算を使わず)すぐ画面へ反映できるようにするため。
  */
 import { fetchContractCompanies } from "./adapters/company-directory";
 import type { ContractCompany } from "./adapters/company-directory";
@@ -21,6 +26,7 @@ import { getAccessToken } from "./adapters/spreadsheet";
 import type { CandidateThreadsResult } from "./candidate-threads";
 import { isNextDynamicUsageError } from "./next-dynamic-usage-error";
 import {
+  applyFeeDecision,
   buildForecastRow,
   findCompanyMatch,
   normalizePersonName,
@@ -29,6 +35,7 @@ import {
   todayJstKey,
 } from "./placement-calc";
 import type { ExtractedIncome, KpiPlacement, PlacementForecastRow } from "./placement-calc";
+import { decisionsByKey, loadPlacementDecisions, placementDecisionKey } from "./placement-decisions";
 import { PLACEMENT_FEE_OVERRIDES } from "./placement-fee-overrides";
 import type { SourceStatus } from "./types";
 import { TIMEOUT_FALLBACK_MESSAGE, withTimeout } from "./with-timeout";
@@ -206,7 +213,7 @@ export async function loadPlacementForecast(
   forceRefresh = false,
 ): Promise<PlacementDataResult> {
   if (!forceRefresh && cache && cache.expiresAt > Date.now()) {
-    return cache.result;
+    return withDecisions(cache.result);
   }
   const now = new Date();
   const result = isDataModeLive() ? await loadLive(getThreads, now) : loadDemoPlacements(now);
@@ -214,7 +221,19 @@ export async function loadPlacementForecast(
     result,
     expiresAt: Date.now() + (result.status === "live-error" || result.warnings.length > 0 ? ERROR_CACHE_MS : CACHE_MS),
   };
-  return result;
+  return withDecisions(result);
+}
+
+/** キャッシュ済みの行(決定を含まない)に、シート保存の決定(①)を重ねる。 */
+async function withDecisions(result: PlacementDataResult): Promise<PlacementDataResult> {
+  if (result.rows.length === 0) return result;
+  const { decisions, warning } = await loadPlacementDecisions();
+  const byKey = decisionsByKey(decisions);
+  return {
+    ...result,
+    rows: result.rows.map((row) => applyFeeDecision(row, byKey.get(placementDecisionKey(row.name, row.company)))),
+    warnings: warning ? [...result.warnings, warning] : result.warnings,
+  };
 }
 
 /**

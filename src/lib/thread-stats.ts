@@ -116,7 +116,7 @@ async function readSavedThreadStats(useMemoryCache: boolean): Promise<SavedThrea
  * (JSON文字列。日付らしき部分文字列や数式らしき "=" 始まりを含みうる)がGoogle Sheets側で日付や
  * 数式として解釈されてしまう恐れがあるため。
  */
-async function putSheetValue(sheetId: string, range: string, value: string, accessToken: string): Promise<Response> {
+export async function putSheetValue(sheetId: string, range: string, value: string, accessToken: string): Promise<Response> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(
     sheetId,
   )}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
@@ -128,18 +128,21 @@ async function putSheetValue(sheetId: string, range: string, value: string, acce
   });
 }
 
-/** `spreadsheets:batchUpdate` の addSheet でタブ「アプリ保存用」を新規作成する。 */
-async function createSaveTab(sheetId: string, accessToken: string): Promise<void> {
+/**
+ * `spreadsheets:batchUpdate` の addSheet で保存用タブを新規作成する(既定は「アプリ保存用」。
+ * placement-decisions.ts など別の保存用タブからも再利用する)。
+ */
+export async function createSaveTab(sheetId: string, accessToken: string, tabTitle: string = SAVE_TAB): Promise<void> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`;
   const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ requests: [{ addSheet: { properties: { title: SAVE_TAB } } }] }),
+    body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tabTitle } } }] }),
     cache: "no-store",
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`タブ「${SAVE_TAB}」の作成に失敗しました(status ${res.status}): ${text.slice(0, 300)}`);
+    throw new Error(`タブ「${tabTitle}」の作成に失敗しました(status ${res.status}): ${text.slice(0, 300)}`);
   }
 }
 

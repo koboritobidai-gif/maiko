@@ -7,18 +7,37 @@
  * - 入金予定月 = 入社月の翌月(例: 11月入社→12月末入金)
  * - 金額は契約条件の額面(税抜)
  */
+import type { PlacementFeeDecision } from "./placement-decisions";
 import type { PlacementFeeOverride } from "./placement-fee-overrides";
 import type { RevenueRecord } from "./types";
+
+/** アプリ上で確定できる固定額の上限(円)。画面入力・API・保存データの検証で共通に使う。 */
+export const MAX_FEE_YEN = 10_000_000;
 
 // ─────────────────────────────────────────────
 // 型
 // ─────────────────────────────────────────────
 
+/**
+ * 条件付き契約の選択肢1つ(率 or 固定額)。label は契約内容の原文で直前にある条件語
+ * (例: 「営業他:30%・事務職:一律40万」の「営業他」「事務職」、「未経験:70万円」の「未経験」)。取れなければ undefined。
+ */
+export type FeeOption =
+  | { kind: "rate"; ratePercent: number; label?: string }
+  | { kind: "fixed"; amountYen: number; label?: string };
+
 /** 契約内容の解釈結果。条件が複数あるものは自動で確定させず conditional とする。 */
 export type FeeTerms =
   | { kind: "rate"; ratePercent: number; text: string }
   | { kind: "fixed"; amountYen: number; text: string }
-  | { kind: "conditional"; text: string; rateCandidates: number[]; fixedCandidatesYen: number[] }
+  | {
+      kind: "conditional";
+      text: string;
+      rateCandidates: number[];
+      fixedCandidatesYen: number[];
+      /** 率・固定額の候補を原文の出現順に並べたもの(条件ラベル付き)。 */
+      options: FeeOption[];
+    }
   /** 数字(%・万)が読み取れない/契約内容が空。 */
   | { kind: "unknown"; text: string };
 
@@ -57,6 +76,8 @@ export interface PlacementForecastRow {
   ratePercent?: number;
   rateCandidates: number[];
   fixedCandidatesYen: number[];
+  /** 条件付き契約の選択肢(条件ラベル付き。UIの選択チップ用。conditional 以外は空)。 */
+  feeOptions: FeeOption[];
   annualIncomeYen?: number;
   /** 年収の抽出根拠(未取得なら undefined)。 */
   incomeBasis?: string;
@@ -65,12 +86,15 @@ export interface PlacementForecastRow {
   feeYen?: number;
   /** 条件付き契約で、年収が取れている場合の「率候補ごとの金額」。 */
   rateFeeCandidates: { ratePercent: number; feeYen?: number }[];
-  feeSource?: "rate" | "fixed" | "manual";
+  /** decision = アプリ上で選択・確定した内容(placement-decisions.ts。最優先)、manual = コード内の手動補正。 */
+  feeSource?: "rate" | "fixed" | "manual" | "decision";
   /** 人の確認が必要か(条件付き契約・年収未取得・契約条件未登録など)。 */
   needsReview: boolean;
   reviewReason?: string;
   /** 手動補正(placement-fee-overrides.ts)を適用した場合のメモ。 */
   overrideNote?: string;
+  /** アプリ上で選択・確定済みの内容(シート保存の決定)。未確定なら undefined。 */
+  decision?: PlacementFeeDecision;
   /** Slack「#求職者」スレッドへのリンク(見つかった場合のみ)。 */
   threadUrl?: string;
   /** 売上シートに同じ求職者名が同じ入金月で載っている(=請求書手配済み。月小計に含めない)。 */
@@ -124,15 +148,81 @@ const CONDITION_WORD_RE = /未経験|経験者|経験あり|経験なし|職種|
 const RATE_RE = /(?<![\d.])(\d{1,2}(?:\.\d)?)\s*%/g;
 const FIXED_RE = /(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*万/g;
 
-function uniq<T>(values: T[]): T[] {
-  return [...new Set(values)];
+/** 条件ラベルの区切り(項目の切れ目)。NFKC後の文字で判定する(「、」「・」は全角のまま残る)。 */
+const LABEL_SEPARATOR_RE = /[、,，・･/;；\n\r]/;
+/** ラベルの末尾に付く、条件語ではない語(「事務職は」「営業一律」「年収の」など)。 */
+const LABEL_TRAILING_RE = /(?:の場合|の時|のとき|なら|であれば|は|が|を|一律|固定|紹介料|成功報酬|報酬|(?:想定|理論)?年収の?|:)$/;
+/** ラベルとして採用しない語(別の語句の切れ端)。 */
+const LABEL_REJECT_RE = /^(?:円|万円|但し|ただし|場合|以上|以下|年収|報酬|契約|条件|※.*)$|^[\d.,%万円\s]+$/;
+
+/** 括弧の外にある区切り(separator)で文字列を分割する(「経験者(3年、実務)」のような括弧内は割らない)。 */
+function splitOutsideParens(text: string, separator: RegExp): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of text) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && separator.test(ch)) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  parts.push(current);
+  return parts;
+}
+
+/**
+ * 候補(%・N万)の直前のテキスト(前の候補の終わりから、この候補の直前まで)から条件ラベルを取り出す。
+ * - 「:」があればその直前の項目(例: 「・事務職:一律」→「事務職」、「円、経験者(3年実務):」→「経験者(3年実務)」)
+ * - 「:」が無ければ、直前の項目(区切り・空白の後ろ。例: 「未経験」「/経験者」)
+ * 取れない/条件語らしくない場合は undefined(呼び出し側は「35%」「固定¥N」表記にする)。
+ */
+export function extractOptionLabel(gap: string): string | undefined {
+  const colon = gap.lastIndexOf(":");
+  const head = colon >= 0 ? gap.slice(0, colon) : gap;
+  const separator = colon >= 0 ? LABEL_SEPARATOR_RE : /[\s、,，・･/;；]/;
+  const pieces = splitOutsideParens(head, separator)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  let label = pieces[pieces.length - 1] ?? "";
+  label = label.replace(/^[円%\s]+/, "");
+  for (let guard = 0; guard < 5 && LABEL_TRAILING_RE.test(label); guard++) {
+    label = label.replace(LABEL_TRAILING_RE, "").trim();
+  }
+  // 括弧の途中から切り出した場合の対応の取れない括弧(「(未経験」→「未経験」)を外す。
+  const opens = (label.match(/\(/g) ?? []).length;
+  const closes = (label.match(/\)/g) ?? []).length;
+  if (opens > closes) label = label.replace(/^\(+/, "").trim();
+  else if (closes > opens) label = label.replace(/\)+$/, "").trim();
+  if (label.length < 1 || label.length > 24) return undefined;
+  if (!/\p{L}/u.test(label) || LABEL_REJECT_RE.test(label)) return undefined;
+  return label;
+}
+
+/** 候補をキー(種別+値)で重複排除する。後の記述にだけラベルがあればそのラベルを採用する。 */
+function dedupeOptions(options: FeeOption[]): FeeOption[] {
+  const result: FeeOption[] = [];
+  for (const option of options) {
+    const existing = result.find((o) =>
+      option.kind === "rate"
+        ? o.kind === "rate" && o.ratePercent === option.ratePercent
+        : o.kind === "fixed" && o.amountYen === option.amountYen,
+    );
+    if (!existing) result.push(option);
+    else if (!existing.label && option.label) existing.label = option.label;
+  }
+  return result;
 }
 
 /**
  * 企業一覧シートの契約内容(自由記述)を解釈する。
  * - 単一の%のみ → rate型(例: 「35％」「35％　分割支払い」)
  * - 単一の「N万」のみ → fixed型(例: 「一律50万」)
- * - 複数条件(未経験/経験者/職種別/①②の列挙 等) → conditional型(原文を保持し、率候補・固定額候補を両方返す)
+ * - 複数条件(未経験/経験者/職種別/①②の列挙 等) → conditional型(原文を保持し、率候補・固定額候補を両方返す。
+ *   各候補には直前の条件語を label として付ける。例: 「営業他：30％・事務職：一律40万」→「営業他」30%・「事務職」40万)
  * - 数字が読み取れない → unknown型
  */
 export function parseFeeTerms(raw: string): FeeTerms {
@@ -140,17 +230,43 @@ export function parseFeeTerms(raw: string): FeeTerms {
   const markerCount = (text.match(ENUM_MARKER_RE) ?? []).length;
   // ②30％ のように項目番号が数字に潰れて「230%」にならないよう、NFKCの前に区切り文字へ置き換える。
   const normalized = text.replace(ENUM_MARKER_RE, " ").normalize("NFKC");
-  const rates = uniq([...normalized.matchAll(RATE_RE)].map((m) => Number(m[1])));
-  const fixed = uniq(
-    [...normalized.matchAll(FIXED_RE)]
-      .map((m) => Math.round(Number(m[1].replace(/,/g, "")) * 10_000))
-      .filter((yen) => yen > 0),
+
+  // 率・固定額の候補を原文の出現位置つきで集め、位置順に並べる(直前の条件語をラベルにするため)。
+  const found: { index: number; end: number; option: FeeOption }[] = [];
+  for (const m of normalized.matchAll(RATE_RE)) {
+    found.push({
+      index: m.index ?? 0,
+      end: (m.index ?? 0) + m[0].length,
+      option: { kind: "rate", ratePercent: Number(m[1]) },
+    });
+  }
+  for (const m of normalized.matchAll(FIXED_RE)) {
+    const amountYen = Math.round(Number(m[1].replace(/,/g, "")) * 10_000);
+    if (amountYen <= 0) continue;
+    found.push({
+      index: m.index ?? 0,
+      end: (m.index ?? 0) + m[0].length,
+      option: { kind: "fixed", amountYen },
+    });
+  }
+  found.sort((a, b) => a.index - b.index);
+  let previousEnd = 0;
+  const options = dedupeOptions(
+    found.map(({ index, end, option }) => {
+      const label = extractOptionLabel(normalized.slice(previousEnd, index));
+      previousEnd = end;
+      return label ? { ...option, label } : option;
+    }),
   );
+  const rates = options.flatMap((o) => (o.kind === "rate" ? [o.ratePercent] : []));
+  const fixed = options.flatMap((o) => (o.kind === "fixed" ? [o.amountYen] : []));
   const count = rates.length + fixed.length;
   if (count === 0) return { kind: "unknown", text };
 
   const isConditional = count >= 2 || markerCount >= 2 || CONDITION_WORD_RE.test(normalized);
-  if (isConditional) return { kind: "conditional", text, rateCandidates: rates, fixedCandidatesYen: fixed };
+  if (isConditional) {
+    return { kind: "conditional", text, rateCandidates: rates, fixedCandidatesYen: fixed, options };
+  }
   if (rates.length === 1) return { kind: "rate", ratePercent: rates[0], text };
   return { kind: "fixed", amountYen: fixed[0], text };
 }
@@ -338,7 +454,11 @@ export interface BuildRowInput {
 
 const yen = (n: number) => Math.round(n);
 
-/** 契約条件・年収・手動補正から1人分の行(見込み報酬・要確認フラグ)を組み立てる。 */
+/**
+ * 契約条件・年収・手動補正から1人分の行(見込み報酬・要確認フラグ)を組み立てる。
+ * アプリ上で選択した決定(シート保存)は、ここでは扱わず applyFeeDecision で後から重ねる
+ * (決定の保存直後に、Slack等を読み直さず画面へ反映できるようにするため)。
+ */
 export function buildForecastRow(input: BuildRowInput): PlacementForecastRow {
   const { placement, company, override } = input;
   const terms: FeeTerms | undefined = company ? parseFeeTerms(company.contractTerms) : undefined;
@@ -362,6 +482,7 @@ export function buildForecastRow(input: BuildRowInput): PlacementForecastRow {
     contractUnconfirmed: company ? !company.isContracted : false,
     rateCandidates: terms?.kind === "conditional" ? terms.rateCandidates : [],
     fixedCandidatesYen: terms?.kind === "conditional" ? terms.fixedCandidatesYen : [],
+    feeOptions: terms?.kind === "conditional" ? terms.options : [],
     annualIncomeYen: income?.annualIncomeYen,
     incomeBasis: income?.basis,
     incomeEstimated: income?.estimated ?? false,
@@ -417,6 +538,36 @@ export function buildForecastRow(input: BuildRowInput): PlacementForecastRow {
 
   row.needsReview = true;
   row.reviewReason = "契約内容から報酬条件(%・金額)を読み取れません";
+  return row;
+}
+
+/**
+ * アプリ上で選択・確定した決定(シート保存。placement-decisions.ts)を行へ重ねる。
+ * 見込み報酬の決定優先順位は ①シート保存の決定(この関数) > ②placement-fee-overrides.ts(コード内手動補正)
+ * > ③契約条件・年収からの自動判定。決定が無ければ行をそのまま返す。
+ * - fixed: 決定の金額を確定額とする。
+ * - rate: 年収が取れていれば 年収×率 で確定する。年収が未取得なら要確認は外すが金額は未確定のまま
+ *   (小計には入れない。年収が取れ次第、次回の読み込みで自動的に金額が入る)。
+ */
+export function applyFeeDecision(row: PlacementForecastRow, decision: PlacementFeeDecision | undefined): PlacementForecastRow {
+  if (!decision) return row;
+  const decided: PlacementForecastRow = {
+    ...row,
+    decision,
+    needsReview: false,
+    reviewReason: undefined,
+    overrideNote: row.feeSource === "manual" ? undefined : row.overrideNote,
+  };
+  if (decision.type === "fixed" && decision.feeYen !== undefined) {
+    return { ...decided, feeYen: yen(decision.feeYen), feeSource: "decision" };
+  }
+  if (decision.type === "rate" && decision.ratePercent !== undefined) {
+    const withRate = { ...decided, ratePercent: decision.ratePercent };
+    return row.annualIncomeYen !== undefined
+      ? { ...withRate, feeYen: yen((row.annualIncomeYen * decision.ratePercent) / 100), feeSource: "decision" }
+      : { ...withRate, feeYen: undefined, feeSource: undefined };
+  }
+  // 値の欠けた壊れた決定は無視する(要確認のまま)。
   return row;
 }
 

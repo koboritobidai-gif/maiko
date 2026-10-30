@@ -5,14 +5,22 @@
  * KPI表.xlsxで入社日が確定した人ごとに、契約条件(%or固定額)×年収(労働条件通知書)から見込み報酬を出し、
  * 入社月の翌月=入金予定月ごとにまとめて小計を表示する(計算は src/lib/placement-calc.ts、
  * 取得は src/lib/placement-data.ts)。行数は少ない想定のため折りたたまず常時表示する。
+ * 条件付き契約などの「要確認」行は、この画面で選択肢(条件ラベル付き)から選ぶか金額を直接入力して確定できる
+ * (POST /api/placement-fee → 連携シートに保存 → router.refresh())。確定した行は月小計に入る。
+ * 編集系UIの出し分けは既存(/companies の編集UI)に合わせ、ロールによる制限は設けていない。
  */
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import SourceBadge from "@/components/SourceBadge";
 import {
   groupPlacementsByMonth,
+  MAX_FEE_YEN,
   paymentMonthLabel,
+  type FeeOption,
   type PlacementForecastRow,
   type PlacementMonthGroup,
 } from "@/lib/placement-calc";
+import type { PlacementFeeDecision } from "@/lib/placement-decisions";
 import { sourceBadgeLabel } from "@/lib/source-status";
 import type { SourceStatus } from "@/lib/types";
 
@@ -48,6 +56,225 @@ function Badge({ label, tone }: { label: string; tone: "warn" | "muted" }) {
     >
       {label}
     </span>
+  );
+}
+
+/** 率オプションの金額(年収が取れているときだけ)。 */
+function rateFeeYen(percent: number, annualIncomeYen: number | undefined): number | undefined {
+  return annualIncomeYen === undefined ? undefined : Math.round((annualIncomeYen * percent) / 100);
+}
+
+/** 選択肢の説明部分。率は「30% → ¥X」(年収未取得なら「30%」)、固定は条件ラベルがあれば「一律¥N」、無ければ「固定¥N」。 */
+function optionDetail(option: FeeOption, annualIncomeYen: number | undefined, withAmount: boolean): string {
+  if (option.kind === "rate") {
+    const fee = withAmount ? rateFeeYen(option.ratePercent, annualIncomeYen) : undefined;
+    return fee !== undefined ? `${option.ratePercent}% → ${formatYen(fee)}` : `${option.ratePercent}%`;
+  }
+  return `${option.label ? "一律" : "固定"}${formatYen(option.amountYen)}`;
+}
+
+/** チップの表示: 「事務職(一律¥400,000)」「経験者(35% → ¥1,627,500)」。ラベルが無ければ「35%」「固定¥700,000」。 */
+function optionChipText(option: FeeOption, annualIncomeYen: number | undefined): string {
+  const detail = optionDetail(option, annualIncomeYen, true);
+  return option.label ? `${option.label}(${detail})` : detail;
+}
+
+/** 確定済みの内容の表示: 「事務職(一律¥400,000)」「経験者(35%)」「固定¥700,000」。 */
+function decisionText(decision: PlacementFeeDecision): string {
+  const detail =
+    decision.type === "rate"
+      ? `${decision.ratePercent}%`
+      : `${decision.label ? "一律" : "固定"}${formatYen(decision.feeYen ?? 0)}`;
+  return decision.label ? `${decision.label}(${detail})` : detail;
+}
+
+function optionMatchesDecision(option: FeeOption, decision: PlacementFeeDecision | undefined): boolean {
+  if (!decision || decision.type !== option.kind) return false;
+  return option.kind === "rate" ? decision.ratePercent === option.ratePercent : decision.feeYen === option.amountYen;
+}
+
+/**
+ * 要確認行の確定UI。選択肢のチップ(条件付き契約)+「金額を直接入力」(固定額として保存)。
+ * 保存中は全ボタンをdisabledにして「保存中…」を出し、成功したら router.refresh() で再読み込みする。
+ */
+function FeeDecisionEditor({ row, onDone }: { row: PlacementForecastRow; onDone?: () => void }) {
+  const router = useRouter();
+  const [isRefreshing, startTransition] = useTransition();
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [directInput, setDirectInput] = useState("");
+  const busy = savingKey !== null || isRefreshing;
+
+  async function post(savingId: string, payload: Record<string, unknown>) {
+    setSavingKey(savingId);
+    setError(null);
+    try {
+      const res = await fetch("/api/placement-fee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: row.name, company: row.company, ...payload }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok || json.error) throw new Error(json.error || "保存に失敗しました。");
+      onDone?.();
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存に失敗しました。");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  function chooseOption(option: FeeOption, index: number) {
+    const base = { type: option.kind, label: option.label };
+    void post(
+      `option-${index}`,
+      option.kind === "rate" ? { ...base, ratePercent: option.ratePercent } : { ...base, feeYen: option.amountYen },
+    );
+  }
+
+  function saveDirect() {
+    const value = Number(directInput.normalize("NFKC").replace(/[,\s]/g, "").replace(/円$/, ""));
+    if (!Number.isInteger(value) || value < 1 || value > MAX_FEE_YEN) {
+      setError(`金額は1〜${MAX_FEE_YEN.toLocaleString("ja-JP")}円の整数で入力してください。`);
+      return;
+    }
+    void post("direct", { type: "fixed", feeYen: value });
+  }
+
+  const chipBase = "min-h-[36px] whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium disabled:opacity-60";
+
+  return (
+    <div className="mt-1 flex flex-col gap-2">
+      {row.feeOptions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {row.feeOptions.map((option, i) => {
+            const selected = optionMatchesDecision(option, row.decision);
+            return (
+              <button
+                key={`${option.kind}-${option.kind === "rate" ? option.ratePercent : option.amountYen}`}
+                type="button"
+                disabled={busy}
+                onClick={() => chooseOption(option, i)}
+                className={chipBase}
+                style={
+                  selected
+                    ? { background: "var(--color-navy)", color: "#ffffff", borderColor: "var(--color-navy)" }
+                    : { background: "var(--color-card)", color: "var(--color-navy)", borderColor: "var(--color-border)" }
+                }
+              >
+                {savingKey === `option-${i}` ? "保存中…" : optionChipText(option, row.annualIncomeYen)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <form
+        className="flex flex-wrap items-center gap-1.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          saveDirect();
+        }}
+      >
+        <input
+          type="text"
+          inputMode="numeric"
+          value={directInput}
+          onChange={(e) => setDirectInput(e.target.value)}
+          disabled={busy}
+          placeholder="金額を直接入力(円)"
+          aria-label="金額を直接入力(円)"
+          className="min-h-[36px] w-44 rounded-lg px-2.5 py-1.5 text-base outline-none sm:text-[12.5px]"
+          style={{ background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+        />
+        <button
+          type="submit"
+          disabled={busy || directInput.trim() === ""}
+          className="min-h-[36px] rounded-full px-3.5 py-1.5 text-[12px] font-semibold disabled:opacity-60"
+          style={{ background: "var(--color-navy)", color: "#ffffff" }}
+        >
+          {savingKey === "direct" ? "保存中…" : "保存"}
+        </button>
+        {onDone && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onDone}
+            className="min-h-[36px] rounded-full px-3 py-1.5 text-[12px] font-semibold disabled:opacity-60"
+            style={{ color: "var(--color-text-muted)", border: "1px solid var(--color-border)" }}
+          >
+            キャンセル
+          </button>
+        )}
+      </form>
+      {error && (
+        <p className="text-[11px]" style={{ color: "var(--color-bad)" }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** 確定済み行の表示(「確定: 事務職(一律¥400,000)」+「変更」「選択を取り消す」)。 */
+function FeeDecisionSummary({ row, decision }: { row: PlacementForecastRow; decision: PlacementFeeDecision }) {
+  const router = useRouter();
+  const [isRefreshing, startTransition] = useTransition();
+  const [editing, setEditing] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const busy = clearing || isRefreshing;
+
+  async function clearDecision() {
+    setClearing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/placement-fee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: row.name, company: row.company, clear: true }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok || json.error) throw new Error(json.error || "取り消しに失敗しました。");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "取り消しに失敗しました。");
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  const linkClass = "min-h-[28px] text-[11px] underline disabled:opacity-60";
+  return (
+    <div className="flex flex-col gap-0.5">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+        <span className="font-semibold" style={{ color: "var(--color-good)" }}>
+          確定: {decisionText(decision)}
+        </span>
+        <span>(選択済み)</span>
+        {!editing && (
+          <>
+            <button type="button" disabled={busy} onClick={() => setEditing(true)} className={linkClass}>
+              変更
+            </button>
+            <button type="button" disabled={busy} onClick={() => void clearDecision()} className={linkClass}>
+              {clearing ? "取り消し中…" : "選択を取り消す"}
+            </button>
+          </>
+        )}
+      </p>
+      {decision.type === "rate" && row.feeYen === undefined && (
+        <p className="text-[11px]" style={{ color: "var(--color-warn)" }}>
+          {decision.ratePercent}%で確定済み・年収未取得のため金額は未確定です(年収が取れ次第、自動で金額が入ります)
+        </p>
+      )}
+      {editing && <FeeDecisionEditor row={row} onDone={() => setEditing(false)} />}
+      {error && (
+        <p className="text-[11px]" style={{ color: "var(--color-bad)" }}>
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -103,20 +330,15 @@ function PlacementRow({ row }: { row: PlacementForecastRow }) {
           {incomeLine ? ` ／ ${incomeLine}` : ""}
           {row.matchedCompany ? ` ／ 企業一覧上の名称: ${row.matchedCompany}` : ""}
         </p>
-        {row.termsKind === "conditional" && (
-          <p className="text-[11px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            {[
-              ...row.rateFeeCandidates.map((c) =>
-                c.feeYen !== undefined ? `${c.ratePercent}%なら${formatYen(c.feeYen)}` : `${c.ratePercent}%なら年収×${c.ratePercent}%`,
-              ),
-              ...row.fixedCandidatesYen.map((y) => `固定なら${formatYen(y)}`),
-            ].join(" / ")}
-          </p>
-        )}
         {row.needsReview && row.reviewReason && (
           <p className="text-[11px]" style={{ color: "var(--color-warn)" }}>
             {row.reviewReason}
           </p>
+        )}
+        {row.decision ? (
+          <FeeDecisionSummary row={row} decision={row.decision} />
+        ) : (
+          row.needsReview && <FeeDecisionEditor row={row} />
         )}
         {row.overrideNote && (
           <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
@@ -233,6 +455,9 @@ export default function PlacementForecastSection({
         <div className="flex flex-col gap-0.5 text-[10px] leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
           <p>※金額は契約条件の額面(税抜)。請求時は消費税10%が加わります</p>
           <p>※入金予定月は入社月の翌月末です。年収は労働条件通知書(Slack「#求職者」)から読み取っており、固定報酬の企業は通知書を確認していません。</p>
+          {rows.some((r) => r.needsReview || r.decision) && (
+            <p>※「要確認」の行は、契約内容の選択肢から選ぶか金額を直接入力して確定できます。確定内容は保存され、月小計に反映されます。</p>
+          )}
           {hasInvoiced && (
             <p>※「請求書手配済み」は売上シートの同じ入金月に同じ求職者名がある分で、二重に期待しないよう月小計には含めていません。</p>
           )}
