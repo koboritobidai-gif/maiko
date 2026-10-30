@@ -661,7 +661,7 @@ const LEVEL_SHORT = {easy:"無理なく始める",normal:"標準ペース",hard:
    状態
    ========================================================================= */
 const KEY = "naru-tore-v3";
-let S = {profile:null, logs:[], checks:{}, level:null};
+let S = {profile:null, logs:[], checks:{}, level:null, sets:{}};
 const app = document.getElementById("app");
 const backdrop = document.getElementById("backdrop");
 
@@ -694,6 +694,68 @@ function programAt(n){
   return list[ order[(n-1) % order.length] % list.length ];
 }
 function doseOf(item){ return item[level()==="easy"?"e":level()==="hard"?"h":"n"]; }
+
+/* ---- 重量・回数の記録 ------------------------------------------------- */
+/* S.sets = { 種目ID: [ {d:"2026-10-30", w:120, r:6}, ... ] } */
+
+/* 今日より前で、いちばん新しい日の記録をまとめて返す */
+function prevSession(x){
+  const a = (S.sets && S.sets[x]) || [];
+  const today = todayKey();
+  let d = null;
+  for(let i=a.length-1;i>=0;i--){ if(a[i].d !== today){ d = a[i].d; break; } }
+  if(!d) return null;
+  return { d:d, list:a.filter(e=>e.d===d) };
+}
+const fmtSet = e =>
+  ((e.w!=null && e.w!=="") ? e.w+"kg" : "自重") + (e.r!=null ? " × "+e.r : "");
+const mmdd = d => d.slice(5).replace("-","/");
+
+/* 実行画面の入力欄を読んで保存する */
+function logCurrentSet(){
+  const f = T.flow[T.i];
+  if(!f || f.sec) return;
+  const wEl = document.getElementById("in-w"), rEl = document.getElementById("in-r");
+  if(!wEl && !rEl) return;
+  const w = (wEl && wEl.value !== "") ? parseFloat(wEl.value) : null;
+  const r = (rEl && rEl.value !== "") ? parseInt(rEl.value,10) : null;
+  if(w==null && r==null) return;
+  if(w!=null && !isFinite(w)) return;
+  S.sets = S.sets || {};
+  (S.sets[f.x] = S.sets[f.x] || []).push({d:todayKey(), w:w, r:r});
+  save();
+}
+
+/* 実行画面に出す「前回の記録」＋入力欄 */
+function setlogBlock(f){
+  const ps = prevSession(f.x);
+  const idx = f.set ? f.set-1 : 0;
+  const pe = ps ? (ps.list[idx] || ps.list[ps.list.length-1]) : null;
+  const pw = (pe && pe.w!=null) ? pe.w : "";
+  const pr = parseDose(f.label).reps;
+  const line = ps
+    ? `<div class="prevline">前回 ${mmdd(ps.d)} ・ <b>${esc(ps.list.map(fmtSet).join("　"))}</b></div>`
+    : `<div class="prevline none">この種目の記録はまだありません</div>`;
+  return `<div class="setlog">${line}
+    <div class="inputs">
+      <label><input id="in-w" type="number" inputmode="decimal" step="0.5" min="0"
+        value="${pw}" placeholder="—" aria-label="重量(kg)"><span>kg</span></label>
+      <label><input id="in-r" type="number" inputmode="numeric" step="1" min="0"
+        value="${pr!=null?pr:""}" placeholder="—" aria-label="回数"><span>rep</span></label>
+    </div></div>`;
+}
+
+/* 種目の解説シートに出す履歴 */
+function historyBlock(id){
+  const a = (S.sets && S.sets[id]) || [];
+  if(!a.length) return "";
+  const byDay = {};
+  a.forEach(e=>{ (byDay[e.d] = byDay[e.d] || []).push(e); });
+  const days = Object.keys(byDay).sort().reverse().slice(0,6);
+  return `<div class="detail-sec"><h4>これまでの記録</h4>
+    <table class="hist">${days.map(d=>
+      `<tr><td>${mmdd(d)}</td><td>${esc(byDay[d].map(fmtSet).join("　"))}</td></tr>`).join("")}</table></div>`;
+}
 
 function streak(){
   const set = new Set(S.logs.map(l=>l.date));
@@ -1081,6 +1143,7 @@ function enterItem(i){
   render();
 }
 function afterItem(){
+  logCurrentSet();
   const f=T.flow[T.i];
   if(T.i>=T.flow.length-1){ stopTimer(); completeToday(); return; }
   if(f.rest>0){ T.phase="rest"; T.left=f.rest; render(); } else enterItem(T.i+1);
@@ -1146,6 +1209,8 @@ function viewTimer(){
            <p class="sub" style="margin-top:2px">秒 ・ ${esc(setLabel(f))}</p>`
         : `<div class="dose-big">${esc(setLabel(f))}</div>
            <p class="sub" style="margin-top:4px">${f.set?`全${f.sets}セット中 ${f.set}セット目 ・ `:""}できたら下のボタンを押す</p>`}
+
+      ${isTime?"":setlogBlock(f)}
 
       <ul class="cues">${ex.cues.slice(0,2).map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
       <div class="steplinks">
@@ -1328,6 +1393,7 @@ function openExercise(id){
       <ul>${e.miss.map(c=>`<li class="dot-r">${esc(c)}</li>`).join("")}</ul></div>
     <div class="detail-sec"><h4>呼吸</h4>
       <p style="margin:0;font-size:13.5px;line-height:1.75">${esc(e.breath)}</p></div>
+    ${historyBlock(id)}
     <button class="btn btn-ghost" style="margin-top:20px" data-close>閉じる</button>
   </div>`;
 }
@@ -1436,7 +1502,7 @@ function bind(){
   });
   on("[data-reset]",()=>{
     if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
-      S={profile:null,logs:[],checks:{},level:null};
+      S={profile:null,logs:[],checks:{},level:null,sets:{}};
       try{ localStorage.removeItem(KEY); }catch(e){}
       go("lp");
     }
@@ -1471,6 +1537,27 @@ render();
 .screen[style*="var(--ink)"] .stephead .tnum{color:rgba(244,240,234,.7)}
 .timer .num.paused{opacity:.4}
 .dose-big{font-size:40px;font-weight:800;letter-spacing:-.01em;margin-top:16px;line-height:1.15}
+/* 重量・回数の記録 */
+.setlog{width:100%;margin-top:16px;background:var(--surface);border-radius:var(--r-md);padding:12px 14px}
+.setlog .prevline{font-size:12.5px;font-weight:700;color:var(--olive-dark);text-align:center;
+  font-variant-numeric:tabular-nums;line-height:1.6}
+.setlog .prevline b{font-size:14px}
+.setlog .prevline.none{color:var(--ink-mute);font-weight:400}
+.setlog .inputs{display:flex;gap:10px;margin-top:10px}
+.setlog label{flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;
+  background:var(--surface-sunk);border-radius:10px;padding:7px 11px}
+.setlog input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);
+  font-family:inherit;font-size:24px;font-weight:800;line-height:1.15;text-align:right;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.setlog input::-webkit-outer-spin-button,.setlog input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.setlog input:focus{outline:none}
+.setlog input::placeholder{color:var(--ink-mute);font-weight:700}
+.setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
+.hist{width:100%;border-collapse:collapse;font-size:13px}
+.hist td{padding:6px 0;border-top:1px solid rgba(34,37,29,.08);vertical-align:top;line-height:1.7}
+.hist tr:first-child td{border-top:0}
+.hist td:first-child{width:4.6em;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+.hist td:last-child{font-variant-numeric:tabular-nums}
 .steplinks{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:16px;font-size:13px}
 .steplinks button{font-weight:700;color:var(--olive);text-decoration:underline;text-underline-offset:3px}
 .steplinks span{color:var(--ink-mute)}
