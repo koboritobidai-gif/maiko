@@ -639,23 +639,28 @@ export default function DashboardView({
             />
           </div>
         )}
-        {/* 入金予定(翌月末入金分・1ヶ月分のみ)。主要指標のカード群とは別の行・別の配色にし、
+        {/* 入金予定(翌月末・再来月末の2ヶ月分)。主要指標のカード群とは別の行・別の配色にし、
             「今月」を表示しているときだけ出す(経営者の指示: 過去月のチップを見ているときに
-            未来の入金予定が混ざると紛らわしいため。9月になれば自動で10月末入金分に切り替わる)。 */}
+            未来の入金予定が混ざると紛らわしいため。月が替われば自動で先の月に切り替わる)。 */}
         {showRevenueSection && primaryMonthIdx === 0 && upcomingRevenue.length > 0 && (
-          <div
-            className="flex items-baseline justify-between gap-3 rounded-xl px-3.5 py-3"
-            style={{
-              background: "color-mix(in srgb, var(--color-gold) 10%, var(--color-card))",
-              border: "1px solid color-mix(in srgb, var(--color-gold) 45%, transparent)",
-            }}
-          >
-            <span className="text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
-              入金予定({shortMonthLabel(upcomingRevenue[0].monthKey)}末入金分)
-            </span>
-            <span className="text-[20px] font-bold leading-tight" style={{ color: "var(--color-gold)" }}>
-              {formatYen(upcomingRevenue[0].totalYen)}
-            </span>
+          <div className="flex flex-col gap-2">
+            {upcomingRevenue.slice(0, 2).map((r) => (
+              <div
+                key={r.monthKey}
+                className="flex items-baseline justify-between gap-3 rounded-xl px-3.5 py-3"
+                style={{
+                  background: "color-mix(in srgb, var(--color-gold) 10%, var(--color-card))",
+                  border: "1px solid color-mix(in srgb, var(--color-gold) 45%, transparent)",
+                }}
+              >
+                <span className="text-[12px] font-semibold" style={{ color: "var(--color-navy)" }}>
+                  入金予定({shortMonthLabel(r.monthKey)}末入金分)
+                </span>
+                <span className="text-[20px] font-bold leading-tight" style={{ color: "var(--color-gold)" }}>
+                  {formatYen(r.totalYen)}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </section>
