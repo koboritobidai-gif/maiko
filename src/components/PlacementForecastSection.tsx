@@ -206,6 +206,7 @@ export default function PlacementForecastSection({
           {shareNeeded ? (
             <>
               KPI表.xlsx をサービスアカウント({SERVICE_ACCOUNT_EMAIL})に閲覧者で共有してください。共有すると、入社日が決まった方の入金予定がここに表示されます。
+              {errorMessage ? `(詳細: ${errorMessage})` : ""}
             </>
           ) : (
             <>入社決定の入金予定を読み込めませんでした{errorMessage ? `(${errorMessage})` : ""}。</>

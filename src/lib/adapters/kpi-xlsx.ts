@@ -36,8 +36,18 @@ export async function downloadKpiXlsx(accessToken: string, fileId: string): Prom
   )}?alt=media&supportsAllDrives=true`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
   if (res.status === 403 || res.status === 404) {
+    const text = await res.text().catch(() => "");
+    // 403はエラー本文で原因が分かれる: Drive API自体が未有効(accessNotConfigured等)の場合は
+    // ファイル共有の問題ではないため、共有案内(KpiXlsxNotSharedError)とは区別して表示する。
+    // Drive APIを有効化した直後は反映まで数分かかることがある。
+    if (/accessNotConfigured|SERVICE_DISABLED|has not been used in project|it is disabled/i.test(text)) {
+      throw new Error(
+        "Google Drive APIが未有効か、有効化の反映待ちです(有効化後、反映まで数分かかることがあります)。" +
+          `(status ${res.status}: ${text.slice(0, 160)})`,
+      );
+    }
     throw new KpiXlsxNotSharedError(
-      `KPI表.xlsxをサービスアカウントに共有してください(Drive API status ${res.status})。`,
+      `KPI表.xlsxをサービスアカウントに共有してください(Drive API status ${res.status}: ${text.slice(0, 160)})。`,
     );
   }
   if (!res.ok) {
