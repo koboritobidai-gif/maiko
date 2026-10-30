@@ -86,8 +86,9 @@ export interface PlacementForecastRow {
   feeYen?: number;
   /** 条件付き契約で、年収が取れている場合の「率候補ごとの金額」。 */
   rateFeeCandidates: { ratePercent: number; feeYen?: number }[];
-  /** decision = アプリ上で選択・確定した内容(placement-decisions.ts。最優先)、manual = コード内の手動補正。 */
-  feeSource?: "rate" | "fixed" | "manual" | "decision";
+  /** decision = アプリ上で選択・確定した内容(placement-decisions.ts)、manual = コード内の手動補正、
+   *  sheet = 売上シート(翔び台請求書関係)の記載(経営者指示により最優先)。 */
+  feeSource?: "rate" | "fixed" | "manual" | "decision" | "sheet";
   /** 人の確認が必要か(条件付き契約・年収未取得・契約条件未登録など)。 */
   needsReview: boolean;
   reviewReason?: string;
@@ -572,22 +573,40 @@ export function applyFeeDecision(row: PlacementForecastRow, decision: PlacementF
 }
 
 /**
- * 売上シート(送客売上)に同じ求職者名が同じ入金月で載っている行を「請求書手配済み」とする
- * (二重に期待しないよう、月小計には含めない)。氏名は空白・「様」を除いて照合する。
+ * 売上シート(翔び台請求書関係)との照合。経営者指示(2026-10-30)「このスプレッドシートを最優先にして。
+ * 正しい情報だが反映が遅い」: 売上シートに同じ求職者名の記載があれば、その行は売上シートの
+ * 金額(税込)・入金月を最優先で表示する(KPI表からの見込み計算より優先)。トップの入金予定
+ * (金色バー)に同じ金額が既に計上されているため、月小計には含めない(二重に期待しない)。
+ * 氏名は空白・「様」を除いて照合する。同名の記載が複数月にあれば、見込みの入金月と同じ月を
+ * 優先し、無ければ最も新しい月を採用する。同じ月に同名が複数行あれば金額は合算する。
  */
 export function markInvoicedPlacements(
   rows: PlacementForecastRow[],
-  revenueRecords: Pick<RevenueRecord, "month" | "candidateName">[],
+  revenueRecords: Pick<RevenueRecord, "month" | "candidateName" | "amountYen">[],
 ): PlacementForecastRow[] {
-  const invoiced = new Set<string>();
+  // 氏名(正規化) → 入金月 → 金額合計
+  const byName = new Map<string, Map<string, number>>();
   for (const r of revenueRecords) {
     if (!r.candidateName) continue;
-    invoiced.add(`${r.month}|${normalizePersonName(r.candidateName)}`);
+    const name = normalizePersonName(r.candidateName);
+    const months = byName.get(name) ?? new Map<string, number>();
+    months.set(r.month, (months.get(r.month) ?? 0) + r.amountYen);
+    byName.set(name, months);
   }
-  return rows.map((row) => ({
-    ...row,
-    invoiced: invoiced.has(`${row.payMonth}|${normalizePersonName(row.name)}`),
-  }));
+  return rows.map((row) => {
+    const months = byName.get(normalizePersonName(row.name));
+    if (!months || months.size === 0) return { ...row, invoiced: false };
+    const month = months.has(row.payMonth) ? row.payMonth : [...months.keys()].sort().slice(-1)[0];
+    return {
+      ...row,
+      invoiced: true,
+      payMonth: month,
+      feeYen: months.get(month),
+      feeSource: "sheet" as const,
+      needsReview: false,
+      reviewReason: undefined,
+    };
+  });
 }
 
 /** 入金予定月ごとにグループ化し、月小計を求める(入金月の昇順、月内は入社日順)。 */

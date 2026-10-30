@@ -310,7 +310,7 @@ function PlacementRow({ row }: { row: PlacementForecastRow }) {
           <span className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
             {row.company}
           </span>
-          {row.invoiced && <Badge label="請求書手配済み" tone="muted" />}
+          {row.invoiced && <Badge label="売上シート記載" tone="muted" />}
           {row.needsReview && <Badge label="要確認" tone="warn" />}
           {row.contractUnconfirmed && <Badge label="契約未確認" tone="muted" />}
           {row.threadUrl && (
@@ -335,7 +335,9 @@ function PlacementRow({ row }: { row: PlacementForecastRow }) {
             {row.reviewReason}
           </p>
         )}
-        {row.decision ? (
+        {/* 売上シート記載の行は、売上シートの金額・入金月を最優先で表示する(経営者指示)。
+            確定UI(選択チップ等)は出さない。 */}
+        {row.invoiced ? null : row.decision ? (
           <FeeDecisionSummary row={row} decision={row.decision} />
         ) : (
           row.needsReview && <FeeDecisionEditor row={row} />
@@ -355,7 +357,7 @@ function PlacementRow({ row }: { row: PlacementForecastRow }) {
         </p>
         {row.invoiced && (
           <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-            小計に含まず
+            売上シートの金額(税込)・入金予定に計上済み
           </p>
         )}
       </div>
@@ -459,7 +461,9 @@ export default function PlacementForecastSection({
             <p>※「要確認」の行は、契約内容の選択肢から選ぶか金額を直接入力して確定できます。確定内容は保存され、月小計に反映されます。</p>
           )}
           {hasInvoiced && (
-            <p>※「請求書手配済み」は売上シートの同じ入金月に同じ求職者名がある分で、二重に期待しないよう月小計には含めていません。</p>
+            <p>
+              ※「売上シート記載」は売上シート(翔び台請求書関係)に記載済みの分で、その金額(税込)・入金月を最優先で表示しています。上の入金予定(金色)に計上済みのため、月小計には含めていません。
+            </p>
           )}
         </div>
       )}
