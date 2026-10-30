@@ -677,15 +677,19 @@ export default function DashboardView({
       </section>
       )}
 
-      {/* 1.2 入社決定の入金予定(見込み)。入金予定(金色バー)の直下に常時表示する【全体】 */}
+      {/* 1.2 入社決定の入金予定(見込み)。入金予定(金色バー)の直下。経営者指示(2026-10-31)により
+          「＋」を押したら開く折りたたみにする(タイトルはCollapsible側が持つ)【全体】 */}
       {group === "全体" && (
-        <PlacementForecastSection
-          rows={placements.rows}
-          status={placements.status}
-          shareNeeded={placements.shareNeeded}
-          warnings={placements.warnings}
-          errorMessage={placements.errorMessage}
-        />
+        <Collapsible title="入社決定の入金予定(見込み)">
+          <PlacementForecastSection
+            rows={placements.rows}
+            status={placements.status}
+            shareNeeded={placements.shareNeeded}
+            warnings={placements.warnings}
+            errorMessage={placements.errorMessage}
+            hideHeader
+          />
+        </Collapsible>
       )}
 
       {/* 1.5 集客・広告(直近6ヶ月の月選択)【マーケティング】 */}

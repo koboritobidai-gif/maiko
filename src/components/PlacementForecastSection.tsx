@@ -405,12 +405,15 @@ export default function PlacementForecastSection({
   shareNeeded,
   warnings,
   errorMessage,
+  hideHeader = false,
 }: {
   rows: PlacementForecastRow[];
   status: SourceStatus;
   shareNeeded: boolean;
   warnings: string[];
   errorMessage?: string;
+  /** true なら見出し行を出さない(DashboardView側のCollapsibleがタイトルを持つため)。 */
+  hideHeader?: boolean;
 }) {
   const groups = groupPlacementsByMonth(rows);
   const hasInvoiced = rows.some((r) => r.invoiced);
@@ -418,13 +421,14 @@ export default function PlacementForecastSection({
 
   return (
     <section className="flex flex-col gap-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
-          入社決定の入金予定(見込み)
-        </h2>
-        <SourceBadge label={sourceBadgeLabel("placements", status)} />
-      </div>
-
+      {!hideHeader && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[13px] font-bold" style={{ color: "var(--color-navy)" }}>
+            入社決定の入金予定(見込み)
+          </h2>
+          <SourceBadge label={sourceBadgeLabel("placements", status)} />
+        </div>
+      )}
       {status === "live-error" && (
         <p className="rounded-lg border px-3 py-2 text-[11px] leading-relaxed" style={mutedNote}>
           {shareNeeded ? (
