@@ -661,7 +661,7 @@ const LEVEL_SHORT = {easy:"無理なく始める",normal:"標準ペース",hard:
    状態
    ========================================================================= */
 const KEY = "naru-tore-v3";
-let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[]};
+let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[], access:null};
 const app = document.getElementById("app");
 const backdrop = document.getElementById("backdrop");
 
@@ -937,7 +937,9 @@ function go(name){ current=name; render(); window.scrollTo(0,0); const s=app.que
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 function render(){
-  if(current==="lp") app.innerHTML = viewLP();
+  if(ACCESS.on && !unlocked() && current!=="lp" && current!=="gate") current="gate";
+  if(current==="gate") app.innerHTML = viewGate();
+  else if(current==="lp") app.innerHTML = viewLP();
   else if(current==="ob") app.innerHTML = viewOB();
   else if(current==="home") app.innerHTML = viewHome();
   else if(current==="train") app.innerHTML = viewTrain();
@@ -1555,6 +1557,17 @@ function viewSettings(){
           </p>
         </div>
 
+        ${ACCESS.on ? `
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:8px">会員資格</div>
+          <p class="sub" style="margin:0">
+            合言葉：<b style="color:var(--olive-dark)">有効</b>
+            ${S.access&&S.access.at?`（${esc(mmdd(S.access.at))} に入力）`:""}<br>
+            合言葉は定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。
+          </p>
+          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>合言葉を入れ直す</button>
+        </div>` : ""}
+
         <div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:4px">このアプリについて</div>
           <button class="lnk first" data-legal="tokushoho">特定商取引法に基づく表記</button>
@@ -1594,6 +1607,74 @@ function openExercise(id){
   </div>`;
 }
 function closeSheet(){ backdrop.className="backdrop"; backdrop.innerHTML=""; }
+
+/* =========================================================================
+   有料の壁（紹介画面 → 申し込み → 合言葉）
+   ========================================================================= */
+const ACCESS = {
+  on   : true,                      // false にすると壁が外れる。社内確認や無料公開に戻すとき用
+  codes: ["naru1116"],              // 有効な合言葉。月初に入れ替える
+                                    // 古いものを消すと、その合言葉の人は再入力になる
+  buy  : BIZ.pay                    // 申し込みページ（Stripe）
+};
+function unlocked(){
+  if(!ACCESS.on) return true;
+  return !!(S.access && ACCESS.codes.some(c => c.toLowerCase() === String(S.access.code).toLowerCase()));
+}
+let gateVal="", gateErr="";
+function tryUnlock(v){
+  const q = String(v||"").trim().toLowerCase().replace(/\s+/g,"");
+  const hit = ACCESS.codes.find(c => c.toLowerCase() === q);
+  if(!hit) return false;
+  S.access = {code:hit, at:todayKey()}; save();
+  gateVal=""; gateErr="";
+  go(S.profile ? "home" : "ob");
+  return true;
+}
+
+/* naruさんの紹介文が決まったら INTRO を差し替える */
+const INTRO = {
+  lead : "2週間で1クール。14日分のメニューが、休む日まで組んであります。",
+  points: [
+    ["14日分のプログラム", "DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています"],
+    ["重量と回数を記録",   "種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です"],
+    ["ジムと自宅",         "目的・強度・場所を選ぶと、その人に合わせた内容になります"],
+    ["naru の解説",        "各日の狙いと、種目ごとのコツ・やりがちなミスが入っています"]
+  ]
+};
+
+function viewGate(){
+  return `<div class="screen on"><div class="scroll"><div class="pad gate">
+    <div class="logo">NARU</div>
+    <h1>ナルフィットネス</h1>
+    <p class="lead">${esc(INTRO.lead)}</p>
+
+    <ul class="gate-pts">${INTRO.points.map(([a,b])=>
+      `<li><b>${esc(a)}</b><span>${esc(b)}</span></li>`).join("")}</ul>
+
+    <div class="gate-price">
+      <div class="eyebrow">ENTRY</div>
+      <div class="p"><b class="tnum">3,500</b><span>円 / 2週間（税込）</span></div>
+      <p class="sub" style="margin-top:4px">2週間ごとの自動更新です。いつでも解約できます。</p>
+    </div>
+    <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">申し込む &nbsp;→</a>
+
+    <div class="gate-div"><span>お申し込み済みの方</span></div>
+    <div class="gate-code">
+      <input id="code" type="text" inputmode="latin" autocapitalize="off" autocorrect="off"
+             spellcheck="false" placeholder="合言葉" value="${esc(gateVal)}" aria-label="合言葉">
+      <button class="btn btn-olive" data-unlock>はじめる</button>
+    </div>
+    ${gateErr?`<p class="gate-err">${esc(gateErr)}</p>`
+             :`<p class="gate-hint">合言葉は、お申し込み後のメールでお送りします。</p>`}
+
+    <div class="gate-foot">
+      <button data-legal="tokushoho">特定商取引法に基づく表記</button>
+      <button data-legal="privacy">プライバシーポリシー</button>
+      <button data-legal="notice">ご利用にあたって</button>
+    </div>
+  </div></div></div>`;
+}
 
 /* =========================================================================
    完了
@@ -1643,7 +1724,19 @@ function bind(){
     if(t==="timer"){ stopTimer(); T.tick=null; }
     go(t);
   });
-  on("[data-start]",()=>{ ob={step:0,goal:null,level:null,place:null,days:3}; go("ob"); });
+  on("[data-start]",()=>{
+    if(!unlocked()){ go("gate"); return; }
+    ob={step:0,goal:null,level:null,place:null,days:3}; go("ob");
+  });
+
+  /* 合言葉 */
+  on("[data-unlock]",()=>{
+    const el=document.getElementById("code"); gateVal = el ? el.value : "";
+    if(!tryUnlock(gateVal)){ gateErr="合言葉が違います。お申し込み後にお送りしたメールをご確認ください。"; render(); }
+  });
+  const ci=document.getElementById("code");
+  if(ci) ci.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault();
+    const b=app.querySelector("[data-unlock]"); if(b) b.click(); } };
 
   /* 診断 */
   on("[data-ob]",el=>{
@@ -1669,6 +1762,9 @@ function bind(){
 
   /* 休養日との振り替え */
   on("[data-swap]",()=>swapToRest());
+
+  /* 合言葉を入れ直す */
+  on("[data-relock]",()=>{ S.access=null; save(); gateVal=""; gateErr=""; go("gate"); });
 
   /* チェックリスト */
   on("[data-check]",(el,e)=>{
@@ -1704,7 +1800,7 @@ function bind(){
   });
   on("[data-reset]",()=>{
     if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
-      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[]};
+      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[],access:null};
       try{ localStorage.removeItem(KEY); }catch(e){}
       go("lp");
     }
@@ -1725,7 +1821,7 @@ backdrop.onclick=e=>{
    起動
    ========================================================================= */
 load();
-current = S.profile ? "home" : "lp";
+current = !unlocked() ? (S.profile ? "gate" : "lp") : (S.profile ? "home" : "lp");
 render();
 </script>
 <style>
@@ -1755,6 +1851,36 @@ render();
 .setlog input:focus{outline:none}
 .setlog input::placeholder{color:var(--ink-mute);font-weight:700}
 .setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
+/* 紹介＋合言葉の画面 */
+.gate{padding-top:26px;padding-bottom:34px}
+.gate .logo{color:var(--ink-mute)}
+.gate h1{margin:9px 0 0;font-size:27px;font-weight:800;letter-spacing:-.01em}
+.gate .lead{margin:7px 0 0;font-size:13.5px;line-height:1.8;color:var(--ink-soft)}
+.gate-pts{list-style:none;margin:20px 0 0;padding:0;border-top:1px solid rgba(34,37,29,.09)}
+.gate-pts li{padding:12px 0;border-bottom:1px solid rgba(34,37,29,.09)}
+.gate-pts b{display:block;font-size:14px;font-weight:800}
+.gate-pts span{display:block;font-size:12.5px;line-height:1.7;color:var(--ink-soft);margin-top:2px}
+.gate-price{margin-top:22px;background:var(--surface);border-radius:var(--r-md);padding:15px 16px;text-align:center}
+.gate-price .p{margin-top:5px}
+.gate-price .p b{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.gate-price .p span{font-size:13px;font-weight:700;color:var(--ink-soft);margin-left:5px}
+.gate a.btn{text-decoration:none;display:grid;place-items:center}
+.gate .btn-orange{margin-top:12px;height:52px}
+.gate-div{display:flex;align-items:center;gap:12px;margin:26px 0 12px;
+  font-size:11.5px;color:var(--ink-mute)}
+.gate-div::before,.gate-div::after{content:"";flex:1;height:1px;background:rgba(34,37,29,.12)}
+.gate-code{display:flex;gap:8px}
+.gate-code input{flex:1;min-width:0;background:var(--surface);border:1px solid rgba(34,37,29,.12);
+  border-radius:12px;padding:0 14px;height:50px;font-family:inherit;font-size:16px;font-weight:700;
+  color:var(--ink);letter-spacing:.04em}
+.gate-code input:focus{outline:none;border-color:var(--olive)}
+.gate-code .btn{width:auto;flex:none;padding:0 20px;height:50px}
+.gate-hint,.gate-err{margin-top:9px;font-size:12px;line-height:1.65;text-align:center}
+.gate-hint{color:var(--ink-mute)}
+.gate-err{color:#a8431a;font-weight:700}
+.gate-foot{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;margin-top:28px;
+  padding-top:16px;border-top:1px solid rgba(34,37,29,.09)}
+.gate-foot button{font-size:11.5px;color:var(--ink-mute);text-decoration:underline;text-underline-offset:3px}
 .hero.rest{background:var(--surface-alt);color:var(--ink);border:1px solid rgba(34,37,29,.08)}
 .hero.rest .day{color:var(--olive)}
 .hero.rest h2{color:var(--ink)}
