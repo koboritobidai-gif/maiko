@@ -728,7 +728,7 @@ const LEVEL_SHORT = {fit1:"初心者・自宅", fit2:"中級（準備中）", fi
    状態
    ========================================================================= */
 const KEY = "naru-tore-v3";
-let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[], access:null};
+let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[], access:null, extras:{}, memo:{}};
 const app = document.getElementById("app");
 const backdrop = document.getElementById("backdrop");
 
@@ -1353,6 +1353,38 @@ function viewTrain(){
    記録：トレーニングが終わってから、まとめて入れる画面
    運動中はスマホを持たない前提なので、合間のボタンは置かない
    ========================================================================= */
+/* 入力された種目名が、登録ずみの種目と一致するか見る。
+   一致すれば履歴に積まれるので「前回」が出せるようになる */
+const exNorm = t => String(t||"").trim().toLowerCase().replace(/[\s　・\-]/g,"");
+let EX_INDEX=null;
+function matchEx(name){
+  if(!EX_INDEX){ EX_INDEX={};
+    Object.keys(EX).forEach(k=>{ EX_INDEX[exNorm(EX[k].ja)]=k; EX_INDEX[exNorm(EX[k].en)]=k; }); }
+  return EX_INDEX[exNorm(name)] || null;
+}
+function exDatalist(){
+  return `<datalist id="ex-names">${Object.keys(EX).map(k=>
+    `<option value="${esc(EX[k].ja)}">${esc(EX[k].en)}</option>`).join("")}</datalist>`;
+}
+
+/* 追加種目の行。画面を組み直しても消えないように持っておく */
+let entryExtras=null, entryMemo=null;
+function entryInit(){
+  if(entryExtras) return;
+  const a=(S.extras && S.extras[todayKey()]) || [];
+  entryExtras = a.map(e=>({name:e.name||"", w:e.w!=null?e.w:"", r:e.r!=null?e.r:""}));
+  if(!entryExtras.length) entryExtras=[{name:"",w:"",r:""}];
+  entryMemo = (S.memo && S.memo[todayKey()]) || "";
+}
+function entryRead(){
+  if(!entryExtras) return;
+  entryExtras = entryExtras.map((e,i)=>({
+    name:(document.getElementById("x"+i+"-n")||{}).value || "",
+    w:   (document.getElementById("x"+i+"-w")||{}).value || "",
+    r:   (document.getElementById("x"+i+"-r")||{}).value || ""
+  }));
+  entryMemo = (document.getElementById("memo")||{}).value || "";
+}
 function entryPrefill(f){
   const today=todayKey(), si = f.set ? f.set-1 : 0;
   const a=(S.sets && S.sets[f.x]) || [];
@@ -1366,6 +1398,7 @@ function entryPrefill(f){
 function viewEntry(){
   const n=cycleDay(), p=todayProgram();
   if(!p) return viewTrain();
+  entryInit();
   const flow=buildFlow(p);
   let html="", lastPi=-1;
   flow.forEach((f,i)=>{
@@ -1422,6 +1455,32 @@ function viewEntry(){
       <h1 style="margin:4px 0 2px;font-size:23px;font-weight:800">${esc(p.t)}</h1>
       <p class="sub" style="margin-bottom:4px">やった分だけ入れてください。空欄のまま進めても大丈夫です。</p>
       ${html}
+
+      <div class="partline light" style="margin-top:22px">
+        <span class="badge">EXTRA</span><span>· 追加でやった種目</span><span class="hr"></span></div>
+      <p class="sub" style="margin:0 0 6px">できなかった種目は空欄のままで大丈夫です。
+        代わりにやったものは、ここに足してください。</p>
+      ${entryExtras.map((e,i)=>`
+        <div class="ent">
+          <input class="x-name" id="x${i}-n" type="text" list="ex-names" placeholder="種目名"
+            value="${esc(e.name)}" aria-label="追加した種目名">
+          <div class="ent-in">
+            <label><input id="x${i}-w" type="number" inputmode="decimal" step="0.5" min="0"
+              value="${esc(e.w)}" placeholder="—" aria-label="重量"><span>kg</span></label>
+            <label><input id="x${i}-r" type="number" inputmode="numeric" min="0"
+              value="${esc(e.r)}" placeholder="—" aria-label="回数"><span>rep</span></label>
+          </div>
+          ${(()=>{ const x=matchEx(e.name), ps=x?prevSession(x):null;
+            return ps?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(ps.list.map(fmtSet).join("　"))}</div>`:""; })()}
+        </div>`).join("")}
+      <button class="btn btn-ghost" style="margin-top:8px" data-extra-add>＋ 行を追加する</button>
+
+      <div class="partline light" style="margin-top:22px">
+        <span class="badge">MEMO</span><span>· 今日のメモ</span><span class="hr"></span></div>
+      <textarea id="memo" class="memo" rows="3" placeholder="調子、痛み、できなかった理由など。naru に伝えたいこともここへ。"
+        aria-label="今日のメモ">${esc(entryMemo)}</textarea>
+      ${exDatalist()}
+
       <button class="btn btn-olive" style="margin-top:20px" data-entry-save>記録して完了する</button>
       <button class="btn btn-ghost" style="margin-top:9px" data-go="train">戻る</button>
     </div></div>
@@ -1455,7 +1514,25 @@ function saveEntry(){
     if(wv==null && rv==null) return;
     (S.sets[f.x]=S.sets[f.x]||[]).push({d:today, w:wv, r:rv});
   });
+
+  /* 追加でやった種目。登録ずみの種目名と一致したら履歴にも積む */
+  entryRead();
+  S.extras=S.extras||{}; S.memo=S.memo||{};
+  const ext=[];
+  (entryExtras||[]).forEach(e=>{
+    const nm=String(e.name||"").trim(); if(!nm) return;
+    const wv = e.w!=="" ? parseFloat(e.w) : null;
+    const rv = e.r!=="" ? parseInt(e.r,10) : null;
+    const x  = matchEx(nm);
+    ext.push(x ? {name:nm, w:wv, r:rv, x:x} : {name:nm, w:wv, r:rv});
+    if(x && (wv!=null || rv!=null)) (S.sets[x]=S.sets[x]||[]).push({d:today, w:wv, r:rv});
+  });
+  if(ext.length) S.extras[today]=ext; else delete S.extras[today];
+  const mm=String(entryMemo||"").trim();
+  if(mm) S.memo[today]=mm; else delete S.memo[today];
+
   save();
+  entryExtras=null; entryMemo=null;
   completeToday();
 }
 
@@ -1809,6 +1886,9 @@ function viewLog(){
               <div><b>${l.date.slice(5).replace("-","/")}</b>
                 <span>${esc(l.title||"Session")} · ${(l.level||"normal").toUpperCase()}</span></div>
               <div style="color:var(--olive);font-weight:800">✓</div>
+              ${(S.extras&&S.extras[l.date]||[]).length?`<div class="sess-ex">＋ ${
+                esc((S.extras[l.date]||[]).map(e=>e.name+(e.w!=null?` ${e.w}kg`:"")+(e.r!=null?`×${e.r}`:"")).join("　"))}</div>`:""}
+              ${S.memo&&S.memo[l.date]?`<div class="sess-memo">${esc(S.memo[l.date])}</div>`:""}
             </div>`).join("")
           : `<p class="sub" style="margin:0">まだ記録がありません。最初の1回を終えるとここに並びます。</p>`}
         </div>
@@ -2018,6 +2098,7 @@ function bind(){
   const on=(sel,fn)=>app.querySelectorAll(sel).forEach(el=>el.onclick=e=>fn(el,e));
 
   on("[data-go]",el=>{ const t=el.dataset.go;
+    if(t==="entry"){ entryExtras=null; entryMemo=null; }
     if(t!=="timer") stopTimer();
     if(t==="timer"){ stopTimer(); T.tick=null; }
     go(t);
@@ -2077,6 +2158,7 @@ function bind(){
     S.folded[i] = S.folded[i]===false ? true : false; render(); });
   on("[data-complete]",()=>completeToday());
   on("[data-entry-save]",()=>saveEntry());
+  on("[data-extra-add]",()=>{ entryRead(); entryExtras.push({name:"",w:"",r:""}); render(); });
 
   /* タイマー */
   on("[data-skip-count]",()=>enterItem(0));
@@ -2100,7 +2182,7 @@ function bind(){
   });
   on("[data-reset]",()=>{
     if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
-      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[],access:null};
+      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[],access:null,extras:{},memo:{}};
       try{ localStorage.removeItem(KEY); }catch(e){}
       go("lp");
     }
@@ -2173,6 +2255,20 @@ render();
 .ent-prev{margin-top:6px;font-size:11.5px;color:var(--ink-soft);font-weight:700;
   font-variant-numeric:tabular-nums}
 .ent-time{margin-top:5px;font-size:15px;font-weight:800;color:var(--ink-soft)}
+
+/* 記録画面：自由入力 */
+.x-name{width:100%;background:var(--surface-sunk);border:0;border-radius:9px;padding:9px 11px;
+  font-family:inherit;font-size:14px;font-weight:700;color:var(--ink)}
+.x-name:focus{outline:1.5px solid var(--olive)}
+.x-name::placeholder{color:var(--ink-mute);font-weight:400}
+.memo{width:100%;background:var(--surface);border:1px solid rgba(34,37,29,.1);border-radius:var(--r-md);
+  padding:11px 13px;font-family:inherit;font-size:13.5px;line-height:1.7;color:var(--ink);resize:vertical}
+.memo:focus{outline:none;border-color:var(--olive)}
+.memo::placeholder{color:var(--ink-mute)}
+.sess{flex-wrap:wrap}
+.sess-ex,.sess-memo{flex-basis:100%;font-size:11.5px;line-height:1.6;margin-top:4px}
+.sess-ex{color:var(--olive-dark);font-weight:700}
+.sess-memo{color:var(--ink-mute)}
 
 /* AMRAP */
 .amrap-list{list-style:none;margin:16px 0 0;padding:0;width:100%;background:var(--surface);
