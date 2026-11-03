@@ -1018,23 +1018,13 @@ function logCurrentSet(){
   save();
 }
 
-/* 実行画面に出す「前回の記録」＋入力欄 */
+/* 実行画面に出す「前回の記録」。入力はしない（記録はトレーニング後にまとめて） */
 function setlogBlock(f){
   const ps = prevSession(f.x);
-  const idx = f.set ? f.set-1 : 0;
-  const pe = ps ? (ps.list[idx] || ps.list[ps.list.length-1]) : null;
-  const pw = (pe && pe.w!=null) ? pe.w : "";
-  const pr = parseDose(f.label).reps;
-  const line = ps
-    ? `<div class="prevline">前回 ${mmdd(ps.d)} ・ <b>${esc(ps.list.map(fmtSet).join("　"))}</b></div>`
-    : `<div class="prevline none">この種目の記録はまだありません</div>`;
-  return `<div class="setlog">${line}
-    <div class="inputs">
-      <label><input id="in-w" type="number" inputmode="decimal" step="0.5" min="0"
-        value="${pw}" placeholder="—" aria-label="重量(kg)"><span>kg</span></label>
-      <label><input id="in-r" type="number" inputmode="numeric" step="1" min="0"
-        value="${pr!=null?pr:""}" placeholder="—" aria-label="回数"><span>rep</span></label>
-    </div></div>`;
+  if(!ps) return "";
+  return `<div class="setlog">
+    <div class="prevline">前回 ${mmdd(ps.d)} ・ <b>${esc(ps.list.map(fmtSet).join("　"))}</b></div>
+  </div>`;
 }
 
 /* 種目の解説シートに出す履歴 */
@@ -1399,55 +1389,58 @@ function viewEntry(){
   const n=cycleDay(), p=todayProgram();
   if(!p) return viewTrain();
   entryInit();
-  const flow=buildFlow(p);
-  let html="", lastPi=-1;
-  flow.forEach((f,i)=>{
-    if(f.pi!==lastPi){
-      lastPi=f.pi;
-      const part=p.parts[f.pi];
-      html+=`<div class="partline light" style="margin-top:18px">
-        <span class="badge">PART ${f.pi+1}</span>
-        <span>· ${esc(part.k)}${part.n?" · "+esc(part.n):""}</span><span class="hr"></span></div>
-        ${part.note?`<p class="pnote" style="margin:0 0 6px">${esc(part.note)}</p>`:""}`;
-    }
-    const ex=EX[f.x];
-    if(f.amrap){
-      const pr=prevAmrap(f.pi);
-      const cur=(S.amraps&&S.amraps[p.t+"|"+f.pi]||[]).filter(e=>e.d===todayKey()).pop();
+  let html="";
+  p.parts.forEach((part,pi)=>{
+    html+=`<div class="partline light" style="margin-top:18px">
+      <span class="badge">PART ${pi+1}</span>
+      <span>· ${esc(part.k)}${part.n?" · "+esc(part.n):""}${part.r?" · "+part.r+" ROUNDS":""}</span>
+      <span class="hr"></span></div>
+      ${part.note?`<p class="pnote" style="margin:0 0 6px">${esc(part.note)}</p>`:""}`;
+
+    if(part.k==="AMRAP"){
+      const min=part.min||12, pr=prevAmrap(pi);
+      const cur=((S.amraps&&S.amraps[p.t+"|"+pi])||[]).filter(e=>e.d===todayKey()).pop();
       html+=`<div class="ent">
-        <div class="ent-h"><b>${f.min} min AMRAP</b>
-          <span>${f.items.map(it=>esc(EX[it.x].ja)+" "+esc(it.d)).join(" / ")}</span></div>
+        <div class="ent-h"><b>${min} min AMRAP</b>
+          <span>${part.items.map(it=>esc(EX[it.x].ja)+" "+esc(doseOf(it))).join(" / ")}</span></div>
         <div class="ent-in">
-          <label><input id="e${i}-x" type="number" inputmode="numeric" min="0"
+          <label><input id="a${pi}-x" type="number" inputmode="numeric" min="0"
             value="${cur?cur.r:""}" placeholder="—" aria-label="完了ラウンド"><span>ラウンド</span></label>
         </div>
         ${pr?`<div class="ent-prev">前回 ${mmdd(pr.d)}・${pr.r} ラウンド</div>`:""}
       </div>`;
       return;
     }
-    const ps=prevSession(f.x);
-    const si=f.set?f.set-1:0;
-    const pe=ps ? (ps.list[si]||ps.list[ps.list.length-1]) : null;
-    if(f.sec){
-      html+=`<div class="ent done-ok">
-        <div class="ent-h"><b>${f.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span></div>
-        <div class="ent-time">${esc(setLabel(f))}${f.round?`　ROUND ${f.round}/${f.rounds}`:""}</div>
+
+    part.items.forEach((it,ii)=>{
+      const d=doseOf(it); if(!d || d==="—") return;
+      const ex=EX[it.x], pd=parseDose(d);
+      /* 時間でやる種目は入れるものが無いので、指示だけ出す */
+      if(pd.sec && pd.reps==null){
+        html+=`<div class="ent done-ok">
+          <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span></div>
+          <div class="ent-time">${esc(d)}</div></div>`;
+        return;
+      }
+      const today=todayKey();
+      const mine=((S.sets&&S.sets[it.x])||[]).filter(e=>e.d===today).pop();
+      const ps=prevSession(it.x), pe=ps?ps.list[ps.list.length-1]:null;
+      const w = mine ? (mine.w!=null?mine.w:"") : (pe&&pe.w!=null?pe.w:"");
+      const r = mine ? (mine.r!=null?mine.r:"") : (pd.reps!=null?pd.reps:"");
+      html+=`<div class="ent">
+        <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span>
+          <i>${esc(d)}</i></div>
+        <div class="ent-in">
+          <label><input id="e${pi}-${ii}-w" type="number" inputmode="decimal" step="0.5" min="0"
+            value="${w}" placeholder="—" aria-label="重量"><span>kg</span></label>
+          <label><input id="e${pi}-${ii}-r" type="number" inputmode="numeric" min="0"
+            value="${r}" placeholder="—" aria-label="回数"><span>rep</span></label>
+        </div>
+        ${pe?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(fmtSet(pe))}</div>`:""}
       </div>`;
-      return;
-    }
-    const pf=entryPrefill(f);
-    html+=`<div class="ent">
-      <div class="ent-h"><b>${f.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span>
-        ${f.set?`<i>SET ${f.set}/${f.sets}</i>`:""}</div>
-      <div class="ent-in">
-        <label><input id="e${i}-w" type="number" inputmode="decimal" step="0.5" min="0"
-          value="${pf.w}" placeholder="—" aria-label="重量"><span>kg</span></label>
-        <label><input id="e${i}-r" type="number" inputmode="numeric" min="0"
-          value="${pf.r}" placeholder="—" aria-label="回数"><span>rep</span></label>
-      </div>
-      ${pe?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(fmtSet(pe))}</div>`:""}
-    </div>`;
+    });
   });
+
   return `<div class="screen on">
     ${topbar()}
     <div class="scroll"><div class="pad">
@@ -1489,7 +1482,7 @@ function viewEntry(){
 }
 function saveEntry(){
   const p=todayProgram(); if(!p) return;
-  const flow=buildFlow(p), today=todayKey();
+  const today=todayKey();
   S.sets=S.sets||{}; S.amraps=S.amraps||{};
   /* 今日ぶんを一度消してから入れ直す（タイマーと二重に記録されるのを防ぐ） */
   Object.keys(S.sets).forEach(k=>{
@@ -1498,21 +1491,23 @@ function saveEntry(){
   Object.keys(S.amraps).forEach(k=>{
     S.amraps[k]=S.amraps[k].filter(e=>e.d!==today); if(!S.amraps[k].length) delete S.amraps[k];
   });
-  flow.forEach((f,i)=>{
-    if(f.amrap){
-      const el=document.getElementById("e"+i+"-x");
+  p.parts.forEach((part,pi)=>{
+    if(part.k==="AMRAP"){
+      const el=document.getElementById("a"+pi+"-x");
       if(el && el.value!==""){
-        const key=p.t+"|"+f.pi;
+        const key=p.t+"|"+pi;
         (S.amraps[key]=S.amraps[key]||[]).push({d:today, r:parseInt(el.value,10)});
       }
       return;
     }
-    if(f.sec) return;
-    const w=document.getElementById("e"+i+"-w"), r=document.getElementById("e"+i+"-r");
-    const wv = (w && w.value!=="") ? parseFloat(w.value) : null;
-    const rv = (r && r.value!=="") ? parseInt(r.value,10) : null;
-    if(wv==null && rv==null) return;
-    (S.sets[f.x]=S.sets[f.x]||[]).push({d:today, w:wv, r:rv});
+    part.items.forEach((it,ii)=>{
+      const w=document.getElementById("e"+pi+"-"+ii+"-w"), r=document.getElementById("e"+pi+"-"+ii+"-r");
+      if(!w && !r) return;
+      const wv=(w && w.value!=="") ? parseFloat(w.value) : null;
+      const rv=(r && r.value!=="") ? parseInt(r.value,10) : null;
+      if(wv==null && rv==null) return;
+      (S.sets[it.x]=S.sets[it.x]||[]).push({d:today, w:wv, r:rv});
+    });
   });
 
   /* 追加でやった種目。登録ずみの種目名と一致したら履歴にも積む */
