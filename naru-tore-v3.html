@@ -1076,6 +1076,7 @@ function render(){
   else if(current==="ob") app.innerHTML = viewOB();
   else if(current==="home") app.innerHTML = viewHome();
   else if(current==="train") app.innerHTML = viewTrain();
+  else if(current==="entry") app.innerHTML = viewEntry();
   else if(current==="run") app.innerHTML = viewRun();
   else if(current==="timer") app.innerHTML = viewTimer();
   else if(current==="log") app.innerHTML = viewLog();
@@ -1339,8 +1340,8 @@ function viewTrain(){
         </div>
 
         <p class="sub" style="text-align:center;margin:14px 0 10px">種目をタップするとフォームのポイントが見られます</p>
-        <button class="btn btn-olive" data-go="timer">トレーニングを始める</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="run">リストで自分のペースで進める</button>
+        <button class="btn btn-olive" data-go="entry">終わったら記録する</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">タイマーを使う（時間種目・AMRAP）</button>
         <button class="btn btn-ghost" style="margin-top:9px" data-go="home">ホームに戻る</button>
       </div>
     </div>
@@ -1349,7 +1350,117 @@ function viewTrain(){
 }
 
 /* =========================================================================
-   実行：チェックリスト
+   記録：トレーニングが終わってから、まとめて入れる画面
+   運動中はスマホを持たない前提なので、合間のボタンは置かない
+   ========================================================================= */
+function entryPrefill(f){
+  const today=todayKey(), si = f.set ? f.set-1 : 0;
+  const a=(S.sets && S.sets[f.x]) || [];
+  const t=a.filter(e=>e.d===today);
+  if(t[si]) return {w: t[si].w!=null?t[si].w:"", r: t[si].r!=null?t[si].r:""};
+  const ps=prevSession(f.x);
+  const pe=ps ? (ps.list[si] || ps.list[ps.list.length-1]) : null;
+  const rp=parseDose(f.label).reps;
+  return {w: (pe && pe.w!=null) ? pe.w : "", r: rp!=null ? rp : ""};
+}
+function viewEntry(){
+  const n=cycleDay(), p=todayProgram();
+  if(!p) return viewTrain();
+  const flow=buildFlow(p);
+  let html="", lastPi=-1;
+  flow.forEach((f,i)=>{
+    if(f.pi!==lastPi){
+      lastPi=f.pi;
+      const part=p.parts[f.pi];
+      html+=`<div class="partline light" style="margin-top:18px">
+        <span class="badge">PART ${f.pi+1}</span>
+        <span>· ${esc(part.k)}${part.n?" · "+esc(part.n):""}</span><span class="hr"></span></div>
+        ${part.note?`<p class="pnote" style="margin:0 0 6px">${esc(part.note)}</p>`:""}`;
+    }
+    const ex=EX[f.x];
+    if(f.amrap){
+      const pr=prevAmrap(f.pi);
+      const cur=(S.amraps&&S.amraps[p.t+"|"+f.pi]||[]).filter(e=>e.d===todayKey()).pop();
+      html+=`<div class="ent">
+        <div class="ent-h"><b>${f.min} min AMRAP</b>
+          <span>${f.items.map(it=>esc(EX[it.x].ja)+" "+esc(it.d)).join(" / ")}</span></div>
+        <div class="ent-in">
+          <label><input id="e${i}-x" type="number" inputmode="numeric" min="0"
+            value="${cur?cur.r:""}" placeholder="—" aria-label="完了ラウンド"><span>ラウンド</span></label>
+        </div>
+        ${pr?`<div class="ent-prev">前回 ${mmdd(pr.d)}・${pr.r} ラウンド</div>`:""}
+      </div>`;
+      return;
+    }
+    const ps=prevSession(f.x);
+    const si=f.set?f.set-1:0;
+    const pe=ps ? (ps.list[si]||ps.list[ps.list.length-1]) : null;
+    if(f.sec){
+      html+=`<div class="ent done-ok">
+        <div class="ent-h"><b>${f.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span></div>
+        <div class="ent-time">${esc(setLabel(f))}${f.round?`　ROUND ${f.round}/${f.rounds}`:""}</div>
+      </div>`;
+      return;
+    }
+    const pf=entryPrefill(f);
+    html+=`<div class="ent">
+      <div class="ent-h"><b>${f.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span>
+        ${f.set?`<i>SET ${f.set}/${f.sets}</i>`:""}</div>
+      <div class="ent-in">
+        <label><input id="e${i}-w" type="number" inputmode="decimal" step="0.5" min="0"
+          value="${pf.w}" placeholder="—" aria-label="重量"><span>kg</span></label>
+        <label><input id="e${i}-r" type="number" inputmode="numeric" min="0"
+          value="${pf.r}" placeholder="—" aria-label="回数"><span>rep</span></label>
+      </div>
+      ${pe?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(fmtSet(pe))}</div>`:""}
+    </div>`;
+  });
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll"><div class="pad">
+      <div class="eyebrow" style="margin-top:4px">DAY ${n} · RECORD</div>
+      <h1 style="margin:4px 0 2px;font-size:23px;font-weight:800">${esc(p.t)}</h1>
+      <p class="sub" style="margin-bottom:4px">やった分だけ入れてください。空欄のまま進めても大丈夫です。</p>
+      ${html}
+      <button class="btn btn-olive" style="margin-top:20px" data-entry-save>記録して完了する</button>
+      <button class="btn btn-ghost" style="margin-top:9px" data-go="train">戻る</button>
+    </div></div>
+    ${nav("train")}
+  </div>`;
+}
+function saveEntry(){
+  const p=todayProgram(); if(!p) return;
+  const flow=buildFlow(p), today=todayKey();
+  S.sets=S.sets||{}; S.amraps=S.amraps||{};
+  /* 今日ぶんを一度消してから入れ直す（タイマーと二重に記録されるのを防ぐ） */
+  Object.keys(S.sets).forEach(k=>{
+    S.sets[k]=S.sets[k].filter(e=>e.d!==today); if(!S.sets[k].length) delete S.sets[k];
+  });
+  Object.keys(S.amraps).forEach(k=>{
+    S.amraps[k]=S.amraps[k].filter(e=>e.d!==today); if(!S.amraps[k].length) delete S.amraps[k];
+  });
+  flow.forEach((f,i)=>{
+    if(f.amrap){
+      const el=document.getElementById("e"+i+"-x");
+      if(el && el.value!==""){
+        const key=p.t+"|"+f.pi;
+        (S.amraps[key]=S.amraps[key]||[]).push({d:today, r:parseInt(el.value,10)});
+      }
+      return;
+    }
+    if(f.sec) return;
+    const w=document.getElementById("e"+i+"-w"), r=document.getElementById("e"+i+"-r");
+    const wv = (w && w.value!=="") ? parseFloat(w.value) : null;
+    const rv = (r && r.value!=="") ? parseInt(r.value,10) : null;
+    if(wv==null && rv==null) return;
+    (S.sets[f.x]=S.sets[f.x]||[]).push({d:today, w:wv, r:rv});
+  });
+  save();
+  completeToday();
+}
+
+/* =========================================================================
+   実行：チェックリスト（任意）
    ========================================================================= */
 function flatItems(p){
   const out=[];
@@ -1965,6 +2076,7 @@ function bind(){
   on("[data-fold]",el=>{ const i=el.dataset.fold; S.folded=S.folded||{};
     S.folded[i] = S.folded[i]===false ? true : false; render(); });
   on("[data-complete]",()=>completeToday());
+  on("[data-entry-save]",()=>saveEntry());
 
   /* タイマー */
   on("[data-skip-count]",()=>enterItem(0));
@@ -2039,6 +2151,29 @@ render();
 .setlog input:focus{outline:none}
 .setlog input::placeholder{color:var(--ink-mute);font-weight:700}
 .setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
+/* 記録画面 */
+.partline.light span{color:var(--ink-soft)}
+.partline.light .hr{background:rgba(34,37,29,.14)}
+.partline.light .badge{background:var(--olive);color:#f4f0ea}
+.ent{background:var(--surface);border-radius:var(--r-md);padding:11px 13px;margin-top:7px}
+.ent.done-ok{background:var(--surface-alt)}
+.ent-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 8px}
+.ent-h b{font-size:14px;font-weight:800}
+.ent-h span{font-size:11.5px;color:var(--ink-mute)}
+.ent-h i{font-style:normal;margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.08em;
+  color:var(--olive-dark);background:var(--olive-soft);border-radius:4px;padding:2px 6px}
+.ent-in{display:flex;gap:8px;margin-top:8px}
+.ent-in label{flex:1;min-width:0;display:flex;align-items:baseline;gap:5px;
+  background:var(--surface-sunk);border-radius:9px;padding:6px 10px}
+.ent-in input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font-family:inherit;
+  font-size:19px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.ent-in input::-webkit-outer-spin-button,.ent-in input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.ent-in input:focus{outline:none}
+.ent-in label span{font-size:11px;font-weight:700;color:var(--ink-mute);flex:none}
+.ent-prev{margin-top:6px;font-size:11.5px;color:var(--ink-soft);font-weight:700;
+  font-variant-numeric:tabular-nums}
+.ent-time{margin-top:5px;font-size:15px;font-weight:800;color:var(--ink-soft)}
+
 /* AMRAP */
 .amrap-list{list-style:none;margin:16px 0 0;padding:0;width:100%;background:var(--surface);
   border-radius:var(--r-md);overflow:hidden}
