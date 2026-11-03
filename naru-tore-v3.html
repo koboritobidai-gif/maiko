@@ -718,11 +718,16 @@ const GOAL_ORDER = {
 };
 const GOAL_LABEL = {tone:"引き締めたい",lose:"痩せたい",build:"筋肉をつけたい",stamina:"体力をつけたい"};
 const LEVELS = [
-  {id:"fit1", name:"Fit 1", sub:"初心者・自宅／自重メイン　運動習慣とフォームの基礎づくり"},
-  {id:"fit2", name:"Fit 2", sub:"中級・自宅ダンベル／ジム　筋力アップと動ける身体づくり", soon:true},
-  {id:"fit3", name:"Fit 3", sub:"上級・ジム／アスリート　限界突破と高強度コンディショニング"},
+  {id:"fit1", name:"Fit 1", emoji:"🏃", lead:"初級者向け",
+   sub:"まずはここから。リフレッシュと基礎作り（自宅・自重）"},
+  {id:"fit2", name:"Fit 2", emoji:"🏋️", lead:"中級者向け",
+   sub:"しっかりボディメイク、筋肉を育てる（自宅ダンベル／ジム）"},
+  {id:"fit3", name:"Fit 3", emoji:"🔥", lead:"アスリートレベル",
+   sub:"限界突破、本格的なバルクアップ（ジム）"},
 ];
-const LEVEL_SHORT = {fit1:"初心者・自宅", fit2:"中級（準備中）", fit3:"上級・ジム"};
+const LEVEL_SHORT = {fit1:"初級・基礎作り", fit2:"中級・ボディメイク", fit3:"上級・限界突破"};
+/* 内容がまだ無いレベルは選ばせない */
+const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 
 /* =========================================================================
    状態
@@ -849,14 +854,14 @@ const dayDiff = (a,b) => Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:0
 /* いま選んでいる Fit レベル。内容がまだ無い Fit 2 は Fit 1 に落とす */
 function fit(){ const v=level(); return (PROGRAM[v] && PROGRAM[v].length) ? v : "fit1"; }
 
+/* サイクル（DAY 1〜14）は Fit レベルと切り離す。
+   その日の調子で Fit を上げ下げしても、日数は進んだまま */
 function newCycle(start){
-  return { start:start, fit:fit(), plan:Array.from({length:CYCLE},(_,i)=>i%WEEK) };
+  return { start:start, plan:Array.from({length:CYCLE},(_,i)=>i%WEEK) };
 }
 function ensureCycle(){
   let moved=false;
-  if(!S.cycle || !S.cycle.start || !S.cycle.plan || S.cycle.fit!==fit()){
-    S.cycle=newCycle(todayKey()); moved=true;
-  }
+  if(!S.cycle || !S.cycle.start || !S.cycle.plan){ S.cycle=newCycle(todayKey()); moved=true; }
   let d=dayDiff(S.cycle.start, todayKey());
   if(d<0){ S.cycle=newCycle(todayKey()); d=0; moved=true; }
   let guard=0;
@@ -871,12 +876,12 @@ function ensureCycle(){
 function dayOf(n){
   ensureCycle();
   if(n<1 || n>CYCLE) return null;
-  const list = PROGRAM[S.cycle.fit] || PROGRAM.fit1;
+  const list = PROGRAM[fit()] || PROGRAM.fit1;
   return list[S.cycle.plan[n-1]] || null;
 }
 function cycleDates(){ return Array.from({length:CYCLE},(_,i)=>addDays(S.cycle.start,i)); }
 function cycleSummary(){
-  const list = PROGRAM[S.cycle.fit] || PROGRAM.fit1;
+  const list = PROGRAM[fit()] || PROGRAM.fit1;
   const need = S.cycle.plan.filter(i => !(list[i]||{}).rest).length;
   const did  = cycleDates().filter(k=>S.logs.some(l=>l.date===k)).length;
   return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE-1), need:need, did:did};
@@ -1134,8 +1139,8 @@ const OB_STEPS = [
   {t:"目的を教えて", s:"あなたに合わせてメニューを組みます", k:"goal",
    opts:[["tone","引き締めたい","見た目をしゅっと"],["lose","痩せたい","脂肪を落とす"],
          ["build","筋肉をつけたい","しっかり増やす"],["stamina","体力をつけたい","動ける体に"]]},
-  {t:"どのレベルから始める？", s:"あとで変えられます。休む日もプログラムに入っています", k:"level",
-   opts:LEVELS.filter(l=>!l.soon).map(l=>[l.id,l.name,l.sub])},
+  {t:"今日はどれでいく？", s:"毎日ここで変えられます。しんどい日は落としてOKです", k:"level",
+   opts:LEVELS.filter(l=>levelReady(l.id)).map(l=>[l.id,l.name+"　"+l.lead,l.sub])},
 ];
 
 function viewOB(){
@@ -1201,9 +1206,10 @@ function viewHome(){
           <p class="swapnote out">休養日を使い切りました。今日やらないと、この2週間では取り返せません。</p>`}`}
 
         <div class="seg">
-          ${LEVELS.map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">
+          ${LEVELS.filter(l=>levelReady(l.id)).map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">
             <b>${l.name}</b><span>${LEVEL_SHORT[l.id]}</span></button>`).join("")}
         </div>
+        <p class="sub" style="text-align:center;margin-top:7px">今日の調子で選べます。しんどい日は落としてOK</p>
 
         <div class="stats">
           <div class="stat"><div class="v tnum">${streak()}</div><div class="k">STREAK 🔥</div></div>
@@ -1305,7 +1311,7 @@ function viewTrain(){
           </div>
 
           <div class="seg-dark">
-            ${LEVELS.map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">${l.name}</button>`).join("")}
+            ${LEVELS.filter(l=>levelReady(l.id)).map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">${l.name}</button>`).join("")}
           </div>
 
           ${p.parts.map((part,pi)=>`
@@ -1917,7 +1923,7 @@ function viewSettings(){
         <h1 class="h1" style="margin-top:2px">設定</h1>
         <p class="sub" style="margin-bottom:4px">変更してもこれまでの記録は残ります</p>
         ${row("GOAL 目的",[["tone","引き締めたい"],["lose","痩せたい"],["build","筋肉をつけたい"],["stamina","体力をつけたい"]],"goal",pf.goal)}
-        ${row("LEVEL 強度",LEVELS.map(l=>[l.id,l.name]),"level",level())}
+        ${row("LEVEL きょうの強度",LEVELS.filter(l=>levelReady(l.id)).map(l=>[l.id,l.name]),"level",level())}
         ${row("PLACE 場所",[["gym","ジム"],["home","自宅"]],"place",pf.place)}
         ${row("FREQUENCY 週の回数",[[2,"週2日"],[3,"週3日"],[4,"週4日"],[5,"週5日"]],"days",pf.days)}
 
@@ -2008,11 +2014,14 @@ function tryUnlock(v){
 /* naruさんの紹介文が決まったら INTRO を差し替える */
 const INTRO = {
   tagline: "すべての人が、自分の身体を自分でデザインし、愛せるようになるアプリ",
+  hook: "筋トレ、毎日同じメニューを無理して続けていませんか？　不調な日に無理をすると、ストレスホルモン（コルチゾール）が増えて逆効果になります。",
+  stepsTitle: "体調や目標に合わせて選べる3ステップ",
+  switchNote: "「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 3 に挑戦」が、自由に選べます。",
   lead : "2週間で1クール。14日分のメニューが、休む日まで組んであります。",
   points: [
     ["14日分のプログラム", "DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています"],
     ["重量と回数を記録",   "種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です"],
-    ["ジムと自宅",         "目的・強度・場所を選ぶと、その人に合わせた内容になります"],
+    ["有酸素までセット",   "各日に『外を走る、もしくは歩く20分』まで指定されています"],
     ["naru の解説",        "各日の狙いと、種目ごとのコツ・やりがちなミスが入っています"]
   ]
 };
@@ -2022,6 +2031,19 @@ function viewGate(){
     <div class="logo">NARU</div>
     <h1>ナルフィットネス</h1>
     <p class="tagline">${esc(INTRO.tagline)}</p>
+    <p class="hook">${esc(INTRO.hook)}</p>
+
+    <div class="steps">
+      <div class="steps-h">${esc(INTRO.stepsTitle)}</div>
+      ${LEVELS.map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
+        <span class="em">${l.emoji}</span>
+        <span class="tx"><b>${esc(l.name)}：${esc(l.lead)}</b>
+          <span>${esc(l.sub)}</span></span>
+        ${levelReady(l.id)?"":`<span class="soon-tag">準備中</span>`}
+      </div>`).join("")}
+      <p class="steps-note">${esc(INTRO.switchNote)}</p>
+    </div>
+
     <p class="lead">${esc(INTRO.lead)}</p>
 
     <ul class="gate-pts">${INTRO.points.map(([a,b])=>
@@ -2296,6 +2318,23 @@ render();
 .gate .tagline{margin:10px 0 0;font-size:12.5px;font-weight:700;color:var(--olive-dark);
   line-height:1.7}
 .gate .lead{margin-top:8px}
+
+/* 紹介画面：naru のコピー */
+.gate .hook{margin:12px 0 0;font-size:13px;line-height:1.85;color:var(--ink)}
+.steps{margin-top:18px;background:var(--surface);border-radius:var(--r-md);padding:14px 15px}
+.steps-h{font-size:12.5px;font-weight:800;color:var(--olive-dark);margin-bottom:9px}
+.step{display:flex;align-items:flex-start;gap:10px;padding:9px 0;
+  border-top:1px solid rgba(34,37,29,.08)}
+.step:first-of-type{border-top:0}
+.step.soon{opacity:.5}
+.step .em{font-size:17px;line-height:1.3;flex:none}
+.step .tx{flex:1;min-width:0}
+.step .tx b{display:block;font-size:13.5px;font-weight:800}
+.step .tx span{display:block;font-size:12px;line-height:1.65;color:var(--ink-soft);margin-top:1px}
+.soon-tag{flex:none;align-self:center;font-size:9.5px;font-weight:800;letter-spacing:.08em;
+  background:var(--surface-sunk);color:var(--ink-mute);border-radius:4px;padding:2px 6px}
+.steps-note{margin:10px 0 0;padding-top:9px;border-top:1px solid rgba(34,37,29,.08);
+  font-size:12px;line-height:1.75;color:var(--ink-soft)}
 
 /* 紹介＋合言葉の画面 */
 .gate{padding-top:26px;padding-bottom:34px}
