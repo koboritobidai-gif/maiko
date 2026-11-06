@@ -443,7 +443,8 @@ const EX = {
   "towel-pulldown":{en:"Towel Lat Pulldown",ja:"タオル・ラットプルダウン",video:null,
     cues:["タオルを両手で張ったまま頭上に上げる","肩甲骨を下げながら肘を体側へ引く","引いている間もタオルを左右に張り続ける"],
     miss:["肩がすくむ","腕だけで動かす","タオルが緩む"],breath:"引きながら吐き、戻しながら吸う"},
-  "good-morning":{en:"Good Morning",ja:"グッドモーニング",video:null,
+  "good-morning":{en:"Good Morning",ja:"グッドモーニング",
+    video:{src:"videos/good-morning.mp4",poster:"videos/good-morning.jpg"},
     cues:["膝を軽く曲げたまま股関節からお辞儀する","背中は最後まで真っすぐ","もも裏が伸びたら戻す"],
     miss:["背中が丸まる","膝が深く曲がる","腰から折る"],breath:"倒しながら吸い、起こしながら吐く"},
   "inchworm":{en:"Inchworm",ja:"インチワーム",video:null,
@@ -1221,7 +1222,7 @@ function viewHome(){
           ${strip.map(d=>`<div class="${d.done?"done":""} ${d.today?"today":""}">${d.ja}<i>${d.done?"✓":"·"}</i></div>`).join("")}
         </div>
 
-        ${videoBlock(null)}
+        ${videoBlock(todaysVideoEx())}
 
         <div class="note">
           <div class="k">FROM NARU</div>
@@ -1262,12 +1263,20 @@ function coachNote(p, lv, doneToday){
 }
 
 /* 動画枠。exId を渡すとその種目の動画、null ならホームのワンポイント動画 */
+/* その日のメニューの中で、動画が入っている最初の種目 */
+function todaysVideoEx(){
+  const p=todayProgram(); if(!p) return null;
+  for(const part of p.parts) for(const it of part.items)
+    if(EX[it.x] && EX[it.x].video) return it.x;
+  return null;
+}
 function videoBlock(exId){
   /* 経験者向けの Fit 3 にはフォーム動画を出さない（naru の指示） */
   if(fit()==="fit3") return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
   const title = exId ? `${EX[exId].en} のフォーム` : "NARU のワンポイント動画";
-  const sub = exId ? "NARU の実演でフォームを確認できます" : "NARU の実演動画がここに入ります（約15秒）";
+  const sub = exId ? (v ? "NARU の実演でフォームを確認できます" : "NARU の実演動画は準備中です")
+                   : "この日のメニューの実演動画がここに入ります";
   return `<div class="video">
     <div class="frame">
       ${v ? `<video src="${v.src}" ${v.poster?`poster="${v.poster}"`:""} controls playsinline></video>`
