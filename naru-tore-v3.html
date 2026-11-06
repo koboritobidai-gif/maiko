@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#e7e3d9">
+<meta name="theme-color" content="#0B0B0A">
 <title>NARU｜Lifestyle Fitness Coach</title>
 <style>
 :root{
-  --bg-top:#e7e3d9; --bg-bottom:#d7d2c4;
-  --surface:#f4f0ea; --surface-alt:#ebe7df; --surface-sunk:#e3ded2;
-  --ink:#22251d; --ink-soft:#5c604f; --ink-mute:#8d8f80;
-  --olive:#737d58; --olive-dark:#5f6849; --olive-soft:#e0e2d3;
-  --orange-a:#e2783c; --orange-b:#d35f2d;
-  --tan:#c58e61;
-  --line:#d8d3c6;
+  --bg-top:#0B0B0A; --bg-bottom:#101207;
+  --panel:#1C2113;
+  --surface:#15180E; --surface-alt:#1D2213; --surface-sunk:#0D0F07;
+  --ink:#F1F5E4; --ink-soft:#AFB89A; --ink-mute:#767E64;
+  --olive:#CAFF3C; --olive-dark:#DBFF7A; --olive-soft:#28320F;
+  --orange-a:#CAFF3C; --orange-b:#A9E022;
+  --tan:#CAFF3C;
+  --line:#2B3020;
   --r-lg:18px; --r-md:12px; --r-sm:8px;
   --safe:env(safe-area-inset-bottom,0px);
   --nav-h:60px;
@@ -34,9 +35,9 @@ button{border:0;background:none;cursor:pointer}
 /* ── アプリの外枠 ── */
 #app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
 @media(min-width:520px){
-  body{background:#cfcabc fixed}
+  body{background:#050504 fixed}
   #app{background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-top) 22%,var(--bg-bottom) 78%);
-       box-shadow:0 0 0 1px rgba(34,37,29,.08),0 30px 70px -40px rgba(34,37,29,.55)}
+       box-shadow:0 0 0 1px rgba(226,236,206,.08),0 30px 70px -40px rgba(226,236,206,.55)}
 }
 .screen{flex:1;min-height:0;display:none;flex-direction:column;animation:fade .28s ease both}
 .screen.on{display:flex}
@@ -48,20 +49,20 @@ button{border:0;background:none;cursor:pointer}
 .eyebrow{font-size:9.5px;letter-spacing:.085em;font-weight:700;color:var(--ink-mute);text-transform:uppercase}
 .h1{font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin:6px 0 0}
 .sub{font-size:13px;color:var(--ink-mute);margin:6px 0 0;line-height:1.6}
-.card{background:var(--surface);border:1px solid rgba(34,37,29,.07);border-radius:var(--r-lg);}
+.card{background:var(--surface);border:1px solid rgba(226,236,206,.07);border-radius:var(--r-lg);}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;
      border-radius:var(--r-md);font-weight:700;font-size:15px;transition:.15s}
-.btn-olive{background:var(--olive);color:#fff}
+.btn-olive{background:var(--olive);color:#0B0B0A}
 .btn-olive:active{background:var(--olive-dark)}
 .btn-olive:disabled{background:var(--surface-sunk);color:var(--ink-mute);cursor:default}
-.btn-ghost{background:var(--surface);border:1px solid rgba(34,37,29,.08);color:var(--ink)}
-.btn-dark{background:var(--ink);color:#f4f0ea}
-.btn-orange{background:linear-gradient(100deg,var(--orange-a),var(--orange-b));color:#fff;
+.btn-ghost{background:var(--surface);border:1px solid rgba(226,236,206,.08);color:var(--ink)}
+.btn-dark{background:var(--panel);color:var(--ink)}
+.btn-orange{background:linear-gradient(100deg,var(--orange-a),var(--orange-b));color:#0B0B0A;
             box-shadow:0 8px 20px -10px rgba(211,95,45,.9)}
-.btn-tan{background:var(--tan);color:#fff}
-.pill{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#f4f0ea;
+.btn-tan{background:var(--tan);color:#0B0B0A}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--panel);color:var(--ink);
       border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;letter-spacing:.06em}
-.badge{display:inline-block;background:var(--olive);color:#fff;font-size:9px;font-weight:800;
+.badge{display:inline-block;background:var(--olive);color:#0B0B0A;font-size:9px;font-weight:800;
        letter-spacing:.1em;padding:3px 8px;border-radius:5px}
 .divider{height:1px;background:rgba(244,240,234,.16);margin:14px 0}
 
@@ -71,7 +72,7 @@ button{border:0;background:none;cursor:pointer}
 
 /* ── ボトムナビ ── */
 .nav{flex:none;height:calc(var(--nav-h) + var(--safe));padding-bottom:var(--safe);
-     display:flex;background:rgba(240,236,228,.94);backdrop-filter:blur(10px);
+     display:flex;background:rgba(10,11,8,.94);backdrop-filter:blur(10px);
      border-top:1px solid var(--line)}
 .nav.hide{display:none}
 .nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink-mute)}
@@ -91,7 +92,7 @@ button{border:0;background:none;cursor:pointer}
 .opt span{display:block;font-size:12.5px;color:var(--ink-mute);margin-top:3px}
 
 /* ── ホーム ── */
-.hero{position:relative;overflow:hidden;background:var(--ink);color:#f4f0ea;border-radius:var(--r-lg);padding:18px}
+.hero{position:relative;overflow:hidden;background:var(--panel);color:var(--ink);border-radius:var(--r-lg);padding:18px}
 .hero .orb{position:absolute;right:-34px;top:-34px;width:130px;height:130px;border-radius:999px;
            background:rgba(115,125,88,.35)}
 .hero .day{font-size:9px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)}
@@ -100,7 +101,7 @@ button{border:0;background:none;cursor:pointer}
           padding:5px 12px;font-size:10px;font-weight:600}
 .hero .by b{font-weight:800;letter-spacing:.06em}
 .stats{display:flex;gap:9px;margin-top:11px}
-.stat{flex:1;background:var(--surface);border:1px solid rgba(34,37,29,.07);border-radius:var(--r-md);
+.stat{flex:1;background:var(--surface);border:1px solid rgba(226,236,206,.07);border-radius:var(--r-md);
       padding:12px 6px;text-align:center}
 .stat .v{font-size:22px;font-weight:800;line-height:1}
 .stat .v small{font-size:12px;color:var(--ink-mute);font-weight:700}
@@ -109,10 +110,12 @@ button{border:0;background:none;cursor:pointer}
 .seg button{flex:1;background:var(--surface);border:1.5px solid transparent;border-radius:var(--r-md);
             padding:11px 4px;text-align:center;transition:.15s}
 .seg button.on{background:var(--olive-soft);border-color:var(--olive)}
+.seg button.soon,.seg-dark button.soon{opacity:.38;cursor:default}
+.opt.soon{opacity:.4;cursor:default}
 .seg b{display:block;font-size:14px;font-weight:800}
 .seg span{display:block;font-size:10.5px;color:var(--ink-mute);margin-top:2px}
 .weekstrip{display:flex;gap:5px;margin-top:11px}
-.weekstrip div{flex:1;border-radius:9px;background:var(--surface);border:1px solid rgba(34,37,29,.06);
+.weekstrip div{flex:1;border-radius:9px;background:var(--surface);border:1px solid rgba(226,236,206,.06);
                padding:7px 0;text-align:center;font-size:10px;color:var(--ink-mute);font-weight:700}
 .weekstrip div.done{background:var(--olive);border-color:var(--olive);color:#fff}
 .weekstrip div.today{border-color:var(--ink)}
@@ -120,19 +123,19 @@ button{border:0;background:none;cursor:pointer}
 
 /* 動画枠 */
 .video{margin-top:11px;border-radius:var(--r-lg);overflow:hidden;background:var(--surface);
-       border:1px solid rgba(34,37,29,.07)}
+       border:1px solid rgba(226,236,206,.07)}
 .video .frame{position:relative;aspect-ratio:16/11;background:linear-gradient(150deg,#3a3f31,#22251d);
               display:grid;place-items:center}
 .video .frame video{width:100%;height:100%;object-fit:cover}
 .video .play{width:56px;height:56px;border-radius:999px;background:rgba(244,240,234,.92);display:grid;place-items:center}
 .video .play::after{content:"";border-left:16px solid var(--ink);border-top:10px solid transparent;
                     border-bottom:10px solid transparent;margin-left:4px}
-.video .tag{position:absolute;top:10px;right:10px;background:rgba(34,37,29,.72);color:#f4f0ea;
+.video .tag{position:absolute;top:10px;right:10px;background:rgba(226,236,206,.72);color:#f4f0ea;
             border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:700}
 .video .cap{padding:12px 14px}
 .video .cap b{font-size:13.5px}
 .video .cap p{margin:3px 0 0;font-size:11.5px;color:var(--ink-mute)}
-.note{margin-top:11px;background:var(--surface);border:1px solid rgba(34,37,29,.07);
+.note{margin-top:11px;background:var(--surface);border:1px solid rgba(226,236,206,.07);
       border-radius:var(--r-lg);padding:14px 16px}
 .note .k{font-size:10.5px;letter-spacing:.14em;font-weight:800;color:var(--ink-mute)}
 .note p{margin:6px 0 0;font-size:13.5px;line-height:1.7}
@@ -150,7 +153,7 @@ button{border:0;background:none;cursor:pointer}
 .exrow .ja{display:block;font-size:10px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
 .exrow .dose{font-size:11px;font-weight:700;white-space:nowrap;color:var(--ink-soft)}
 .exrow .chev{color:var(--ink-mute);font-size:15px}
-.trainwrap{position:relative;overflow:hidden;background:var(--ink);border-radius:var(--r-lg);padding:18px;color:#f4f0ea}
+.trainwrap{position:relative;overflow:hidden;background:var(--panel);border-radius:var(--r-lg);padding:18px;color:var(--ink)}
 
 /* ── 実行 ── */
 .check{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;background:var(--surface);
@@ -175,7 +178,7 @@ button{border:0;background:none;cursor:pointer}
 .timer .cues{margin-top:18px;width:100%;background:var(--surface);border-radius:var(--r-md);padding:14px 16px;text-align:left}
 .timer .cues li{font-size:13px;line-height:1.7;margin-left:-8px}
 .tctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:14px 18px calc(18px + var(--safe))}
-.tctl .rnd{width:52px;height:52px;border-radius:999px;background:var(--surface);border:1px solid rgba(34,37,29,.08);
+.tctl .rnd{width:52px;height:52px;border-radius:999px;background:var(--surface);border:1px solid rgba(226,236,206,.08);
            display:grid;place-items:center;font-size:17px}
 .tctl .main{flex:1;max-width:170px}
 
@@ -191,7 +194,7 @@ button{border:0;background:none;cursor:pointer}
 .sess b{font-size:14px}.sess span{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px}
 
 /* ── シート／モーダル ── */
-.backdrop{position:fixed;inset:0;background:rgba(34,37,29,.55);z-index:60;display:none;
+.backdrop{position:fixed;inset:0;background:rgba(226,236,206,.55);z-index:60;display:none;
           align-items:flex-end;justify-content:center;padding:0}
 .backdrop.on{display:flex}
 .sheet{width:100%;max-width:430px;max-height:86dvh;overflow-y:auto;background:var(--surface-alt);
@@ -213,7 +216,7 @@ button{border:0;background:none;cursor:pointer}
 .lp-top{margin-top:auto}
 .lp .hero-t{font-size:42px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin:12px 0 0}
 .lp .avatar{width:36px;height:36px;border-radius:999px;background:linear-gradient(150deg,#8b9469,#5f6849);flex:none}
-.about{border-top:1px solid rgba(34,37,29,.1);margin-top:auto;padding:22px 0 5px}
+.about{border-top:1px solid rgba(226,236,206,.1);margin-top:auto;padding:22px 0 5px}
 .about li:last-child{margin-bottom:0}
 .about li{display:flex;gap:9px;margin-bottom:11px;list-style:none}
 .about b{display:block;font-size:11px;font-weight:700}
@@ -1140,7 +1143,8 @@ const OB_STEPS = [
    opts:[["tone","引き締めたい","見た目をしゅっと"],["lose","痩せたい","脂肪を落とす"],
          ["build","筋肉をつけたい","しっかり増やす"],["stamina","体力をつけたい","動ける体に"]]},
   {t:"今日はどれでいく？", s:"毎日ここで変えられます。しんどい日は落としてOKです", k:"level",
-   opts:LEVELS.filter(l=>levelReady(l.id)).map(l=>[l.id,l.name+"　"+l.lead,l.sub])},
+   opts:LEVELS.map(l=>[l.id, l.name+"　"+l.lead,
+        (PROGRAM[l.id]&&PROGRAM[l.id].length) ? l.sub : "準備中です。もうすぐ追加されます", !(PROGRAM[l.id]&&PROGRAM[l.id].length)])},
 ];
 
 function viewOB(){
@@ -1153,8 +1157,8 @@ function viewOB(){
         <div class="eyebrow">STEP ${ob.step+1} / ${OB_STEPS.length}</div>
         <h1 class="h1">${st.t}</h1>
         <p class="sub" style="margin-bottom:18px">${st.s}</p>
-        ${st.opts.map(([v,a,b])=>
-          `<button class="opt ${val===v?"on":""}" data-ob="${v}"><b>${a}</b><span>${b}</span></button>`).join("")}
+        ${st.opts.map(([v,a,b,soon])=>
+          `<button class="opt ${val===v?"on":""}${soon?" soon":""}" data-ob="${v}" ${soon?"disabled":""}><b>${a}</b><span>${b}</span></button>`).join("")}
         <div class="step-dots">${OB_STEPS.map((_,i)=>`<i class="${i===ob.step?"on":""}"></i>`).join("")}</div>
         <button class="btn btn-olive" data-ob-next ${val==null?"disabled":""}>${last?"はじめる":"次へ"}</button>
         ${ob.step>0?`<button class="btn btn-ghost" style="margin-top:9px" data-ob-back>もどる</button>`:""}
@@ -1206,8 +1210,9 @@ function viewHome(){
           <p class="swapnote out">休養日を使い切りました。今日やらないと、この2週間では取り返せません。</p>`}`}
 
         <div class="seg">
-          ${LEVELS.filter(l=>levelReady(l.id)).map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">
-            <b>${l.name}</b><span>${LEVEL_SHORT[l.id]}</span></button>`).join("")}
+          ${LEVELS.map(l=>{ const ok=levelReady(l.id);
+            return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>
+              <b>${l.name}</b><span>${ok?LEVEL_SHORT[l.id]:"準備中"}</span></button>`;}).join("")}
         </div>
         <p class="sub" style="text-align:center;margin-top:7px">今日の調子で選べます。しんどい日は落としてOK</p>
 
@@ -1263,6 +1268,8 @@ function coachNote(p, lv, doneToday){
 
 /* 動画枠。exId を渡すとその種目の動画、null ならホームのワンポイント動画 */
 function videoBlock(exId){
+  /* 経験者向けの Fit 3 にはフォーム動画を出さない（naru の指示） */
+  if(fit()==="fit3") return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
   const title = exId ? `${EX[exId].en} のフォーム` : "NARU のワンポイント動画";
   const sub = exId ? "NARU の実演でフォームを確認できます" : "NARU の実演動画がここに入ります（約15秒）";
@@ -1311,7 +1318,8 @@ function viewTrain(){
           </div>
 
           <div class="seg-dark">
-            ${LEVELS.filter(l=>levelReady(l.id)).map(l=>`<button class="${lv===l.id?"on":""}" data-level="${l.id}">${l.name}</button>`).join("")}
+            ${LEVELS.map(l=>{ const ok=levelReady(l.id);
+              return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
 
           ${p.parts.map((part,pi)=>`
@@ -1566,7 +1574,7 @@ function viewRun(){
           const head = `<div class="partline" style="color:var(--ink-mute)">
               <span class="badge" style="${allDone?"background:#a9b191":""}">PART ${pi+1}</span>
               <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}${allDone?" · 完了 ✓":""}</span>
-              <span class="hr" style="background:rgba(34,37,29,.12)"></span>
+              <span class="hr" style="background:rgba(226,236,206,.12)"></span>
               ${allDone?`<button data-fold="${pi}" style="font-size:11.5px;color:var(--ink-mute)">${S.folded&&S.folded[pi]===false?"隠す":"開く"}</button>`:""}
             </div>`;
           if(allDone && !(S.folded && S.folded[pi]===false)) return head;
@@ -1727,7 +1735,7 @@ function viewTimer(){
         <p style="font-size:13px;opacity:.7;margin:3px 0 0">${esc(EX[nx.x].ja)}</p>
         <p style="font-size:15px;font-weight:700;margin:8px 0 0;color:var(--tan)">${esc(setLabel(nx))}${stepMeta(nx)?" ・ "+stepMeta(nx):""}</p>`:""}
       </div>
-      <div class="stepbar" style="background:rgba(34,37,29,.96);border-top-color:rgba(244,240,234,.12)">
+      <div class="stepbar" style="background:rgba(226,236,206,.96);border-top-color:rgba(244,240,234,.12)">
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-rest-add>+30</button>
         <button class="btn btn-tan main" data-rest-skip>休憩をとばす</button>
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-quit>✕</button>
@@ -1913,7 +1921,7 @@ function viewSettings(){
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         ${opts.map(([v,label])=>`<button data-set="${keyName}" data-val="${v}"
           style="border-radius:999px;padding:9px 15px;font-size:13px;font-weight:700;
-          background:${cur==v?"var(--olive)":"var(--surface-alt)"};color:${cur==v?"#fff":"var(--ink)"}">${label}</button>`).join("")}
+          background:${cur==v?"var(--olive)":"var(--surface-alt)"};color:${cur==v?"#0B0B0A":"var(--ink)"}">${label}</button>`).join("")}
       </div>
     </div>`;
   return `<div class="screen on">
@@ -1923,7 +1931,7 @@ function viewSettings(){
         <h1 class="h1" style="margin-top:2px">設定</h1>
         <p class="sub" style="margin-bottom:4px">変更してもこれまでの記録は残ります</p>
         ${row("GOAL 目的",[["tone","引き締めたい"],["lose","痩せたい"],["build","筋肉をつけたい"],["stamina","体力をつけたい"]],"goal",pf.goal)}
-        ${row("LEVEL きょうの強度",LEVELS.filter(l=>levelReady(l.id)).map(l=>[l.id,l.name]),"level",level())}
+        ${row("LEVEL きょうの強度",LEVELS.map(l=>[l.id,l.name+(levelReady(l.id)?"":"（準備中）")]),"level",level())}
         ${row("PLACE 場所",[["gym","ジム"],["home","自宅"]],"place",pf.place)}
         ${row("FREQUENCY 週の回数",[[2,"週2日"],[3,"週3日"],[4,"週4日"],[5,"週5日"]],"days",pf.days)}
 
@@ -2252,7 +2260,7 @@ render();
 .setlog label span{font-size:12px;font-weight:700;color:var(--ink-mute);flex:none}
 /* 記録画面 */
 .partline.light span{color:var(--ink-soft)}
-.partline.light .hr{background:rgba(34,37,29,.14)}
+.partline.light .hr{background:rgba(226,236,206,.14)}
 .partline.light .badge{background:var(--olive);color:#f4f0ea}
 .ent{background:var(--surface);border-radius:var(--r-md);padding:11px 13px;margin-top:7px}
 .ent.done-ok{background:var(--surface-alt)}
@@ -2278,7 +2286,7 @@ render();
   font-family:inherit;font-size:14px;font-weight:700;color:var(--ink)}
 .x-name:focus{outline:1.5px solid var(--olive)}
 .x-name::placeholder{color:var(--ink-mute);font-weight:400}
-.memo{width:100%;background:var(--surface);border:1px solid rgba(34,37,29,.1);border-radius:var(--r-md);
+.memo{width:100%;background:var(--surface);border:1px solid rgba(226,236,206,.1);border-radius:var(--r-md);
   padding:11px 13px;font-family:inherit;font-size:13.5px;line-height:1.7;color:var(--ink);resize:vertical}
 .memo:focus{outline:none;border-color:var(--olive)}
 .memo::placeholder{color:var(--ink-mute)}
@@ -2291,11 +2299,11 @@ render();
 .amrap-list{list-style:none;margin:16px 0 0;padding:0;width:100%;background:var(--surface);
   border-radius:var(--r-md);overflow:hidden}
 .amrap-list li{display:flex;align-items:center;gap:10px;padding:11px 14px;text-align:left;
-  border-top:1px solid rgba(34,37,29,.07)}
+  border-top:1px solid rgba(226,236,206,.07)}
 .amrap-list li:first-child{border-top:0}
 .amrap-list button{flex:1;min-width:0;text-align:left}
 .amrap-list b{display:block;font-size:13.5px;font-weight:800;
-  text-decoration:underline;text-decoration-color:rgba(34,37,29,.18);text-underline-offset:3px}
+  text-decoration:underline;text-decoration-color:rgba(226,236,206,.18);text-underline-offset:3px}
 .amrap-list span{display:block;font-size:11px;color:var(--ink-mute);margin-top:1px}
 .amrap-list em{font-style:normal;font-size:14px;font-weight:800;color:var(--olive-dark);
   white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -2324,7 +2332,7 @@ render();
 .steps{margin-top:18px;background:var(--surface);border-radius:var(--r-md);padding:14px 15px}
 .steps-h{font-size:12.5px;font-weight:800;color:var(--olive-dark);margin-bottom:9px}
 .step{display:flex;align-items:flex-start;gap:10px;padding:9px 0;
-  border-top:1px solid rgba(34,37,29,.08)}
+  border-top:1px solid rgba(226,236,206,.08)}
 .step:first-of-type{border-top:0}
 .step.soon{opacity:.5}
 .step .em{font-size:17px;line-height:1.3;flex:none}
@@ -2333,7 +2341,7 @@ render();
 .step .tx span{display:block;font-size:12px;line-height:1.65;color:var(--ink-soft);margin-top:1px}
 .soon-tag{flex:none;align-self:center;font-size:9.5px;font-weight:800;letter-spacing:.08em;
   background:var(--surface-sunk);color:var(--ink-mute);border-radius:4px;padding:2px 6px}
-.steps-note{margin:10px 0 0;padding-top:9px;border-top:1px solid rgba(34,37,29,.08);
+.steps-note{margin:10px 0 0;padding-top:9px;border-top:1px solid rgba(226,236,206,.08);
   font-size:12px;line-height:1.75;color:var(--ink-soft)}
 
 /* 紹介＋合言葉の画面 */
@@ -2341,21 +2349,22 @@ render();
 .gate .logo{color:var(--ink-mute)}
 .gate h1{margin:9px 0 0;font-size:27px;font-weight:800;letter-spacing:-.01em}
 .gate .lead{margin:7px 0 0;font-size:13.5px;line-height:1.8;color:var(--ink-soft)}
-.gate-pts{list-style:none;margin:20px 0 0;padding:0;border-top:1px solid rgba(34,37,29,.09)}
-.gate-pts li{padding:12px 0;border-bottom:1px solid rgba(34,37,29,.09)}
+.gate-pts{list-style:none;margin:20px 0 0;padding:0;border-top:1px solid rgba(226,236,206,.09)}
+.gate-pts li{padding:12px 0;border-bottom:1px solid rgba(226,236,206,.09)}
 .gate-pts b{display:block;font-size:14px;font-weight:800}
 .gate-pts span{display:block;font-size:12.5px;line-height:1.7;color:var(--ink-soft);margin-top:2px}
-.gate-price{margin-top:22px;background:var(--surface);border-radius:var(--r-md);padding:15px 16px;text-align:center}
+.gate-price{margin-top:22px;background:var(--surface);border:1.5px solid var(--olive);
+  border-radius:var(--r-md);padding:20px 16px 18px;text-align:center}
 .gate-price .p{margin-top:5px}
-.gate-price .p b{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1}
-.gate-price .p span{font-size:13px;font-weight:700;color:var(--ink-soft);margin-left:5px}
+.gate-price .p b{font-size:62px;font-weight:800;letter-spacing:-.035em;line-height:.95;color:var(--olive)}
+.gate-price .p span{font-size:15px;font-weight:700;color:var(--ink);margin-left:7px}
 .gate a.btn{text-decoration:none;display:grid;place-items:center}
 .gate .btn-orange{margin-top:12px;height:52px}
 .gate-div{display:flex;align-items:center;gap:12px;margin:26px 0 12px;
   font-size:11.5px;color:var(--ink-mute)}
-.gate-div::before,.gate-div::after{content:"";flex:1;height:1px;background:rgba(34,37,29,.12)}
+.gate-div::before,.gate-div::after{content:"";flex:1;height:1px;background:rgba(226,236,206,.12)}
 .gate-code{display:flex;gap:8px}
-.gate-code input{flex:1;min-width:0;background:var(--surface);border:1px solid rgba(34,37,29,.12);
+.gate-code input{flex:1;min-width:0;background:var(--surface);border:1px solid rgba(226,236,206,.12);
   border-radius:12px;padding:0 14px;height:50px;font-family:inherit;font-size:16px;font-weight:700;
   color:var(--ink);letter-spacing:.04em}
 .gate-code input:focus{outline:none;border-color:var(--olive)}
@@ -2364,9 +2373,9 @@ render();
 .gate-hint{color:var(--ink-mute)}
 .gate-err{color:#a8431a;font-weight:700}
 .gate-foot{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;margin-top:28px;
-  padding-top:16px;border-top:1px solid rgba(34,37,29,.09)}
+  padding-top:16px;border-top:1px solid rgba(226,236,206,.09)}
 .gate-foot button{font-size:11.5px;color:var(--ink-mute);text-decoration:underline;text-underline-offset:3px}
-.hero.rest{background:var(--surface-alt);color:var(--ink);border:1px solid rgba(34,37,29,.08)}
+.hero.rest{background:var(--surface-alt);color:var(--ink);border:1px solid rgba(226,236,206,.08)}
 .hero.rest .day{color:var(--olive)}
 .hero.rest h2{color:var(--ink)}
 .hero.rest p{margin:9px 0 0;font-size:13px;line-height:1.75;color:var(--ink-soft)}
@@ -2374,7 +2383,7 @@ render();
 .swapnote.left{color:var(--ink-mute)}
 .swapnote.out{color:#a8431a;font-weight:700}
 .lnk{display:block;width:100%;text-align:left;font-size:13.5px;font-weight:700;
-  color:var(--olive-dark);padding:11px 0;border-top:1px solid rgba(34,37,29,.08)}
+  color:var(--olive-dark);padding:11px 0;border-top:1px solid rgba(226,236,206,.08)}
 .lnk.first{border-top:0}
 .legal{font-size:13px;line-height:1.85}
 .legal h5{font-size:12.5px;font-weight:800;margin:17px 0 5px;color:var(--olive-dark);
@@ -2382,13 +2391,13 @@ render();
 .legal p{margin:0 0 9px}
 .legal .tbl{width:100%;border-collapse:collapse;margin-top:2px}
 .legal .tbl th{width:8.6em;text-align:left;font-weight:700;color:var(--ink-soft);
-  vertical-align:top;padding:8px 10px 8px 0;border-top:1px solid rgba(34,37,29,.08);font-size:12.5px}
-.legal .tbl td{padding:8px 0;border-top:1px solid rgba(34,37,29,.08);vertical-align:top}
+  vertical-align:top;padding:8px 10px 8px 0;border-top:1px solid rgba(226,236,206,.08);font-size:12.5px}
+.legal .tbl td{padding:8px 0;border-top:1px solid rgba(226,236,206,.08);vertical-align:top}
 .legal .tbl tr:first-child th,.legal .tbl tr:first-child td{border-top:0}
-.legal mark{background:#f3dfc9;color:#8a4a1d;padding:1px 4px;border-radius:3px;font-weight:700}
+.legal mark{background:#3B3410;color:#F2D98A;padding:1px 4px;border-radius:3px;font-weight:700}
 .legal .upd{margin-top:18px;font-size:11.5px;color:var(--ink-mute)}
 .hist{width:100%;border-collapse:collapse;font-size:13px}
-.hist td{padding:6px 0;border-top:1px solid rgba(34,37,29,.08);vertical-align:top;line-height:1.7}
+.hist td{padding:6px 0;border-top:1px solid rgba(226,236,206,.08);vertical-align:top;line-height:1.7}
 .hist tr:first-child td{border-top:0}
 .hist td:first-child{width:4.6em;color:var(--ink-mute);font-variant-numeric:tabular-nums}
 .hist td:last-child{font-variant-numeric:tabular-nums}
@@ -2396,10 +2405,10 @@ render();
 .steplinks button{font-weight:700;color:var(--olive);text-decoration:underline;text-underline-offset:3px}
 .steplinks span{color:var(--ink-mute)}
 .stepbar{flex:none;display:flex;gap:10px;align-items:center;justify-content:center;
-  padding:12px 18px calc(14px + var(--safe));background:rgba(240,236,228,.96);
+  padding:12px 18px calc(14px + var(--safe));background:rgba(10,11,8,.96);
   backdrop-filter:blur(10px);border-top:1px solid var(--line)}
 .stepbar .rnd{width:54px;height:54px;flex:none;border-radius:999px;background:var(--surface);
-  border:1px solid rgba(34,37,29,.08);display:grid;place-items:center;font-size:20px}
+  border:1px solid rgba(226,236,206,.08);display:grid;place-items:center;font-size:20px}
 .stepbar .main{flex:1;height:54px;font-size:16px}
 
 /* 全体リスト（ジャンプ） */
@@ -2418,7 +2427,7 @@ render();
 .check.next{outline:1.5px solid var(--olive)}
 .check .info{width:22px;height:22px;flex:none;border-radius:999px;background:var(--surface-sunk);
   color:var(--ink-mute);font-size:12px;font-weight:800;display:grid;place-items:center;align-self:center}
-.runbar{flex:none;background:rgba(240,236,228,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.runbar{flex:none;background:rgba(10,11,8,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
 .runbar-in{display:flex;align-items:center;gap:14px;padding:11px 18px}
 .seg-dark{display:flex;gap:0;margin-top:16px;background:rgba(244,240,234,.09);border-radius:10px;padding:4px}
 .seg-dark button{flex:1;padding:9px 0;border-radius:7px;font-size:13px;font-weight:700;color:rgba(244,240,234,.75)}
@@ -2428,7 +2437,7 @@ render();
 .timer .cues{list-style:disc;padding-left:32px}
 .hero .btn-orange{height:50px}
 .about li{align-items:flex-start}
-code{background:rgba(34,37,29,.07);border-radius:4px;padding:1px 5px;font-size:11.5px}
+code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-size:11.5px}
 </style>
 </body>
 </html>
