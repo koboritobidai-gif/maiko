@@ -497,6 +497,38 @@ const EX = {
   "pushup-to-plank":{en:"Push-up to Plank",ja:"プッシュアップ・トゥ・プランク",video:null,
     cues:["手の位置から片腕ずつ前腕プランクへ移る","腰をねじらない","体を一直線に保つ"],
     miss:["お尻が左右に振れる","腰が落ちる","急ぎすぎる"],breath:"切り替えるたびに吐く"},
+
+  /* ---- Fit 1 Unit 2（自宅・自重）---- */
+  "wide-squat":{en:"Wide Squat",ja:"ワイドスクワット",video:null,
+    cues:["足は肩幅より広く、つま先はやや外向き","内ももとお尻を意識して下ろす","膝はつま先と同じ向きに開く"],
+    miss:["膝が内に入る","上体が前に倒れる","浅くしか下りない"],breath:"下ろすとき吸い、立つとき吐く"},
+  "towel-row":{en:"Towel Row",ja:"タオルローイング",video:null,
+    cues:["タオルを引っ張り合いながら肘を後ろに引く","肩甲骨を背中の中心に寄せる","肩は下げたまま"],
+    miss:["腕だけで引く","肩がすくむ","背中が丸まる"],breath:"引くときに吐く"},
+  "plank-shoulder-tap":{en:"Plank Shoulder Tap",ja:"プランク・ショルダータップ",video:null,
+    cues:["プランクの姿勢で左右交互に肩をタッチ","お尻を振らず、体は一直線のまま","足幅を広めにすると安定する"],
+    miss:["腰が左右にねじれる","お尻が高く上がる","速さだけを追う"],breath:"止めずに細く吐き続ける"},
+  "incline-push-up":{en:"Incline Push-up",ja:"インクライン・プッシュアップ",video:null,
+    cues:["椅子やソファに手をついて行う","手は肩幅よりやや広く","頭からかかとまで一直線"],
+    miss:["腰が落ちる","肘が真横に開く","可動域が狭い"],breath:"押し上げるときに吐く"},
+  "hip-hinge":{en:"Hip Hinge",ja:"ヒップヒンジ",video:null,
+    cues:["お辞儀の動きで股関節から折りたたむ","背筋は伸ばしたまま","裏ももの伸びを感じるところまで"],
+    miss:["膝から曲げてしまう","背中が丸まる","腰で反る"],breath:"倒すとき吸い、起こすとき吐く"},
+  "front-lunge":{en:"Front Lunge",ja:"フロントランジ",video:null,
+    cues:["一歩前に踏み出して腰を真下に落とす","前脚の膝はつま先より前に出さない","上体は立てたまま"],
+    miss:["膝が内に入る","上体が前に倒れる","踏み出しが浅い"],breath:"下ろすとき吸い、戻すとき吐く"},
+  "glute-bridge-hold":{en:"Glute Bridge Hold",ja:"ヒップリフト・キープ",video:null,
+    cues:["お尻を上げた位置で2秒キープ","お尻をしっかり締めて骨盤を持ち上げる","かかとで床を押す"],
+    miss:["腰で反って上げる","キープせずに下ろす","お尻が締まっていない"],breath:"上げるときに吐き、キープ中も止めない"},
+  "twist-crunch":{en:"Twist Crunch",ja:"ツイスト・クランチ",video:null,
+    cues:["おへそを覗き込みながら体をひねる","腹斜筋を縮めるイメージ","肘ではなく胸から向ける"],
+    miss:["首を引っ張る","反動でひねる","腰が浮く"],breath:"ひねるときに吐く"},
+  "knee-to-chest":{en:"Knee to Chest",ja:"ニートゥーチェスト",video:null,
+    cues:["座った姿勢から膝を胸に引き寄せる","下腹部を丸めて引き込む","上体は軽く後ろに倒したまま"],
+    miss:["脚だけ動かす","背中が完全に丸まって力が抜ける","反動を使う"],breath:"引き寄せるときに吐く"},
+  "squat-calf-raise":{en:"Squat to Calf Raise",ja:"スクワット＋カーフレイズ",video:null,
+    cues:["スクワットで立ち切った最後につま先立ちまで伸び上がる","かかとを高く上げて1秒止める","バランスは体幹で取る"],
+    miss:["つま先立ちが浅い","急いでリズムが崩れる","膝が内に入る"],breath:"立ち上がって伸び上がるときに吐く"},
 };
 /* =========================================================================
    デイリープログラム
@@ -775,43 +807,101 @@ const MOBILITY = [
 const CARDIO = "外を走る、もしくは歩く（20分）";
 
 const PROGRAM = {
+  /* ===== Fit 1（自宅・自重）=========================================
+     naru さん作成の Google スプレッドシート「Naru Fit Daily」FIT1 シートの
+     表（【Unit 1】Day 1-7 ／【Unit 2】Day 8-14）をそのまま入れています。
+     Unit 1 は「それぞれ4周」のサーキット、Unit 2 は「10回×3セット」です。
+     ※ シートの「意識する点」列は、その日の種目と合っていないものがあったため
+       合っている Day 3 / Day 6 / Day 7 だけ入れています。要確認は下のメモ参照。
+     ================================================================= */
   fit1: [
-    {t:"Lower & Core", ja:"下半身と体幹の土台", cardio:CARDIO, parts:[
-      {k:"TRAINING", items:[
-        P("air-squat","10 rep × 3 set"),
-        P("knee-push-up","10 rep × 3 set"),
-        P("dead-bug","16 rep × 3 set")]}]},
-    {t:"Posterior Chain", ja:"体の背面を意識する", cardio:CARDIO, parts:[
-      {k:"TRAINING", items:[
-        P("glute-bridge","10 rep × 3 set"),
-        P("towel-pulldown","10 rep × 3 set"),
-        P("bird-dog","16 rep × 3 set")]}]},
-    {t:"Multi-planar", ja:"横方向の動き", cardio:CARDIO, parts:[
-      {k:"TRAINING", items:[
-        P("side-lunge","10 rep × 3 set"),
-        P("wall-pushup","10 rep × 3 set"),
-        P("plank-hold","20 sec × 3 set")]}]},
-    {t:"Active Recovery", ja:"疲労を抜く日", cool:true, cardio:"のんびり散歩（20分）",
-     note:"全身のストレッチ、またはヨガのポーズを15分。無理に伸ばさず、呼吸を止めないこと。",
+    /* ---- Unit 1 ---- */
+    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", cardio:CARDIO, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+        P("air-squat","10 rep"),
+        P("knee-push-up","10 rep"),
+        P("plank-hold","30 sec")]}]},
+    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", cardio:CARDIO, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。", items:[
+        P("glute-bridge","20 rep"),
+        P("leg-raise","10 rep"),
+        P("superman","30 sec")]}]},
+    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", cardio:CARDIO,
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+        P("bird-dog","16 rep"),
+        P("side-lunge","16 rep"),
+        P("side-plank","30 sec")]}]},
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", cool:true, cardio:CARDIO,
+     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
      parts:[{k:"COOL DOWN", items:MOBILITY}]},
     {t:"Full Body", ja:"全身の引き締め", cardio:CARDIO, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。", items:[
+        P("good-morning","10 rep"),
+        P("db-curl","10 rep"),
+        P("pike-push-up","10 rep"),
+        P("tuck-up","10 rep")]}]},
+    {t:"Core & Stamina", ja:"体幹とスタミナの融合", cardio:CARDIO,
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+        P("reverse-lunge","16 rep"),
+        P("burpee","10 rep"),
+        P("mountain-climber","10 rep")]}]},
+    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", rest:true,
+     cardio:"のんびり散歩（20分）",
+     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く",
+     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。"},
+
+    /* ---- Unit 2 ---- */
+    {t:"Lower & Back", ja:"下半身＆背中の連動強化", cardio:CARDIO, parts:[
       {k:"TRAINING", items:[
-        P("good-morning","10 rep × 3 set"),
-        P("pike-push-up","10 rep × 3 set"),
-        P("bicycle-crunch","16 rep × 3 set")]}]},
-    {t:"Core & Stamina", ja:"体幹とスタミナの融合", cardio:CARDIO, parts:[
+        P("wide-squat","10 rep × 3 set"),
+        P("towel-row","10 rep × 3 set"),
+        P("plank-shoulder-tap","12 rep × 3 set")]}]},
+    {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", cardio:CARDIO, parts:[
       {k:"TRAINING", items:[
-        P("reverse-lunge","10 rep × 3 set"),
+        P("incline-push-up","10 rep × 3 set"),
+        P("hip-hinge","12 rep × 3 set"),
+        P("side-plank","左右各 20 sec × 3 set")]}]},
+    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め（前後・左右）", cardio:CARDIO, parts:[
+      {k:"TRAINING", items:[
+        P("front-lunge","左右交互 10 rep × 3 set"),
+        P("glute-bridge-hold","12 rep × 3 set"),
+        P("bird-dog","16 rep × 3 set")]}]},
+    /* シートの Day 11 は種目が空欄だったので、Day 4 と同じ内容にしています */
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", cool:true, cardio:CARDIO,
+     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
+     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", cardio:CARDIO, parts:[
+      {k:"TRAINING", note:"ツイスト・クランチは腹部の斜筋を意識して。", items:[
+        P("twist-crunch","16 rep × 3 set"),
+        P("superman","10 rep × 3 set"),
+        P("knee-to-chest","12 rep × 3 set")]}]},
+    {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", cardio:CARDIO, parts:[
+      {k:"TRAINING", items:[
+        P("squat-calf-raise","10 rep × 3 set"),
         P("inchworm","8 rep × 3 set"),
         P("mountain-climber","30 sec × 3 set")]}]},
-    {t:"Full Rest", ja:"完全休養", rest:true,
-     note:"トレーニングはなし。しっかり寝て、栄養を補給する日です。"}
+    {t:"Full Rest", ja:"完全休養！REST", rest:true,
+     note:"完全休養。もしくは、できるなら！ 1分間のプランクホールド → 30回のバーピー → 50回のマウンテンクライマー、これを 3 Rounds！！！"}
   ],
 
-  fit2: null,   /* 準備中。naru さんの監修が入ったらここに7日分を入れる */
+  /* シート「意識する点」列のうち、その日の種目と合っていなかったぶん。
+     naru さんに正しい日を確認してから入れる：
+       Day 1「お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる」→ ヒップリフトの Day 2 向きか
+       Day 4「お尻・太ももを意識し、股関節を引き込んで腰を落とす」→ サイドランジの Day 3 向きか
+       Day 5「壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持」→ ウォール・プッシュアップの日が無い
+       Day 8「背筋を伸ばしたまま股関節から前傾し、ハムストリングスを意識」→ ヒップヒンジの Day 9 向きか  */
 
+  fit2: null,   /* 準備中。スプレッドシートにも Fit 2 の中身はまだありません */
+
+  /* ===== Fit 3（ジム・アスリート向け）===============================
+     シート FIT3 の【Unit1】Day 1-7（Day 8-14 は同じ内容の2周目）。
+     有酸素はシートの「有酸素運動 / その他」列から入れています。
+     【Unit2】は Day 6・Day 7 が空欄のため、まだ入れていません。
+     ================================================================= */
   fit3: [
-    {t:"Lower Body Focus", ja:"下半身のパワーと土台", parts:[
+    {t:"Lower Body Focus", ja:"下半身のパワーと土台", cardio:"30 cal ROW", parts:[
       {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）",
        items:[P("back-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
@@ -823,7 +913,7 @@ const PROGRAM = {
       {k:"ACCESSORY", items:[P("pull-up","8 rep × 3 set　※ 加重／ラットプルダウンでも可")]},
       {k:"AMRAP", min:12, items:[
         P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","15 rep")]}]},
-    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", parts:[
+    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", cardio:"30 cal BIKE", parts:[
       {k:"STRENGTH", n:"DEADLIFT", note:"5-5-5-5-5（@80-85%）　※ トラップバーでも可",
        items:[P("deadlift","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("bulgarian-split","左右各 8 rep × 3 set")]},
@@ -839,13 +929,13 @@ const PROGRAM = {
       {k:"ACCESSORY", items:[P("db-incline-press","10 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("db-thruster","10 rep"), P("burpee-over-db","8 rep"), P("row-machine","200 m")]}]},
-    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", parts:[
+    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", cardio:CARDIO, parts:[
       {k:"STRENGTH", n:"POWER SNATCH", note:"3-3-3-3-3（@75-80%）　※ ハングクリーンでも可",
        items:[P("power-snatch","3 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("rdl","10 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("pushup-to-plank","9 rep")]}]},
-    {t:"Full Rest", ja:"完全休養", rest:true,
+    {t:"Full Rest", ja:"完全休養", rest:true, cardio:"のんびり散歩（20分）",
      note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。"}
   ]
 };
@@ -862,11 +952,13 @@ function fit(){ const v=level(); return (PROGRAM[v] && PROGRAM[v].length) ? v : 
 /* サイクル（DAY 1〜14）は Fit レベルと切り離す。
    その日の調子で Fit を上げ下げしても、日数は進んだまま */
 function newCycle(start){
-  return { start:start, plan:Array.from({length:CYCLE},(_,i)=>i%WEEK) };
+  return { v:2, start:start, plan:Array.from({length:CYCLE},(_,i)=>i) };
 }
 function ensureCycle(){
   let moved=false;
   if(!S.cycle || !S.cycle.start || !S.cycle.plan){ S.cycle=newCycle(todayKey()); moved=true; }
+  /* 旧データ（7日ぶんを2周する plan）を 14日ぶんの plan に作り直す */
+  if(S.cycle.v!==2){ const st=S.cycle.start; S.cycle=newCycle(st); moved=true; }
   let d=dayDiff(S.cycle.start, todayKey());
   if(d<0){ S.cycle=newCycle(todayKey()); d=0; moved=true; }
   let guard=0;
@@ -877,17 +969,18 @@ function ensureCycle(){
   }
   if(moved) save();
 }
-/* n 日目（1〜14）のプログラム。7日ぶんを2周する */
+/* n 日目（1〜14）のプログラム。
+   14日ぶん用意してある Fit（Fit 1）はそのまま、7日ぶんの Fit（Fit 3）は2周する */
 function dayOf(n){
   ensureCycle();
   if(n<1 || n>CYCLE) return null;
   const list = PROGRAM[fit()] || PROGRAM.fit1;
-  return list[S.cycle.plan[n-1]] || null;
+  return list[S.cycle.plan[n-1] % list.length] || null;
 }
 function cycleDates(){ return Array.from({length:CYCLE},(_,i)=>addDays(S.cycle.start,i)); }
 function cycleSummary(){
   const list = PROGRAM[fit()] || PROGRAM.fit1;
-  const need = S.cycle.plan.filter(i => !(list[i]||{}).rest).length;
+  const need = S.cycle.plan.filter(i => !(list[i % list.length]||{}).rest).length;
   const did  = cycleDates().filter(k=>S.logs.some(l=>l.date===k)).length;
   return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE-1), need:need, did:did};
 }
@@ -1292,15 +1385,17 @@ function videoBlock(exId){
 function viewTrain(){
   const p = todayProgram(), lv = level(), n = cycleDay();
   if(!p){
-    const ra = restAhead();
+    const ra = restAhead(), r = dayOf(n) || {};
     return `<div class="screen on">${topbar()}<div class="scroll"><div class="pad">
       <div class="hero rest" style="margin-top:4px">
         <div class="day">DAY ${n} / ${CYCLE}</div>
-        <h2>休養日</h2>
-        <p>今日はメニューがありません。<br>
+        <h2>${esc(r.t==="Full Rest"?"休養日":(r.t||"休養日"))}</h2>
+        <p>${r.note?esc(r.note):"今日はメニューがありません。"}<br>
           ${ra.length?`どうしても動きたいときは、ホームから ${ra[0]} 日目と振り替えられます。`
                      :"この2週間の休養日はここが最後です。"}</p>
       </div>
+      ${r.cardio?`<div class="cardio"><b>有酸素</b>${esc(r.cardio)}</div>`:""}
+      ${r.point?`<div class="cardio"><b>今日のポイント</b>${esc(r.point)}</div>`:""}
       <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
     </div></div>${nav("train")}</div>`;
   }
@@ -1319,6 +1414,7 @@ function viewTrain(){
             ${p.ja?`<p class="daysub">${esc(p.ja)}</p>`:""}
             ${p.note?`<p class="daynote">${esc(p.note)}</p>`:""}
             ${p.cardio?`<div class="cardio"><b>有酸素</b>${esc(p.cardio)}</div>`:""}
+            ${p.point?`<div class="cardio"><b>今日のポイント</b>${esc(p.point)}</div>`:""}
           </div>
 
           <div class="seg-dark">
@@ -1333,6 +1429,7 @@ function viewTrain(){
               <span>· ${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
               <span class="hr"></span>
             </div>
+            ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(part.note)}</p>`:""}
             ${part.items.map(it=>{
               const d = doseOf(it);
               if(d==="—") return "";
@@ -1710,6 +1807,8 @@ const fmt = s => String(s);
 const fmtClock = s => String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 
 function viewTimer(){
+  /* 休養日にはタイマーに入れるメニューが無いので、今日の画面に戻す */
+  if(!todayProgram()){ clearInterval(T.tick); T.tick=null; return viewTrain(); }
   if(!T.tick) startTimer();
   const f=T.flow[T.i]||T.flow[0];
   const ex=EX[f.x];
@@ -2036,7 +2135,10 @@ const INTRO = {
     ["重量と回数を記録",   "種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です"],
     ["有酸素までセット",   "各日に『外を走る、もしくは歩く20分』まで指定されています"],
     ["naru の解説",        "各日の狙いと、種目ごとのコツ・やりがちなミスが入っています"]
-  ]
+  ],
+  /* 特典。「プレゼント」という書き方だと景品表示法の総付景品（上限＝代金の20％＝700円）に
+     あたりうるので、サービスの内容として書いています。文面は naru さんに最終確認を */
+  bonus: "30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。"
 };
 
 function viewGate(){
@@ -2067,6 +2169,7 @@ function viewGate(){
       <div class="p"><b class="tnum">3,500</b><span>円 / 2週間（税込）</span></div>
       <p class="sub" style="margin-top:4px">2週間ごとの自動更新です。いつでも解約できます。</p>
     </div>
+    ${INTRO.bonus?`<div class="gate-bonus"><b>先着10名様</b>${esc(INTRO.bonus)}</div>`:""}
     <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">申し込む &nbsp;→</a>
 
     <div class="gate-div"><span>お申し込み済みの方</span></div>
@@ -2363,6 +2466,10 @@ render();
 .gate-price .p{margin-top:5px}
 .gate-price .p b{font-size:62px;font-weight:800;letter-spacing:-.035em;line-height:.95;color:var(--olive)}
 .gate-price .p span{font-size:15px;font-weight:700;color:var(--ink);margin-left:7px}
+.gate-bonus{margin-top:10px;background:var(--olive-soft);border:1px solid var(--olive);
+  border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.65;color:var(--ink)}
+.gate-bonus b{display:block;font-size:10px;letter-spacing:.16em;font-weight:800;
+  color:var(--olive);margin-bottom:3px}
 .gate a.btn{text-decoration:none;display:grid;place-items:center}
 .gate .btn-orange{margin-top:12px;height:52px}
 .gate-div{display:flex;align-items:center;gap:12px;margin:26px 0 12px;
