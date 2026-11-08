@@ -566,6 +566,223 @@ const EX = {
     miss:["上腕が動く","反動で振る","背中が丸まる"],breath:"伸ばすときに吐く"},
 };
 /* =========================================================================
+   種目の解説の英語版。EX と同じキーで並べる。
+   ここに無い種目は英語でも日本語の解説が出る。
+   ※ naru さんの英語チェック待ち
+   ========================================================================= */
+const EX_EN = {
+"star-jump":{cues:["Open your arms and legs wide at the same time","Land softly with a slight bend in the knees"],
+  miss:["Arms do not reach the top","Landing hard on your heels"],breath:"Breathe in and out with the rhythm"},
+"plank-hold":{cues:["Elbows directly under your shoulders","One straight line from head to heels","Squeeze your glutes and tuck your pelvis"],
+  miss:["Hips sagging","Hips riding too high","Holding your breath"],breath:"Keep breathing out slowly, never hold it"},
+"v-up":{cues:["Lift your upper body and legs together into a V","Reach your hands toward your toes"],
+  miss:["Swinging up with momentum","Pulling with your neck only"],breath:"Breathe out as you lift"},
+"cat-cow":{cues:["Hands under shoulders, knees under hips","Move slowly, one vertebra at a time"],
+  miss:["Arching from the lower back only","Moving too fast"],breath:"In as you arch, out as you round"},
+"world-greatest":{cues:["Drop your elbow inside your front foot","Open your chest and reach for the ceiling"],
+  miss:["Back knee drops to the floor","Rounding your back"],breath:"Breathe out as you open"},
+"hip-circle":{cues:["Feet shoulder-width, hands on your hips","Draw a big circle from the hip joint"],
+  miss:["Only the knees are moving","Upper body swinging around"],breath:"Breathe naturally"},
+"arm-circle":{cues:["Relax your shoulders, big and slow","Move from the shoulder blades"],
+  miss:["Shrugging your neck","Chasing speed only"],breath:"Do not hold your breath"},
+"air-squat":{cues:["Push your hips back as you sit down","Keep your knees tracking over your toes"],
+  miss:["Knees caving in","Heels lifting off the floor"],breath:"In on the way down, out as you stand"},
+"high-knee":{cues:["Knees up to hip height","Land on the balls of your feet, keep the rhythm"],
+  miss:["Leaning forward","Knees not coming up"],breath:"Short, quick breaths out"},
+"mountain-climber":{cues:["Hands under shoulders, body in one line","Drive your knee to your chest quickly"],
+  miss:["Hips bouncing up and down","Shoulders drifting past your hands"],breath:"Short, quick breaths out"},
+"jump-rope":{cues:["Elbows in, turn the rope with your wrists","Keep the jumps small"],
+  miss:["Turning with your whole arm","Jumping too high"],breath:"Keep a steady rhythm"},
+"double-unders":{cues:["Jump just a little higher than a single","Snap your wrists faster"],
+  miss:["Kicking your heels back","Arms drifting away from your body"],breath:"Short breaths in time with the jumps"},
+"burpee":{cues:["Do every part of it properly","Skip the jump if it is too much"],
+  miss:["Dropping into the plank with an arched back","Chasing reps as the form falls apart"],breath:"Breathe out as you stand up"},
+"skater":{cues:["Jump wide sideways and land on one leg","Only as big as you can hold still for a second"],
+  miss:["Knee caving in","Upper body too upright"],breath:"Breathe out on every jump"},
+"row-machine":{cues:["Drive legs, then body, then arms","On the return: arms, body, legs"],
+  miss:["Starting the pull with your arms","Rounding your back"],breath:"Breathe out as you pull"},
+"deadlift-wu":{cues:["Start light and check your form","Keep the bar against your shins"],
+  miss:["Going heavy on the first set","Pulling with a rounded back"],breath:"Take a breath in before you pull"},
+"deadlift":{cues:["Keep the bar against your shins and pull straight up","Back stays flat the whole way","Hips and chest rise together"],
+  miss:["Rounding your back","Bar drifting away from your body","Trying to pull with your arms"],breath:"Hold your breath before the pull, out once you lock out"},
+"back-squat":{cues:["Bar sits on your traps","Fill your belly with air and brace","Break at the hips first"],
+  miss:["Heels lifting","Knees caving in","Chest diving forward"],breath:"Breathe in and brace before you descend, out at the top"},
+"front-squat":{cues:["Keep your elbows high","Stay upright and drop straight down"],
+  miss:["Elbows drop and the bar falls","Heels lifting"],breath:"Breathe in and brace before you descend"},
+"bench-press":{cues:["Pull your shoulder blades together and down","Lower to the base of your sternum","Drive your feet into the floor"],
+  miss:["Shoulders shrugging up","Bar drifting toward your neck","Hips lifting off the bench"],breath:"In on the way down, out as you press"},
+"overhead-press":{cues:["Brace your ribs down and press straight up","Bar path passes right by your ears"],
+  miss:["Arching your lower back","Shrugging your shoulders"],breath:"Breathe out as you press"},
+"pull-up":{cues:["Pull your shoulders down before you start","Bring your collarbone to the bar"],
+  miss:["Pulling with shrugged shoulders","Kipping with momentum"],breath:"Breathe out as you pull"},
+"barbell-row":{cues:["Hinge from the hips, back flat","Pull toward your belly button"],
+  miss:["Upper body rising with each rep","Pulling with your arms only"],breath:"Breathe out as you pull"},
+"lat-pulldown":{cues:["Chest up, pull to your collarbone","Think about driving your elbows down to your sides"],
+  miss:["Leaning way back for momentum","Pulling with your arms only"],breath:"Breathe out as you pull"},
+"seated-row":{cues:["Set your shoulder blades first, then pull","Keep your chest proud"],
+  miss:["Rounding your back","Rocking back and forth"],breath:"Breathe out as you pull"},
+"rdl":{cues:["Soft knees, hinge from the hips","Stop where you feel your hamstrings stretch"],
+  miss:["Bending the knees into a squat","Rounding your back"],breath:"In on the way down, out as you stand"},
+"bulgarian-split":{cues:["Rear foot up on the bench","Keep 80% of your weight on the front leg"],
+  miss:["Stance too short, knee shooting forward","Body tipping sideways"],breath:"In on the way down, out as you stand"},
+"hip-thrust":{cues:["Bench sits just under your shoulder blades","Squeeze your glutes for a second at the top"],
+  miss:["Arching your lower back to get up","Chin lifting"],breath:"Breathe out as you lift"},
+"leg-press":{cues:["Feet shoulder-width in the middle of the plate","Stop short of locking your knees"],
+  miss:["Lower back rounding off the seat","Locking the knees out"],breath:"Breathe out as you press"},
+"db-snatch":{cues:["One move from the floor to overhead","Keep the elbow soft all the way"],
+  miss:["Muscling it up with your arm","Rounding your lower back"],breath:"Breathe out as you drive it up"},
+"db-clean":{cues:["Snap it up by extending your hips","Whip your elbow through quickly"],
+  miss:["Pulling with your arm","Back rounding in the catch"],breath:"Breathe out as you drive it up"},
+"db-thruster":{cues:["Carry the squat drive straight overhead","One continuous movement, no pause"],
+  miss:["Squat and press become separate moves","Arching your lower back"],breath:"Breathe out as you lock it out"},
+"kb-swing":{cues:["Swing from a hip hinge","Arms are just ropes, do not pull"],
+  miss:["Squatting instead of hinging","Lifting with your arms"],breath:"Short breath out at the top"},
+"farmer-carry":{cues:["Shoulders down, chest up","Walk one quiet step at a time"],
+  miss:["Leaning to one side","Shrugging your shoulders"],breath:"Keep breathing as you walk"},
+"lateral-raise":{cues:["Straight out to the side, up to shoulder height","Do not let your shoulders shrug"],
+  miss:["Swinging it up with momentum","Lifting above shoulder height"],breath:"Breathe out as you lift"},
+"db-curl":{cues:["Elbows fixed at your sides","Stay tight on the way down too"],
+  miss:["Elbows drifting forward","Using momentum"],breath:"Breathe out as you lift"},
+"pushdown":{cues:["Elbows fixed at your sides","Lock out and hold for a second"],
+  miss:["Elbows moving back and forth","Leaning your body weight into it"],breath:"Breathe out as you push down"},
+"push-up":{cues:["Elbows at about 45 degrees","Lower with your chest and push with your chest"],
+  miss:["Hips sagging","Not going deep enough"],breath:"In on the way down, out as you push"},
+"knee-push-up":{cues:["Straight line from knees to head","Hands slightly wider than your shoulders"],
+  miss:["Hips sticking up","Elbows flaring straight out"],breath:"In on the way down, out as you push"},
+"diamond-push-up":{cues:["Make a diamond with your thumbs and index fingers","Keep your elbows tucked to your sides"],
+  miss:["Elbows flaring out","Pushing through wrist pain"],breath:"Breathe out as you push"},
+"pike-push-up":{cues:["Hips high, make an upside-down V","Lower your head in front of your hands"],
+  miss:["Rounding your back","Elbows flaring out"],breath:"Breathe out as you push"},
+"split-squat":{cues:["Front knee stays over your toes","Drop straight down, upper body upright"],
+  miss:["Knee travelling past your toes","Upper body tipping forward"],breath:"In on the way down, out as you stand"},
+"glute-bridge":{cues:["Push the floor away with your heels","Squeeze your glutes for a second at the top"],
+  miss:["Arching your lower back to get up","Knees falling open"],breath:"Breathe out as you lift"},
+"single-leg-bridge":{cues:["Extend one leg and keep your hips level","Push through the heel of the working leg"],
+  miss:["Hips tilting to one side","Lifting from your lower back"],breath:"Breathe out as you lift"},
+"wall-sit":{cues:["Back flat on the wall, knees at 90 degrees","Keep that burn in the front of your thighs"],
+  miss:["Knees past your toes","Lower back peeling off the wall"],breath:"Keep breathing out slowly"},
+"reverse-lunge":{cues:["Step back long and drop straight down","Push the floor away with your front foot to stand"],
+  miss:["Step too short","Upper body tipping forward"],breath:"Breathe out as you stand"},
+"superman":{cues:["Lift opposite arm and leg together","Long neck, eyes on the floor"],
+  miss:["Cranking your neck up","Using momentum"],breath:"Breathe out as you lift"},
+"reverse-plank":{cues:["Hands under shoulders, chest open","Push your hips up into one straight line"],
+  miss:["Hips dropping","Shoulders shrugging"],breath:"Keep breathing out slowly"},
+"side-plank":{cues:["Elbow directly under your shoulder","Push your hips up into one straight line"],
+  miss:["Hips dropping","Body rolling forward or back"],breath:"Keep breathing out slowly"},
+"hollow-hold":{cues:["Press your lower back into the floor","Lift your shoulders and legs at the same time"],
+  miss:["Lower back lifting and arching","Tension in your neck"],breath:"Keep shallow breaths going"},
+"dead-bug":{cues:["No gap between your lower back and the floor","Extend opposite arm and leg slowly"],
+  miss:["Lower back lifting","Moving too fast"],breath:"Breathe out as you extend"},
+"leg-raise":{cues:["Keep your lower back pressed down as you lower","The lowering is the part to slow down"],
+  miss:["Lower back lifting and arching","Dropping the legs too fast"],breath:"In on the way down, out as you lift"},
+
+"bicycle-crunch":{cues:["Bring your shoulder and the opposite hip together","Keep the extended leg just off the floor"],
+  miss:["Straining your neck","Spinning fast without feeling it"],breath:"Short breath out on every twist"},
+"russian-twist":{cues:["Chest proud, rotate from the ribs","Let your eyes follow your hands"],
+  miss:["Rounding your back","Swinging your arms only"],breath:"Breathe out at the end of each twist"},
+"chair-dip":{cues:["Grip the edge of the chair and slide your hips forward","Bend your elbows straight back"],
+  miss:["Shoulders shrugging","Hips too far from the chair"],breath:"Breathe out as you push"},
+"band-pull-apart":{cues:["Pull out wide, squeezing your shoulder blades","Keep your elbows softly straight"],
+  miss:["Shoulders shrugging","Arching your lower back"],breath:"Breathe out as you pull"},
+"calf-raise":{cues:["Rise as high as you can and hold for a second","Lower slowly"],
+  miss:["Bouncing with momentum","Short range of motion"],breath:"Breathe out as you rise"},
+"child-pose":{cues:["Sit your hips back toward your heels and lengthen your spine","Reach your hands far in front"],
+  miss:["Tension in your shoulders","Shallow breathing"],breath:"In through the nose, long out through the mouth"},
+"hamstring-stretch":{cues:["Hinge from the hips without rounding your back","Stop where it feels good-sore"],
+  miss:["Bouncing into it","Only bringing your head closer"],breath:"Go a little deeper on each exhale"},
+"quad-stretch":{cues:["Pull your heel toward your glute","Keep the knee beside or slightly behind your body"],
+  miss:["Arching your lower back","Knee drifting out to the side"],breath:"Slow and deep"},
+"chest-stretch":{cues:["Clasp your hands behind your back and open your chest","Keep your shoulders down"],
+  miss:["Arching your lower back","Shoulders shrugging"],breath:"Breathe out as you open"},
+"pigeon":{cues:["Front shin parallel to the front of your mat","Fold forward and let go"],
+  miss:["Hips sliding off to one side","Tensing up and holding your breath"],breath:"Keep breathing out, long and slow"},
+"bird-dog":{cues:["From all fours, extend opposite arm and leg","Keep your back flat and level","Brace your belly and do not arch"],
+  miss:["Arching your lower back","Rocking side to side","Lifting the limbs too high"],breath:"Out as you extend, in as you return"},
+"side-lunge":{cues:["Step wide, straight out to the side","Push the hip of the stepping leg back","Keep the straight leg's toes pointing forward"],
+  miss:["Knee caving in","Upper body tipping forward","Step too short"],breath:"In as you drop, out as you return"},
+"wall-pushup":{cues:["Stand a step back, hands at chest height on the wall","Bring your chest toward the wall","One straight line from head to heels"],
+  miss:["Hips sagging","Elbows flaring straight out","Hands placed too high"],breath:"In as you lower, out as you push"},
+"towel-pulldown":{cues:["Hold the towel taut overhead with both hands","Pull your shoulder blades down and your elbows to your sides","Keep pulling the towel apart the whole time"],
+  miss:["Shoulders shrugging","Moving with your arms only","Letting the towel go slack"],breath:"Out as you pull, in as you return"},
+"good-morning":{cues:["Soft knees, bow forward from the hips","Back stays flat the whole way","Come back up when your hamstrings stretch"],
+  miss:["Rounding your back","Bending the knees too much","Folding from the lower back"],breath:"In as you fold, out as you rise"},
+"inchworm":{cues:["From standing, put your hands on the floor","Walk your hands out to a plank","Brace your belly so your hips do not drop"],
+  miss:["Arching your lower back","Bending your knees too much","Rocking side to side as you walk out"],breath:"Keep breathing out as you walk"},
+"db-squat":{cues:["Hold the dumbbells at your sides or at your chest","Chest proud, sit down from the hips","Push through your heels to stand"],
+  miss:["Rounding your back","Knees caving in","Not squatting deep enough"],breath:"In on the way down, out as you stand"},
+"db-press":{cues:["Press straight up from shoulder height","Brace your ribs down, do not arch","Finish beside your ears"],
+  miss:["Arching your lower back","Elbows drifting forward","Not locking out"],breath:"Out as you press, in as you lower"},
+"tuck-up":{cues:["From lying down, bring knees and chest together","Start with your lower back on the floor","Do not rely on momentum"],
+  miss:["Lower back staying lifted","Pulling with your neck","Just swinging through it"],breath:"Out as you crunch in, in as you open"},
+"renegade-row":{cues:["Hold the dumbbells and set up in a plank","Feet wide to lock your hips in place","Row one elbow to your hip at a time"],
+  miss:["Hips twisting","Hips riding up","Weight shifting to the rowing side"],breath:"Out as you row, in as you lower"},
+"toes-to-bar":{cues:["Hang and pull your shoulders down","Curl your belly and send your feet to the bar","Find a rhythm with the swing"],
+  miss:["Pulling with your arms only","Swinging too wildly","Letting your shoulders go loose"],breath:"Out as you lift, in as you return"},
+"barbell-clean":{cues:["Pull slowly from the floor to your knees","Accelerate only after your hips are fully extended","Whip your elbows through to catch"],
+  miss:["Pulling with your arms","Bar drifting away from your body","Catching too high"],breath:"Hold before the pull, out after the catch"},
+"hang-clean":{cues:["Set up above the knee with your hips back","Snap it up by extending your hips","Rotate your elbows and rack it on your shoulders"],
+  miss:["Pulling with your arms","Knees straightening first","Wrists not turning over"],breath:"Hold before the pull, out after the catch"},
+"power-snatch":{cues:["Wide grip, keep the bar close to your body","Use your arms only after your hips are fully extended","Lock your shoulders overhead"],
+  miss:["Bending your arms too early","Bar swinging out in front","Elbows bending in the catch"],breath:"Hold before the pull, out once you are locked out"},
+"box-jump":{cues:["Swing your arms and jump straight up","Stand all the way up on the box","Step down one foot at a time"],
+  miss:["Landing in too deep a squat","Jumping down and crashing into your knees","Going for a height you cannot hold"],breath:"Breathe out as you jump"},
+"hollow-rock":{cues:["Set the shape with your lower back pressed down","Rock back and forth holding that shape","Keep tension in your arms and legs"],
+  miss:["Lower back lifting","Knees bending","Rocking too big"],breath:"Keep shallow breaths in time with the rock"},
+"db-incline-press":{cues:["Set the bench to 30-45 degrees","Shoulder blades together, chest proud","Bring the dumbbells together over your upper chest"],
+  miss:["Elbows flaring straight out","Hips lifting off the bench","Not lowering far enough"],breath:"In as you lower, out as you press"},
+"burpee-over-db":{cues:["Chest to the floor, then stand up","Jump sideways over the dumbbell","Land softly"],
+  miss:["Chest not touching","Catching a foot on the jump","Arching your lower back"],breath:"Keep breathing out, do not hold it"},
+"wall-ball":{cues:["Hug the ball to your chest and squat deep","Throw at the target using the drive out of the squat","Catch it and go straight into the next squat"],
+  miss:["Not squatting deep enough","Throwing with your arms only","Missing the target"],breath:"Breathe out as you throw"},
+"echo-bike":{cues:["Use your arms and legs together","Stay upright as you pedal","Do not go too hard in the first minute"],
+  miss:["Pedalling with your legs only","Leaning too far forward","Losing your pace"],breath:"Keep your rhythm steady"},
+"pushup-to-plank":{cues:["Move to a forearm plank one arm at a time","Do not twist your hips","Keep your body in one line"],
+  miss:["Hips swinging side to side","Hips sagging","Rushing it"],breath:"Breathe out on every change"},
+"wide-squat":{cues:["Feet wider than your shoulders, toes turned slightly out","Feel your inner thighs and glutes as you lower","Knees track in the same direction as your toes"],
+  miss:["Knees caving in","Upper body tipping forward","Not squatting deep enough"],breath:"In on the way down, out as you stand"},
+"towel-row":{cues:["Pull the towel apart as you drive your elbows back","Squeeze your shoulder blades to the middle of your back","Keep your shoulders down"],
+  miss:["Pulling with your arms only","Shoulders shrugging","Rounding your back"],breath:"Breathe out as you pull"},
+"plank-shoulder-tap":{cues:["In a plank, tap each shoulder in turn","Do not let your hips swing, stay in one line","A wider stance makes it easier to hold"],
+  miss:["Hips twisting side to side","Hips riding up","Chasing speed"],breath:"Keep breathing out slowly, never hold it"},
+"incline-push-up":{cues:["Hands on a chair or a sofa","Hands slightly wider than your shoulders","One straight line from head to heels"],
+  miss:["Hips sagging","Elbows flaring straight out","Short range of motion"],breath:"Breathe out as you push up"},
+"hip-hinge":{cues:["Fold from the hips like a bow","Keep your back long and flat","Go until you feel your hamstrings stretch"],
+  miss:["Bending from the knees instead","Rounding your back","Arching through the lower back"],breath:"In as you fold, out as you rise"},
+"front-lunge":{cues:["Step forward and drop your hips straight down","Keep your front knee behind your toes","Stay upright through your torso"],
+  miss:["Knee caving in","Upper body tipping forward","Step too short"],breath:"In on the way down, out as you return"},
+"glute-bridge-hold":{cues:["Hold for two seconds at the top","Squeeze your glutes hard and lift your pelvis","Push the floor away with your heels"],
+  miss:["Arching your lower back to get up","Lowering without holding","Glutes not actually squeezing"],breath:"Out as you lift, and keep breathing through the hold"},
+"twist-crunch":{cues:["Twist as you look toward your belly button","Think about shortening your obliques","Turn from your chest, not your elbow"],
+  miss:["Pulling on your neck","Twisting with momentum","Lower back lifting"],breath:"Breathe out as you twist"},
+"knee-to-chest":{cues:["Seated, pull your knees toward your chest","Curl your lower abs to draw them in","Keep your torso leaning slightly back"],
+  miss:["Moving your legs only","Back rounding until you lose tension","Using momentum"],breath:"Breathe out as you pull in"},
+"squat-calf-raise":{cues:["Rise onto your toes at the top of every squat","Lift your heels high and hold for a second","Use your core for balance"],
+  miss:["Not rising far enough onto your toes","Rushing and losing the rhythm","Knees caving in"],breath:"Breathe out as you stand and rise up"},
+"wide-push-up":{cues:["Hands two fists wider than your shoulders","Lower as if opening your chest","One straight line from head to heels"],
+  miss:["Hips sagging","Elbows flaring too far out","Not lowering far enough"],breath:"In on the way down, out as you push"},
+"jump-lunge":{cues:["Drop into a deep reverse lunge, then jump straight up","Switch your legs in the air","Land softly and quietly"],
+  miss:["Knee caving in","Upper body tipping forward","Crashing into your knee on landing"],breath:"Breathe out as you jump"},
+"toe-touch":{cues:["Set up with your hips high","Reach one hand across to the opposite toe","Keep your back long"],
+  miss:["Bending your knees too much","Rounding your back","Just swinging through it"],breath:"Breathe out as you reach"},
+"db-reverse-lunge":{cues:["Let the dumbbells hang at your sides","Step back long and drop straight down","Push the floor away with your front foot"],
+  miss:["Step too short","Upper body tipping forward","Shoulders shrugging"],breath:"Breathe out as you return"},
+"goblet-squat":{cues:["Hold the dumbbell upright at your chest","Lower so your elbows drop inside your thighs","Push through your heels to stand"],
+  miss:["Rounding your back","Knees caving in","Heels lifting"],breath:"In on the way down, out as you stand"},
+"db-deadlift":{cues:["Keep the dumbbells against your shins and pull straight up","Back stays flat the whole way","Hips and chest rise together"],
+  miss:["Rounding your back","Dumbbells drifting away from your body","Trying to pull with your arms"],breath:"Breathe in and brace, out once you lock out"},
+"db-row":{cues:["Hinge from the hips and keep your back flat","Drive your elbow toward your hip","Squeeze your shoulder blade to the middle of your back"],
+  miss:["Upper body rising with each rep","Pulling with your arms only","Shoulders shrugging"],breath:"Breathe out as you pull"},
+"rear-delt-raise":{cues:["Hinged over, open using the back of your shoulders","Keep a soft, fixed bend in your elbows","Lead with your little fingers"],
+  miss:["Swinging it up with momentum","Working your traps instead","Going too heavy"],breath:"Breathe out as you open"},
+"hammer-curl":{cues:["Palms facing in the whole way up","Elbows fixed at your sides","Stay tight on the way down too"],
+  miss:["Elbows drifting forward","Using momentum","Letting your wrists bend back"],breath:"Breathe out as you lift"},
+"triceps-extension":{cues:["Lower the dumbbell behind your head","Keep your elbows where they are","Lock out and squeeze the back of your arms"],
+  miss:["Elbows flaring out","Arching your lower back","Shoulders shrugging"],breath:"Breathe out as you extend"},
+"db-kickback":{cues:["Hinged over, upper arm fixed parallel to your body","Only the forearm moves back","Lock out and hold for a second"],
+  miss:["Upper arm moving","Swinging with momentum","Rounding your back"],breath:"Breathe out as you extend"},
+};
+
+/* =========================================================================
    デイリープログラム
    PART 1 WARM UP → PART 2 STRENGTH → PART 3 FUNCTIONAL → PART 4 COOL DOWN
    e / n / h はそれぞれ Easy / Normal / Hard の処方
@@ -1123,6 +1340,14 @@ function doseEn(d){
     .replace(/（フォーム確認）/g, " (form check)")
     .replace(/（補助あり）/g, " (assisted)")
     .replace(/（左右）/g, " each side");
+}
+
+/* 種目の解説の英語。EX_EN[id] = {cues:[...], miss:[...], breath:"..."}
+   英語に無い種目は日本語のまま出る */
+function exTx(id, k){
+  const e = EX[id]; if(!e) return k==="breath" ? "" : [];
+  if(lang()==="en" && EX_EN[id] && EX_EN[id][k]) return EX_EN[id][k];
+  return e[k];
 }
 
 /* 種目の日本語名。英語のときは英語名だけ出すので空にする */
@@ -2238,7 +2463,7 @@ function viewTimer(){
 
       ${isTime?"":setlogBlock(f)}
 
-      <ul class="cues">${ex.cues.slice(0,2).map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
+      <ul class="cues">${exTx(f.x,"cues").slice(0,2).map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
       <div class="steplinks">
         <button data-ex="${f.x}">${TX("tm.seeForm")}</button>
         <span>·</span>
@@ -2455,11 +2680,11 @@ function openExercise(id, force){
     ${lang()==="en"?"":`<p class="sub" style="margin-top:3px">${esc(e.ja)}</p>`}
     ${videoBlock(id, force)}
     <div class="detail-sec"><h4>${TX("ex.cues")}</h4>
-      <ul>${e.cues.map(c=>`<li class="dot-o">${esc(c)}</li>`).join("")}</ul></div>
+      <ul>${exTx(id,"cues").map(c=>`<li class="dot-o">${esc(c)}</li>`).join("")}</ul></div>
     <div class="detail-sec"><h4>${TX("ex.miss")}</h4>
-      <ul>${e.miss.map(c=>`<li class="dot-r">${esc(c)}</li>`).join("")}</ul></div>
+      <ul>${exTx(id,"miss").map(c=>`<li class="dot-r">${esc(c)}</li>`).join("")}</ul></div>
     <div class="detail-sec"><h4>${TX("ex.breath")}</h4>
-      <p style="margin:0;font-size:13.5px;line-height:1.75">${esc(e.breath)}</p></div>
+      <p style="margin:0;font-size:13.5px;line-height:1.75">${esc(exTx(id,"breath"))}</p></div>
     ${historyBlock(id)}
     <button class="btn btn-ghost" style="margin-top:20px" data-close>${TX("btn.close")}</button>
   </div>`;
