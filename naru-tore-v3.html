@@ -237,10 +237,10 @@ button{border:0;background:none;cursor:pointer}
    ========================================================================= */
 const EX = {
   /* ---- ウォームアップ / コンディショニング ---- */
-  "star-jump":{en:"Star Jump",ja:"スタージャンプ",video:null,
+  "star-jump":{en:"Star Jump",ja:"スタージャンプ",video:{src:"videos/star-jump.mp4",poster:"videos/star-jump.jpg"},
     cues:["手足を同時に大きく開く","膝を軽く曲げてやわらかく着地する"],
     miss:["腕が上がりきらない","かかとから硬く着地する"],breath:"リズムよく吸って吐く"},
-  "plank-hold":{en:"Plank Hold",ja:"プランク",video:null,
+  "plank-hold":{en:"Plank Hold",ja:"プランク",video:{src:"videos/plank-hold.mp4",poster:"videos/plank-hold.jpg"},
     cues:["肘は肩の真下","頭からかかとまで一直線","お尻を締めて骨盤を立てる"],
     miss:["腰が落ちる","お尻が高く上がる","呼吸を止める"],breath:"止めずに細く長く吐き続ける"},
   "v-up":{en:"V-up",ja:"V字腹筋",video:null,
@@ -258,7 +258,7 @@ const EX = {
   "arm-circle":{en:"Arm Circle",ja:"アームサークル",video:null,
     cues:["肩の力を抜いて大きくゆっくり","肩甲骨から動かす"],
     miss:["首をすくめる","速さだけ追う"],breath:"止めない"},
-  "air-squat":{en:"Air Squat",ja:"エアスクワット",video:null,
+  "air-squat":{en:"Air Squat",ja:"エアスクワット",video:{src:"videos/air-squat.mp4",poster:"videos/air-squat.jpg"},
     cues:["お尻を後ろに引きながら下ろす","膝とつま先の向きを揃える"],
     miss:["膝が内に入る","かかとが浮く"],breath:"下ろすとき吸い、立つとき吐く"},
   "high-knee":{en:"High Knees",ja:"ハイニー",video:null,
@@ -276,7 +276,7 @@ const EX = {
   "burpee":{en:"Burpee",ja:"バーピー",video:null,
     cues:["1つ1つの動作を丁寧に","きつければジャンプを省いてよい"],
     miss:["腰が反ったままプランクに入る","フォームが崩れても回数を追う"],breath:"立ち上がるときに吐く"},
-  "skater":{en:"Skater",ja:"スケーター",video:null,
+  "skater":{en:"Skater",ja:"スケーター",video:{src:"videos/skater.mp4",poster:"videos/skater.jpg"},
     cues:["横に大きく跳んで片脚で着地","1秒静止できる強さで"],
     miss:["膝が内に入る","上体が起きすぎる"],breath:"跳ぶたびに吐く"},
   "row-machine":{en:"Row",ja:"ローイング",video:null,
@@ -341,10 +341,10 @@ const EX = {
   "farmer-carry":{en:"Farmer Carry",ja:"ファーマーズキャリー",video:null,
     cues:["肩を下げて胸を張る","一歩ずつ静かに歩く"],
     miss:["体が左右に傾く","肩がすくむ"],breath:"止めずに歩く"},
-  "lateral-raise":{en:"Lateral Raise",ja:"サイドレイズ",video:null,
+  "lateral-raise":{en:"Lateral Raise",ja:"サイドレイズ",video:{src:"videos/lateral-raise.mp4",poster:"videos/lateral-raise.jpg"},
     cues:["肩の高さまで真横へ","肩をすくめない"],
     miss:["反動で振り上げる","肩より高く上げる"],breath:"上げるときに吐く"},
-  "db-curl":{en:"DB Curl",ja:"ダンベルカール",video:null,
+  "db-curl":{en:"DB Curl",ja:"ダンベルカール",video:{src:"videos/db-curl.mp4",poster:"videos/db-curl.jpg"},
     cues:["肘を体の横で固定","下ろすときも力を抜かない"],
     miss:["肘が前に出る","反動で上げる"],breath:"上げるときに吐く"},
   "pushdown":{en:"Triceps Pushdown",ja:"プッシュダウン",video:null,
@@ -352,7 +352,7 @@ const EX = {
     miss:["肘が前後に動く","体重をかけて押す"],breath:"押し下げで吐く"},
 
   /* ---- 自重（自宅） ---- */
-  "push-up":{en:"Push-up",ja:"プッシュアップ",video:null,
+  "push-up":{en:"Push-up",ja:"プッシュアップ",video:{src:"videos/push-up.mp4",poster:"videos/push-up.jpg"},
     cues:["肘は45度に締める","胸から下ろして胸から上げる"],
     miss:["腰が落ちる","可動域が浅い"],breath:"下ろすとき吸い、押すとき吐く"},
   "knee-push-up":{en:"Knee Push-up",ja:"膝つきプッシュアップ",video:null,
@@ -376,7 +376,7 @@ const EX = {
   "wall-sit":{en:"Wall Sit",ja:"ウォールシット",video:null,
     cues:["背中を壁につけて膝90度","太ももの前が焼ける感覚をキープ"],
     miss:["膝がつま先より前に出る","腰が壁から離れる"],breath:"止めずに細く吐く"},
-  "reverse-lunge":{en:"Reverse Lunge",ja:"リバースランジ",video:null,
+  "reverse-lunge":{en:"Reverse Lunge",ja:"リバースランジ",video:{src:"videos/reverse-lunge.mp4",poster:"videos/reverse-lunge.jpg"},
     cues:["後ろに大きく引いて真下に落ちる","前足で床を押して戻る"],
     miss:["歩幅が狭い","上体が前に倒れる"],breath:"戻すときに吐く"},
   "superman":{en:"Superman",ja:"スーパーマン",video:null,
@@ -455,10 +455,10 @@ const EX = {
   "db-squat":{en:"Dumbbell Squat",ja:"ダンベルスクワット",video:null,
     cues:["ダンベルは体の横か胸の前で持つ","胸を張ったまま股関節から下ろす","かかとで床を押して立つ"],
     miss:["背中が丸まる","膝が内に入る","しゃがみが浅い"],breath:"下りながら吸い、立ちながら吐く"},
-  "db-press":{en:"Dumbbell Press",ja:"ダンベルプレス",video:null,
+  "db-press":{en:"Dumbbell Press",ja:"ダンベルプレス",video:{src:"videos/db-press.mp4",poster:"videos/db-press.jpg"},
     cues:["肩の高さから真上に押し上げる","肋骨を締めて腰を反らせない","耳の横で止める"],
     miss:["腰が反る","肘が前に流れる","上げきらない"],breath:"押しながら吐き、下ろしながら吸う"},
-  "tuck-up":{en:"Tuck-up",ja:"タックアップ",video:null,
+  "tuck-up":{en:"Tuck-up",ja:"タックアップ",video:{src:"videos/tuck-up.mp4",poster:"videos/tuck-up.jpg"},
     cues:["仰向けから膝と胸を同時に寄せる","腰を床につけた状態から始める","反動に頼りすぎない"],
     miss:["腰が浮いたまま","首で引く","勢いだけで回す"],breath:"寄せながら吐き、開きながら吸う"},
   "renegade-row":{en:"Renegade Row",ja:"レネゲードロウ",video:null,
@@ -479,7 +479,7 @@ const EX = {
   "box-jump":{en:"Box Jump",ja:"ボックスジャンプ",video:null,
     cues:["腕を振って真上に跳ぶ","ボックスの上で膝を伸ばし切る","降りるときは一歩ずつ"],
     miss:["着地が深すぎる","跳び降りて膝に落とす","高さを欲張る"],breath:"跳ぶ瞬間に吐く"},
-  "hollow-rock":{en:"Hollow Rock",ja:"ホロウロック",video:null,
+  "hollow-rock":{en:"Hollow Rock",ja:"ホロウロック",video:{src:"videos/hollow-rock.mp4",poster:"videos/hollow-rock.jpg"},
     cues:["腰を床に押しつけた形を作る","その形のまま前後に揺れる","手足は力を抜かない"],
     miss:["腰が浮く","膝が曲がる","揺れが大きすぎる"],breath:"揺れに合わせて浅く吐き続ける"},
   "db-incline-press":{en:"DB Incline Press",ja:"ダンベルインクラインプレス",video:null,
@@ -505,7 +505,7 @@ const EX = {
   "towel-row":{en:"Towel Row",ja:"タオルローイング",video:null,
     cues:["タオルを引っ張り合いながら肘を後ろに引く","肩甲骨を背中の中心に寄せる","肩は下げたまま"],
     miss:["腕だけで引く","肩がすくむ","背中が丸まる"],breath:"引くときに吐く"},
-  "plank-shoulder-tap":{en:"Plank Shoulder Tap",ja:"プランク・ショルダータップ",video:null,
+  "plank-shoulder-tap":{en:"Plank Shoulder Tap",ja:"プランク・ショルダータップ",video:{src:"videos/plank-shoulder-tap.mp4",poster:"videos/plank-shoulder-tap.jpg"},
     cues:["プランクの姿勢で左右交互に肩をタッチ","お尻を振らず、体は一直線のまま","足幅を広めにすると安定する"],
     miss:["腰が左右にねじれる","お尻が高く上がる","速さだけを追う"],breath:"止めずに細く吐き続ける"},
   "incline-push-up":{en:"Incline Push-up",ja:"インクライン・プッシュアップ",video:null,
@@ -529,6 +529,42 @@ const EX = {
   "squat-calf-raise":{en:"Squat to Calf Raise",ja:"スクワット＋カーフレイズ",video:null,
     cues:["スクワットで立ち切った最後につま先立ちまで伸び上がる","かかとを高く上げて1秒止める","バランスは体幹で取る"],
     miss:["つま先立ちが浅い","急いでリズムが崩れる","膝が内に入る"],breath:"立ち上がって伸び上がるときに吐く"},
+
+  /* ---- naru さんの実演動画に合わせて追加した種目 ----------------------
+     コツ・よくあるミスは動画を見て書いたものなので、naru さんの確認待ち  */
+  "wide-push-up":{en:"Wide Push-up",ja:"ワイドプッシュアップ",video:{src:"videos/wide-push-up.mp4",poster:"videos/wide-push-up.jpg"},
+    cues:["手は肩幅よりこぶし2つぶん外に置く","胸を広げるように下ろす","頭からかかとまで一直線"],
+    miss:["腰が落ちる","肘が真横に開きすぎる","下ろしが浅い"],breath:"下ろすとき吸い、押すとき吐く"},
+  "jump-lunge":{en:"Jumping Reverse Lunge",ja:"ジャンピング・リバースランジ",video:{src:"videos/jump-lunge.mp4",poster:"videos/jump-lunge.jpg"},
+    cues:["深く後ろに踏み込んでから真上に跳ぶ","空中で前後の足を入れ替える","着地はやわらかく、音を立てない"],
+    miss:["膝が内に入る","上体が前に倒れる","着地で膝に落ちる"],breath:"跳ぶ瞬間に吐く"},
+  "toe-touch":{en:"Toe Touch",ja:"トゥータッチ",video:{src:"videos/toe-touch.mp4",poster:"videos/toe-touch.jpg"},
+    cues:["お尻を高く上げた姿勢をつくる","対角の手でつま先にタッチする","背中は長く保ったまま"],
+    miss:["膝が深く曲がる","背中が丸まる","勢いだけで振る"],breath:"タッチするときに吐く"},
+  "db-reverse-lunge":{en:"Dumbbell Reverse Lunge",ja:"ダンベル・リバースランジ",video:{src:"videos/db-reverse-lunge.mp4",poster:"videos/db-reverse-lunge.jpg"},
+    cues:["ダンベルは体の横で吊るように持つ","後ろに大きく引いて真下に落ちる","前足で床を押して戻る"],
+    miss:["歩幅が狭い","上体が前に倒れる","肩がすくむ"],breath:"戻すときに吐く"},
+  "goblet-squat":{en:"Goblet Squat",ja:"ゴブレットスクワット",video:{src:"videos/goblet-squat.mp4",poster:"videos/goblet-squat.jpg"},
+    cues:["ダンベルを胸の前で縦に抱える","肘を内ももの内側に落とすように下ろす","かかとで床を押して立つ"],
+    miss:["背中が丸まる","膝が内に入る","かかとが浮く"],breath:"下ろすとき吸い、立つとき吐く"},
+  "db-deadlift":{en:"Dumbbell Deadlift",ja:"ダンベルデッドリフト",video:{src:"videos/db-deadlift.mp4",poster:"videos/db-deadlift.jpg"},
+    cues:["ダンベルはすねに沿わせて真上に引く","背中は最後まで真っすぐ","お尻と背中を同時に立てる"],
+    miss:["背中が丸まる","ダンベルが体から離れる","腕で引こうとする"],breath:"引く前に息を溜め、立ち切ってから吐く"},
+  "db-row":{en:"Dumbbell Row",ja:"ダンベルロウ",video:{src:"videos/db-row.mp4",poster:"videos/db-row.jpg"},
+    cues:["股関節から前傾して背中を真っすぐ保つ","肘を腰に向かって引く","肩甲骨を背中の中心に寄せる"],
+    miss:["上体が起き上がる","腕だけで引く","肩がすくむ"],breath:"引くときに吐く"},
+  "rear-delt-raise":{en:"Rear Delt Raise",ja:"リアデルトレイズ",video:{src:"videos/rear-delt-raise.mp4",poster:"videos/rear-delt-raise.jpg"},
+    cues:["前傾した姿勢で肩の後ろを使って開く","肘は軽く曲げたまま固定","小指側から上げる意識"],
+    miss:["反動で振り上げる","僧帽筋に力が入る","重さを欲張る"],breath:"開くときに吐く"},
+  "hammer-curl":{en:"Hammer Curl",ja:"ハンマーカール",video:{src:"videos/hammer-curl.mp4",poster:"videos/hammer-curl.jpg"},
+    cues:["手のひらを内側に向けたまま巻き上げる","肘を体の横で固定","下ろすときも力を抜かない"],
+    miss:["肘が前に出る","反動で上げる","手首が折れる"],breath:"上げるときに吐く"},
+  "triceps-extension":{en:"Triceps Extension",ja:"トライセプスエクステンション",video:{src:"videos/triceps-extension.mp4",poster:"videos/triceps-extension.jpg"},
+    cues:["ダンベルを頭の後ろに下ろす","肘の位置を動かさない","伸ばし切って二の腕を締める"],
+    miss:["肘が開く","腰が反る","肩がすくむ"],breath:"伸ばすときに吐く"},
+  "db-kickback":{en:"Dumbbell Triceps Kickback",ja:"ダンベル・トライセプスキックバック",video:{src:"videos/db-kickback.mp4",poster:"videos/db-kickback.jpg"},
+    cues:["前傾して上腕を体と平行に固定","肘から先だけを後ろに伸ばす","伸ばし切って1秒止める"],
+    miss:["上腕が動く","反動で振る","背中が丸まる"],breath:"伸ばすときに吐く"},
 };
 /* =========================================================================
    デイリープログラム
@@ -1174,6 +1210,7 @@ function render(){
   else if(current==="timer") app.innerHTML = viewTimer();
   else if(current==="log") app.innerHTML = viewLog();
   else if(current==="settings") app.innerHTML = viewSettings();
+  else if(current==="videos") app.innerHTML = viewVideos();
   bind();
 }
 
@@ -1316,6 +1353,8 @@ function viewHome(){
         </div>
 
         ${videoBlock(todaysVideoEx())}
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
+          NARU の実演動画をぜんぶ見る &nbsp;→</button>
 
         <div class="note">
           <div class="k">FROM NARU</div>
@@ -1363,9 +1402,10 @@ function todaysVideoEx(){
     if(EX[it.x] && EX[it.x].video) return it.x;
   return null;
 }
-function videoBlock(exId){
-  /* 経験者向けの Fit 3 にはフォーム動画を出さない（naru の指示） */
-  if(fit()==="fit3") return "";
+function videoBlock(exId, force){
+  /* 経験者向けの Fit 3 にはフォーム動画を出さない（naru の指示）。
+     ただし設定の動画ライブラリから開いたときは、自分で選んでいるので出す */
+  if(fit()==="fit3" && !force) return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
   const title = exId ? `${EX[exId].en} のフォーム` : "NARU のワンポイント動画";
   const sub = exId ? (v ? "NARU の実演でフォームを確認できます" : "NARU の実演動画は準備中です")
@@ -2017,6 +2057,28 @@ function viewLog(){
 /* =========================================================================
    設定（記録を消さずに変更できる）
    ========================================================================= */
+/* 実演動画の一覧。動画が入っている種目を全部ここから見られる */
+function viewVideos(){
+  const list = Object.keys(EX).filter(k=>EX[k].video);
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll"><div class="pad">
+      <div class="eyebrow" style="margin-top:2px">NARU DEMO</div>
+      <h1 class="h1" style="margin-top:4px">実演動画</h1>
+      <p class="sub" style="margin-bottom:14px">${list.length} 本あります。
+        タップするとフォームのポイント・よくあるミスと一緒に見られます。</p>
+      <div class="vlib">
+        ${list.map(k=>`<button data-ex="${k}" data-vid="1">
+          <img src="${EX[k].video.poster.replace("videos/","videos/thumb/")}" alt="" loading="lazy">
+          <span>${esc(EX[k].ja)}</span>
+        </button>`).join("")}
+      </div>
+      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
+    </div></div>
+    ${nav("home")}
+  </div>`;
+}
+
 function viewSettings(){
   const pf=S.profile||{};
   const row=(title,opts,keyName,cur)=>`
@@ -2040,12 +2102,10 @@ function viewSettings(){
         ${row("FREQUENCY 週の回数",[[2,"週2日"],[3,"週3日"],[4,"週4日"],[5,"週5日"]],"days",pf.days)}
 
         <div class="card" style="padding:15px;margin-top:11px">
-          <div class="eyebrow" style="margin-bottom:8px">NARU の実演動画</div>
-          <p class="sub" style="margin:0">
-            現在 ${Object.values(EX).filter(e=>e.video).length} / ${Object.keys(EX).length} 種目に動画が入っています。
-            撮影ができ次第、HTML内の <code>EX</code> の <code>video</code> を差し替えると
-            ホーム・種目詳細・タイマー画面に自動で表示されます。
-          </p>
+          <div class="eyebrow" style="margin-bottom:6px">NARU の実演動画</div>
+          <p class="sub" style="margin:0 0 11px">
+            ${Object.values(EX).filter(e=>e.video).length} 種目に動画が入っています。</p>
+          <button class="btn btn-ghost" data-go="videos">動画の一覧を見る &nbsp;→</button>
         </div>
 
         ${ACCESS.on ? `
@@ -2077,7 +2137,7 @@ function viewSettings(){
 /* =========================================================================
    種目詳細シート
    ========================================================================= */
-function openExercise(id){
+function openExercise(id, force){
   const e=EX[id]; if(!e) return;
   if(current==="timer") T.paused=true;   // 解説を見ている間はカウントを止める
   backdrop.className="backdrop on";
@@ -2086,7 +2146,7 @@ function openExercise(id){
     <div class="eyebrow">EXERCISE</div>
     <h2 style="margin:5px 0 0;font-size:22px;font-weight:800">${esc(e.en)}</h2>
     <p class="sub" style="margin-top:3px">${esc(e.ja)}</p>
-    ${videoBlock(id)}
+    ${videoBlock(id, force)}
     <div class="detail-sec"><h4>フォームのポイント</h4>
       <ul>${e.cues.map(c=>`<li class="dot-o">${esc(c)}</li>`).join("")}</ul></div>
     <div class="detail-sec"><h4>よくあるミス</h4>
@@ -2134,7 +2194,7 @@ const INTRO = {
     ["14日分のプログラム", "DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています"],
     ["重量と回数を記録",   "種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です"],
     ["有酸素までセット",   "各日に『外を走る、もしくは歩く20分』まで指定されています"],
-    ["naru の解説",        "各日の狙いと、種目ごとのコツ・やりがちなミスが入っています"]
+    ["naru の実演動画",    `${Object.values(EX).filter(e=>e.video).length} 種目は naru 本人の実演つき。各日の狙いと、種目ごとのコツ・やりがちなミスも入っています`]
   ],
   /* 特典。「プレゼント」という書き方だと景品表示法の総付景品（上限＝代金の20％＝700円）に
      あたりうるので、サービスの内容として書いています。文面は naru さんに最終確認を */
@@ -2267,7 +2327,7 @@ function bind(){
   on("[data-level]",el=>{ S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
 
   /* 種目詳細 */
-  on("[data-ex]",el=>openExercise(el.dataset.ex));
+  on("[data-ex]",el=>openExercise(el.dataset.ex, el.dataset.vid==="1"));
 
   /* 書類 */
   on("[data-legal]",el=>openLegal(el.dataset.legal));
@@ -2281,7 +2341,7 @@ function bind(){
   /* チェックリスト */
   on("[data-check]",(el,e)=>{
     // 「?」を押したときは解説を開く（チェックしない）
-    if(e.target.closest("[data-ex]")){ openExercise(e.target.closest("[data-ex]").dataset.ex); return; }
+    if(e.target.closest("[data-ex]")){ const el=e.target.closest("[data-ex]"); openExercise(el.dataset.ex, el.dataset.vid==="1"); return; }
     const k=el.dataset.check; S.checks[k]=!S.checks[k]; save(); render();
     // 次の未チェック種目まで自動でスクロールする
     setTimeout(()=>{ const n=document.getElementById("next-item");
@@ -2329,7 +2389,7 @@ backdrop.onclick=e=>{
   const r=t.closest("[data-rpe]"); if(r){ applyRpe(r.dataset.rpe); return; }
   const v=t.closest("[data-view-progress]"); if(v){ closeSheet(); stopTimer(); T.tick=null; go("log"); return; }
   const j=t.closest("[data-jump]"); if(j){ closeSheet(); enterItem(+j.dataset.jump); return; }
-  const x=t.closest("[data-ex]"); if(x){ openExercise(x.dataset.ex); return; }
+  const x=t.closest("[data-ex]"); if(x){ openExercise(x.dataset.ex, x.dataset.vid==="1"); return; }
 };
 
 /* =========================================================================
@@ -2466,6 +2526,12 @@ render();
 .gate-price .p{margin-top:5px}
 .gate-price .p b{font-size:62px;font-weight:800;letter-spacing:-.035em;line-height:.95;color:var(--olive)}
 .gate-price .p span{font-size:15px;font-weight:700;color:var(--ink);margin-left:7px}
+.vlib{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vlib button{display:block;text-align:left;background:var(--surface-sunk);border-radius:10px;
+  overflow:hidden;padding:0;transition:.15s}
+.vlib button:active{transform:scale(.98)}
+.vlib img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:var(--panel)}
+.vlib span{display:block;padding:7px 9px 9px;font-size:11.5px;font-weight:700;line-height:1.4;color:var(--ink)}
 .gate-bonus{margin-top:10px;background:var(--olive-soft);border:1px solid var(--olive);
   border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.65;color:var(--ink)}
 .gate-bonus b{display:block;font-size:10px;letter-spacing:.16em;font-weight:800;
