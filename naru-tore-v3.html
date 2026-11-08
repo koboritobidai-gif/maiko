@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0A">
-<title>NARU｜Lifestyle Fitness Coach</title>
+<title>NARU FIT DAILY</title>
 <style>
 :root{
   --bg-top:#0B0B0A; --bg-bottom:#101207;
@@ -68,7 +68,7 @@ button{border:0;background:none;cursor:pointer}
 
 /* ── ヘッダー ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px}
-.logo{font-size:12px;font-weight:800;letter-spacing:.3em}
+.logo{font-size:11px;font-weight:800;letter-spacing:.18em;white-space:nowrap}
 
 /* ── ボトムナビ ── */
 .nav{flex:none;height:calc(var(--nav-h) + var(--safe));padding-bottom:var(--safe);
@@ -1849,7 +1849,7 @@ function nav(active){
 }
 function topbar(){
   return `<div class="topbar">
-    <div class="logo">NARU</div>
+    <div class="logo">NARU FIT DAILY</div>
     <div class="pill">🔥 <span class="tnum">${streak()}</span> STREAK</div>
   </div>`;
 }
@@ -1870,7 +1870,7 @@ function viewLP(){
     <div class="lp">
       <div class="lp-top">
         ${langSwitch()}
-        <div class="eyebrow">NARU &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
+        <div class="eyebrow">NARU FIT DAILY &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
         <h1 class="hero-t">${TX("lp.hero")}</h1>
         <p class="sub" style="margin-top:14px">Welcome to my page 🌿</p>
       </div>
@@ -2804,7 +2804,7 @@ function viewGate(){
   const nvid = Object.values(EX).filter(e=>e.video).length;
   return `<div class="screen on"><div class="scroll"><div class="pad gate">
     ${langSwitch()}
-    <h1>NARU FITNESS</h1>
+    <h1>NARU FIT DAILY</h1>
     <p class="tagline">${esc(TX("gate.tagline"))}</p>
     <p class="hook">${esc(TX("gate.hook"))}</p>
 
