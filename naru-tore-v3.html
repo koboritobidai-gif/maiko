@@ -1011,8 +1011,17 @@ const GOAL_ORDER = {
    en に無いキーは ja に落ちるので、訳の途中でも画面は壊れない。
    TX("key", a, b) の a,b は文中の {0}{1} に入る。
    ========================================================================= */
+/* 英語版は作ってあるが、naru さんのチェックが済むまでは出さない。
+   見せるときは SHOW_LANG を true にするだけでよい */
+const SHOW_LANG = false;
+
+/* 実演動画の一覧画面。いまはメニューの中からだけ見せる。
+   一覧を出したくなったら true に戻す */
+const SHOW_VIDEO_LIST = false;
+
 const LANGS = [["ja","日本語"],["en","English"]];
 function lang(){
+  if(!SHOW_LANG) return "ja";
   if(S.lang==="ja" || S.lang==="en") return S.lang;
   try{ return String(navigator.language||"ja").toLowerCase().startsWith("ja") ? "ja" : "en"; }
   catch(e){ return "ja"; }
@@ -1827,7 +1836,7 @@ function render(){
   else if(current==="timer") app.innerHTML = viewTimer();
   else if(current==="log") app.innerHTML = viewLog();
   else if(current==="settings") app.innerHTML = viewSettings();
-  else if(current==="videos") app.innerHTML = viewVideos();
+  else if(current==="videos") app.innerHTML = SHOW_VIDEO_LIST ? viewVideos() : viewHome();
   bind();
 }
 
@@ -1850,6 +1859,7 @@ function topbar(){
    ========================================================================= */
 /* 日本語 / English の切り替え。申し込み前にも切り替えられるよう LP と紹介画面にも置く */
 function langSwitch(){
+  if(!SHOW_LANG) return "";
   const cur = lang();
   return `<div class="langsw">${LANGS.map(([id,label])=>
     `<button data-lang="${id}" class="${cur===id?"on":""}">${label}</button>`).join("")}</div>`;
@@ -1976,8 +1986,8 @@ function viewHome(){
         </div>
 
         ${videoBlock(todaysVideoEx())}
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
-          ${TX("home.allVideos")}</button>
+        ${SHOW_VIDEO_LIST?`<button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
+          ${TX("home.allVideos")}</button>`:""}
 
         <div class="note">
           <div class="k">FROM NARU</div>
@@ -2708,18 +2718,18 @@ function viewSettings(){
       <div class="pad">
         <h1 class="h1" style="margin-top:2px">${TX("set.title")}</h1>
         <p class="sub" style="margin-bottom:4px">${TX("set.lead")}</p>
-        ${row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang())}
+        ${SHOW_LANG?row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang()):""}
         ${row(TX("set.goal"),[["tone",TX("goal.tone")],["lose",TX("goal.lose")],["build",TX("goal.build")],["stamina",TX("goal.stamina")]],"goal",pf.goal)}
         ${row(TX("set.level"),LEVELS.map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level())}
         ${row(TX("set.place"),[["gym",TX("set.gym")],["home",TX("set.home")]],"place",pf.place)}
         ${row(TX("set.freq"),[[2,TX("set.d2")],[3,TX("set.d3")],[4,TX("set.d4")],[5,TX("set.d5")]],"days",pf.days)}
 
-        <div class="card" style="padding:15px;margin-top:11px">
+        ${SHOW_VIDEO_LIST?`<div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:6px">${TX("set.vidH")}</div>
           <p class="sub" style="margin:0 0 11px">
             ${TX("set.vidBody", Object.values(EX).filter(e=>e.video).length)}</p>
           <button class="btn btn-ghost" data-go="videos">${TX("set.vidBtn")}</button>
-        </div>
+        </div>`:""}
 
         ${ACCESS.on ? `
         <div class="card" style="padding:15px;margin-top:11px">
