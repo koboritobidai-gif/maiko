@@ -1041,7 +1041,11 @@ const BIZ = {
   site : null,                                   // 公開後のアプリURL
   pay  : "https://buy.stripe.com/8x2eVfbugc0e6cw4GF87K00",
   price: "2週間 3,500円（税込）",
-  made : "2026年10月30日"
+  made : "2026年10月30日",
+  /* 適格請求書（インボイス）発行事業者の登録番号。
+     お客様が一般の方だけなら登録は不要なので、当面は null のまま。
+     登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
+  invoice: null
 };
 const TBD = t => `<mark>${t}</mark>`;            // 未確定の箇所を目立たせる
 
@@ -1055,6 +1059,7 @@ const LEGAL = {
       <tr><th>メール</th><td>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</td></tr>
       <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
       <tr><th>販売価格</th><td>${esc(BIZ.price)}<br>表示価格はすべて税込です</td></tr>
+      ${BIZ.invoice?`<tr><th>登録番号</th><td>${esc(BIZ.invoice)}<br>適格請求書発行事業者</td></tr>`:""}
       <tr><th>商品代金以外の<br>必要料金</th><td>インターネットの接続料金および通信料金は、お客様のご負担となります</td></tr>
       <tr><th>支払方法</th><td>クレジットカード（Visa／Mastercard／American Express／JCB ほか）<br>
         決済代行：Stripe, Inc.</td></tr>
