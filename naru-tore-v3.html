@@ -811,6 +811,171 @@ function TX(k){
 const TXT = { ja:{}, en:{} };
 function addTxt(map){ for(const k in map){ TXT.ja[k]=map[k][0]; TXT.en[k]=map[k][1]; } }
 
+/* ---- 記録・タイマー・ログ・設定 --------------------------------------- */
+addTxt({
+"ent.lead"   : ["やった分だけ入れてください。空欄のまま進めても大丈夫です。",
+                "Just fill in what you did. Leaving boxes empty is fine."],
+"ent.extra"  : ["· 追加でやった種目","\u00b7 Extra exercises"],
+"ent.extraLead":["できなかった種目は空欄のままで大丈夫です。 代わりにやったものは、ここに足してください。",
+                "Leave anything you skipped blank. Add whatever you did instead down here."],
+"ent.exName" : ["種目名","Exercise"],
+"ent.exNameA": ["追加した種目名","Name of the extra exercise"],
+"ent.addRow" : ["＋ 行を追加する","+ Add a row"],
+"ent.memoH"  : ["· 今日のメモ","\u00b7 Today\u2019s note"],
+"ent.memoPh" : ["調子、痛み、できなかった理由など。naru に伝えたいこともここへ。",
+                "How it felt, any pain, why you skipped something \u2014 anything you want NARU to know."],
+"ent.memo"   : ["今日のメモ","Today\u2019s note"],
+"ent.save"   : ["記録して完了する","Save and finish"],
+"ent.back"   : ["戻る","Back"],
+"ent.prev"   : ["前回","Last time"],
+"ent.weight" : ["重量","Weight"],
+"ent.reps"   : ["回数","Reps"],
+"ent.rounds" : ["ラウンド","rounds"],
+"ent.bw"     : ["自重","bodyweight"],
+"ent.roundsA": ["完了ラウンド","Rounds completed"],
+
+"run.done"   : ["· 完了 ✓","\u00b7 Done \u2713"],
+"run.hide"   : ["隠す","Hide"],
+"run.open"   : ["開く","Show"],
+"run.round"  : ["周","rounds"],
+"run.tapHint": ["できた種目をタップしてチェック","Tap each exercise as you finish it"],
+"run.ex"     : ["種目","exercises"],
+
+"tm.soon"    : ["まもなくスタート","Starting soon"],
+"tm.first"   : ["最初の種目：","First up: "],
+"tm.now"     : ["すぐ始める","Start now"],
+"tm.quit"    : ["やめる","Quit"],
+"tm.skipRest": ["休憩をとばす","Skip the rest"],
+"tm.amrap"   : ["できるだけ多くのラウンドを","As many rounds as you can"],
+"tm.prev"    : ["前へ","Back"],
+"tm.round1"  : ["1ラウンド完了 ＋1","Round done +1"],
+"tm.next"    : ["次へ","Next"],
+"tm.secOf"   : ["秒 ・ ","sec \u00b7 "],
+"tm.setNo"   : ["全{1}セット中 {0}セット目 ・ ","set {0} of {1} \u00b7 "],
+"tm.pressWhenDone":["できたら下のボタンを押す","Press the button below when you are done"],
+"tm.seeForm" : ["フォームを見る","See the form"],
+"tm.seeAll"  : ["全体を見る","See the whole plan"],
+"tm.prevEx"  : ["前の種目","Previous"],
+"tm.resume"  : ["再開する","Resume"],
+"tm.pause"   : ["一時停止","Pause"],
+"tm.ok"      : ["できた ✓","Done \u2713"],
+"tm.nextEx"  : ["次の種目","Next"],
+"tm.stop"    : ["✕ やめる","\u2715 Quit"],
+"tm.jump"    : ["タップするとその種目へ移動します","Tap to jump to that exercise"],
+
+"log.empty"  : ["まだ記録がありません。最初の1回を終えるとここに並びます。",
+                "Nothing logged yet. Your first session will show up here."],
+"log.top"    : ["トップ画面を見る","See the start screen"],
+"log.keep"   : ["Keep it going ― 積み上がってるよ。","Keep it going \u2014 it is adding up."],
+
+"vids.title" : ["実演動画","Demo videos"],
+"vids.lead"  : ["{0} 本あります。 タップするとフォームのポイント・よくあるミスと一緒に見られます。",
+                "{0} of them. Tap one to watch it with the form points and the common mistakes."],
+
+"set.title"  : ["設定","Settings"],
+"set.lead"   : ["変更してもこれまでの記録は残ります","Changing these keeps everything you have logged"],
+"set.goal"   : ["GOAL 目的","GOAL"],
+"set.level"  : ["LEVEL きょうの強度","LEVEL \u00b7 today\u2019s intensity"],
+"set.soon"   : ["（準備中）"," (coming soon)"],
+"set.place"  : ["PLACE 場所","PLACE"],
+"set.gym"    : ["ジム","Gym"],
+"set.home"   : ["自宅","Home"],
+"set.freq"   : ["FREQUENCY 週の回数","FREQUENCY \u00b7 days per week"],
+"set.d2"     : ["週2日","2 days"],
+"set.d3"     : ["週3日","3 days"],
+"set.d4"     : ["週4日","4 days"],
+"set.d5"     : ["週5日","5 days"],
+"set.vidH"   : ["NARU の実演動画","NARU\u2019s demo videos"],
+"set.vidBody": ["{0} 種目に動画が入っています。","{0} exercises have a video."],
+"set.vidBtn" : ["動画の一覧を見る &nbsp;→","See the video list &nbsp;→"],
+"set.memberH": ["会員資格","Membership"],
+"set.codeOk" : ["合言葉：{0}　有効（{1} に入力）","Access code: {0} \u00b7 active (entered {1})"],
+"set.codeNote":["合言葉は定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
+                "The access code changes from time to time. If you are asked for it again, check the email from your sign-up."],
+"set.relock" : ["合言葉を入れ直す","Enter the access code again"],
+"set.aboutH" : ["このアプリについて","About this app"],
+"set.notice" : ["ご利用にあたって（安全のために）","Before you start (for your safety)"],
+"set.reset"  : ["診断をやり直す（データ消去）","Start over (this erases your data)"],
+"set.resetAsk":["これまでの記録もすべて消えます。診断からやり直しますか？",
+                "This erases everything you have logged. Start over from the questions?"],
+
+"ex.cues"    : ["フォームのポイント","Form points"],
+"ex.miss"    : ["よくあるミス","Common mistakes"],
+"ex.breath"  : ["呼吸","Breathing"],
+"ex.history" : ["これまでの記録","Your history"],
+
+"rpe.ask"    : ["今日の強度はどうだった？","How did today feel?"],
+"rpe.easy"   : ["楽だった","Easy"],
+"rpe.easyS"  : ["次は少し上げよう","Push it up a little next time"],
+"rpe.ok"     : ["ちょうどよかった","Just right"],
+"rpe.okS"    : ["この強度でいこう","Stay at this level"],
+"rpe.hard"   : ["きつかった","Hard"],
+"rpe.hardS"  : ["次は少し落とそう","Drop it a little next time"]
+});
+
+/* ---- ホーム・今日・記録まわり ---------------------------------------- */
+addTxt({
+"wd.0":["日","Sun"],"wd.1":["月","Mon"],"wd.2":["火","Tue"],"wd.3":["水","Wed"],
+"wd.4":["木","Thu"],"wd.5":["金","Fri"],"wd.6":["土","Sat"],
+
+"home.rest"     : ["休養日","Rest day"],
+"home.restBody" : ["今日は空けておく日です。回復もプログラムのうちなので、予定どおり休んでください。",
+                   "Today is meant to be empty. Recovery is part of the program, so take it as planned."],
+"home.nextCycle": ["明日から、次の2週間が始まります。","Your next two weeks start tomorrow."],
+"home.nextIs"   : ["次は DAY {0}・{1} です。","Next up is DAY {0}, {1}."],
+"home.swap"     : ["今日は休む（DAY {0} の休養日と振り替える）","Rest today (swap with the rest day on DAY {0})"],
+"home.swapLeft" : ["振り替えできるのは、あと {0} 日ぶんです","You can swap {0} more day(s)"],
+"home.swapOut"  : ["休養日を使い切りました。今日やらないと、この2週間では取り返せません。",
+                   "You have used all your rest days. Skip today and you cannot make it up this cycle."],
+"home.allVideos": ["NARU の実演動画をぜんぶ見る &nbsp;→","See all of NARU\u2019s demo videos &nbsp;→"],
+"home.settings" : ["メニューの設定を変える","Change your settings"],
+"home.lastDay"  : ["この2週間は今日で最終日です（{0} / {1} 日 実施）",
+                   "Today is the last day of this cycle ({0} of {1} done)"],
+"home.nextUp"   : ["次の予定：DAY {0} {1}","Next: DAY {0} {1}"],
+
+"coach.rest"  : ["今日は休む日。トレーニングは休んでいる間に効いてくるから、ここで無理をしないのが一番伸びる。",
+                 "Today is a rest day. Training does its work while you rest, so not pushing now is what makes you grow."],
+"coach.done"  : ["今日はもう終えてるね。おつかれさま。回復も練習のうち、しっかり食べて寝よう。",
+                 "You are already done for today. Nice work. Recovery counts too \u2014 eat well and sleep."],
+"coach.base"  : ["フォーム第一。回数より“効かせる”意識でいこう。",
+                 "Form first. Think about feeling the muscle, not chasing reps."],
+"coach.hard"  : ["追い込む日こそフォームが命。最後の1repまで丁寧に。",
+                 "On a hard day, form matters most. Stay clean to the very last rep."],
+"coach.DEADLIFT":["引く前に一度お腹に空気を入れて、背中を固めてから。",
+                  "Take a breath into your belly and lock your back before you pull."],
+"coach.BACK SQUAT":["しゃがむ深さより、膝とつま先の向きを揃えることを優先。",
+                  "Matching your knees to your toes matters more than how deep you go."],
+"coach.BENCH PRESS":["肩甲骨を寄せて下げる。ここが決まると重さが変わる。",
+                  "Pull your shoulder blades together and down. Get that right and the weight changes."],
+"coach.PULL-UP":["肩を下げてから引く。届かない日は補助を使ってOK。",
+                  "Drop your shoulders first, then pull. Use assistance on days you cannot reach."],
+"coach.PUSH-UP":["胸から下ろして胸から上げる。腰が落ちたらそこで終了。",
+                  "Lower with your chest, push with your chest. Stop the set when your hips drop."],
+"coach.else" : ["きつくなったら回数を減らしていい。止めないことがいちばん強い。",
+                 "Cut the reps when it gets hard. Not stopping is the strongest thing you can do."],
+
+"vid.form"    : ["{0} のフォーム","{0} \u2014 form"],
+"vid.onePoint": ["NARU のワンポイント動画","One tip from NARU"],
+"vid.have"    : ["NARU の実演でフォームを確認できます","Check your form against NARU\u2019s demo"],
+"vid.none"    : ["NARU の実演動画は準備中です","NARU\u2019s demo video is on the way"],
+"vid.dayNone" : ["この日のメニューの実演動画がここに入ります","Demo videos for this day will appear here"],
+
+"train.noMenu"  : ["今日はメニューがありません。","Nothing on the plan today."],
+"train.swapHint": ["どうしても動きたいときは、ホームから {0} 日目と振り替えられます。",
+                   "If you really want to move, you can swap this with DAY {0} from the home screen."],
+"train.lastRest": ["この2週間の休養日はここが最後です。","This is the last rest day of the cycle."],
+"train.cardio"  : ["有酸素","Cardio"],
+"train.point"   : ["今日のポイント","Today\u2019s point"],
+"train.back"    : ["ホームに戻る","Back to home"],
+"train.levelHint":["今日の調子で変えられます。しんどい日は落としてOK",
+                   "Change it to match today. Dropping down on a hard day is fine."],
+"train.tapHint" : ["種目をタップするとフォームのポイントが見られます",
+                   "Tap an exercise to see the form points"],
+"train.record"  : ["終わったら記録する","Log it when you are done"],
+"train.timer"   : ["タイマーを使う（時間種目・AMRAP）","Use the timer (timed sets \u00b7 AMRAP)"],
+"train.rounds"  : ["ROUNDS","ROUNDS"]
+});
+
 /* ---- 画面の文言（左が日本語・右が英語） ---------------------------- */
 addTxt({
 /* 共通 */
@@ -947,7 +1112,30 @@ function weekTarget(){ return (S.profile && S.profile.days) || 3; }
 function dayNumber(){ return cycleDay(); }
 function todayProgram(){ const d=dayOf(cycleDay()); return (d && !d.rest) ? d : null; }
 function programAt(n){ const d=dayOf(n); return (d && !d.rest) ? d : null; }
-function doseOf(item){ return item.n; }
+function doseOf(item){ return lang()==="en" ? doseEn(item.n) : item.n; }
+
+/* 英語のときの処方表記。日本語まじりの指示だけを置き換える */
+function doseEn(d){
+  return String(d)
+    .replace(/左右各\s*(\d+)\s*(rep|sec)/g, "$1 $2 each side")
+    .replace(/左右交互\s*(\d+)\s*(rep|sec)/g, "$1 $2 alternating")
+    .replace(/　?※\s*加重／ラットプルダウンでも可/g, " \u00b7 weighted or lat pulldown is fine")
+    .replace(/（フォーム確認）/g, " (form check)")
+    .replace(/（補助あり）/g, " (assisted)")
+    .replace(/（左右）/g, " each side");
+}
+
+/* 種目の日本語名。英語のときは英語名だけ出すので空にする */
+const exSub2 = e => (lang()==="en" || !e) ? "" : e.ja;
+
+/* メニューの文（テーマ・メモ・ポイント・有酸素）。
+   英語のときは同じキーの末尾に En を付けたものがあればそれを返す。
+   例: {ja:"全身の引き締め", jaEn:"Full-body toning"} */
+function dayTx(o, k){
+  if(!o) return "";
+  if(lang()==="en" && o[k+"En"]) return o[k+"En"];
+  return o[k] || "";
+}
 
 /* ---- プログラム本体（naru 監修・7日で1周、2週間＝2周） ---------------- */
 const P = (x,d,star) => ({x, n:d, star:!!star});
@@ -958,6 +1146,7 @@ const MOBILITY = [
   P("pigeon","50 sec"), P("chest-stretch","50 sec"), P("child-pose","60 sec")
 ];
 const CARDIO = "外を走る、もしくは歩く（20分）";
+const CARDIO_EN = "Run or walk outside (20 min)";
 
 const PROGRAM = {
   /* ===== Fit 1（自宅・自重）=========================================
@@ -969,74 +1158,74 @@ const PROGRAM = {
      ================================================================= */
   fit1: [
     /* ---- Unit 1 ---- */
-    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", cardio:CARDIO, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", jaEn:"Squat basics (push & squat)", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
         P("air-squat","10 rep"),
         P("knee-push-up","10 rep"),
         P("plank-hold","30 sec")]}]},
-    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", cardio:CARDIO, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。", items:[
+    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain — feel your back side", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。", noteEn:"Four rounds of each. Take your time and keep it clean. Feel the leg raises in your lower abs, and brace hard on the supermans.", items:[
         P("glute-bridge","20 rep"),
         P("leg-raise","10 rep"),
         P("superman","30 sec")]}]},
-    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", cardio:CARDIO,
-     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)", cardio:CARDIO, cardioEn:CARDIO_EN,
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ", pointEn:"Keep your core still and your limbs in one line, without arching your lower back", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
         P("bird-dog","16 rep"),
         P("side-lunge","16 rep"),
         P("side-plank","30 sec")]}]},
-    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", cool:true, cardio:CARDIO,
-     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
+     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
      parts:[{k:"COOL DOWN", items:MOBILITY}]},
-    {t:"Full Body", ja:"全身の引き締め", cardio:CARDIO, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。", items:[
+    {t:"Full Body", ja:"全身の引き締め", jaEn:"Full-body toning", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。", noteEn:"Four rounds of each. Take your time and keep it clean. Use dumbbells or a water bottle for the arm curls.", items:[
         P("good-morning","10 rep"),
         P("db-curl","10 rep"),
         P("pike-push-up","10 rep"),
         P("tuck-up","10 rep")]}]},
-    {t:"Core & Stamina", ja:"体幹とスタミナの融合", cardio:CARDIO,
-     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", items:[
+    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core meets stamina", cardio:CARDIO, cardioEn:CARDIO_EN,
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける", pointEn:"Hold a straight line from head to heels and keep your core braced", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
         P("reverse-lunge","16 rep"),
         P("burpee","10 rep"),
         P("mountain-climber","10 rep")]}]},
-    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", rest:true,
-     cardio:"のんびり散歩（20分）",
-     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く",
-     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。"},
+    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest (great work this week!)", rest:true,
+     cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
+     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く", pointEn:"Breathe deep, let everything loosen, and clear the fatigue",
+     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。", noteEn:"No training. 15 minutes of full-body stretching. Sleep well and eat well today."},
 
     /* ---- Unit 2 ---- */
-    {t:"Lower & Back", ja:"下半身＆背中の連動強化", cardio:CARDIO, parts:[
+    {t:"Lower & Back", ja:"下半身＆背中の連動強化", jaEn:"Lower body and back, working together", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", items:[
         P("wide-squat","10 rep × 3 set"),
         P("towel-row","10 rep × 3 set"),
         P("plank-shoulder-tap","12 rep × 3 set")]}]},
-    {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", cardio:CARDIO, parts:[
+    {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", jaEn:"Upper-body pushing and a stable core", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", items:[
         P("incline-push-up","10 rep × 3 set"),
         P("hip-hinge","12 rep × 3 set"),
         P("side-plank","左右各 20 sec × 3 set")]}]},
-    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め（前後・左右）", cardio:CARDIO, parts:[
+    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め（前後・左右）", jaEn:"Lower body in every direction (front-back, side-side)", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", items:[
         P("front-lunge","左右交互 10 rep × 3 set"),
         P("glute-bridge-hold","12 rep × 3 set"),
         P("bird-dog","16 rep × 3 set")]}]},
     /* シートの Day 11 は種目が空欄だったので、Day 4 と同じ内容にしています */
-    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", cool:true, cardio:CARDIO,
-     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
+     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
      parts:[{k:"COOL DOWN", items:MOBILITY}]},
-    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", cardio:CARDIO, parts:[
-      {k:"TRAINING", note:"ツイスト・クランチは腹部の斜筋を意識して。", items:[
+    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", jaEn:"Tighten the midsection, connect the back", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
+      {k:"TRAINING", note:"ツイスト・クランチは腹部の斜筋を意識して。", noteEn:"Feel the twist crunches in your obliques.", items:[
         P("twist-crunch","16 rep × 3 set"),
         P("superman","10 rep × 3 set"),
         P("knee-to-chest","12 rep × 3 set")]}]},
-    {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", cardio:CARDIO, parts:[
+    {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", jaEn:"Full-body stamina and coordination", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", items:[
         P("squat-calf-raise","10 rep × 3 set"),
         P("inchworm","8 rep × 3 set"),
         P("mountain-climber","30 sec × 3 set")]}]},
-    {t:"Full Rest", ja:"完全休養！REST", rest:true,
-     note:"完全休養。もしくは、できるなら！ 1分間のプランクホールド → 30回のバーピー → 50回のマウンテンクライマー、これを 3 Rounds！！！"}
+    {t:"Full Rest", ja:"完全休養！REST", jaEn:"Full rest!", rest:true,
+     note:"完全休養。もしくは、できるなら！ 1分間のプランクホールド → 30回のバーピー → 50回のマウンテンクライマー、これを 3 Rounds！！！", noteEn:"Full rest. Or, if you are up for it: 1-minute plank hold → 30 burpees → 50 mountain climbers, 3 rounds!!!"}
   ],
 
   /* シート「意識する点」列のうち、その日の種目と合っていなかったぶん。
@@ -1054,42 +1243,42 @@ const PROGRAM = {
      【Unit2】は Day 6・Day 7 が空欄のため、まだ入れていません。
      ================================================================= */
   fit3: [
-    {t:"Lower Body Focus", ja:"下半身のパワーと土台", cardio:"30 cal ROW", parts:[
-      {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）",
+    {t:"Lower Body Focus", ja:"下半身のパワーと土台", jaEn:"Lower-body power and foundation", cardio:"30 cal ROW", cardioEn:"30 cal ROW", parts:[
+      {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）", noteEn:"5-5-5-5-5 (@80-85% of max)",
        items:[P("back-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("db-squat","10 rep"), P("db-press","8 rep"), P("tuck-up","15 rep")]}]},
-    {t:"Upper Push / Pull", ja:"逆三角形のシルエット", parts:[
-      {k:"STRENGTH", n:"BENCH PRESS", note:"5-5-5-5-5（@80-85%）　※ OHP に替えても可",
+    {t:"Upper Push / Pull", ja:"逆三角形のシルエット", jaEn:"The V-taper", parts:[
+      {k:"STRENGTH", n:"BENCH PRESS", note:"5-5-5-5-5（@80-85%）　※ OHP に替えても可", noteEn:"5-5-5-5-5 (@80-85%) · OHP works too",
        items:[P("bench-press","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("pull-up","8 rep × 3 set　※ 加重／ラットプルダウンでも可")]},
       {k:"AMRAP", min:12, items:[
         P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","15 rep")]}]},
-    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", cardio:"30 cal BIKE", parts:[
-      {k:"STRENGTH", n:"DEADLIFT", note:"5-5-5-5-5（@80-85%）　※ トラップバーでも可",
+    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", jaEn:"A strong back and usable strength", cardio:"30 cal BIKE", cardioEn:"30 cal BIKE", parts:[
+      {k:"STRENGTH", n:"DEADLIFT", note:"5-5-5-5-5（@80-85%）　※ トラップバーでも可", noteEn:"5-5-5-5-5 (@80-85%) · trap bar is fine",
        items:[P("deadlift","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("bulgarian-split","左右各 8 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("barbell-clean","8 rep"), P("box-jump","10 rep"), P("hollow-rock","15 rep")]}]},
-    {t:"Active Recovery", ja:"積極的疲労回復", cool:true,
-     cardio:"軽いジョギング、または低強度のローイング（30分）",
-     note:"高強度のウェイトは完全にオフ。股関節と胸椎の可動域を上げて、血流を促す日です。",
+    {t:"Active Recovery", ja:"積極的疲労回復", jaEn:"Active recovery", cool:true,
+     cardio:"軽いジョギング、または低強度のローイング（30分）", cardioEn:"Easy jog or low-intensity rowing (30 min)",
+     note:"高強度のウェイトは完全にオフ。股関節と胸椎の可動域を上げて、血流を促す日です。", noteEn:"No heavy lifting at all. Open up the hips and upper back, and get the blood moving.",
      parts:[{k:"COOL DOWN", items:MOBILITY}]},
-    {t:"Full Body Integration", ja:"全身の連動とタフネス", parts:[
-      {k:"STRENGTH", n:"FRONT SQUAT", note:"5-5-5-5-5（@75-80%）　フロントキープでコアを使う",
+    {t:"Full Body Integration", ja:"全身の連動とタフネス", jaEn:"Full-body coordination and toughness", parts:[
+      {k:"STRENGTH", n:"FRONT SQUAT", note:"5-5-5-5-5（@75-80%）　フロントキープでコアを使う", noteEn:"5-5-5-5-5 (@75-80%) · the front rack makes your core work",
        items:[P("front-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("db-incline-press","10 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("db-thruster","10 rep"), P("burpee-over-db","8 rep"), P("row-machine","200 m")]}]},
-    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", cardio:CARDIO, parts:[
-      {k:"STRENGTH", n:"POWER SNATCH", note:"3-3-3-3-3（@75-80%）　※ ハングクリーンでも可",
+    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", jaEn:"Explosive power, past your limit", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
+      {k:"STRENGTH", n:"POWER SNATCH", note:"3-3-3-3-3（@75-80%）　※ ハングクリーンでも可", noteEn:"3-3-3-3-3 (@75-80%) · hang clean works too",
        items:[P("power-snatch","3 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("rdl","10 rep × 3 set")]},
       {k:"AMRAP", min:12, items:[
         P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("pushup-to-plank","9 rep")]}]},
-    {t:"Full Rest", ja:"完全休養", rest:true, cardio:"のんびり散歩（20分）",
-     note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。"}
+    {t:"Full Rest", ja:"完全休養", jaEn:"Full rest", rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
+     note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。", noteEn:"No training at all. Rest properly so you can give 100% on the next Day 1."}
   ]
 };
 
@@ -1244,7 +1433,7 @@ function openLegal(k){
     <div class="eyebrow">LEGAL</div>
     <h2 style="margin:5px 0 12px;font-size:19px;font-weight:800">${esc(d.t)}</h2>
     <div class="legal">${d.body()}</div>
-    <button class="btn btn-ghost" style="margin-top:20px" data-close>閉じる</button>
+    <button class="btn btn-ghost" style="margin-top:20px" data-close>${TX("btn.close")}</button>
   </div>`;
 }
 
@@ -1261,7 +1450,7 @@ function prevSession(x){
   return { d:d, list:a.filter(e=>e.d===d) };
 }
 const fmtSet = e =>
-  ((e.w!=null && e.w!=="") ? e.w+"kg" : "自重") + (e.r!=null ? " × "+e.r : "");
+  ((e.w!=null && e.w!=="") ? e.w+"kg" : TX("ent.bw")) + (e.r!=null ? " × "+e.r : "");
 const mmdd = d => d.slice(5).replace("-","/");
 
 /* 実行画面の入力欄を読んで保存する */
@@ -1284,7 +1473,7 @@ function setlogBlock(f){
   const ps = prevSession(f.x);
   if(!ps) return "";
   return `<div class="setlog">
-    <div class="prevline">前回 ${mmdd(ps.d)} ・ <b>${esc(ps.list.map(fmtSet).join("　"))}</b></div>
+    <div class="prevline">${TX("ent.prev")} ${mmdd(ps.d)} ・ <b>${esc(ps.list.map(fmtSet).join("　"))}</b></div>
   </div>`;
 }
 
@@ -1295,7 +1484,7 @@ function historyBlock(id){
   const byDay = {};
   a.forEach(e=>{ (byDay[e.d] = byDay[e.d] || []).push(e); });
   const days = Object.keys(byDay).sort().reverse().slice(0,6);
-  return `<div class="detail-sec"><h4>これまでの記録</h4>
+  return `<div class="detail-sec"><h4>${TX("ex.history")}</h4>
     <table class="hist">${days.map(d=>
       `<tr><td>${mmdd(d)}</td><td>${esc(byDay[d].map(fmtSet).join("　"))}</td></tr>`).join("")}</table></div>`;
 }
@@ -1435,11 +1624,11 @@ function viewHome(){
   const ra = restAhead(), cs = cycleSummary();
   const doneToday = S.logs.some(l=>l.date===todayKey());
   const wk = thisWeekCount(), tgt = weekTarget();
-  const now = new Date(); const wd=["日","月","火","水","木","金","土"];
+  const now = new Date();
   const strip = Array.from({length:7},(_,i)=>{
     const d=new Date(now); d.setDate(now.getDate()-now.getDay()+i);
     const k=dkey(d);
-    return {ja:wd[i], done:S.logs.some(l=>l.date===k), today:k===todayKey()};
+    return {ja:TX("wd."+i), done:S.logs.some(l=>l.date===k), today:k===todayKey()};
   });
   return `<div class="screen on">
     ${topbar()}
@@ -1450,10 +1639,10 @@ function viewHome(){
         ${dd && dd.rest ? `
         <div class="hero rest">
           <div class="day">DAY ${n} / ${CYCLE}</div>
-          <h2>休養日</h2>
-          <p>今日は空けておく日です。回復もプログラムのうちなので、予定どおり休んでください。<br>
-             ${n+1>CYCLE ? "明日から、次の2週間が始まります。"
-                           : `次は DAY ${n+1}・${esc(dayTitle(n+1))} です。`}</p>
+          <h2>${TX("home.rest")}</h2>
+          <p>${TX("home.restBody")}<br>
+             ${n+1>CYCLE ? TX("home.nextCycle")
+                         : TX("home.nextIs", n+1, esc(dayTitle(n+1)))}</p>
         </div>` : `
         <div class="hero">
           <div class="orb"></div>
@@ -1465,9 +1654,9 @@ function viewHome(){
         </div>
         ${doneToday ? "" : ra.length ? `
           <button class="btn btn-ghost" style="margin-top:9px" data-swap>
-            今日は休む（DAY ${ra[0]} の休養日と振り替える）</button>
-          <p class="swapnote left">振り替えできるのは、あと ${ra.length} 日ぶんです</p>` : `
-          <p class="swapnote out">休養日を使い切りました。今日やらないと、この2週間では取り返せません。</p>`}`}
+            ${TX("home.swap", ra[0])}</button>
+          <p class="swapnote left">${TX("home.swapLeft", ra.length)}</p>` : `
+          <p class="swapnote out">${TX("home.swapOut")}</p>`}`}
 
 
         <div class="stats">
@@ -1482,7 +1671,7 @@ function viewHome(){
 
         ${videoBlock(todaysVideoEx())}
         <button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
-          NARU の実演動画をぜんぶ見る &nbsp;→</button>
+          ${TX("home.allVideos")}</button>
 
         <div class="note">
           <div class="k">FROM NARU</div>
@@ -1490,13 +1679,13 @@ function viewHome(){
         </div>
 
         <div style="margin-top:11px">
-          <button class="btn btn-ghost" data-go="settings">メニューの設定を変える</button>
+          <button class="btn btn-ghost" data-go="settings">${TX("home.settings")}</button>
         </div>
 
         <p class="sub" style="text-align:center;margin-top:14px">
           ${n>=CYCLE
-            ? `この2週間は今日で最終日です（${cs.did} / ${cs.need} 日 実施）`
-            : `次の予定：DAY ${n+1} ${esc(dayTitle(n+1))}`}
+            ? TX("home.lastDay", cs.did, cs.need)
+            : TX("home.nextUp", n+1, esc(dayTitle(n+1)))}
         </p>
       </div>
     </div>
@@ -1505,20 +1694,11 @@ function viewHome(){
 }
 
 function coachNote(p, lv, doneToday){
-  if(!p) return "今日は休む日。トレーニングは休んでいる間に効いてくるから、ここで無理をしないのが一番伸びる。";
-  if(doneToday) return "今日はもう終えてるね。おつかれさま。回復も練習のうち、しっかり食べて寝よう。";
-  const base = {
-    easy:"フォーム第一。回数より“効かせる”意識でいこう。",
-    normal:"フォーム第一。回数より“効かせる”意識でいこう。",
-    hard:"追い込む日こそフォームが命。最後の1repまで丁寧に。",
-  }[lv];
-  const add = {
-    "DEADLIFT":"引く前に一度お腹に空気を入れて、背中を固めてから。",
-    "BACK SQUAT":"しゃがむ深さより、膝とつま先の向きを揃えることを優先。",
-    "BENCH PRESS":"肩甲骨を寄せて下げる。ここが決まると重さが変わる。",
-    "PULL-UP":"肩を下げてから引く。届かない日は補助を使ってOK。",
-    "PUSH-UP":"胸から下ろして胸から上げる。腰が落ちたらそこで終了。",
-  }[p.f] || "きつくなったら回数を減らしていい。止めないことがいちばん強い。";
+  if(!p) return TX("coach.rest");
+  if(doneToday) return TX("coach.done");
+  const base = TX(lv==="hard" ? "coach.hard" : "coach.base");
+  const keys = ["DEADLIFT","BACK SQUAT","BENCH PRESS","PULL-UP","PUSH-UP"];
+  const add = keys.indexOf(p.f)>=0 ? TX("coach."+p.f) : TX("coach.else");
   return base + " " + add;
 }
 
@@ -1535,13 +1715,12 @@ function videoBlock(exId, force){
      ただし設定の動画ライブラリから開いたときは、自分で選んでいるので出す */
   if(fit()==="fit3" && !force) return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
-  const title = exId ? `${EX[exId].en} のフォーム` : "NARU のワンポイント動画";
-  const sub = exId ? (v ? "NARU の実演でフォームを確認できます" : "NARU の実演動画は準備中です")
-                   : "この日のメニューの実演動画がここに入ります";
+  const title = exId ? TX("vid.form", EX[exId].en) : TX("vid.onePoint");
+  const sub = exId ? (v ? TX("vid.have") : TX("vid.none")) : TX("vid.dayNone");
   return `<div class="video">
     <div class="frame">
       ${v ? `<video src="${v.src}" ${v.poster?`poster="${v.poster}"`:""} controls playsinline></video>`
-          : `<div class="play"></div><div class="tag">準備中</div>`}
+          : `<div class="play"></div><div class="tag">${TX("soon")}</div>`}
     </div>
     <div class="cap"><b>${esc(title)}</b><p>${esc(sub)}</p></div>
   </div>`;
@@ -1557,14 +1736,13 @@ function viewTrain(){
     return `<div class="screen on">${topbar()}<div class="scroll"><div class="pad">
       <div class="hero rest" style="margin-top:4px">
         <div class="day">DAY ${n} / ${CYCLE}</div>
-        <h2>${esc(r.t==="Full Rest"?"休養日":(r.t||"休養日"))}</h2>
-        <p>${r.note?esc(r.note):"今日はメニューがありません。"}<br>
-          ${ra.length?`どうしても動きたいときは、ホームから ${ra[0]} 日目と振り替えられます。`
-                     :"この2週間の休養日はここが最後です。"}</p>
+        <h2>${esc(r.t==="Full Rest"?TX("home.rest"):(r.t||TX("home.rest")))}</h2>
+        <p>${r.note?esc(dayTx(r,"note")):TX("train.noMenu")}<br>
+          ${ra.length?TX("train.swapHint", ra[0]):TX("train.lastRest")}</p>
       </div>
-      ${r.cardio?`<div class="cardio"><b>有酸素</b>${esc(r.cardio)}</div>`:""}
-      ${r.point?`<div class="cardio"><b>今日のポイント</b>${esc(r.point)}</div>`:""}
-      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
+      ${r.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(r,"cardio"))}</div>`:""}
+      ${r.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(r,"point"))}</div>`:""}
+      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
     </div></div>${nav("train")}</div>`;
   }
   return `<div class="screen on">
@@ -1579,17 +1757,17 @@ function viewTrain(){
             <h2 style="margin:5px 0 0;font-size:25px;font-weight:800">${esc(p.t)}</h2>
             <div class="by" style="display:inline-block;margin-top:10px;background:rgba(244,240,234,.13);
                  border-radius:999px;padding:5px 12px;font-size:11.5px">Coaching by <b style="letter-spacing:.06em">NARU</b></div>
-            ${p.ja?`<p class="daysub">${esc(p.ja)}</p>`:""}
-            ${p.note?`<p class="daynote">${esc(p.note)}</p>`:""}
-            ${p.cardio?`<div class="cardio"><b>有酸素</b>${esc(p.cardio)}</div>`:""}
-            ${p.point?`<div class="cardio"><b>今日のポイント</b>${esc(p.point)}</div>`:""}
+            ${p.ja?`<p class="daysub">${esc(dayTx(p,"ja"))}</p>`:""}
+            ${p.note?`<p class="daynote">${esc(dayTx(p,"note"))}</p>`:""}
+            ${p.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(p,"cardio"))}</div>`:""}
+            ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
           </div>
 
           <div class="seg-dark">
             ${LEVELS.map(l=>{ const ok=levelReady(l.id);
               return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
-          <p class="levelhint">今日の調子で変えられます。しんどい日は落としてOK</p>
+          <p class="levelhint">${TX("train.levelHint")}</p>
 
           ${p.parts.map((part,pi)=>`
             <div class="partline">
@@ -1597,14 +1775,14 @@ function viewTrain(){
               <span>· ${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
               <span class="hr"></span>
             </div>
-            ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(part.note)}</p>`:""}
+            ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(dayTx(part,"note"))}</p>`:""}
             ${part.items.map(it=>{
               const d = doseOf(it);
               if(d==="—") return "";
               return `<button class="exrow" data-ex="${it.x}">
                 <span class="nm">
                   <span class="en">${it.star?"★ ":""}${esc(EX[it.x].en)}</span>
-                  <span class="ja">${esc(EX[it.x].ja)}</span>
+                  <span class="ja">${esc(exSub2(EX[it.x]))}</span>
                 </span>
                 <span class="dose">${esc(d)}</span>
                 <span class="chev">›</span>
@@ -1613,10 +1791,10 @@ function viewTrain(){
           `).join("")}
         </div>
 
-        <p class="sub" style="text-align:center;margin:14px 0 10px">種目をタップするとフォームのポイントが見られます</p>
-        <button class="btn btn-olive" data-go="entry">終わったら記録する</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">タイマーを使う（時間種目・AMRAP）</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="home">ホームに戻る</button>
+        <p class="sub" style="text-align:center;margin:14px 0 10px">${TX("train.tapHint")}</p>
+        <button class="btn btn-olive" data-go="entry">${TX("train.record")}</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">${TX("train.timer")}</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="home">${TX("train.back")}</button>
       </div>
     </div>
     ${nav("train")}
@@ -1679,19 +1857,19 @@ function viewEntry(){
       <span class="badge">PART ${pi+1}</span>
       <span>· ${esc(part.k)}${part.n?" · "+esc(part.n):""}${part.r?" · "+part.r+" ROUNDS":""}</span>
       <span class="hr"></span></div>
-      ${part.note?`<p class="pnote" style="margin:0 0 6px">${esc(part.note)}</p>`:""}`;
+      ${part.note?`<p class="pnote" style="margin:0 0 6px">${esc(dayTx(part,"note"))}</p>`:""}`;
 
     if(part.k==="AMRAP"){
       const min=part.min||12, pr=prevAmrap(pi);
       const cur=((S.amraps&&S.amraps[p.t+"|"+pi])||[]).filter(e=>e.d===todayKey()).pop();
       html+=`<div class="ent">
         <div class="ent-h"><b>${min} min AMRAP</b>
-          <span>${part.items.map(it=>esc(EX[it.x].ja)+" "+esc(doseOf(it))).join(" / ")}</span></div>
+          <span>${part.items.map(it=>esc(lang()==="en"?EX[it.x].en:EX[it.x].ja)+" "+esc(doseOf(it))).join(" / ")}</span></div>
         <div class="ent-in">
           <label><input id="a${pi}-x" type="number" inputmode="numeric" min="0"
-            value="${cur?cur.r:""}" placeholder="—" aria-label="完了ラウンド"><span>ラウンド</span></label>
+            value="${cur?cur.r:""}" placeholder="—" aria-label="${TX("ent.roundsA")}"><span>${TX("ent.rounds")}</span></label>
         </div>
-        ${pr?`<div class="ent-prev">前回 ${mmdd(pr.d)}・${pr.r} ラウンド</div>`:""}
+        ${pr?`<div class="ent-prev">${TX("ent.prev")} ${mmdd(pr.d)}・${pr.r} ${TX("ent.rounds")}</div>`:""}
       </div>`;
       return;
     }
@@ -1702,7 +1880,7 @@ function viewEntry(){
       /* 時間でやる種目は入れるものが無いので、指示だけ出す */
       if(pd.sec && pd.reps==null){
         html+=`<div class="ent done-ok">
-          <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span></div>
+          <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(exSub2(ex))}</span></div>
           <div class="ent-time">${esc(d)}</div></div>`;
         return;
       }
@@ -1712,15 +1890,15 @@ function viewEntry(){
       const w = mine ? (mine.w!=null?mine.w:"") : (pe&&pe.w!=null?pe.w:"");
       const r = mine ? (mine.r!=null?mine.r:"") : (pd.reps!=null?pd.reps:"");
       html+=`<div class="ent">
-        <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(ex.ja)}</span>
+        <div class="ent-h"><b>${it.star?"★ ":""}${esc(ex.en)}</b><span>${esc(exSub2(ex))}</span>
           <i>${esc(d)}</i></div>
         <div class="ent-in">
           <label><input id="e${pi}-${ii}-w" type="number" inputmode="decimal" step="0.5" min="0"
-            value="${w}" placeholder="—" aria-label="重量"><span>kg</span></label>
+            value="${w}" placeholder="—" aria-label="${TX("ent.weight")}"><span>kg</span></label>
           <label><input id="e${pi}-${ii}-r" type="number" inputmode="numeric" min="0"
-            value="${r}" placeholder="—" aria-label="回数"><span>rep</span></label>
+            value="${r}" placeholder="—" aria-label="${TX("ent.reps")}"><span>rep</span></label>
         </div>
-        ${pe?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(fmtSet(pe))}</div>`:""}
+        ${pe?`<div class="ent-prev">${TX("ent.prev")} ${mmdd(ps.d)}・${esc(fmtSet(pe))}</div>`:""}
       </div>`;
     });
   });
@@ -1730,36 +1908,35 @@ function viewEntry(){
     <div class="scroll"><div class="pad">
       <div class="eyebrow" style="margin-top:4px">DAY ${n} · RECORD</div>
       <h1 style="margin:4px 0 2px;font-size:23px;font-weight:800">${esc(p.t)}</h1>
-      <p class="sub" style="margin-bottom:4px">やった分だけ入れてください。空欄のまま進めても大丈夫です。</p>
+      <p class="sub" style="margin-bottom:4px">${TX("ent.lead")}</p>
       ${html}
 
       <div class="partline light" style="margin-top:22px">
-        <span class="badge">EXTRA</span><span>· 追加でやった種目</span><span class="hr"></span></div>
-      <p class="sub" style="margin:0 0 6px">できなかった種目は空欄のままで大丈夫です。
-        代わりにやったものは、ここに足してください。</p>
+        <span class="badge">EXTRA</span><span>${TX("ent.extra")}</span><span class="hr"></span></div>
+      <p class="sub" style="margin:0 0 6px">${TX("ent.extraLead")}</p>
       ${entryExtras.map((e,i)=>`
         <div class="ent">
-          <input class="x-name" id="x${i}-n" type="text" list="ex-names" placeholder="種目名"
-            value="${esc(e.name)}" aria-label="追加した種目名">
+          <input class="x-name" id="x${i}-n" type="text" list="ex-names" placeholder="${TX("ent.exName")}"
+            value="${esc(e.name)}" aria-label="${TX("ent.exNameA")}">
           <div class="ent-in">
             <label><input id="x${i}-w" type="number" inputmode="decimal" step="0.5" min="0"
-              value="${esc(e.w)}" placeholder="—" aria-label="重量"><span>kg</span></label>
+              value="${esc(e.w)}" placeholder="—" aria-label="${TX("ent.weight")}"><span>kg</span></label>
             <label><input id="x${i}-r" type="number" inputmode="numeric" min="0"
-              value="${esc(e.r)}" placeholder="—" aria-label="回数"><span>rep</span></label>
+              value="${esc(e.r)}" placeholder="—" aria-label="${TX("ent.reps")}"><span>rep</span></label>
           </div>
           ${(()=>{ const x=matchEx(e.name), ps=x?prevSession(x):null;
-            return ps?`<div class="ent-prev">前回 ${mmdd(ps.d)}・${esc(ps.list.map(fmtSet).join("　"))}</div>`:""; })()}
+            return ps?`<div class="ent-prev">${TX("ent.prev")} ${mmdd(ps.d)}・${esc(ps.list.map(fmtSet).join("　"))}</div>`:""; })()}
         </div>`).join("")}
-      <button class="btn btn-ghost" style="margin-top:8px" data-extra-add>＋ 行を追加する</button>
+      <button class="btn btn-ghost" style="margin-top:8px" data-extra-add>${TX("ent.addRow")}</button>
 
       <div class="partline light" style="margin-top:22px">
-        <span class="badge">MEMO</span><span>· 今日のメモ</span><span class="hr"></span></div>
-      <textarea id="memo" class="memo" rows="3" placeholder="調子、痛み、できなかった理由など。naru に伝えたいこともここへ。"
-        aria-label="今日のメモ">${esc(entryMemo)}</textarea>
+        <span class="badge">MEMO</span><span>${TX("ent.memoH")}</span><span class="hr"></span></div>
+      <textarea id="memo" class="memo" rows="3" placeholder="${TX("ent.memoPh")}"
+        aria-label="${TX("ent.memo")}">${esc(entryMemo)}</textarea>
       ${exDatalist()}
 
-      <button class="btn btn-olive" style="margin-top:20px" data-entry-save>記録して完了する</button>
-      <button class="btn btn-ghost" style="margin-top:9px" data-go="train">戻る</button>
+      <button class="btn btn-olive" style="margin-top:20px" data-entry-save>${TX("ent.save")}</button>
+      <button class="btn btn-ghost" style="margin-top:9px" data-go="train">${TX("ent.back")}</button>
     </div></div>
     ${nav("train")}
   </div>`;
@@ -1827,6 +2004,8 @@ function flatItems(p){
   return out;
 }
 function viewRun(){
+  /* 休養日にはチェックする種目が無いので、今日の画面に戻す */
+  if(!todayProgram()) return viewTrain();
   const p=todayProgram(), items=flatItems(p);
   const done = items.filter(x=>S.checks[x.key]).length;
   const nextKey = (items.find(x=>!S.checks[x.key])||{}).key;
@@ -1843,9 +2022,9 @@ function viewRun(){
           const allDone = rows.every(r=>S.checks[pi+"-"+r.ii]);
           const head = `<div class="partline" style="color:var(--ink-mute)">
               <span class="badge" style="${allDone?"background:#a9b191":""}">PART ${pi+1}</span>
-              <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}${allDone?" · 完了 ✓":""}</span>
+              <span>· ${part.k}${part.r?" · "+part.r+" ROUNDS":""}${allDone?" "+TX("run.done"):""}</span>
               <span class="hr" style="background:rgba(226,236,206,.12)"></span>
-              ${allDone?`<button data-fold="${pi}" style="font-size:11.5px;color:var(--ink-mute)">${S.folded&&S.folded[pi]===false?"隠す":"開く"}</button>`:""}
+              ${allDone?`<button data-fold="${pi}" style="font-size:11.5px;color:var(--ink-mute)">${S.folded&&S.folded[pi]===false?TX("run.hide"):TX("run.open")}</button>`:""}
             </div>`;
           if(allDone && !(S.folded && S.folded[pi]===false)) return head;
           return head + rows.map(({it,ii,d})=>{
@@ -1854,16 +2033,16 @@ function viewRun(){
               <span class="box">${on?"✓":""}</span>
               <span style="flex:1;min-width:0">
                 <span class="en">${it.star?"★ ":""}${esc(EX[it.x].en)}</span>
-                <span class="ja">${esc(EX[it.x].ja)}</span>
-                <span class="dose">${esc(d)}${part.r?` ・ ${part.r}周`:""}</span>
+                <span class="ja">${esc(exSub2(EX[it.x]))}</span>
+                <span class="dose">${esc(d)}${part.r?` ・ ${part.r} ${TX("run.round")}`:""}</span>
               </span>
               <span class="info" data-ex="${it.x}">?</span>
             </button>`;
           }).join("");
         }).join("")}
 
-        <p class="sub" style="text-align:center;margin:16px 0 0">できた種目をタップしてチェック</p>
-        <button class="btn btn-ghost" style="margin-top:10px" data-go="train">戻る</button>
+        <p class="sub" style="text-align:center;margin:16px 0 0">${TX("run.tapHint")}</p>
+        <button class="btn btn-ghost" style="margin-top:10px" data-go="train">${TX("ent.back")}</button>
       </div>
     </div>
 
@@ -1871,7 +2050,7 @@ function viewRun(){
       <div class="runbar-in">
         <div style="flex:1">
           <div class="progress" style="margin:0"><i style="width:${(done/items.length*100).toFixed(1)}%"></i></div>
-          <p class="tnum" style="font-size:11.5px;color:var(--ink-mute);margin:5px 0 0">${done} / ${items.length} 種目</p>
+          <p class="tnum" style="font-size:11.5px;color:var(--ink-mute);margin:5px 0 0">${done} / ${items.length} ${TX("run.ex")}</p>
         </div>
         <button class="btn btn-dark" style="width:auto;padding:0 16px;height:46px;font-size:14px;white-space:nowrap" data-complete>Complete Today</button>
       </div>
@@ -1985,12 +2164,12 @@ function viewTimer(){
   if(T.phase==="count"){
     return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
       <div class="timer">
-        <div class="lbl" style="color:var(--tan)">まもなくスタート</div>
+        <div class="lbl" style="color:var(--tan)">${TX("tm.soon")}</div>
         <div class="num" id="t-num" style="font-size:88px">${T.left}</div>
-        <p style="margin-top:14px;font-size:14px;opacity:.8">最初の種目：${esc(EX[T.flow[0].x].en)}</p>
-        <button class="btn btn-tan" style="max-width:200px;margin-top:22px" data-skip-count>すぐ始める</button>
+        <p style="margin-top:14px;font-size:14px;opacity:.8">${TX("tm.first")}${esc(EX[T.flow[0].x].en)}</p>
+        <button class="btn btn-tan" style="max-width:200px;margin-top:22px" data-skip-count>${TX("tm.now")}</button>
       </div>
-      <div class="tctl"><button class="btn" style="background:rgba(244,240,234,.12);color:#f4f0ea" data-quit>やめる</button></div>
+      <div class="tctl"><button class="btn" style="background:rgba(244,240,234,.12);color:#f4f0ea" data-quit>${TX("tm.quit")}</button></div>
     </div>`;
   }
 
@@ -2004,12 +2183,12 @@ function viewTimer(){
         <div class="num" id="t-num">${T.left}</div>
         ${nx?`<p style="margin-top:20px;font-size:12px;letter-spacing:.12em;opacity:.6">NEXT</p>
         <p style="font-size:19px;font-weight:800;margin:5px 0 0">${nx.star?"★ ":""}${esc(EX[nx.x].en)}</p>
-        <p style="font-size:13px;opacity:.7;margin:3px 0 0">${esc(EX[nx.x].ja)}</p>
+        <p style="font-size:13px;opacity:.7;margin:3px 0 0">${esc(exSub2(EX[nx.x]))}</p>
         <p style="font-size:15px;font-weight:700;margin:8px 0 0;color:var(--tan)">${esc(setLabel(nx))}${stepMeta(nx)?" ・ "+stepMeta(nx):""}</p>`:""}
       </div>
       <div class="stepbar" style="background:rgba(226,236,206,.96);border-top-color:rgba(244,240,234,.12)">
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-rest-add>+30</button>
-        <button class="btn btn-tan main" data-rest-skip>休憩をとばす</button>
+        <button class="btn btn-tan main" data-rest-skip>${TX("tm.skipRest")}</button>
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-quit>✕</button>
       </div>
     </div>`;
@@ -2022,21 +2201,21 @@ function viewTimer(){
       ${stepHeader(false)}
       <div class="timer">
         <div class="lbl">PART ${f.pi+1} · ${f.min} MIN AMRAP</div>
-        <h2 style="font-size:21px;margin-top:6px">できるだけ多くのラウンドを</h2>
+        <h2 style="font-size:21px;margin-top:6px">${TX("tm.amrap")}</h2>
         <div class="num ${T.paused?"paused":""}" id="t-num">${fmtClock(T.left>0?T.left:0)}</div>
         <ul class="amrap-list">${f.items.map(it=>`
-          <li><button data-ex="${it.x}"><b>${esc(EX[it.x].en)}</b><span>${esc(EX[it.x].ja)}</span></button>
+          <li><button data-ex="${it.x}"><b>${esc(EX[it.x].en)}</b><span>${esc(exSub2(EX[it.x]))}</span></button>
             <em>${esc(it.d)}</em></li>`).join("")}</ul>
         <div class="amrap-round">
-          <div class="k">完了ラウンド</div>
+          <div class="k">${TX("ent.roundsA")}</div>
           <div class="v tnum">${T.rounds||0}</div>
-          ${pr?`<div class="pr">前回 ${mmdd(pr.d)}・${pr.r} ラウンド</div>`:""}
+          ${pr?`<div class="pr">${TX("ent.prev")} ${mmdd(pr.d)}・${pr.r} ${TX("ent.rounds")}</div>`:""}
         </div>
       </div>
       <div class="stepbar">
-        <button class="rnd" data-t-prev aria-label="前へ">‹</button>
-        <button class="btn btn-olive main" data-amrap-round>1ラウンド完了 ＋1</button>
-        <button class="rnd" data-t-next aria-label="次へ">›</button>
+        <button class="rnd" data-t-prev aria-label="${TX("tm.prev")}">‹</button>
+        <button class="btn btn-olive main" data-amrap-round>${TX("tm.round1")}</button>
+        <button class="rnd" data-t-next aria-label="${TX("tm.next")}">›</button>
       </div>
     </div>`;
   }
@@ -2048,31 +2227,31 @@ function viewTimer(){
     <div class="timer">
       <div class="lbl">PART ${f.pi+1} · ${f.part}${stepMeta(f)?" · "+stepMeta(f):""}</div>
       <h2>${f.star?"★ ":""}${esc(ex.en)}</h2>
-      <div class="ja2">${esc(ex.ja)}</div>
+      <div class="ja2">${esc(exSub2(ex))}</div>
 
       ${isTime
         ? `<div class="num ${T.paused?"paused":""}" id="t-num">${T.left}</div>
-           <p class="sub" style="margin-top:2px">秒 ・ ${esc(setLabel(f))}</p>`
+           <p class="sub" style="margin-top:2px">${TX("tm.secOf")}${esc(setLabel(f))}</p>`
         : `<div class="dose-big">${esc(setLabel(f))}</div>
            ${f.pnote?`<p class="pnote">${esc(f.pnote)}</p>`:""}
-           <p class="sub" style="margin-top:4px">${f.set?`全${f.sets}セット中 ${f.set}セット目 ・ `:""}できたら下のボタンを押す</p>`}
+           <p class="sub" style="margin-top:4px">${f.set?TX("tm.setNo", f.set, f.sets):""}${TX("tm.pressWhenDone")}</p>`}
 
       ${isTime?"":setlogBlock(f)}
 
       <ul class="cues">${ex.cues.slice(0,2).map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
       <div class="steplinks">
-        <button data-ex="${f.x}">フォームを見る</button>
+        <button data-ex="${f.x}">${TX("tm.seeForm")}</button>
         <span>·</span>
-        <button data-jump-open>全体を見る</button>
+        <button data-jump-open>${TX("tm.seeAll")}</button>
       </div>
     </div>
 
     <div class="stepbar">
-      <button class="rnd" data-t-prev aria-label="前の種目">‹</button>
+      <button class="rnd" data-t-prev aria-label="${TX("tm.prevEx")}">‹</button>
       <button class="btn ${isTime&&!T.paused?"btn-ghost":"btn-olive"} main" data-t-toggle>
-        ${isTime ? (T.paused?"再開する":"一時停止") : "できた ✓"}
+        ${isTime ? (T.paused?TX("tm.resume"):TX("tm.pause")) : TX("tm.ok")}
       </button>
-      <button class="rnd" data-t-next aria-label="次の種目">›</button>
+      <button class="rnd" data-t-next aria-label="${TX("tm.nextEx")}">›</button>
     </div>
   </div>`;
 }
@@ -2093,7 +2272,7 @@ function stepHeader(dark){
     <div class="progress" style="margin-top:0;${dark?"background:rgba(244,240,234,.16)":""}">
       <i id="t-bar" style="width:${pct}%;${dark?"background:var(--tan)":""}"></i></div>
     <div class="stephead">
-      <button data-quit>✕ やめる</button>
+      <button data-quit>${TX("tm.stop")}</button>
       <span class="tnum">${T.i+1} / ${T.flow.length}</span>
       <span class="tnum" id="t-el">${fmtClock(T.elapsed)}</span>
     </div>
@@ -2117,7 +2296,7 @@ function openJump(){
       <span class="mk">${i<T.i?"✓":i===T.i?"▶":""}</span>
       <span style="flex:1;min-width:0">
         <span class="en">${f.star?"★ ":""}${esc(EX[f.x].en)}</span>
-        <span class="ja">${esc(EX[f.x].ja)}${f.set?` · SET ${f.set}/${f.sets}`:""}</span>
+        <span class="ja">${esc(exSub2(EX[f.x]))}${f.set?` · SET ${f.set}/${f.sets}`:""}</span>
       </span>
       <span class="dose">${esc(setLabel(f))}</span></button>`;
   });
@@ -2125,9 +2304,9 @@ function openJump(){
     <div class="grab"></div>
     <div class="eyebrow">TODAY'S MENU</div>
     <h2 style="margin:5px 0 2px;font-size:20px;font-weight:800">${esc(todayProgram().t)}</h2>
-    <p class="sub" style="margin-bottom:12px">タップするとその種目へ移動します</p>
+    <p class="sub" style="margin-bottom:12px">${TX("tm.jump")}</p>
     ${html}
-    <button class="btn btn-ghost" style="margin-top:16px" data-close>閉じる</button>
+    <button class="btn btn-ghost" style="margin-top:16px" data-close>${TX("btn.close")}</button>
   </div>`;
   setTimeout(()=>{ const el=backdrop.querySelector(".jump-row.now"); if(el) el.scrollIntoView({block:"center"}); },30);
 }
@@ -2171,11 +2350,11 @@ function viewLog(){
                 esc((S.extras[l.date]||[]).map(e=>e.name+(e.w!=null?` ${e.w}kg`:"")+(e.r!=null?`×${e.r}`:"")).join("　"))}</div>`:""}
               ${S.memo&&S.memo[l.date]?`<div class="sess-memo">${esc(S.memo[l.date])}</div>`:""}
             </div>`).join("")
-          : `<p class="sub" style="margin:0">まだ記録がありません。最初の1回を終えるとここに並びます。</p>`}
+          : `<p class="sub" style="margin:0">${TX("log.empty")}</p>`}
         </div>
 
-        <button class="btn btn-ghost" style="margin-top:11px" data-go="home">トップ画面を見る</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="settings">メニューの設定を変える</button>
+        <button class="btn btn-ghost" style="margin-top:11px" data-go="home">${TX("log.top")}</button>
+        <button class="btn btn-ghost" style="margin-top:9px" data-go="settings">${TX("home.settings")}</button>
       </div>
     </div>
     ${nav("log")}
@@ -2192,16 +2371,15 @@ function viewVideos(){
     ${topbar()}
     <div class="scroll"><div class="pad">
       <div class="eyebrow" style="margin-top:2px">NARU DEMO</div>
-      <h1 class="h1" style="margin-top:4px">実演動画</h1>
-      <p class="sub" style="margin-bottom:14px">${list.length} 本あります。
-        タップするとフォームのポイント・よくあるミスと一緒に見られます。</p>
+      <h1 class="h1" style="margin-top:4px">${TX("vids.title")}</h1>
+      <p class="sub" style="margin-bottom:14px">${TX("vids.lead", list.length)}</p>
       <div class="vlib">
         ${list.map(k=>`<button data-ex="${k}" data-vid="1">
           <img src="${EX[k].video.poster.replace("videos/","videos/thumb/")}" alt="" loading="lazy">
-          <span>${esc(EX[k].ja)}</span>
+          <span>${esc(lang()==="en"?EX[k].en:EX[k].ja)}</span>
         </button>`).join("")}
       </div>
-      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
+      <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
     </div></div>
     ${nav("home")}
   </div>`;
@@ -2222,40 +2400,41 @@ function viewSettings(){
     ${topbar()}
     <div class="scroll">
       <div class="pad">
-        <h1 class="h1" style="margin-top:2px">設定</h1>
-        <p class="sub" style="margin-bottom:4px">変更してもこれまでの記録は残ります</p>
-        ${row("GOAL 目的",[["tone","引き締めたい"],["lose","痩せたい"],["build","筋肉をつけたい"],["stamina","体力をつけたい"]],"goal",pf.goal)}
-        ${row("LEVEL きょうの強度",LEVELS.map(l=>[l.id,l.name+(levelReady(l.id)?"":"（準備中）")]),"level",level())}
-        ${row("PLACE 場所",[["gym","ジム"],["home","自宅"]],"place",pf.place)}
-        ${row("FREQUENCY 週の回数",[[2,"週2日"],[3,"週3日"],[4,"週4日"],[5,"週5日"]],"days",pf.days)}
+        <h1 class="h1" style="margin-top:2px">${TX("set.title")}</h1>
+        <p class="sub" style="margin-bottom:4px">${TX("set.lead")}</p>
+        ${row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang())}
+        ${row(TX("set.goal"),[["tone",TX("goal.tone")],["lose",TX("goal.lose")],["build",TX("goal.build")],["stamina",TX("goal.stamina")]],"goal",pf.goal)}
+        ${row(TX("set.level"),LEVELS.map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level())}
+        ${row(TX("set.place"),[["gym",TX("set.gym")],["home",TX("set.home")]],"place",pf.place)}
+        ${row(TX("set.freq"),[[2,TX("set.d2")],[3,TX("set.d3")],[4,TX("set.d4")],[5,TX("set.d5")]],"days",pf.days)}
 
         <div class="card" style="padding:15px;margin-top:11px">
-          <div class="eyebrow" style="margin-bottom:6px">NARU の実演動画</div>
+          <div class="eyebrow" style="margin-bottom:6px">${TX("set.vidH")}</div>
           <p class="sub" style="margin:0 0 11px">
-            ${Object.values(EX).filter(e=>e.video).length} 種目に動画が入っています。</p>
-          <button class="btn btn-ghost" data-go="videos">動画の一覧を見る &nbsp;→</button>
+            ${TX("set.vidBody", Object.values(EX).filter(e=>e.video).length)}</p>
+          <button class="btn btn-ghost" data-go="videos">${TX("set.vidBtn")}</button>
         </div>
 
         ${ACCESS.on ? `
         <div class="card" style="padding:15px;margin-top:11px">
-          <div class="eyebrow" style="margin-bottom:8px">会員資格</div>
+          <div class="eyebrow" style="margin-bottom:8px">${TX("set.memberH")}</div>
           <p class="sub" style="margin:0">
-            合言葉：<b style="color:var(--olive-dark)">有効</b>
-            ${S.access&&S.access.at?`（${esc(mmdd(S.access.at))} に入力）`:""}<br>
-            合言葉は定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。
+            ${TX("set.codeOk", `<b style="color:var(--olive-dark)">${esc(S.access&&S.access.code||"")}</b>`,
+                 esc(S.access&&S.access.at?mmdd(S.access.at):"—"))}<br>
+            ${TX("set.codeNote")}
           </p>
-          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>合言葉を入れ直す</button>
+          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>${TX("set.relock")}</button>
         </div>` : ""}
 
         <div class="card" style="padding:15px;margin-top:11px">
-          <div class="eyebrow" style="margin-bottom:4px">このアプリについて</div>
-          <button class="lnk first" data-legal="tokushoho">特定商取引法に基づく表記</button>
-          <button class="lnk" data-legal="privacy">プライバシーポリシー</button>
-          <button class="lnk" data-legal="notice">ご利用にあたって（安全のために）</button>
+          <div class="eyebrow" style="margin-bottom:4px">${TX("set.aboutH")}</div>
+          <button class="lnk first" data-legal="tokushoho">${TX("doc.tokusho")}</button>
+          <button class="lnk" data-legal="privacy">${TX("doc.privacy")}</button>
+          <button class="lnk" data-legal="notice">${TX("set.notice")}</button>
         </div>
 
-        <button class="btn btn-ghost" style="margin-top:14px" data-go="home">ホームに戻る</button>
-        <button class="btn btn-ghost" style="margin-top:9px;color:#a4442c" data-reset>診断をやり直す（データ消去）</button>
+        <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
+        <button class="btn btn-ghost" style="margin-top:9px;color:#a4442c" data-reset>${TX("set.reset")}</button>
       </div>
     </div>
     ${nav("home")}
@@ -2273,16 +2452,16 @@ function openExercise(id, force){
     <div class="grab"></div>
     <div class="eyebrow">EXERCISE</div>
     <h2 style="margin:5px 0 0;font-size:22px;font-weight:800">${esc(e.en)}</h2>
-    <p class="sub" style="margin-top:3px">${esc(e.ja)}</p>
+    ${lang()==="en"?"":`<p class="sub" style="margin-top:3px">${esc(e.ja)}</p>`}
     ${videoBlock(id, force)}
-    <div class="detail-sec"><h4>フォームのポイント</h4>
+    <div class="detail-sec"><h4>${TX("ex.cues")}</h4>
       <ul>${e.cues.map(c=>`<li class="dot-o">${esc(c)}</li>`).join("")}</ul></div>
-    <div class="detail-sec"><h4>よくあるミス</h4>
+    <div class="detail-sec"><h4>${TX("ex.miss")}</h4>
       <ul>${e.miss.map(c=>`<li class="dot-r">${esc(c)}</li>`).join("")}</ul></div>
-    <div class="detail-sec"><h4>呼吸</h4>
+    <div class="detail-sec"><h4>${TX("ex.breath")}</h4>
       <p style="margin:0;font-size:13.5px;line-height:1.75">${esc(e.breath)}</p></div>
     ${historyBlock(id)}
-    <button class="btn btn-ghost" style="margin-top:20px" data-close>閉じる</button>
+    <button class="btn btn-ghost" style="margin-top:20px" data-close>${TX("btn.close")}</button>
   </div>`;
 }
 function closeSheet(){ backdrop.className="backdrop"; backdrop.innerHTML=""; }
@@ -2374,12 +2553,12 @@ function completeToday(){
   backdrop.innerHTML=`<div class="modal">
     <div style="font-size:38px">🎉</div>
     <h2 style="margin:8px 0 0;font-size:21px;font-weight:800">Training Complete!</h2>
-    <p class="sub" style="margin-top:5px">Keep it going ― 積み上がってるよ。</p>
+    <p class="sub" style="margin-top:5px">${TX("log.keep")}</p>
     <p style="margin:16px 0 0;font-size:23px;font-weight:800;color:var(--tan)">
       <span class="tnum">${st}</span> DAY STREAK 🔥</p>
     <div style="margin-top:20px;text-align:left">
-      <div class="eyebrow" style="margin-bottom:9px">今日の強度はどうだった？</div>
-      ${[["down","楽だった","次は少し上げよう"],["keep","ちょうどよかった","この強度でいこう"],["up","きつかった","次は少し落とそう"]]
+      <div class="eyebrow" style="margin-bottom:9px">${TX("rpe.ask")}</div>
+      ${[["down",TX("rpe.easy"),TX("rpe.easyS")],["keep",TX("rpe.ok"),TX("rpe.okS")],["up",TX("rpe.hard"),TX("rpe.hardS")]]
         .map(([k,a,b])=>`<button data-rpe="${k}" style="display:block;width:100%;text-align:left;background:var(--surface);
           border-radius:12px;padding:12px 14px;margin-bottom:8px">
           <b style="font-size:14px">${a}</b>
@@ -2482,14 +2661,16 @@ function bind(){
   /* 設定 */
   on("[data-set]",el=>{
     const k=el.dataset.set; let v=el.dataset.val;
+    if(k==="lang"){ setLang(v); return; }
     if(k==="days") v=+v;
     if(!S.profile) S.profile={goal:"tone",level:"normal",place:"home",days:3};
     S.profile[k]=v; if(k==="level") S.level=v;
     save(); render();
   });
   on("[data-reset]",()=>{
-    if(confirm("これまでの記録もすべて消えます。診断からやり直しますか？")){
-      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[],access:null,extras:{},memo:{}};
+    if(confirm(TX("set.resetAsk"))){
+      const keepLang=S.lang;
+      S={profile:null,logs:[],checks:{},level:null,sets:{},cycle:null,cycles:[],access:null,extras:{},memo:{},lang:keepLang};
       try{ localStorage.removeItem(KEY); }catch(e){}
       go("lp");
     }
