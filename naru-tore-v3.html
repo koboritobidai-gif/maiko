@@ -1960,7 +1960,6 @@ function viewHome(){
           <div class="orb"></div>
           <div class="day">DAY ${n} / ${CYCLE}${dd&&dd.cool?" · RECOVERY":""}</div>
           <h2>${esc(p?p.t:"")}</h2>
-          <div class="by">Coaching by <b>NARU</b></div>
           <button class="btn btn-orange" style="margin-top:14px" data-go="train">
             🔥 Today's Training &nbsp;→</button>
         </div>
@@ -2067,9 +2066,7 @@ function viewTrain(){
           <div style="position:relative">
             <div class="day" style="font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)">DAY ${n}</div>
             <h2 style="margin:5px 0 0;font-size:25px;font-weight:800">${esc(p.t)}</h2>
-            <div class="by" style="display:inline-block;margin-top:10px;background:rgba(244,240,234,.13);
-                 border-radius:999px;padding:5px 12px;font-size:11.5px">Coaching by <b style="letter-spacing:.06em">NARU</b></div>
-            ${p.ja?`<p class="daysub">${esc(dayTx(p,"ja"))}</p>`:""}
+            ${p.ja?`<p class="daysub" style="margin-top:10px">${esc(dayTx(p,"ja"))}</p>`:""}
             ${p.note?`<p class="daynote">${esc(dayTx(p,"note"))}</p>`:""}
             ${p.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(p,"cardio"))}</div>`:""}
             ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
