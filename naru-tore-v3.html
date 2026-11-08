@@ -788,24 +788,142 @@ const GOAL_ORDER = {
   build:  [0,1,2,3,5,4],   // 筋肉をつけたい
   stamina:[5,1,3,0,4,2],   // 体力をつけたい
 };
-const GOAL_LABEL = {tone:"引き締めたい",lose:"痩せたい",build:"筋肉をつけたい",stamina:"体力をつけたい"};
+/* =========================================================================
+   言語（日本語 / English）
+   TXT に ja と en を並べて持つ。TX("key") で今の言語の文を返し、
+   en に無いキーは ja に落ちるので、訳の途中でも画面は壊れない。
+   TX("key", a, b) の a,b は文中の {0}{1} に入る。
+   ========================================================================= */
+const LANGS = [["ja","日本語"],["en","English"]];
+function lang(){
+  if(S.lang==="ja" || S.lang==="en") return S.lang;
+  try{ return String(navigator.language||"ja").toLowerCase().startsWith("ja") ? "ja" : "en"; }
+  catch(e){ return "ja"; }
+}
+function setLang(v){ S.lang = (v==="en"?"en":"ja"); save(); render(); }
+function TX(k){
+  const d = TXT[lang()] || TXT.ja;
+  let v = (k in d) ? d[k] : TXT.ja[k];
+  if(v==null) return k;
+  for(let i=1;i<arguments.length;i++) v = v.split("{"+(i-1)+"}").join(arguments[i]);
+  return v;
+}
+const TXT = { ja:{}, en:{} };
+function addTxt(map){ for(const k in map){ TXT.ja[k]=map[k][0]; TXT.en[k]=map[k][1]; } }
+
+/* ---- 画面の文言（左が日本語・右が英語） ---------------------------- */
+addTxt({
+/* 共通 */
+"nav.home"   : ["ホーム","Home"],
+"nav.today"  : ["今日","Today"],
+"nav.log"    : ["記録","Log"],
+"btn.start"  : ["はじめる","Start"],
+"btn.next"   : ["次へ","Next"],
+"btn.back"   : ["もどる","Back"],
+"btn.close"  : ["閉じる","Close"],
+"soon"       : ["準備中","Coming soon"],
+"lang"       : ["言語","Language"],
+
+/* 最初の画面 */
+"lp.hero"    : ["小さなステップから、<br>効率よくカラダを<br>動かしていこう",
+                "Start small.<br>Train smart.<br>Keep moving."],
+"lp.a1"      : ["正しいトレーニングフォームを習いたい人","For anyone who wants cleaner, safer technique"],
+"lp.a2"      : ["効率良く運動のパフォーマンスをあげたい人","For anyone who wants to move better and faster"],
+"lp.a3"      : ["筋肥大を目指したい人","For anyone who wants to build real size"],
+"lp.resume"  : ["前回の続きから","Continue where you left off"],
+"lp.has"     : ["アカウントをお持ちの方は","Already signed up?"],
+"lp.login"   : ["ログイン","Log in"],
+
+/* 紹介・申し込み */
+"gate.tagline": ["すべての人が、自分の身体を自分でデザインし、愛せるようになるアプリ",
+                 "An app to help anyone design the body they want \u2014 and learn to love it."],
+"gate.hook"   : ["筋トレ、毎日同じメニューを無理して続けていませんか？　不調な日に無理をすると、ストレスホルモン（コルチゾール）が増えて逆効果になります。",
+                 "Forcing yourself through the same workout every day? Training hard on a bad day raises cortisol \u2014 your stress hormone \u2014 and works against you."],
+"gate.steps"  : ["体調や目標に合わせて選べる3ステップ","Three levels, picked by how you feel today"],
+"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 3 に挑戦」が、自由に選べます。",
+                 "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 3.\u201d It is your call, every day."],
+"gate.lead"   : ["2週間で1クール。14日分のメニューが、休む日まで組んであります。",
+                 "One cycle is two weeks. All 14 days are planned out \u2014 rest days included."],
+"gate.p1t"    : ["14日分のプログラム","A full 14-day program"],
+"gate.p1b"    : ["DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています",
+                 "DAY 1 through DAY 14. Rest days and cool-down days are part of the plan"],
+"gate.p2t"    : ["重量と回数を記録","Log your weight and reps"],
+"gate.p2b"    : ["種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です",
+                 "Saved per exercise. Your last session shows while you train, so you can beat it"],
+"gate.p3t"    : ["有酸素までセット","Cardio included"],
+"gate.p3b"    : ["各日に『外を走る、もしくは歩く20分』まで指定されています",
+                 "Every day tells you exactly what to do, down to \u201c20 min run or walk\u201d"],
+"gate.p4t"    : ["naru の実演動画","{0} demo videos by NARU"],
+"gate.p4b"    : ["{0} 種目は naru 本人の実演つき。各日の狙いと、種目ごとのコツ・やりがちなミスも入っています",
+                 "{0} exercises come with NARU\u2019s own demo, plus the point of each day and the mistakes to avoid"],
+"gate.bonusH" : ["先着10名様","First 10 members"],
+"gate.bonus"  : ["30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
+                 "Includes a 30-minute online coaching session \u2014 training, food, anything you want to ask."],
+"gate.unit"   : ["円 / 2週間（税込）"," JPY / 2 weeks"],
+"gate.renew"  : ["2週間ごとの自動更新です。いつでも解約できます。",
+                 "Renews automatically every 2 weeks. Cancel any time."],
+"gate.buy"    : ["申し込む &nbsp;→","Sign up &nbsp;→"],
+"gate.already": ["お申し込み済みの方","Already signed up"],
+"gate.code"   : ["合言葉","Access code"],
+"gate.codeHint":["合言葉は、お申し込み後のメールでお送りします。",
+                 "We email you the access code right after you sign up."],
+"gate.codeErr": ["合言葉が違います。お申し込み後にお送りしたメールをご確認ください。",
+                 "That access code is not right. Please check the email we sent after your sign-up."],
+"doc.tokusho" : ["特定商取引法に基づく表記","Legal notice (Japan)"],
+"doc.privacy" : ["プライバシーポリシー","Privacy Policy"],
+"doc.notice"  : ["ご利用にあたって","Before you start"],
+
+/* レベル */
+"lv.fit1.lead": ["初級者向け","Beginner"],
+"lv.fit1.sub" : ["まずはここから。リフレッシュと基礎作り（自宅・自重）",
+                 "Start here. Refresh and build your base (at home, bodyweight)"],
+"lv.fit2.lead": ["中級者向け","Intermediate"],
+"lv.fit2.sub" : ["しっかりボディメイク、筋肉を育てる（自宅ダンベル／ジム）",
+                 "Real body-making. Grow muscle (dumbbells at home / gym)"],
+"lv.fit3.lead": ["アスリートレベル","Athlete"],
+"lv.fit3.sub" : ["限界突破、本格的なバルクアップ（ジム）",
+                 "Break your limits. Serious bulking (gym)"],
+"lv.fit1.short": ["初級・基礎作り","Beginner \u00b7 base building"],
+"lv.fit2.short": ["中級・ボディメイク","Intermediate \u00b7 body-making"],
+"lv.fit3.short": ["上級・限界突破","Advanced \u00b7 breaking limits"],
+
+/* 目的 */
+"goal.tone"   : ["引き締めたい","Get toned"],
+"goal.lose"   : ["痩せたい","Lose fat"],
+"goal.build"  : ["筋肉をつけたい","Build muscle"],
+"goal.stamina": ["体力をつけたい","Get fitter"],
+"goal.tone.s" : ["見た目をしゅっと","Look leaner"],
+"goal.lose.s" : ["脂肪を落とす","Drop body fat"],
+"goal.build.s": ["しっかり増やす","Add real size"],
+"goal.stamina.s":["動ける体に","A body that moves"],
+
+/* 診断 */
+"ob.1t": ["目的を教えて","What is your goal?"],
+"ob.1s": ["あなたに合わせてメニューを組みます","We build the plan around it"],
+"ob.2t": ["今日はどれでいく？","Which one today?"],
+"ob.2s": ["毎日ここで変えられます。しんどい日は落としてOKです",
+          "You can change this any day. Dropping down on a hard day is fine."],
+"ob.soon": ["準備中です。もうすぐ追加されます","Coming soon."]
+});
+
+const GOAL_LABEL = {tone:"goal.tone",lose:"goal.lose",build:"goal.build",stamina:"goal.stamina"};
 const LEVELS = [
-  {id:"fit1", name:"Fit 1", emoji:"🏃", lead:"初級者向け",
-   sub:"まずはここから。リフレッシュと基礎作り（自宅・自重）"},
-  {id:"fit2", name:"Fit 2", emoji:"🏋️", lead:"中級者向け",
-   sub:"しっかりボディメイク、筋肉を育てる（自宅ダンベル／ジム）"},
-  {id:"fit3", name:"Fit 3", emoji:"🔥", lead:"アスリートレベル",
-   sub:"限界突破、本格的なバルクアップ（ジム）"},
+  {id:"fit1", name:"Fit 1", emoji:"🏃"},
+  {id:"fit2", name:"Fit 2", emoji:"🏋️"},
+  {id:"fit3", name:"Fit 3", emoji:"🔥"},
 ];
-const LEVEL_SHORT = {fit1:"初級・基礎作り", fit2:"中級・ボディメイク", fit3:"上級・限界突破"};
+const levelLead  = id => TX("lv."+id+".lead");
+const levelSub   = id => TX("lv."+id+".sub");
+const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short"};
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 
 /* =========================================================================
    状態
    ========================================================================= */
+
 const KEY = "naru-tore-v3";
-let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[], access:null, extras:{}, memo:{}};
+let S = {profile:null, logs:[], checks:{}, level:null, sets:{}, cycle:null, cycles:[], access:null, extras:{}, memo:{}, lang:null};
 const app = document.getElementById("app");
 const backdrop = document.getElementById("backdrop");
 
@@ -1220,9 +1338,9 @@ function render(){
 
 function nav(active){
   return `<div class="nav">
-    ${[["home","HOME","ホーム"],["train","TRAIN","今日"],["log","LOG","記録"]].map(([id,en,ja])=>
+    ${[["home","HOME","nav.home"],["train","TRAIN","nav.today"],["log","LOG","nav.log"]].map(([id,en,ja])=>
       `<button data-go="${id}" class="${active===id?"on":""}">
-        <span class="en">${en}</span><span class="ja">${ja}</span></button>`).join("")}
+        <span class="en">${en}</span><span class="ja">${TX(ja)}</span></button>`).join("")}
   </div>`;
 }
 function topbar(){
@@ -1235,12 +1353,20 @@ function topbar(){
 /* =========================================================================
    LP
    ========================================================================= */
+/* 日本語 / English の切り替え。申し込み前にも切り替えられるよう LP と紹介画面にも置く */
+function langSwitch(){
+  const cur = lang();
+  return `<div class="langsw">${LANGS.map(([id,label])=>
+    `<button data-lang="${id}" class="${cur===id?"on":""}">${label}</button>`).join("")}</div>`;
+}
+
 function viewLP(){
   return `<div class="screen on" style="overflow-y:auto">
     <div class="lp">
       <div class="lp-top">
+        ${langSwitch()}
         <div class="eyebrow">NARU &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
-        <h1 class="hero-t">小さなステップから、<br>効率よくカラダを<br>動かしていこう</h1>
+        <h1 class="hero-t">${TX("lp.hero")}</h1>
         <p class="sub" style="margin-top:14px">Welcome to my page 🌿</p>
         <div style="margin-top:14px">
           <b style="font-size:11.5px">Coaching by NARU</b>
@@ -1250,9 +1376,9 @@ function viewLP(){
       <div class="about">
         <div class="eyebrow" style="margin-bottom:14px">ABOUT PERSONAL TRAINING</div>
         <ul style="margin:0;padding:0">
-          ${[["Perfecting your training form","正しいトレーニングフォームを習いたい人"],
-             ["Optimizing athletic performance","効率良く運動のパフォーマンスをあげたい人"],
-             ["Hypertrophy &amp; Muscle Building","筋肥大を目指したい人"]].map(([a,b])=>
+          ${[["Perfecting your training form",TX("lp.a1")],
+             ["Optimizing athletic performance",TX("lp.a2")],
+             ["Hypertrophy &amp; Muscle Building",TX("lp.a3")]].map(([a,b])=>
             `<li><span class="ck">✓</span><span><b>${a}</b><span>${b}</span></span></li>`).join("")}
         </ul>
       </div>
@@ -1260,8 +1386,8 @@ function viewLP(){
     <div class="pad" style="padding:0 22px calc(26px + var(--safe))">
       <button class="btn btn-olive" data-start>Start</button>
       <p style="text-align:center;font-size:11px;color:var(--ink-mute);margin:12px 0 0">
-        ${S.profile? `<button data-go="home" style="text-decoration:underline">前回の続きから</button>`
-                   : `アカウントをお持ちの方は <span style="text-decoration:underline">ログイン</span>`}
+        ${S.profile? `<button data-go="home" style="text-decoration:underline">${TX("lp.resume")}</button>`
+                   : `${TX("lp.has")} <span style="text-decoration:underline">${TX("lp.login")}</span>`}
       </p>
     </div>
   </div>`;
@@ -1271,30 +1397,31 @@ function viewLP(){
    診断（4ステップ）
    ========================================================================= */
 let ob = {step:0, goal:null, level:null, place:null, days:3};
-const OB_STEPS = [
-  {t:"目的を教えて", s:"あなたに合わせてメニューを組みます", k:"goal",
-   opts:[["tone","引き締めたい","見た目をしゅっと"],["lose","痩せたい","脂肪を落とす"],
-         ["build","筋肉をつけたい","しっかり増やす"],["stamina","体力をつけたい","動ける体に"]]},
-  {t:"今日はどれでいく？", s:"毎日ここで変えられます。しんどい日は落としてOKです", k:"level",
-   opts:LEVELS.map(l=>[l.id, l.name+"　"+l.lead,
-        (PROGRAM[l.id]&&PROGRAM[l.id].length) ? l.sub : "準備中です。もうすぐ追加されます", !(PROGRAM[l.id]&&PROGRAM[l.id].length)])},
-];
+function obSteps(){ return [
+  {t:TX("ob.1t"), s:TX("ob.1s"), k:"goal",
+   opts:[["tone",TX("goal.tone"),TX("goal.tone.s")],["lose",TX("goal.lose"),TX("goal.lose.s")],
+         ["build",TX("goal.build"),TX("goal.build.s")],["stamina",TX("goal.stamina"),TX("goal.stamina.s")]]},
+  {t:TX("ob.2t"), s:TX("ob.2s"), k:"level",
+   opts:LEVELS.map(l=>[l.id, l.name+"　"+levelLead(l.id),
+        levelReady(l.id) ? levelSub(l.id) : TX("ob.soon"), !levelReady(l.id)])},
+];}
 
 function viewOB(){
-  const st = OB_STEPS[ob.step];
+  const steps = obSteps();
+  const st = steps[ob.step];
   const val = ob[st.k];
-  const last = ob.step===OB_STEPS.length-1;
+  const last = ob.step===steps.length-1;
   return `<div class="screen on">
     <div class="scroll" style="padding-bottom:20px">
       <div class="pad" style="padding-top:22px">
-        <div class="eyebrow">STEP ${ob.step+1} / ${OB_STEPS.length}</div>
+        <div class="eyebrow">STEP ${ob.step+1} / ${steps.length}</div>
         <h1 class="h1">${st.t}</h1>
         <p class="sub" style="margin-bottom:18px">${st.s}</p>
         ${st.opts.map(([v,a,b,soon])=>
           `<button class="opt ${val===v?"on":""}${soon?" soon":""}" data-ob="${v}" ${soon?"disabled":""}><b>${a}</b><span>${b}</span></button>`).join("")}
-        <div class="step-dots">${OB_STEPS.map((_,i)=>`<i class="${i===ob.step?"on":""}"></i>`).join("")}</div>
-        <button class="btn btn-olive" data-ob-next ${val==null?"disabled":""}>${last?"はじめる":"次へ"}</button>
-        ${ob.step>0?`<button class="btn btn-ghost" style="margin-top:9px" data-ob-back>もどる</button>`:""}
+        <div class="step-dots">${steps.map((_,i)=>`<i class="${i===ob.step?"on":""}"></i>`).join("")}</div>
+        <button class="btn btn-olive" data-ob-next ${val==null?"disabled":""}>${last?TX("btn.start"):TX("btn.next")}</button>
+        ${ob.step>0?`<button class="btn btn-ghost" style="margin-top:9px" data-ob-back>${TX("btn.back")}</button>`:""}
       </div>
     </div>
   </div>`;
@@ -2184,67 +2311,53 @@ function tryUnlock(v){
   return true;
 }
 
-/* naruさんの紹介文が決まったら INTRO を差し替える */
-const INTRO = {
-  tagline: "すべての人が、自分の身体を自分でデザインし、愛せるようになるアプリ",
-  hook: "筋トレ、毎日同じメニューを無理して続けていませんか？　不調な日に無理をすると、ストレスホルモン（コルチゾール）が増えて逆効果になります。",
-  stepsTitle: "体調や目標に合わせて選べる3ステップ",
-  switchNote: "「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 3 に挑戦」が、自由に選べます。",
-  lead : "2週間で1クール。14日分のメニューが、休む日まで組んであります。",
-  points: [
-    ["14日分のプログラム", "DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています"],
-    ["重量と回数を記録",   "種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です"],
-    ["有酸素までセット",   "各日に『外を走る、もしくは歩く20分』まで指定されています"],
-    ["naru の実演動画",    `${Object.values(EX).filter(e=>e.video).length} 種目は naru 本人の実演つき。各日の狙いと、種目ごとのコツ・やりがちなミスも入っています`]
-  ],
-  /* 特典。「プレゼント」という書き方だと景品表示法の総付景品（上限＝代金の20％＝700円）に
-     あたりうるので、サービスの内容として書いています。文面は naru さんに最終確認を */
-  bonus: "30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。"
-};
 
 function viewGate(){
+  const nvid = Object.values(EX).filter(e=>e.video).length;
   return `<div class="screen on"><div class="scroll"><div class="pad gate">
+    ${langSwitch()}
     <h1>NARU FITNESS</h1>
-    <p class="tagline">${esc(INTRO.tagline)}</p>
-    <p class="hook">${esc(INTRO.hook)}</p>
+    <p class="tagline">${esc(TX("gate.tagline"))}</p>
+    <p class="hook">${esc(TX("gate.hook"))}</p>
 
     <div class="steps">
-      <div class="steps-h">${esc(INTRO.stepsTitle)}</div>
+      <div class="steps-h">${esc(TX("gate.steps"))}</div>
       ${LEVELS.map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
         <span class="em">${l.emoji}</span>
-        <span class="tx"><b>${esc(l.name)}：${esc(l.lead)}</b>
-          <span>${esc(l.sub)}</span></span>
-        ${levelReady(l.id)?"":`<span class="soon-tag">準備中</span>`}
+        <span class="tx"><b>${esc(l.name)}：${esc(levelLead(l.id))}</b>
+          <span>${esc(levelSub(l.id))}</span></span>
+        ${levelReady(l.id)?"":`<span class="soon-tag">${TX("soon")}</span>`}
       </div>`).join("")}
-      <p class="steps-note">${esc(INTRO.switchNote)}</p>
+      <p class="steps-note">${esc(TX("gate.switch"))}</p>
     </div>
 
-    <p class="lead">${esc(INTRO.lead)}</p>
+    <p class="lead">${esc(TX("gate.lead"))}</p>
 
-    <ul class="gate-pts">${INTRO.points.map(([a,b])=>
-      `<li><b>${esc(a)}</b><span>${esc(b)}</span></li>`).join("")}</ul>
+    <ul class="gate-pts">${[["gate.p1t","gate.p1b"],["gate.p2t","gate.p2b"],
+        ["gate.p3t","gate.p3b"],["gate.p4t","gate.p4b"]].map(([a,b])=>
+      `<li><b>${esc(TX(a,nvid))}</b><span>${esc(TX(b,nvid))}</span></li>`).join("")}</ul>
 
     <div class="gate-price">
       <div class="eyebrow">ENTRY</div>
-      <div class="p"><b class="tnum">3,500</b><span>円 / 2週間（税込）</span></div>
-      <p class="sub" style="margin-top:4px">2週間ごとの自動更新です。いつでも解約できます。</p>
+      <div class="p"><b class="tnum">3,500</b><span>${TX("gate.unit")}</span></div>
+      <p class="sub" style="margin-top:4px">${TX("gate.renew")}</p>
     </div>
-    ${INTRO.bonus?`<div class="gate-bonus"><b>先着10名様</b>${esc(INTRO.bonus)}</div>`:""}
-    <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">申し込む &nbsp;→</a>
+    <div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>
+    <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">${TX("gate.buy")}</a>
 
-    <div class="gate-div"><span>お申し込み済みの方</span></div>
+    <div class="gate-div"><span>${TX("gate.already")}</span></div>
     <div class="gate-code">
       <input id="code" type="text" inputmode="latin" autocapitalize="off" autocorrect="off"
-             spellcheck="false" placeholder="合言葉" value="${esc(gateVal)}" aria-label="合言葉">
-      <button class="btn btn-olive" data-unlock>はじめる</button>
+             spellcheck="false" placeholder="${TX("gate.code")}" value="${esc(gateVal)}" aria-label="${TX("gate.code")}">
+      <button class="btn btn-olive" data-unlock>${TX("btn.start")}</button>
     </div>
     ${gateErr?`<p class="gate-err">${esc(gateErr)}</p>`
-             :`<p class="gate-hint">合言葉は、お申し込み後のメールでお送りします。</p>`}
+             :`<p class="gate-hint">${TX("gate.codeHint")}</p>`}
 
     <div class="gate-foot">
-      <button data-legal="tokushoho">特定商取引法に基づく表記</button>
-      <button data-legal="privacy">プライバシーポリシー</button>
-      <button data-legal="notice">ご利用にあたって</button>
+      <button data-legal="tokushoho">${TX("doc.tokusho")}</button>
+      <button data-legal="privacy">${TX("doc.privacy")}</button>
+      <button data-legal="notice">${TX("doc.notice")}</button>
     </div>
   </div></div></div>`;
 }
@@ -2304,7 +2417,7 @@ function bind(){
   /* 合言葉 */
   on("[data-unlock]",()=>{
     const el=document.getElementById("code"); gateVal = el ? el.value : "";
-    if(!tryUnlock(gateVal)){ gateErr="合言葉が違います。お申し込み後にお送りしたメールをご確認ください。"; render(); }
+    if(!tryUnlock(gateVal)){ gateErr=TX("gate.codeErr"); render(); }
   });
   const ci=document.getElementById("code");
   if(ci) ci.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault();
@@ -2327,6 +2440,7 @@ function bind(){
   on("[data-level]",el=>{ S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
 
   /* 種目詳細 */
+  on("[data-lang]",el=>setLang(el.dataset.lang));
   on("[data-ex]",el=>openExercise(el.dataset.ex, el.dataset.vid==="1"));
 
   /* 書類 */
@@ -2526,6 +2640,10 @@ render();
 .gate-price .p{margin-top:5px}
 .gate-price .p b{font-size:62px;font-weight:800;letter-spacing:-.035em;line-height:.95;color:var(--olive)}
 .gate-price .p span{font-size:15px;font-weight:700;color:var(--ink);margin-left:7px}
+.langsw{display:flex;gap:6px;justify-content:flex-end;margin:0 0 6px}
+.langsw button{font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px;
+  background:var(--surface);color:var(--ink-mute);border:1px solid rgba(226,236,206,.08)}
+.langsw button.on{background:var(--olive);color:#0B0B0A;border-color:var(--olive)}
 .vlib{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .vlib button{display:block;text-align:left;background:var(--surface-sunk);border-radius:10px;
   overflow:hidden;padding:0;transition:.15s}
