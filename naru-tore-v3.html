@@ -3058,6 +3058,24 @@ backdrop.onclick=e=>{
    起動
    ========================================================================= */
 load();
+
+/* 決済後に Stripe から ?k=合言葉 付きで戻ってきたときは、自動で解錠する。
+   お客さんが合言葉をコピーしなくて済む。
+   アドレスバーに合言葉が残らないよう、解錠したらURLから消す。
+   ※ 合言葉はもともと画面のHTMLに書いてあるので、これで安全性は変わらない */
+(function autoUnlock(){
+  try{
+    const q = new URLSearchParams(location.search);
+    const k = q.get("k") || q.get("code");
+    if(!k) return;
+    const ok = ACCESS.codes.find(c => c.toLowerCase() === String(k).trim().toLowerCase());
+    if(ok){ S.access = {code:ok, at:todayKey()}; save(); }
+    q.delete("k"); q.delete("code");
+    const rest = q.toString();
+    history.replaceState(null, "", location.pathname + (rest?"?"+rest:"") + location.hash);
+  }catch(e){}
+})();
+
 current = !unlocked() ? (S.profile ? "gate" : "lp") : (S.profile ? "home" : "lp");
 render();
 </script>
