@@ -104,4 +104,27 @@ async function hash(s) {
   return [...new Uint8Array(b)].slice(0, 4).map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
-export const onRequestGet = () => json({ ok: false, reason: "method" }, 405);
+/* ── 設定の確認用 ────────────────────────────────────────
+   ブラウザでこのURLを開くと、設定がそろっているかだけ返す。
+   キーの中身は返さない。Stripe へは1件だけ問い合わせて、
+   通ったかどうか（HTTPの番号）を見る。 */
+export async function onRequestGet({ env }) {
+  const out = {
+    ok: false, reason: "method",
+    stripeKey: !!env.STRIPE_KEY,     // キーが入っているか
+    kv       : !!env.LOGINS          // KV が繋がっているか
+  };
+  if (env.STRIPE_KEY) {
+    try {
+      const r = await fetch("https://api.stripe.com/v1/customers?limit=1", {
+        headers: { authorization: "Bearer " + env.STRIPE_KEY }
+      });
+      out.stripeStatus = r.status;   // 200 なら成功。401=キーが違う 403=権限不足
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        out.stripeError = (e.error && (e.error.code || e.error.type)) || "";
+      }
+    } catch (e) { out.stripeStatus = "とどかない"; }
+  }
+  return json(out, 405);
+}
