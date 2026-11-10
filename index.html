@@ -1319,6 +1319,37 @@ addTxt({
 "gate.p4t"    : ["naru の実演動画","{0} demo videos by NARU"],
 "gate.p4b"    : ["{0} 種目は naru 本人の実演つき。各日の狙いと、種目ごとのコツ・やりがちなミスも入っています",
                  "{0} exercises come with NARU\u2019s own demo, plus the point of each day and the mistakes to avoid"],
+"gate.msgH"   : ["MESSAGE FROM NARU","MESSAGE FROM NARU"],
+"gate.msg"    : [`「動ける身体、そして効率よく習慣化させる為のトレーニングツール」です！
+
+私自身も実際に行っている、トレーニングプログラムを誰でもやりやすいように一元化しました。
+
+これまで約11年間、トレーニングを行ってきました。数々のスポーツイベントや、いろんな動きをトライしたり、ボディメイクやハイブリットの大会などにも出場しました。
+
+こういった経験を経て私が感じたのは、何かを成し遂げることも大事ですが、日々”継続をする”大切さを学びました。人は成長します。それはカラダも一緒です。続けなければ、その瞬間にやらなければ衰えてしまう一方です。
+
+「運動・フィットネス」というものは、単にカラダを動かす。というわけではありません。
+
+日々、皆さんが心地よく継続できるトレーニングを考え、NARU監修のプログラムをつくりました。これを通して体だけでなく、脳やマインドもより良い方向に変え、人生を豊かに Happyにしたいです。
+
+小さな目標そしてステップから一緒に楽しく理想なカラダ・ライフスタイルを創り上げていきましょう！
+
+さあ、今日からはじめましょう。`,
+`This is a training tool for a body that moves well, and for making that a habit.
+
+I have brought together the program I follow myself, in a form anyone can pick up.
+
+I have trained for about eleven years, competing in sports events, bodybuilding and hybrid competitions, and trying every kind of movement along the way. What I took from all of it is this: achieving something matters, but learning to keep going, day after day, matters more. People grow, and so do bodies. Stop, and they only go the other way.
+
+Fitness is not just moving your body.
+
+I built this program around training you can keep up comfortably, every day. I want it to change not only your body but your head and your mood, and to make your life a happier one.
+
+Let's start small, enjoy the steps, and build the body and the life you want.
+
+So — let's begin today.`],
+"gate.consent": ["お申し込みをもって、{0}に同意いただいたものとします。",
+                 "By signing up you agree to {0}."],
 "gate.bonusH" : ["先着10名様","First 10 members"],
 "gate.bonus"  : ["30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
                  "Includes a 30-minute online coaching session \u2014 training, food, anything you want to ask."],
@@ -1775,35 +1806,84 @@ const LEGAL = {
     <p class="upd">Japanese version prevails \u00b7 ${esc(BIZ.nameEn||BIZ.name)}</p>` },
 
   notice: { t:"ご利用にあたって", tEn:"Before you start", body: () => `
-    <h5>体調について</h5>
-    <p>本アプリが提供するのはトレーニングのプログラムであり、医療行為ではありません。
-      治療中の病気やけががある方、妊娠中の方、医師から運動を止められている方は、
-      <b>必ず主治医にご相談のうえ</b>ご利用ください。</p>
+    <h5>このプログラムについて</h5>
+    <p>本アプリが提供するのはトレーニングのプログラムであり、<b>医療行為ではありません。</b>
+      内容は多くの方に当てはまる一般的なもので、お一人ずつの体格・既往歴・体力に合わせて
+      個別に処方したものではありません。重量・回数・種目は、
+      <b>ご自身の体調と技術に合わせて調整してください。</b>
+      きつい日は軽くする、種目を飛ばす、やさしい動きに置き換える。いずれも問題ありません。</p>
+
+    <h5>はじめる前に、医師にご相談ください</h5>
+    <p>次のいずれかに当てはまる方は、<b>必ず主治医にご相談のうえ</b>ご利用ください。</p>
+    <ul>
+      <li>治療中の病気やけががある</li>
+      <li>妊娠中、または出産後まもない</li>
+      <li>心臓・血圧・関節に不安がある</li>
+      <li>薬を服用している</li>
+      <li>医師から運動を止められている</li>
+    </ul>
+
     <h5>無理をしないでください</h5>
-    <p>痛み、めまい、強い息切れ、気分の悪さを感じた場合は、
-      <b>ただちに中止してください。</b> 表示される重量や回数はあくまで目安です。
+    <p>痛み、めまい、強い息切れ、胸の違和感、気分の悪さを感じた場合は、
+      <b>ただちに中止してください。</b>必要に応じて医療機関を受診してください。
+      表示される重量や回数はあくまで目安です。
       その日の体調に合わせて、ご自身の判断で軽くしてください。</p>
+
+    <h5>安全な環境で行ってください</h5>
+    <p>十分な広さと滑らない床を確保し、周囲に人や物がないことをご確認ください。
+      器具を扱う種目では、固定とロックを毎回ご確認ください。
+      高重量を扱う際は、可能であれば補助者をつけてください。</p>
+
+    <h5>未成年の方</h5>
+    <p>18歳未満の方は、保護者の同意を得たうえでご利用ください。</p>
+
     <h5>免責</h5>
-    <p>本アプリの利用によって生じたけがや体調の不良について、
-      当方は責任を負いかねます。安全な環境で、ご自身の責任のもとでお取り組みください。
-      器具を扱う種目では、周囲の安全と器具の固定を必ずご確認ください。</p>
+    <p>本アプリの利用によって生じた損害について、
+      <b>当方の軽過失による場合は、当方は責任を負いません。</b>
+      当方の故意または重大な過失による場合は、この限りではありません。</p>
+    <p>当方が責任を負う場合であっても、賠償の額は
+      <b>お客様がお支払いになった直近1か月分の利用料金を上限</b>とします。
+      ただし、当方の故意または重大な過失による場合は、この限りではありません。</p>
     <h5>記録の保存について</h5>
     <p>トレーニングの記録はお使いの端末内にのみ保存されます。
       <b>機種変更やブラウザのデータ消去を行うと記録は失われます。</b>
       また、別の端末から同じ記録を見ることはできません。</p>
     <p class="upd">制定 ${esc(BIZ.made)}</p>`,
   bodyEn: () => `
-    <h5>Your health</h5>
-    <p>This app gives you a training program. It is not medical advice.
-      If you are being treated for an illness or injury, if you are pregnant, or if a doctor has
-      told you not to exercise, <b>please talk to your doctor first.</b></p>
+    <h5>About this program</h5>
+    <p>This app gives you a training program. <b>It is not medical advice.</b>
+      The sessions are general, not prescribed for your body, your history or your fitness.
+      <b>Adjust the weights, the reps and the exercises to how you feel and what you can do.</b>
+      Going lighter, skipping a movement or swapping in an easier one is all fine.</p>
+
+    <h5>Talk to your doctor first</h5>
+    <p><b>Please speak to your doctor before you start</b> if any of these apply to you:</p>
+    <ul>
+      <li>You are being treated for an illness or injury</li>
+      <li>You are pregnant or recently gave birth</li>
+      <li>You have concerns about your heart, blood pressure or joints</li>
+      <li>You take prescribed medication</li>
+      <li>A doctor has told you not to exercise</li>
+    </ul>
+
     <h5>Do not push through pain</h5>
-    <p>If you feel pain, dizziness, heavy breathlessness or nausea, <b>stop straight away.</b>
+    <p>If you feel pain, dizziness, heavy breathlessness, chest discomfort or nausea,
+      <b>stop straight away</b> and seek medical help if you need it.
       The weights and reps shown are a guide. Go lighter whenever your body says so.</p>
-    <h5>Your responsibility</h5>
-    <p>Train in a safe space and at your own risk. When you are using equipment, check that it is
-      secure and that the area around you is clear.
-      Nothing here takes away rights you have under the consumer law that applies to you.</p>
+
+    <h5>Train somewhere safe</h5>
+    <p>Give yourself room and a floor that does not slip, and check that nobody and nothing is in
+      the way. With equipment, check every time that it is secure and locked.
+      Use a spotter for heavy lifts where you can.</p>
+
+    <h5>Under 18</h5>
+    <p>If you are under 18, please use this app with a parent or guardian's consent.</p>
+
+    <h5>Our responsibility</h5>
+    <p>You train at your own risk. Where the law allows us to limit our liability, we do so.
+      <b>Nothing here takes away rights you have under the consumer law that applies to you</b> —
+      in Australia, that includes the consumer guarantees under the Australian Consumer Law,
+      which cannot be excluded.</p>
     <h5>About your logs</h5>
     <p>Your training log is stored only on this device.
       <b>If you change phones or clear your browser data, it is gone.</b>
@@ -2894,6 +2974,12 @@ function viewGate(){
 
     <p class="lead">${esc(TX("gate.lead"))}</p>
 
+    <div class="gate-msg">
+      <div class="eyebrow">${TX("gate.msgH")}</div>
+      ${TX("gate.msg").trim().split(/\n\s*\n/).map(x=>`<p>${esc(x.trim())}</p>`).join("")}
+      <div class="sign">杉田 成美 — NARU</div>
+    </div>
+
     <ul class="gate-pts">${[["gate.p1t","gate.p1b"],["gate.p2t","gate.p2b"],
         ["gate.p3t","gate.p3b"]].map(([a,b])=>
       `<li><b>${esc(TX(a,nvid))}</b><span>${esc(TX(b,nvid))}</span></li>`).join("")}</ul>
@@ -2905,6 +2991,8 @@ function viewGate(){
     </div>
     <div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>
     <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">${TX("gate.buy")}</a>
+    <p class="gate-consent">${TX("gate.consent",
+       `<button data-legal="notice">${TX("doc.notice")}</button>`)}</p>
 
     <div class="gate-div"><span>${TX("gate.already")}</span></div>
     <div class="gate-code">
@@ -3354,6 +3442,20 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .logomark{display:block;width:100%;height:auto}
 .gate .logomark{max-width:236px;margin:0 0 14px}
 .lp .logomark{max-width:218px;margin:0 0 14px}
+
+
+/* ── 申し込み画面：naru からのメッセージ ── */
+.gate-msg{margin-top:22px;background:var(--surface);border:1px solid rgba(226,236,206,.08);
+  border-radius:var(--r-lg);padding:18px 17px}
+.gate-msg p{margin:0 0 11px;font-size:13.5px;line-height:1.95;color:var(--ink-soft)}
+.gate-msg p:first-of-type{color:var(--ink);font-weight:700;font-size:14.5px}
+.gate-msg .sign{margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,236,206,.08);
+  font-family:var(--f-dis);font-weight:900;font-style:italic;font-stretch:76%;
+  font-size:13px;letter-spacing:.02em;color:var(--olive);text-align:right}
+.gate-consent{margin:10px 0 0;font-size:11.5px;line-height:1.7;text-align:center;color:var(--ink-mute)}
+.gate-consent button{color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px}
+.legal ul{margin:6px 0 0;padding-left:18px}
+.legal li{font-size:13px;line-height:1.8;margin-bottom:2px}
 
 </style>
 </body>
