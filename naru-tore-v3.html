@@ -2986,12 +2986,12 @@ function bind(){
 
   /* 診断 */
   on("[data-ob]",el=>{
-    const st=OB_STEPS[ob.step]; let v=el.dataset.ob;
+    const st=obSteps()[ob.step]; let v=el.dataset.ob;
     if(st.k==="days") v=+v;
     ob[st.k]=v; render();
   });
   on("[data-ob-next]",()=>{
-    if(ob.step<OB_STEPS.length-1){ ob.step++; render(); return; }
+    if(ob.step<obSteps().length-1){ ob.step++; render(); return; }
     S.profile={goal:ob.goal,level:ob.level,place:ob.place,days:ob.days};
     S.level=ob.level; save(); go("home");
   });
