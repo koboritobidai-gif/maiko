@@ -3049,6 +3049,7 @@ function viewGate(){
     <p class="lead">${esc(TX("gate.lead"))}</p>
 
     <div class="gate-msg">
+      <img class="photo" src="img/naru.jpg" alt="杉田 成美（NARU）" width="880" height="1100">
       <div class="eyebrow">${TX("gate.msgH")}</div>
       ${TX("gate.msg").trim().split(/\n\s*\n/).map(x=>`<p>${esc(x.trim())}</p>`).join("")}
       <div class="sign">杉田 成美 — NARU</div>
@@ -3552,7 +3553,9 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 
 /* ── 申し込み画面：naru からのメッセージ ── */
 .gate-msg{margin-top:22px;background:var(--surface);border:1px solid rgba(226,236,206,.08);
-  border-radius:var(--r-lg);padding:18px 17px}
+  border-radius:var(--r-lg);padding:18px 17px;overflow:hidden}
+.gate-msg .photo{display:block;width:calc(100% + 34px);max-width:none;height:auto;
+  margin:-18px -17px 16px;aspect-ratio:1/1;object-fit:cover;object-position:50% 18%}
 .gate-msg p{margin:0 0 11px;font-size:13.5px;line-height:1.95;color:var(--ink-soft)}
 .gate-msg p:first-of-type{color:var(--ink);font-weight:700;font-size:14.5px}
 .gate-msg .sign{margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,236,206,.08);
