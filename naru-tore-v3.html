@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0A">
 <title>NARU FIT DAILY</title>
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="NARU FIT DAILY">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
+/* ── ロゴに合わせた欧文書体 Saira（可変フォント・自己ホスト） ── */
+@font-face{font-family:"Saira";src:url("fonts/saira-normal.woff2") format("woff2");
+  font-weight:100 900;font-stretch:50% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:"Saira";src:url("fonts/saira-italic.woff2") format("woff2");
+  font-weight:100 900;font-stretch:50% 125%;font-style:italic;font-display:swap}
 :root{
   --bg-top:#0B0B0A; --bg-bottom:#101207;
   --panel:#1C2113;
@@ -18,7 +29,10 @@
   --r-lg:18px; --r-md:12px; --r-sm:8px;
   --safe:env(safe-area-inset-bottom,0px);
   --nav-h:60px;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
+  --jp:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
+  --font:"Saira",var(--jp);
+  --f-dis:"Saira","Arial Narrow",Impact,var(--jp);   /* ロゴのワードマーク（極太・斜体・コンデンス） */
+  --f-lab:"Saira",var(--jp);                          /* ロゴの細いラベル（BETTER LIFE / SINCE 2026） */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;height:100%}
@@ -118,7 +132,7 @@ button{border:0;background:none;cursor:pointer}
 .weekstrip{display:flex;gap:5px;margin-top:11px}
 .weekstrip div{flex:1;border-radius:9px;background:var(--surface);border:1px solid rgba(226,236,206,.06);
                padding:7px 0;text-align:center;font-size:10px;color:var(--ink-mute);font-weight:700}
-.weekstrip div.done{background:var(--olive);border-color:var(--olive);color:#fff}
+.weekstrip div.done{background:var(--olive);border-color:var(--olive);color:#0B0B0A}
 .weekstrip div.today{border-color:var(--ink)}
 .weekstrip div i{display:block;font-style:normal;font-size:12px;margin-top:2px}
 
@@ -131,7 +145,7 @@ button{border:0;background:none;cursor:pointer}
 .video .play{width:56px;height:56px;border-radius:999px;background:rgba(244,240,234,.92);display:grid;place-items:center}
 .video .play::after{content:"";border-left:16px solid var(--ink);border-top:10px solid transparent;
                     border-bottom:10px solid transparent;margin-left:4px}
-.video .tag{position:absolute;top:10px;right:10px;background:rgba(226,236,206,.72);color:#f4f0ea;
+.video .tag{position:absolute;top:10px;right:10px;background:rgba(11,11,10,.74);color:var(--ink);
             border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:700}
 .video .cap{padding:12px 14px}
 .video .cap b{font-size:13.5px}
@@ -161,7 +175,7 @@ button{border:0;background:none;cursor:pointer}
        border-radius:var(--r-md);padding:13px 15px;margin-bottom:8px;transition:.15s}
 .check .box{width:24px;height:24px;border-radius:999px;border:1.5px solid #c3bfae;flex:none;margin-top:1px;
             display:grid;place-items:center;transition:.15s}
-.check.on .box{background:var(--olive);border-color:var(--olive);color:#fff}
+.check.on .box{background:var(--olive);border-color:var(--olive);color:#0B0B0A}
 .check.on .en{text-decoration:line-through;color:var(--ink-mute)}
 .check{color:var(--ink)}
 .check .en{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
@@ -187,15 +201,15 @@ button{border:0;background:none;cursor:pointer}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .cal div{aspect-ratio:1;border-radius:9px;background:var(--surface-sunk);display:grid;place-items:center;
          font-size:11.5px;color:var(--ink-mute)}
-.cal div.done{background:var(--olive);color:#fff;font-weight:700}
+.cal div.done{background:var(--olive);color:#0B0B0A;font-weight:700}
 .cal div.today{outline:2px solid var(--ink);outline-offset:-2px;color:var(--ink)}
-.cal div.done.today{color:#fff}
+.cal div.done.today{color:#0B0B0A}
 .sess{display:flex;align-items:center;justify-content:space-between;background:var(--surface);
       border-radius:var(--r-md);padding:13px 15px;margin-bottom:8px}
 .sess b{font-size:14px}.sess span{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px}
 
 /* ── シート／モーダル ── */
-.backdrop{position:fixed;inset:0;background:rgba(226,236,206,.55);z-index:60;display:none;
+.backdrop{position:fixed;inset:0;background:rgba(6,7,4,.62);z-index:60;display:none;
           align-items:flex-end;justify-content:center;padding:0}
 .backdrop.on{display:flex}
 .sheet{width:100%;max-width:430px;max-height:86dvh;overflow-y:auto;background:var(--surface-alt);
@@ -213,10 +227,10 @@ button{border:0;background:none;cursor:pointer}
 .dot-r::marker{color:var(--orange-b)}
 
 /* ── LP ── */
-.lp{flex:1;display:flex;flex-direction:column;padding:0 22px}
-.lp-top{margin-top:auto}
+.lp{flex:1 0 auto;display:flex;flex-direction:column;padding:0 22px}
+.lp-top{flex:none;margin-top:auto}
 .lp .hero-t{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.45;margin:12px 0 0}
-.about{border-top:1px solid rgba(226,236,206,.1);margin-top:auto;padding:22px 0 5px}
+.about{flex:none;border-top:1px solid rgba(226,236,206,.1);margin-top:auto;padding:22px 0 5px}
 .about li:last-child{margin-bottom:0}
 .about li{display:flex;gap:9px;margin-bottom:11px;list-style:none}
 .about b{display:block;font-size:11px;font-weight:700}
@@ -1928,7 +1942,8 @@ function viewLP(){
     <div class="lp">
       <div class="lp-top">
         ${langSwitch()}
-        <div class="eyebrow">NARU FIT DAILY &nbsp;|&nbsp; LIFESTYLE FITNESS COACH</div>
+        <img class="logomark" src="img/logo.png" srcset="img/logo.png 1x, img/logo@2x.png 2x" alt="NARU FIT DAILY" width="600" height="300">
+        <div class="eyebrow">LIFESTYLE FITNESS COACH</div>
         <h1 class="hero-t">${TX("lp.hero")}</h1>
         <p class="sub" style="margin-top:14px">Welcome to my page 🌿</p>
       </div>
@@ -1942,7 +1957,7 @@ function viewLP(){
         </ul>
       </div>
     </div>
-    <div class="pad" style="padding:0 22px calc(26px + var(--safe))">
+    <div class="pad" style="flex:none;padding:14px 22px calc(26px + var(--safe))">
       <button class="btn btn-olive" data-start>Start</button>
       <p style="text-align:center;font-size:11px;color:var(--ink-mute);margin:12px 0 0">
         ${S.profile? `<button data-go="home" style="text-decoration:underline">${TX("lp.resume")}</button>`
@@ -2004,7 +2019,7 @@ function viewHome(){
     ${topbar()}
     <div class="scroll">
       <div class="pad">
-        <h1 style="margin:2px 0 12px;font-size:25px;font-weight:800;letter-spacing:-.02em">Hello</h1>
+        <h1 class="dis" style="margin:2px 0 12px;font-size:26px">Hello</h1>
 
         ${dd && dd.rest ? `
         <div class="hero rest">
@@ -2123,7 +2138,7 @@ function viewTrain(){
                border-radius:999px;background:rgba(115,125,88,.3)"></div>
           <div style="position:relative">
             <div class="day" style="font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)">DAY ${n}</div>
-            <h2 style="margin:5px 0 0;font-size:25px;font-weight:800">${esc(p.t)}</h2>
+            <h2 class="dis" style="margin:5px 0 0;font-size:26px">${esc(p.t)}</h2>
             ${p.ja?`<p class="daysub" style="margin-top:10px">${esc(dayTx(p,"ja"))}</p>`:""}
             ${p.note?`<p class="daynote">${esc(dayTx(p,"note"))}</p>`:""}
             ${p.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(p,"cardio"))}</div>`:""}
@@ -2274,7 +2289,7 @@ function viewEntry(){
     ${topbar()}
     <div class="scroll"><div class="pad">
       <div class="eyebrow" style="margin-top:4px">DAY ${n} · RECORD</div>
-      <h1 style="margin:4px 0 2px;font-size:23px;font-weight:800">${esc(p.t)}</h1>
+      <h1 class="dis" style="margin:4px 0 2px;font-size:24px">${esc(p.t)}</h1>
       <p class="sub" style="margin-bottom:4px">${TX("ent.lead")}</p>
       ${html}
 
@@ -2529,7 +2544,7 @@ function viewTimer(){
 
   /* --- 開始前のカウントダウン --- */
   if(T.phase==="count"){
-    return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
+    return `<div class="screen on" style="background:var(--bg-top);color:var(--ink)">
       <div class="timer">
         <div class="lbl" style="color:var(--tan)">${TX("tm.soon")}</div>
         <div class="num" id="t-num" style="font-size:88px">${T.left}</div>
@@ -2543,7 +2558,7 @@ function viewTimer(){
   /* --- 休憩 --- */
   if(T.phase==="rest"){
     const nx=T.flow[T.i+1];
-    return `<div class="screen on" style="background:var(--ink);color:#f4f0ea">
+    return `<div class="screen on" style="background:var(--bg-top);color:var(--ink)">
       ${stepHeader(true)}
       <div class="timer">
         <div class="lbl" style="color:var(--tan)">REST</div>
@@ -2553,7 +2568,7 @@ function viewTimer(){
         <p style="font-size:13px;opacity:.7;margin:3px 0 0">${esc(exSub2(EX[nx.x]))}</p>
         <p style="font-size:15px;font-weight:700;margin:8px 0 0;color:var(--tan)">${esc(setLabel(nx))}${stepMeta(nx)?" ・ "+stepMeta(nx):""}</p>`:""}
       </div>
-      <div class="stepbar" style="background:rgba(226,236,206,.96);border-top-color:rgba(244,240,234,.12)">
+      <div class="stepbar" style="background:rgba(11,11,10,.96);border-top-color:rgba(244,240,234,.12)">
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-rest-add>+30</button>
         <button class="btn btn-tan main" data-rest-skip>${TX("tm.skipRest")}</button>
         <button class="rnd" style="background:rgba(244,240,234,.12);border:0;color:#f4f0ea" data-quit>✕</button>
@@ -2862,7 +2877,7 @@ function viewGate(){
   const nvid = Object.values(EX).filter(e=>e.video).length;
   return `<div class="screen on"><div class="scroll"><div class="pad gate">
     ${langSwitch()}
-    <h1>NARU FIT DAILY</h1>
+    <img class="logomark" src="img/logo.png" srcset="img/logo.png 1x, img/logo@2x.png 2x" alt="NARU FIT DAILY" width="600" height="300">
     <p class="tagline">${esc(TX("gate.tagline"))}</p>
     <p class="hook">${esc(TX("gate.hook"))}</p>
 
@@ -3086,8 +3101,8 @@ render();
 .stephead button{color:var(--ink-mute)}
 .stephead .tnum:nth-of-type(1){font-weight:700}
 .stephead .tnum:last-child{color:var(--ink-mute)}
-.screen[style*="var(--ink)"] .stephead button,
-.screen[style*="var(--ink)"] .stephead .tnum{color:rgba(244,240,234,.7)}
+.screen[style*="var(--bg-top)"] .stephead button,
+.screen[style*="var(--bg-top)"] .stephead .tnum{color:rgba(244,240,234,.7)}
 .timer .num.paused{opacity:.4}
 .dose-big{font-size:40px;font-weight:800;letter-spacing:-.01em;margin-top:16px;line-height:1.15}
 /* 重量・回数の記録 */
@@ -3300,6 +3315,46 @@ render();
 .hero .btn-orange{height:50px}
 .about li{align-items:flex-start}
 code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-size:11.5px}
+
+/* ═══ ロゴに合わせたタイポグラフィ ═══
+   ・ワードマーク（NARU FIT / DAILY）= 極太・斜体・コンデンス
+   ・ラベル（BETTER LIFE / SINCE 2026）= 細め・大きめの字間
+   日本語はこれまで通りゴシック体（Saira に日本語が無いので自動で切り替わる） */
+
+/* ── ワードマーク系（欧文のみの見出し） ── */
+.dis,.logo,.hero h2,.timer h2,.gate h1,.daytitle{
+  font-family:var(--f-dis);font-weight:900;font-style:italic;
+  font-stretch:76%;letter-spacing:.012em;text-transform:uppercase}
+.logo{font-size:14px;letter-spacing:.015em;font-weight:900}
+.hero h2{font-size:24px;letter-spacing:.005em;margin-top:3px}
+.timer h2{font-size:28px}
+.gate h1{font-size:31px;letter-spacing:.005em}
+
+/* ── 数字 ── */
+.timer .num{font-family:var(--f-dis);font-weight:900;font-style:italic;
+  font-stretch:78%;letter-spacing:0}
+.stat .v,.gate-price .p b{font-family:var(--f-dis);font-weight:900;font-stretch:82%}
+.gate-price .p b{letter-spacing:-.01em}
+
+/* ── 細いラベル ── */
+.eyebrow,.nav .en,.stat .k,.hero .day,.partline,.note .k,
+.detail-sec h4,.timer .lbl,.gate-div,.gate-bonus b,.badge,.pill,.steps-h{
+  font-family:var(--f-lab);font-stretch:108%;text-transform:uppercase}
+.eyebrow{font-weight:500;letter-spacing:.2em;font-size:10px}
+.nav .en{font-weight:600;letter-spacing:.13em;font-size:12.5px}
+.stat .k{font-weight:500;letter-spacing:.18em}
+.hero .day{font-weight:500;letter-spacing:.22em;font-size:9.5px}
+.partline{font-weight:500;letter-spacing:.2em}
+.note .k,.detail-sec h4{font-weight:700;letter-spacing:.06em}  /* 日本語ラベルなので字間は控えめ */
+.timer .lbl{font-weight:600;letter-spacing:.2em}
+.badge{font-weight:700;letter-spacing:.14em}
+.pill{font-weight:600;letter-spacing:.12em}
+
+/* ── ロゴ画像 ── */
+.logomark{display:block;width:100%;height:auto}
+.gate .logomark{max-width:236px;margin:0 0 14px}
+.lp .logomark{max-width:218px;margin:0 0 14px}
+
 </style>
 </body>
 </html>
