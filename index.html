@@ -1187,6 +1187,10 @@ addTxt({
 "set.vidBody": ["{0} 種目に動画が入っています。","{0} exercises have a video."],
 "set.vidBtn" : ["動画の一覧を見る &nbsp;→","See the video list &nbsp;→"],
 "set.memberH": ["会員資格","Membership"],
+"set.mailOk"  : ["{0}　有効（{1} まで）","{0} \u00b7 active until {1}"],
+"set.mailNote":["アプリを開いたときに、お申し込みが続いているかを自動で確認します。解約されると、確認のタイミングで開けなくなります。",
+                "Each time you open the app we check that your subscription is still live. If it is cancelled, you lose access at the next check."],
+"set.relockM" : ["別のメールアドレスで入り直す","Sign in with another email"],
 "set.codeOk" : ["パスワード：{0}　有効（{1} に入力）","Password: {0} \u00b7 active (entered {1})"],
 "set.codeNote":["パスワードは定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
                 "The password changes from time to time. If you are asked for it again, check the email from your sign-up."],
@@ -1358,9 +1362,20 @@ So — let's begin today.`],
                  "Renews automatically every 2 weeks. Cancel any time."],
 "gate.buy"    : ["申し込む &nbsp;→","Sign up &nbsp;→"],
 "gate.already": ["お申し込み済みの方","Already signed up"],
+"gate.email"  : ["お申し込みに使ったメールアドレス","The email you signed up with"],
+"gate.emailGo": ["はじめる","Start"],
+"gate.emailHint":["お申し込みのときに入力したメールアドレスを入れてください。パスワードは要りません。",
+                  "Enter the email address you used when you signed up. No password needed."],
+"gate.emailNo": ["このメールアドレスでのお申し込みが見つかりませんでした。入力の間違いか、解約されている可能性があります。",
+                 "We could not find a live subscription for that address. Check the spelling, or it may have been cancelled."],
+"gate.emailErr":["いま確認ができませんでした。少し時間をおいて、もう一度お試しください。",
+                 "We could not check just now. Please try again in a moment."],
+"gate.emailWait":["確認しています…","Checking…"],
+"gate.pwOpen" : ["うまくいかないときは、パスワードで入る",
+                 "Having trouble? Use a password instead"],
 "gate.code"   : ["パスワード","Password"],
-"gate.codeHint":["パスワードは、お申し込み後のメールでお送りします。",
-                 "We email you the password right after you sign up."],
+"gate.codeHint":["メールアドレスで入れない場合は、{0} までご連絡ください。パスワードをお送りします。",
+                 "If the email does not work, contact {0} and we will send you a password."],
 "gate.codeErr": ["パスワードが違います。お申し込み後にお送りしたメールをご確認ください。",
                  "That password is not right. Please check the email we sent after your sign-up."],
 "doc.tokusho" : ["特定商取引法に基づく表記","Legal notice (Japan)"],
@@ -2881,11 +2896,14 @@ function viewSettings(){
         <div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:8px">${TX("set.memberH")}</div>
           <p class="sub" style="margin:0">
-            ${TX("set.codeOk", `<b style="color:var(--olive-dark)">${esc(S.access&&S.access.code||"")}</b>`,
-                 esc(S.access&&S.access.at?mmdd(S.access.at):"—"))}<br>
-            ${TX("set.codeNote")}
+            ${S.access&&S.access.email
+              ? TX("set.mailOk", `<b style="color:var(--olive-dark)">${esc(S.access.email)}</b>`,
+                   esc(S.access.until?mmdd(new Date(S.access.until).toISOString().slice(0,10)):"—"))
+                + "<br>" + TX("set.mailNote")
+              : TX("set.codeOk", `<b style="color:var(--olive-dark)">${esc(S.access&&S.access.code||"")}</b>`,
+                   esc(S.access&&S.access.at?mmdd(S.access.at):"—")) + "<br>" + TX("set.codeNote")}
           </p>
-          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>${TX("set.relock")}</button>
+          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
         </div>` : ""}
 
         <div class="card" style="padding:15px;margin-top:11px">
@@ -2939,9 +2957,45 @@ const ACCESS = {
 };
 function unlocked(){
   if(!ACCESS.on) return true;
-  return !!(S.access && ACCESS.codes.some(c => c.toLowerCase() === String(S.access.code).toLowerCase()));
+  if(!S.access) return false;
+  /* メールアドレスで入った人。until を過ぎていても、裏で確認している間は
+     開いたままにする（確認が失敗したときに締め出さないため）。
+     確認の結果ダメだったときだけ S.access を消す。 */
+  if(S.access.email) return true;
+  return ACCESS.codes.some(c => c.toLowerCase() === String(S.access.code).toLowerCase());
 }
-let gateVal="", gateErr="";
+
+/* ── メールアドレスで確認する ──────────────────────────────
+   返り値 "ok" / "nosub"（お申し込みが見つからない） / "err"（確認できない） */
+async function checkEmail(email){
+  try{
+    const r = await fetch("/api/unlock", {
+      method :"POST",
+      headers:{"content-type":"application/json"},
+      body   :JSON.stringify({email:email})
+    });
+    const d = await r.json().catch(()=>({}));
+    if(d && d.ok){ return {r:"ok", until:d.until}; }
+    if(d && d.reason==="nosub") return {r:"nosub"};
+    return {r:"err"};
+  }catch(e){ return {r:"err"}; }
+}
+
+/* 期限が来ていたら、裏でもう一度 Stripe に確認する。
+   ・生きていれば期限を延ばすだけ（お客さんは何も気づかない）
+   ・解約されていたら、そこで初めてログアウトさせる
+   ・確認できなかった（圏外・サーバー不調）ときは、何もしない */
+async function refreshAccess(){
+  const a = S.access;
+  if(!a || !a.email || !a.until || Date.now() < a.until) return;
+  const res = await checkEmail(a.email);
+  if(res.r==="ok"){ S.access.until = res.until; save(); return; }
+  if(res.r==="nosub"){
+    S.access = null; save();
+    gateErr = TX("gate.emailNo"); go("gate");
+  }
+}
+let gateVal="", gateErr="", gateMail="", gateBusy=false, gatePw=false;
 function tryUnlock(v){
   const q = String(v||"").trim().toLowerCase().replace(/\s+/g,"");
   const hit = ACCESS.codes.find(c => c.toLowerCase() === q);
@@ -2950,6 +3004,26 @@ function tryUnlock(v){
   gateVal=""; gateErr="";
   go(S.profile ? "home" : "ob");
   return true;
+}
+
+async function submitMail(){
+  if(gateBusy) return;
+  const el = document.getElementById("mail");
+  const v  = String(el ? el.value : gateMail).trim().toLowerCase();
+  gateMail = v;
+  if(!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(v)){ gateErr = TX("gate.emailNo"); render(); return; }
+  gateBusy = true; gateErr = ""; render();
+  const res = await checkEmail(v);
+  gateBusy = false;
+  if(res.r === "ok"){
+    S.access = {email:v, until:res.until, at:todayKey()}; save();
+    gateMail=""; gateErr="";
+    go(S.profile ? "home" : "ob");
+    return;
+  }
+  gateErr = res.r === "nosub" ? TX("gate.emailNo") : TX("gate.emailErr");
+  if(res.r !== "nosub") gatePw = true;   /* 確認できないときはパスワードの道を出す */
+  render();
 }
 
 
@@ -2996,12 +3070,22 @@ function viewGate(){
 
     <div class="gate-div"><span>${TX("gate.already")}</span></div>
     <div class="gate-code">
-      <input id="code" type="text" inputmode="latin" autocapitalize="off" autocorrect="off"
-             spellcheck="false" placeholder="${TX("gate.code")}" value="${esc(gateVal)}" aria-label="${TX("gate.code")}">
-      <button class="btn btn-olive" data-unlock>${TX("btn.start")}</button>
+      <input id="mail" type="email" inputmode="email" autocapitalize="off" autocorrect="off"
+             spellcheck="false" autocomplete="email" placeholder="${TX("gate.email")}"
+             value="${esc(gateMail)}" aria-label="${TX("gate.email")}" ${gateBusy?"disabled":""}>
+      <button class="btn btn-olive" data-mailgo ${gateBusy?"disabled":""}>${
+        gateBusy?TX("gate.emailWait"):TX("btn.start")}</button>
     </div>
     ${gateErr?`<p class="gate-err">${esc(gateErr)}</p>`
-             :`<p class="gate-hint">${TX("gate.codeHint")}</p>`}
+             :`<p class="gate-hint">${TX("gate.emailHint")}</p>`}
+
+    ${gatePw ? `<div class="gate-code" style="margin-top:12px">
+      <input id="code" type="text" inputmode="latin" autocapitalize="off" autocorrect="off"
+             spellcheck="false" placeholder="${TX("gate.code")}" value="${esc(gateVal)}" aria-label="${TX("gate.code")}">
+      <button class="btn btn-ghost" data-unlock>${TX("btn.start")}</button>
+    </div>
+    <p class="gate-hint">${TX("gate.codeHint", esc(BIZ.email||""))}</p>`
+    : `<p class="gate-hint"><button data-pw style="text-decoration:underline;text-underline-offset:3px">${TX("gate.pwOpen")}</button></p>`}
 
     <div class="gate-foot">
       <button data-legal="tokushoho">${TX("doc.tokusho")}</button>
@@ -3072,6 +3156,12 @@ function bind(){
   if(ci) ci.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault();
     const b=app.querySelector("[data-unlock]"); if(b) b.click(); } };
 
+  /* メールアドレスで入る */
+  on("[data-pw]",()=>{ gatePw=true; gateErr=""; render(); });
+  on("[data-mailgo]",()=>{ submitMail(); });
+  const mi=document.getElementById("mail");
+  if(mi) mi.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); submitMail(); } };
+
   /* 診断 */
   on("[data-ob]",el=>{
     const st=obSteps()[ob.step]; let v=el.dataset.ob;
@@ -3099,7 +3189,7 @@ function bind(){
   on("[data-swap]",()=>swapToRest());
 
   /* パスワードを入れ直す */
-  on("[data-relock]",()=>{ S.access=null; save(); gateVal=""; gateErr=""; go("gate"); });
+  on("[data-relock]",()=>{ S.access=null; save(); gateVal=""; gateMail=""; gateErr=""; go("gate"); });
 
   /* チェックリスト */
   on("[data-check]",(el,e)=>{
@@ -3179,8 +3269,24 @@ load();
   }catch(e){}
 })();
 
+/* 決済から戻ってきたとき、?m= にメールアドレスが付いていれば先に確認する */
+(function autoMail(){
+  try{
+    const q = new URLSearchParams(location.search);
+    const m = q.get("m") || q.get("email");
+    if(!m || (S.access && S.access.email)) return;
+    q.delete("m"); q.delete("email");
+    const rest = q.toString();
+    history.replaceState(null, "", location.pathname + (rest?"?"+rest:"") + location.hash);
+    gateMail = String(m).trim().toLowerCase();
+  }catch(e){}
+})();
+
 current = !unlocked() ? (S.profile ? "gate" : "lp") : (S.profile ? "home" : "lp");
 render();
+
+/* 期限が来ていれば、裏でお申し込みが続いているか確認する */
+refreshAccess();
 </script>
 <style>
 /* 追加スタイル（生成したマークアップ用） */
