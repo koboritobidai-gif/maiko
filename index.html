@@ -1187,10 +1187,10 @@ addTxt({
 "set.vidBody": ["{0} 種目に動画が入っています。","{0} exercises have a video."],
 "set.vidBtn" : ["動画の一覧を見る &nbsp;→","See the video list &nbsp;→"],
 "set.memberH": ["会員資格","Membership"],
-"set.codeOk" : ["合言葉：{0}　有効（{1} に入力）","Access code: {0} \u00b7 active (entered {1})"],
-"set.codeNote":["合言葉は定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
-                "The access code changes from time to time. If you are asked for it again, check the email from your sign-up."],
-"set.relock" : ["合言葉を入れ直す","Enter the access code again"],
+"set.codeOk" : ["パスワード：{0}　有効（{1} に入力）","Password: {0} \u00b7 active (entered {1})"],
+"set.codeNote":["パスワードは定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
+                "The password changes from time to time. If you are asked for it again, check the email from your sign-up."],
+"set.relock" : ["パスワードを入れ直す","Enter the password again"],
 "set.aboutH" : ["このアプリについて","About this app"],
 "set.notice" : ["ご利用にあたって（安全のために）","Before you start (for your safety)"],
 "set.reset"  : ["診断をやり直す（データ消去）","Start over (this erases your data)"],
@@ -1327,11 +1327,11 @@ addTxt({
                  "Renews automatically every 2 weeks. Cancel any time."],
 "gate.buy"    : ["申し込む &nbsp;→","Sign up &nbsp;→"],
 "gate.already": ["お申し込み済みの方","Already signed up"],
-"gate.code"   : ["合言葉","Access code"],
-"gate.codeHint":["合言葉は、お申し込み後のメールでお送りします。",
-                 "We email you the access code right after you sign up."],
-"gate.codeErr": ["合言葉が違います。お申し込み後にお送りしたメールをご確認ください。",
-                 "That access code is not right. Please check the email we sent after your sign-up."],
+"gate.code"   : ["パスワード","Password"],
+"gate.codeHint":["パスワードは、お申し込み後のメールでお送りします。",
+                 "We email you the password right after you sign up."],
+"gate.codeErr": ["パスワードが違います。お申し込み後にお送りしたメールをご確認ください。",
+                 "That password is not right. Please check the email we sent after your sign-up."],
 "doc.tokusho" : ["特定商取引法に基づく表記","Legal notice (Japan)"],
 "doc.privacy" : ["プライバシーポリシー","Privacy Policy"],
 "doc.notice"  : ["ご利用にあたって","Before you start"],
@@ -2849,12 +2849,12 @@ function openExercise(id, force){
 function closeSheet(){ backdrop.className="backdrop"; backdrop.innerHTML=""; }
 
 /* =========================================================================
-   有料の壁（紹介画面 → 申し込み → 合言葉）
+   有料の壁（紹介画面 → 申し込み → パスワード）
    ========================================================================= */
 const ACCESS = {
   on   : true,                      // false にすると壁が外れる。社内確認や無料公開に戻すとき用
-  codes: ["naru1116"],              // 有効な合言葉。月初に入れ替える
-                                    // 古いものを消すと、その合言葉の人は再入力になる
+  codes: ["naru1116"],              // 有効なパスワード。月初に入れ替える
+                                    // 古いものを消すと、そのパスワードの人は再入力になる
   buy  : BIZ.pay                    // 申し込みページ（Stripe）
 };
 function unlocked(){
@@ -2975,7 +2975,7 @@ function bind(){
     ob={step:0,goal:null,level:null,place:null,days:3}; go("ob");
   });
 
-  /* 合言葉 */
+  /* パスワード */
   on("[data-unlock]",()=>{
     const el=document.getElementById("code"); gateVal = el ? el.value : "";
     if(!tryUnlock(gateVal)){ gateErr=TX("gate.codeErr"); render(); }
@@ -3010,7 +3010,7 @@ function bind(){
   /* 休養日との振り替え */
   on("[data-swap]",()=>swapToRest());
 
-  /* 合言葉を入れ直す */
+  /* パスワードを入れ直す */
   on("[data-relock]",()=>{ S.access=null; save(); gateVal=""; gateErr=""; go("gate"); });
 
   /* チェックリスト */
@@ -3074,10 +3074,10 @@ backdrop.onclick=e=>{
    ========================================================================= */
 load();
 
-/* 決済後に Stripe から ?k=合言葉 付きで戻ってきたときは、自動で解錠する。
-   お客さんが合言葉をコピーしなくて済む。
-   アドレスバーに合言葉が残らないよう、解錠したらURLから消す。
-   ※ 合言葉はもともと画面のHTMLに書いてあるので、これで安全性は変わらない */
+/* 決済後に Stripe から ?k=パスワード 付きで戻ってきたときは、自動で解錠する。
+   お客さんがパスワードをコピーしなくて済む。
+   アドレスバーにパスワードが残らないよう、解錠したらURLから消す。
+   ※ パスワードはもともと画面のHTMLに書いてあるので、これで安全性は変わらない */
 (function autoUnlock(){
   try{
     const q = new URLSearchParams(location.search);
@@ -3207,7 +3207,7 @@ render();
 .steps-note{margin:10px 0 0;padding-top:9px;border-top:1px solid rgba(226,236,206,.08);
   font-size:12px;line-height:1.75;color:var(--ink-soft)}
 
-/* 紹介＋合言葉の画面 */
+/* 紹介＋パスワードの画面 */
 .gate{padding-top:26px;padding-bottom:34px}
 .gate .logo{color:var(--ink-mute)}
 .gate h1{margin:9px 0 0;font-size:27px;font-weight:800;letter-spacing:-.01em}
