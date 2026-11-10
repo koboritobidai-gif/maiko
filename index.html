@@ -1314,8 +1314,8 @@ addTxt({
 "gate.p2b"    : ["種目ごとに残り、前回の記録が実行画面に出ます。前回より重くするための記録です",
                  "Saved per exercise. Your last session shows while you train, so you can beat it"],
 "gate.p3t"    : ["有酸素までセット","Cardio included"],
-"gate.p3b"    : ["各日に『外を走る、もしくは歩く20分』まで指定されています",
-                 "Every day tells you exactly what to do, down to \u201c20 min run or walk\u201d"],
+"gate.p3b"    : ["その日のコンディションにあわせて、足りない分の有酸素もできるようサポート",
+                 "Cardio is built in too, scaled to how your body feels that day"],
 "gate.p4t"    : ["naru の実演動画","{0} demo videos by NARU"],
 "gate.p4b"    : ["{0} 種目は naru 本人の実演つき。各日の狙いと、種目ごとのコツ・やりがちなミスも入っています",
                  "{0} exercises come with NARU\u2019s own demo, plus the point of each day and the mistakes to avoid"],
@@ -2895,7 +2895,7 @@ function viewGate(){
     <p class="lead">${esc(TX("gate.lead"))}</p>
 
     <ul class="gate-pts">${[["gate.p1t","gate.p1b"],["gate.p2t","gate.p2b"],
-        ["gate.p3t","gate.p3b"],["gate.p4t","gate.p4b"]].map(([a,b])=>
+        ["gate.p3t","gate.p3b"]].map(([a,b])=>
       `<li><b>${esc(TX(a,nvid))}</b><span>${esc(TX(b,nvid))}</span></li>`).join("")}</ul>
 
     <div class="gate-price">
