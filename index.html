@@ -2153,6 +2153,7 @@ function viewHome(){
           ${strip.map(d=>`<div class="${d.done?"done":""} ${d.today?"today":""}">${d.ja}<i>${d.done?"✓":"·"}</i></div>`).join("")}
         </div>
 
+        ${wodBlock()}
         ${videoBlock(todaysVideoEx())}
         ${SHOW_VIDEO_LIST?`<button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
           ${TX("home.allVideos")}</button>`:""}
@@ -2194,6 +2195,18 @@ function todaysVideoEx(){
     if(EX[it.x] && EX[it.x].video) return it.x;
   return null;
 }
+/* その日の解説動画。PROGRAM の各日に wod があるときだけ出る。
+   ホームと「今日」の両方から呼ぶ */
+function wodBlock(){
+  const p = todayProgram();
+  if(!p || !p.wod) return "";
+  return `<div class="wod">
+    <video src="${esc(p.wod.src)}" poster="${esc(p.wod.poster)}"
+           controls playsinline preload="none"></video>
+    <div class="wodc"><b>${TX("train.wodT")}</b><span>${TX("train.wodS")}</span></div>
+  </div>`;
+}
+
 function videoBlock(exId, force){
   /* 経験者向けの Fit 3 にはフォーム動画を出さない（naru の指示）。
      ただし設定の動画ライブラリから開いたときは、自分で選んでいるので出す */
@@ -2240,11 +2253,7 @@ function viewTrain(){
             <div class="day" style="font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)">DAY ${n}</div>
             <h2 class="dis" style="margin:5px 0 0;font-size:26px">${esc(p.t)}</h2>
             ${p.ja?`<p class="daysub" style="margin-top:10px">${esc(dayTx(p,"ja"))}</p>`:""}
-            ${p.wod?`<div class="wod">
-              <video src="${esc(p.wod.src)}" poster="${esc(p.wod.poster)}"
-                     controls playsinline preload="none"></video>
-              <div class="wodc"><b>${TX("train.wodT")}</b><span>${TX("train.wodS")}</span></div>
-            </div>`:""}
+            ${wodBlock()}
             ${p.note?`<p class="daynote">${esc(dayTx(p,"note"))}</p>`:""}
             ${p.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(p,"cardio"))}</div>`:""}
             ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
