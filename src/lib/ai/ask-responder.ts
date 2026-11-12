@@ -278,7 +278,7 @@ channel/unitCostYen(1人あたり単価)/count(今月の対象人数)/costYen(�
 referralTotalYen(送客パートナー費用の今月合計)、referralPartnersLastMonth/referralLastMonthTotalYen
 (同じ課金ルールでの先月の経路別サマリと先月費用合計。「先月の送客費用は?」にはこちらで答える)、
 totalCost/eventCostYen/totalLineRegs/totalReservations/totalInterviews
-(totalCost は広告+SNS+送客パートナー+イベント出展費の合算。eventCostYen は経営者確認済みで手動計上
+(totalCost は広告+SNS+送客パートナー+イベント出展費+月額コンサル費(monthlyFixedCostYen、リグラフィティのwebマーケコンサル。内訳は monthlyFixedCostEntries)の合算。eventCostYen は経営者確認済みで手動計上
 したイベント出展費〈該当月のみ0円超。#請求書に同社の請求書が投稿されても支出への二重計上はされません〉。
 totalLineRegs/totalInterviews は「基本KPI優先」の方針で、
 週次KPI表にその月の実数があればそちらの値、無ければ広告+SNS合算にフォールバックした値です。
@@ -494,10 +494,17 @@ function answerAdCost(marketingSummary: MarketingSummary | null): string {
     marketingSummary.eventCostYen > 0
       ? `イベント出展費 ${formatYenPlain(marketingSummary.eventCostYen)}(学情)を含む。`
       : "";
+  // 月額固定のマーケ費用(リグラフィティのwebマーケコンサル等。MONTHLY_MARKETING_COSTS 参照)。
+  const fixedCostPart =
+    marketingSummary.monthlyFixedCostYen > 0
+      ? `${marketingSummary.monthlyFixedCostEntries
+          .map((c) => `${c.label} ${formatYenPlain(c.amountYen)}`)
+          .join("、")}を含む。`
+      : "";
   return (
     `今月の広告費用は合計${formatYenPlain(marketingSummary.totalCost)}です` +
     `(Google広告 ${formatYenPlain(google?.cost ?? 0)}、Meta広告 ${formatYenPlain(meta?.cost ?? 0)}、` +
-    `${snsPart})。${eventPart}` +
+    `${snsPart})。${eventPart}${fixedCostPart}` +
     totalsPart
   );
 }

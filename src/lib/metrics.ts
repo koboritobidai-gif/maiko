@@ -7,7 +7,12 @@
 import { ALL_STAGES, PIPELINE_STAGES } from "./types";
 // イベント経由の面談予約・出展費用の手動計上(定数)。データ取得ではなく経営者確認済みの固定値
 // のため、純関数方針の例外としてここで直接参照する。
-import { MANUAL_EVENT_RESERVATIONS, MANUAL_EVENT_COSTS } from "./kpi-adjustments";
+import {
+  MANUAL_EVENT_RESERVATIONS,
+  MANUAL_EVENT_COSTS,
+  MONTHLY_MARKETING_COSTS,
+  isMonthlyMarketingCostActive,
+} from "./kpi-adjustments";
 import type {
   AdDailyRecord,
   Candidate,
@@ -745,6 +750,13 @@ export interface MarketingSummary {
    */
   eventCostYen: number;
   /**
+   * 月額固定のマーケ費用合計(円、リグラフィティのwebマーケコンサル等)。kpi-adjustments.ts の
+   * MONTHLY_MARKETING_COSTS 参照。totalCost に含まれる。0円なら計上なし。
+   */
+  monthlyFixedCostYen: number;
+  /** 月額固定のマーケ費用の内訳(表示用。その月に計上があるものだけ)。 */
+  monthlyFixedCostEntries: { label: string; amountYen: number }[];
+  /**
    * イベント経由のLINE登録人数(その月分、媒体別テーブルの内訳表示・CPA算出用)。
    * 全体のLINE登録合計(totalLineRegs)はKPI表の実数にイベント分が含まれるため、ここから加算はしない。
    */
@@ -808,6 +820,12 @@ export function getMarketingSummary(
   const eventCostYen = monthEventCosts.reduce((sum, e) => sum + e.amountYen, 0);
   // イベント経由のLINE登録(内訳表示用。KPI表の実数に含まれるため合計へは加算しない)。
   const eventLineRegs = monthEventCosts.reduce((sum, e) => sum + (e.lineRegs ?? 0), 0);
+  // 月額固定のマーケ費用(経営者指示 2026-11-12、MONTHLY_MARKETING_COSTS 参照)。契約期間内の月だけ
+  // totalCost に含める(リズアライズと同じ考え方。週次には按分しない)。
+  const monthlyFixedCostEntries = MONTHLY_MARKETING_COSTS.filter((c) =>
+    isMonthlyMarketingCostActive(c, monthKeyOf(now)),
+  ).map((c) => ({ label: c.label, amountYen: c.amountYen }));
+  const monthlyFixedCostYen = monthlyFixedCostEntries.reduce((sum, c) => sum + c.amountYen, 0);
 
   return {
     channels: [google, meta],
@@ -816,8 +834,10 @@ export function getMarketingSummary(
     referralTotalYen,
     referralPartnersLastMonth,
     referralLastMonthTotalYen,
-    totalCost: google.cost + meta.cost + sns.cost + referralTotalYen + eventCostYen,
+    totalCost: google.cost + meta.cost + sns.cost + referralTotalYen + eventCostYen + monthlyFixedCostYen,
     eventCostYen,
+    monthlyFixedCostYen,
+    monthlyFixedCostEntries,
     eventLineRegs,
     eventReservations,
     totalLineRegs: kpiLineRegs > 0 ? kpiLineRegs : adLineRegs + sns.lineRegs,
@@ -1283,6 +1303,16 @@ export function getPrimaryMonthSnapshots(
           dedupedInvoices = dedupedInvoices.filter((_, i) => i !== amountIndex);
         }
       }
+    }
+    // 月額固定のマーケ費用(MONTHLY_MARKETING_COSTS)は対象月に計上済みで、請求書は対象月の翌月に
+    // 支払われる。この月の前月が契約期間内なら、同社の請求書は支出計算から除外して二重計上を防ぐ。
+    const prevMonthKey = monthKeyOf(new Date(ref.getFullYear(), ref.getMonth() - 1, 15));
+    for (const fixedCost of MONTHLY_MARKETING_COSTS) {
+      if (!isMonthlyMarketingCostActive(fixedCost, prevMonthKey)) continue;
+      dedupedInvoices = dedupedInvoices.filter(
+        (inv) =>
+          !fixedCost.vendorRe.test(`${inv.vendorName ?? ""} ${inv.fileName} ${inv.threadTitle ?? ""}`),
+      );
     }
     const invoicePaidYen = dedupedInvoices.reduce((sum, inv) => sum + (inv.amountYen ?? 0), 0);
     const unreadableInvoiceCount = dedupedInvoices.filter((inv) => inv.amountYen === undefined).length;

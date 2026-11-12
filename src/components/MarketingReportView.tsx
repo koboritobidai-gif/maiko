@@ -172,7 +172,15 @@ export default function MarketingReportView({
               label="全体費用"
               current={formatYen(overall.cost)}
               last={formatYen(overallLastMonth.cost)}
-              caption={summary.eventCostYen > 0 ? "※イベント出展費含む" : undefined}
+              caption={
+                [
+                  summary.eventCostYen > 0 ? "イベント出展費" : null,
+                  summary.monthlyFixedCostYen > 0 ? "webマーケコンサル費用" : null,
+                ]
+                  .filter((s) => s !== null)
+                  .map((s) => `※${s}含む`)
+                  .join(" ") || undefined
+              }
             />
             <CompareRow
               label="面談単価(全体)"

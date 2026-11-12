@@ -87,6 +87,8 @@ export interface EventCostEntry {
  * (マーケ支出)として計上する。請求書は10月末払いで#請求書に後日投稿される見込みのため、
  * リズアライズ(SNS運用月額固定費)と同じ方式で、その支払月に投稿される同社請求書を支出計算
  * から除外し、二重計上を防ぐ(metrics.ts の getPrimaryMonthSnapshots 参照)。
+ * 当初は10月支払い想定だったが、実際の請求書は支払期日2026-11-30で11月支払いスレッドに投稿された
+ * (2026-11-12確認)ため、invoicePaymentMonth は "2026-11"。
  * 今後イベントがあればここに追記する。
  */
 export const MANUAL_EVENT_COSTS: EventCostEntry[] = [
@@ -95,9 +97,48 @@ export const MANUAL_EVENT_COSTS: EventCostEntry[] = [
     weekStart: "2026-08-31", // 開催日9/4(金)・9/5(土)が属する週
     amountYen: 1_100_000,
     vendorRe: /学情|GAKUJO/i,
-    invoicePaymentMonth: "2026-10",
+    invoicePaymentMonth: "2026-11",
     invoiceAmountYen: 1_100_000,
     lineRegs: 50, // 9/4・9/5合計のLINE登録50名(経営者確認。KPI表の8/31週59人に含まれる)
-    note: "9/4・9/5開催の就職イベント出展費(主催: 学情)。請求書は10月末払いで#請求書に投稿予定",
+    note: "9/4・9/5開催の就職イベント出展費(主催: 学情)。請求書は支払期日2026-11-30で11月支払いスレッドに投稿(2026-11-12確認)",
   },
 ];
+
+/** 月額固定のマーケティング費用1件分(対象月ごとに計上し、翌月支払いの請求書は支出から除外)。 */
+export interface MonthlyMarketingCostEntry {
+  /** 計上を開始する対象月("YYYY-MM") */
+  startMonth: string;
+  /** 契約終了時に設定(この月まで計上。未設定なら継続中) */
+  endMonth?: string;
+  amountYen: number;
+  /** #請求書の同社請求書を支出から除外するための請求元一致(二重計上防止) */
+  vendorRe: RegExp;
+  label: string;
+  note: string;
+}
+
+/**
+ * 月額固定のマーケティング費用。経営者指示(2026-11-12)「リグラフィティという会社の¥275,000は
+ * マーケティングの費用。Google広告で使っているお金+¥275,000がマーケティング費用になる。
+ * 二重で入っていたら修正して」。
+ * 請求書の初回確認: 請求元「株式会社リグラフィティ」・INV-0000000407・税込¥275,000(税抜¥250,000)・
+ * 内容「webマーケティングコンサル費用」・件名「2026年10月対象御請求書」・支払期日2026-11-30。
+ * 毎月の固定費(対象月の翌月末払い)と思われるため、リズアライズ(SNS運用月額固定費)と同じ考え方で
+ * 対象月ごとにマーケ費用へ計上し、翌月支払いの#請求書の同社請求書は支出計算から除外して二重計上を防ぐ
+ * (metrics.ts の getMarketingSummary / getPrimaryMonthSnapshots 参照)。週次MTG資料の費用には按分しない。
+ * 契約が終了したら endMonth を設定する。
+ */
+export const MONTHLY_MARKETING_COSTS: MonthlyMarketingCostEntry[] = [
+  {
+    startMonth: "2026-10",
+    amountYen: 275_000,
+    vendorRe: /リグラフィティ|REGRAFFITI/i,
+    label: "リグラフィティ(webマーケコンサル)",
+    note: "経営者指示(2026-11-12)。Google広告費+¥275,000がマーケティング費用。対象月の翌月末払いで#請求書に請求書が届くため、支出からは除外して二重計上を防ぐ",
+  },
+];
+
+/** 指定月("YYYY-MM")が契約期間内(startMonth以上、endMonth以下)かどうか。 */
+export function isMonthlyMarketingCostActive(entry: MonthlyMarketingCostEntry, monthKey: string): boolean {
+  return monthKey >= entry.startMonth && (entry.endMonth === undefined || monthKey <= entry.endMonth);
+}

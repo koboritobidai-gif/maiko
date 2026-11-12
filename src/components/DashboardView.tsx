@@ -742,7 +742,7 @@ export default function DashboardView({
               mk.sns.contractEnded ? "" : ` + SNS ${formatYen(mk.sns.cost)}`
             } + 送客 ${formatYen(mk.referralTotalYen)}${
               mk.eventCostYen > 0 ? ` + イベント ${formatYen(mk.eventCostYen)}` : ""
-            }`}
+            }${mk.monthlyFixedCostYen > 0 ? ` + コンサル ${formatYen(mk.monthlyFixedCostYen)}` : ""}`}
             accent
           />
           <KpiCard label="LINE登録合計" value={`${mk.totalLineRegs.toLocaleString("ja-JP")}人`} />
@@ -855,6 +855,19 @@ export default function DashboardView({
                   <td className="py-2 text-right">—</td>
                 </tr>
               )}
+              {mk.monthlyFixedCostEntries.map((c) => (
+                <tr key={c.label}>
+                  <td className="py-2 pr-2 font-medium whitespace-nowrap" style={{ color: "var(--color-navy)" }}>
+                    {c.label}
+                  </td>
+                  <td className="py-2 pr-2 text-right">{formatYen(c.amountYen)}</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 pr-2 text-right">—</td>
+                  <td className="py-2 text-right">—</td>
+                </tr>
+              ))}
             </tbody>
           </table>
           {mk.sns.contractEnded && (
@@ -864,7 +877,7 @@ export default function DashboardView({
           )}
           {mk.eventCostYen > 0 && (
             <p className="pt-1 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-              ※イベント出展費(学情、9/4・9/5開催)。請求書は10月末払いで#請求書に投稿予定(支出への二重計上はなし)
+              ※イベント出展費(学情、9/4・9/5開催)。請求書は11月支払いで#請求書に投稿済み(支出への二重計上はなし)
             </p>
           )}
         </Collapsible>
