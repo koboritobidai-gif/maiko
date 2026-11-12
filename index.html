@@ -107,8 +107,6 @@ button{border:0;background:none;cursor:pointer}
 
 /* ── ホーム ── */
 .hero{position:relative;overflow:hidden;background:var(--panel);color:var(--ink);border-radius:var(--r-lg);padding:18px}
-.hero .orb{position:absolute;right:-34px;top:-34px;width:130px;height:130px;border-radius:999px;
-           background:rgba(115,125,88,.35)}
 .hero .day{font-size:9px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)}
 .hero h2{margin:5px 0 0;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .hero .by{display:inline-block;margin-top:10px;background:rgba(244,240,234,.13);border-radius:999px;
@@ -2213,7 +2211,6 @@ function viewHome(){
                          : TX("home.nextIs", n+1, esc(dayTitle(n+1)))}</p>
         </div>` : `
         <div class="hero">
-          <div class="orb"></div>
           <div class="day">DAY ${n} / ${CYCLE}${dd&&dd.cool?" · RECOVERY":""}</div>
           <h2>${esc(p?p.t:"")}</h2>
           <button class="btn btn-orange" style="margin-top:14px" data-go="train">
@@ -2330,8 +2327,6 @@ function viewTrain(){
     <div class="scroll">
       <div class="pad">
         <div class="trainwrap">
-          <div style="position:absolute;right:-34px;top:-46px;width:150px;height:150px;
-               border-radius:999px;background:rgba(115,125,88,.3)"></div>
           <div style="position:relative">
             <div class="day" style="font-size:11px;letter-spacing:.18em;font-weight:700;color:rgba(244,240,234,.65)">DAY ${n}</div>
             <h2 class="dis" style="margin:5px 0 0;font-size:26px">${esc(p.t)}</h2>
