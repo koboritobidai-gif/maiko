@@ -1365,10 +1365,11 @@ So — let's begin today.`],
                  "Renews monthly \u00b7 cancel any time"],
 "gate.best"   : ["おすすめ","Recommended"],
 "gate.early"  : ["先行価格","Early price"],
-"gate.fromDay": ["{0}から","From {0}"],
-"gate.upTo"   : ["{0}円に改定","{0} JPY"],
-"gate.future" : ["いまお申し込みいただいた方は、継続されている限り {2}円 のままです。改定後も上がりません。",
-                 "Sign up now and you keep paying {2} JPY for as long as you stay \u2014 the increase will not reach you."],
+"gate.limit"  : ["先着{0}名様","Only {0} places"],
+"gate.limitWhy":["naru が直接みられる人数に限りがあるため、{0}名様で締め切ります。枠が埋まりしだい、受付を停止します。",
+                 "NARU can only take on so many people at once, so this closes at {0}. We stop taking sign-ups as soon as the places are gone."],
+"gate.full"   : ["満席になりました","All places taken"],
+
 "gate.payTbd" : ["準備中","Coming soon"],
 "gate.bonusH" : ["先着10名様","First 10 members"],
 "gate.bonus"  : ["初回のみ、30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
@@ -1763,11 +1764,12 @@ const PLANS = [
     price :14800, days:null, monthly:true, per:"月",
     pay   :null,                      /* ← Stripe の支払いリンクを入れる */
     best  :true,
-    /* 先行価格。景品表示法の二重価格表示にならないよう、「通常19,800円」とは
-       書かず、将来の改定予定として書く。比較ではなく予定なので適法。
-       ただし from の日に本当に 19,800 円へ上げること。上げないと有利誤認になる。
-       日付は要確定（いまは公開のおよそ3か月後を置いてある） */
-    future:{ price:19800, from:"2027年2月1日" },
+    /* naru が直接みられる人数に上限があるので、枠で区切る。
+       「先着◯名」と書いた以上、その人数で本当に締め切ること
+       （超えても同じ価格で受けると、景品表示法の有利誤認になる）。
+       埋まったら full:true にすると、ボタンが「満席」に変わる */
+    limit :5,
+    full  :false,
     feats :["スタンダードの内容すべて",
             "naru とのオンラインコーチング 50分 × 月1回",
             "フォームの確認、次の1か月の組み立て、食事の相談まで"],
@@ -3151,27 +3153,27 @@ function viewGate(){
     <div class="eyebrow" style="margin-top:26px">${TX("gate.plansH")}</div>
     <div class="plans">${PLANS.map(pl=>`
       <div class="plan${pl.best?" best":""}">
-        ${pl.best?`<span class="ptag">${TX(pl.future?"gate.early":"gate.best")}</span>`:""}
+        ${pl.limit?`<span class="ptag">${TX("gate.limit", pl.limit)}</span>`
+           :(pl.best?`<span class="ptag">${TX("gate.best")}</span>`:"")}
         <div class="pnm">${esc(planTx(pl,"name"))}</div>
         <div class="pld">${esc(planTx(pl,"lead"))}</div>
         <div class="ppr"><b class="tnum">${pl.price.toLocaleString()}</b><i>円</i>
           <span>/ ${esc(pl.per)}（税込）</span></div>
         ${pl.monthly?"":`<div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>`}
-        ${pl.future?`<div class="pnx">
-          <span class="d">${TX("gate.fromDay", esc(pl.future.from))}</span>
-          <b>${pl.future.price.toLocaleString()}円</b>
-          <span class="d">に改定</span>
-        </div>`:""}
+
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
-        ${pl.future?`<p class="pfu">${TX("gate.future", esc(pl.future.from),
-            pl.future.price.toLocaleString(), pl.price.toLocaleString())}</p>`:""}
-        ${pl.pay
-          ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
-                target="_blank" rel="noopener">${TX("gate.buy")}</a>`
-          : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
+        ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit)}</p>`:""}
+        ${pl.full
+          ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
+          : pl.pay
+            ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
+                  target="_blank" rel="noopener">${TX("gate.buy")}</a>`
+            : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
         <div class="pcy">${pl.monthly?TX("gate.renewMo"):TX("gate.renew14")}</div>
       </div>`).join("")}</div>
-    <div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>
+    ${""/* 先着10名様の無料コーチング特典。コーチングつきプラン（先着5名）と
+         矛盾するため外してある。戻すときは下の1行を有効にする。
+      `<div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>` */}
     <p class="gate-consent">${TX("gate.consent",
        `<button data-legal="notice">${TX("doc.notice")}</button>`)}</p>
 
