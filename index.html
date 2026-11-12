@@ -1365,8 +1365,10 @@ So — let's begin today.`],
                  "Renews monthly \u00b7 cancel any time"],
 "gate.best"   : ["おすすめ","Recommended"],
 "gate.early"  : ["先行価格","Early price"],
-"gate.future" : ["{0}より {1}円 に改定します。それまでにお申し込みいただいた方は、継続されている限り {2}円 のままです。",
-                 "From {0} the price becomes {1} JPY. Sign up before then and you keep paying {2} JPY for as long as you stay."],
+"gate.fromDay": ["{0}から","From {0}"],
+"gate.upTo"   : ["{0}円に改定","{0} JPY"],
+"gate.future" : ["いまお申し込みいただいた方は、継続されている限り {2}円 のままです。改定後も上がりません。",
+                 "Sign up now and you keep paying {2} JPY for as long as you stay \u2014 the increase will not reach you."],
 "gate.payTbd" : ["準備中","Coming soon"],
 "gate.bonusH" : ["先着10名様","First 10 members"],
 "gate.bonus"  : ["初回のみ、30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
@@ -3152,6 +3154,11 @@ function viewGate(){
         <div class="ppr"><b class="tnum">${pl.price.toLocaleString()}</b><i>円</i>
           <span>/ ${esc(pl.per)}（税込）</span></div>
         ${pl.monthly?"":`<div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>`}
+        ${pl.future?`<div class="pnx">
+          <span class="d">${TX("gate.fromDay", esc(pl.future.from))}</span>
+          <b>${pl.future.price.toLocaleString()}円</b>
+          <span class="d">に改定</span>
+        </div>`:""}
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
         ${pl.future?`<p class="pfu">${TX("gate.future", esc(pl.future.from),
             pl.future.price.toLocaleString(), pl.price.toLocaleString())}</p>`:""}
@@ -3702,6 +3709,14 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 /* 先行価格のお知らせ */
 .pfu{margin:13px 0 0;padding:11px 12px;background:var(--olive-soft);
   border-radius:var(--r-sm);font-size:11.5px;line-height:1.75;color:var(--olive-dark)}
+
+
+/* 改定後の価格（将来価格との比較。過去の価格ではないので「通常価格」とは書かない） */
+.pnx{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:9px;
+  padding:8px 11px;background:var(--surface-sunk);border-radius:var(--r-sm)}
+.pnx .d{font-size:11px;color:var(--ink-mute)}
+.pnx b{font-family:var(--f-dis);font-weight:900;font-stretch:82%;font-size:19px;
+  color:var(--ink-soft);letter-spacing:.01em}
 
 </style>
 </body>
