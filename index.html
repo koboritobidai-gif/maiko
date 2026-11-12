@@ -1357,8 +1357,16 @@ Let's start small, enjoy the steps, and build the body and the life you want.
 So — let's begin today.`],
 "gate.consent": ["お申し込みをもって、{0}に同意いただいたものとします。",
                  "By signing up you agree to {0}."],
+"gate.plansH" : ["プランを選ぶ","Choose your plan"],
+"gate.perMo"  : ["月あたり 約{0}円","about {0} JPY a month"],
+"gate.renew14": ["2週間ごとの自動更新・いつでも解約できます",
+                 "Renews every 2 weeks \u00b7 cancel any time"],
+"gate.renew30": ["30日ごとの自動更新・いつでも解約できます",
+                 "Renews every 30 days \u00b7 cancel any time"],
+"gate.best"   : ["おすすめ","Recommended"],
+"gate.payTbd" : ["準備中","Coming soon"],
 "gate.bonusH" : ["先着10名様","First 10 members"],
-"gate.bonus"  : ["30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
+"gate.bonus"  : ["初回のみ、30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
                  "Includes a 30-minute online coaching session \u2014 training, food, anything you want to ask."],
 "gate.unit"   : ["円 / 2週間（税込）"," JPY / 2 weeks"],
 "gate.renew"  : ["2週間ごとの自動更新です。いつでも解約できます。",
@@ -1719,6 +1727,49 @@ const BIZ = {
 };
 const TBD = t => `<mark>${t}</mark>`;            // 未確定の箇所を目立たせる
 
+/* =========================================================================
+   料金プラン
+   -------------------------------------------------------------------------
+   price … 1回の請求額（税込）
+   days  … 何日ごとに請求するか
+   pay   … Stripe の支払いリンク。null の間はボタンが「準備中」になる
+   月あたりの金額は days から自動で出す（2週間ごとと30日ごとを並べて
+   比べられるようにするため）
+   ========================================================================= */
+const PLANS = [
+  { id:"std",
+    name  :"スタンダード",            nameEn:"Standard",
+    lead  :"アプリだけで続ける",      leadEn:"The app on its own",
+    price :3500, days:14,
+    pay   :BIZ.pay,
+    feats :["14日分のメニュー（Fit 1 / Fit 3）",
+            "naru の実演動画つき",
+            "重量と回数の記録",
+            "その日の解説動画"],
+    featsEn:["A full 14-day program (Fit 1 / Fit 3)",
+             "NARU's own demo videos",
+             "Log your weight and reps",
+             "A short briefing for each day"] },
+
+  { id:"coach",
+    name  :"コーチングつき",          nameEn:"With coaching",
+    lead  :"naru に直接みてもらう",   leadEn:"Work with NARU directly",
+    price :14800, days:30,
+    pay   :null,                      /* ← Stripe の支払いリンクを入れる */
+    best  :true,
+    feats :["スタンダードの内容すべて",
+            "naru とのオンラインコーチング 50分 × 月1回",
+            "フォームの確認、次の1か月の組み立て、食事の相談まで"],
+    featsEn:["Everything in Standard",
+             "A 50-minute online session with NARU, once a month",
+             "Form checks, planning the month ahead, and food"] }
+];
+/* プランの英語表記。無ければ日本語のまま */
+const planTx = (pl,k) => (lang()==="en" && pl[k+"En"]) ? pl[k+"En"] : pl[k];
+
+/* 1か月あたりの金額（365日 ÷ 請求の間隔 ÷ 12か月） */
+const perMonth = pl => Math.round(pl.price * (365 / pl.days) / 12 / 100) * 100;
+
 /* 書類の英語版。日本語が正本で、英語は参考訳＋海外のお客様向けの追記。
    オーストラリアのお客様には Australian Consumer Law が適用されるため、
    返金の条項は日本語版をそのまま訳さず、権利を排除しない書き方にしている */
@@ -1731,12 +1782,16 @@ const LEGAL = {
       <tr><th>電話番号</th><td>ご請求をいただいた場合、遅滞なく開示いたします</td></tr>
       <tr><th>メール</th><td>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</td></tr>
       <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
-      <tr><th>販売価格</th><td>${esc(BIZ.price)}<br>表示価格はすべて税込です</td></tr>
+      <tr><th>販売価格</th><td>${PLANS.map(pl=>
+        `${esc(pl.name)}：${pl.price.toLocaleString()}円 / ${pl.days===14?"2週間":pl.days+"日"}`
+        ).join("<br>")}<br>表示価格はすべて税込です</td></tr>
       ${BIZ.invoice?`<tr><th>登録番号</th><td>${esc(BIZ.invoice)}<br>適格請求書発行事業者</td></tr>`:""}
       <tr><th>商品代金以外の<br>必要料金</th><td>インターネットの接続料金および通信料金は、お客様のご負担となります</td></tr>
       <tr><th>支払方法</th><td>クレジットカード（Visa／Mastercard／American Express／JCB ほか）<br>
         決済代行：Stripe, Inc.</td></tr>
-      <tr><th>支払時期</th><td>お申し込み時に初回分を決済し、以後2週間ごとに自動で決済されます</td></tr>
+      <tr><th>支払時期</th><td>お申し込み時に初回分を決済し、以後は
+        ${PLANS.map(pl=>`${esc(pl.name)}は${pl.days===14?"2週間":pl.days+"日"}ごと`).join("、")}に
+        自動で決済されます</td></tr>
       <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
       <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
         次回の更新日の前に解約していただくと、以後の課金は停止します。<br>
@@ -3078,13 +3133,23 @@ function viewGate(){
         ["gate.p3t","gate.p3b"]].map(([a,b])=>
       `<li><b>${esc(TX(a,nvid))}</b><span>${esc(TX(b,nvid))}</span></li>`).join("")}</ul>
 
-    <div class="gate-price">
-      <div class="eyebrow">ENTRY</div>
-      <div class="p"><b class="tnum">3,500</b><span>${TX("gate.unit")}</span></div>
-      <p class="sub" style="margin-top:4px">${TX("gate.renew")}</p>
-    </div>
+    <div class="eyebrow" style="margin-top:26px">${TX("gate.plansH")}</div>
+    <div class="plans">${PLANS.map(pl=>`
+      <div class="plan${pl.best?" best":""}">
+        ${pl.best?`<span class="ptag">${TX("gate.best")}</span>`:""}
+        <div class="pnm">${esc(planTx(pl,"name"))}</div>
+        <div class="pld">${esc(planTx(pl,"lead"))}</div>
+        <div class="ppr"><b class="tnum">${pl.price.toLocaleString()}</b><i>円</i>
+          <span>/ ${pl.days===14?"2週間":pl.days+"日"}（税込）</span></div>
+        <div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>
+        <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
+        ${pl.pay
+          ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
+                target="_blank" rel="noopener">${TX("gate.buy")}</a>`
+          : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
+        <div class="pcy">${pl.days===14?TX("gate.renew14"):TX("gate.renew30")}</div>
+      </div>`).join("")}</div>
     <div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>
-    <a class="btn btn-orange" href="${ACCESS.buy}" target="_blank" rel="noopener">${TX("gate.buy")}</a>
     <p class="gate-consent">${TX("gate.consent",
        `<button data-legal="notice">${TX("doc.notice")}</button>`)}</p>
 
@@ -3594,6 +3659,32 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .wodc{padding:11px 13px;background:var(--surface-sunk)}
 .wodc b{display:block;font-size:13px;color:var(--ink)}
 .wodc span{display:block;font-size:11.5px;color:var(--ink-mute);margin-top:2px;line-height:1.6}
+
+
+/* ── 料金プラン（2つ並べる） ── */
+.plans{display:flex;flex-direction:column;gap:11px;margin-top:11px}
+.plan{position:relative;background:var(--surface);border:1.5px solid rgba(226,236,206,.13);
+  border-radius:var(--r-lg);padding:17px 16px 16px}
+.plan.best{border-color:var(--olive);background:rgba(202,255,60,.045)}
+.ptag{position:absolute;top:-9px;right:14px;background:var(--olive);color:#0B0B0A;
+  font-family:var(--f-lab);font-stretch:108%;font-weight:700;font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;border-radius:4px;padding:3px 9px}
+.pnm{font-size:15px;font-weight:800;letter-spacing:.01em}
+.pld{font-size:12px;color:var(--ink-mute);margin-top:2px}
+.ppr{display:flex;align-items:baseline;gap:3px;margin-top:11px;flex-wrap:wrap}
+.ppr b{font-family:var(--f-dis);font-weight:900;font-stretch:82%;font-size:38px;line-height:1;
+  color:var(--olive);letter-spacing:-.01em}
+.ppr i{font-style:normal;font-size:14px;font-weight:700;color:var(--ink)}
+.ppr span{font-size:12px;color:var(--ink-soft);margin-left:4px}
+.ppm{font-size:11.5px;color:var(--ink-mute);margin-top:4px}
+.pfe{list-style:none;margin:13px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pfe li{position:relative;padding-left:17px;font-size:12.5px;line-height:1.65;color:var(--ink-soft)}
+.pfe li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;
+  border-radius:999px;background:var(--olive)}
+.plan .btn{margin-top:15px;height:48px;font-size:14px}
+.plan .btn[disabled]{background:var(--surface-sunk);color:var(--ink-mute);
+  border:1px solid rgba(226,236,206,.08)}
+.pcy{margin-top:8px;font-size:10.5px;text-align:center;color:var(--ink-mute)}
 
 </style>
 </body>
