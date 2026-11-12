@@ -47,13 +47,25 @@ async function loadDemoInvoices(status: SourceStatus): Promise<InvoiceDataResult
 }
 
 /**
- * 手動補正: 金額を読み取れないPDF(スキャン画像等)に、経営者確認済みの金額を割り当てる。
- * 経営者確認済み: 2026年5月支払いの読取不可1件(¥16,500)、6月・7月・8月支払いの読取不可各2件
- * (いずれも¥16,500、各月計¥33,000)、9月支払いの読取不可2件(SSマーケット・楽天モバイル、
- * いずれも¥16,500。経営者確認 2026-09-24)、10月支払いの読取不可2件(いずれも¥16,500、
- * 経営者確認 2026-10-22)。
- * 対象月の読取不可PDFすべてに一律で適用されるため、その月に新たな読取不可PDFが増えた場合は
- * この補正を見直すこと。
+ * 恒久補正: 毎月¥16,500固定と経営者確認済みの2社(2026-11-12指示「この2社は16,500円で固定なので、
+ * 毎回16,500円に2社ともして」)。この2社の請求書PDFはスキャン画像のため毎月金額を読み取れない。
+ * - 株式会社SSマーケット(ファイル名は「御請求書.E26028180.PDF」「御請求書E26031979.PDF」等)
+ * - 楽天モバイル株式会社の月額固定分(ファイル名は「株式会社飛び台様_T0000001069_R11001069_…pdf」等)
+ * 注意: 楽天モバイルには別の携帯通信費の請求書(「楽天モバイル請求書_2026年N月利用分.pdf」、
+ * 金額は自動で読める)も毎月あり、そちらは混同しないこと。この補正は**金額を読み取れなかった
+ * PDFにしか適用されない**ため、金額が読めている通信費請求書には影響しない(経営者指示どおり)。
+ */
+const FIXED_UNREADABLE_VENDORS: { re: RegExp; amountYen: number; label: string }[] = [
+  { re: /SS\s*マーケット|SSE?\d{8}/i, amountYen: 16_500, label: "株式会社SSマーケット" },
+  { re: /楽天モバイル|T\d{10}_R\d{8}/, amountYen: 16_500, label: "楽天モバイル株式会社" },
+];
+
+/**
+ * 月別の手動補正(過去月の経緯記録として残す): 2026年5月〜10月支払いの読取不可は
+ * いずれも¥16,500(経営者確認 2026-09-24・2026-10-22)。
+ * 2026年11月以降は上の FIXED_UNREADABLE_VENDORS(2社固定)で自動適用されるため、
+ * この配列への月の追記は原則不要。2社以外の読取不可PDFが新たに出た場合のみ、
+ * 経営者確認の金額をここに月単位で足すこと(その月の読取不可すべてに一律適用される点に注意)。
  */
 const MANUAL_UNREADABLE_AMOUNTS: { month: string; amountYen: number }[] = [
   { month: "2026-05", amountYen: 16_500 },
@@ -70,6 +82,17 @@ function applyManualInvoiceFixes(invoices: ReferralInvoice[]): ReferralInvoice[]
     // 経営者確認済みの補正はSTORY(別事業)以外の読取不可PDFが対象のため、
     // excludedFromTotals(STORYスレッド由来)の請求書には適用しない。
     if (inv.excludedFromTotals) return inv;
+    // 2社固定(SSマーケット・楽天モバイル)を最優先で適用(月を問わず毎回¥16,500)。
+    const vendorFix = FIXED_UNREADABLE_VENDORS.find((f) =>
+      f.re.test(`${inv.vendorName ?? ""} ${inv.fileName}`),
+    );
+    if (vendorFix) {
+      return {
+        ...inv,
+        amountYen: vendorFix.amountYen,
+        parseNote: `${vendorFix.label}は毎月¥${vendorFix.amountYen.toLocaleString("ja-JP")}固定(経営者確認)のため手動計上。`,
+      };
+    }
     const fix = MANUAL_UNREADABLE_AMOUNTS.find((f) => f.month === inv.targetMonth);
     if (!fix) return inv;
     return {
