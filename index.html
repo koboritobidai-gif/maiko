@@ -1368,8 +1368,8 @@ So — let's begin today.`],
 "lp.c1"       : ["1日10分から","From 10 minutes a day"],
 "lp.c2"       : ["週3〜4回のペースでもOK","3 to 4 times a week is fine"],
 "gate.limit"  : ["先着{0}名様","Only {0} places"],
-"gate.limitWhy":["naru が直接みられる人数の都合で、{0}名様で締め切ります。",
-                 "NARU can only take on so many people, so this closes at {0}."],
+"gate.limitWhy":["はじめの{0}名様の価格です。{1}名様以降は {2}円 / 月 になります。",
+                 "This is the price for the first {0} members. From member {1} it is {2} JPY a month."],
 "gate.full"   : ["満席になりました","All places taken"],
 
 "gate.payTbd" : ["準備中","Coming soon"],
@@ -1771,6 +1771,10 @@ const PLANS = [
        （超えても同じ価格で受けると、景品表示法の有利誤認になる）。
        埋まったら full:true にすると、ボタンが「満席」に変わる */
     limit :5,
+    /* limit 人目までがこの価格。それ以降は nextPrice。
+       「先着5名様」と書いた以上、6人目からは本当に nextPrice で売ること
+       （同じ価格で受け続けると、景品表示法の有利誤認になる） */
+    nextPrice:19800,
     full  :false,
     feats :["スタンダードの内容すべて",
             "naru とのオンラインコーチング 50分 × 月1回",
@@ -1801,6 +1805,8 @@ const LEGAL = {
       <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
       <tr><th>販売価格</th><td>${PLANS.map(pl=>
         `${esc(pl.name)}：${pl.price.toLocaleString()}円 / ${esc(pl.per)}`
+        + (pl.nextPrice?`（はじめの${pl.limit}名様の価格です。${pl.limit+1}名様以降は`
+           +`${pl.nextPrice.toLocaleString()}円 / ${esc(pl.per)}）`:"")
         ).join("<br>")}<br>表示価格はすべて税込です</td></tr>
       ${BIZ.invoice?`<tr><th>登録番号</th><td>${esc(BIZ.invoice)}<br>適格請求書発行事業者</td></tr>`:""}
       <tr><th>商品代金以外の<br>必要料金</th><td>インターネットの接続料金および通信料金は、お客様のご負担となります</td></tr>
@@ -1829,6 +1835,8 @@ const LEGAL = {
       <tr><th>Website</th><td>${BIZ.site?esc(BIZ.site):TBD("app URL")}</td></tr>
       <tr><th>Price</th><td>${PLANS.map(pl=>
         `${esc(pl.nameEn||pl.name)}: ${pl.price.toLocaleString()} JPY / ${pl.monthly?"month":"2 weeks"}`
+        + (pl.nextPrice?` (price for the first ${pl.limit} members; `
+           +`${pl.nextPrice.toLocaleString()} JPY / ${pl.monthly?"month":"2 weeks"} from member ${pl.limit+1})`:"")
         ).join("<br>")}<br>Charged in Japanese yen. Your bank or card
         issuer may add a currency conversion fee.</td></tr>
       ${BIZ.invoice?`<tr><th>Registration<br>number</th><td>${esc(BIZ.invoice)}</td></tr>`:""}
@@ -3165,7 +3173,8 @@ function viewGate(){
         ${pl.monthly?"":`<div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>`}
 
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
-        ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit)}</p>`:""}
+        ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit, pl.limit+1,
+             (pl.nextPrice||0).toLocaleString())}</p>`:""}
         ${pl.full
           ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
           : pl.pay
