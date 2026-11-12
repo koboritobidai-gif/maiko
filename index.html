@@ -1361,8 +1361,8 @@ So — let's begin today.`],
 "gate.perMo"  : ["月あたり 約{0}円","about {0} JPY a month"],
 "gate.renew14": ["2週間ごとの自動更新・いつでも解約できます",
                  "Renews every 2 weeks \u00b7 cancel any time"],
-"gate.renew30": ["30日ごとの自動更新・いつでも解約できます",
-                 "Renews every 30 days \u00b7 cancel any time"],
+"gate.renewMo": ["毎月の自動更新・いつでも解約できます",
+                 "Renews monthly \u00b7 cancel any time"],
 "gate.best"   : ["おすすめ","Recommended"],
 "gate.early"  : ["先行価格","Early price"],
 "gate.future" : ["{0}より {1}円 に改定します。それまでにお申し込みいただいた方は、継続されている限り {2}円 のままです。",
@@ -1734,7 +1734,7 @@ const TBD = t => `<mark>${t}</mark>`;            // 未確定の箇所を目立�
    料金プラン
    -------------------------------------------------------------------------
    price … 1回の請求額（税込）
-   days  … 何日ごとに請求するか
+   days  … 何日ごとに請求するか。毎月のプランは null（monthly:true）
    pay   … Stripe の支払いリンク。null の間はボタンが「準備中」になる
    月あたりの金額は days から自動で出す（2週間ごとと30日ごとを並べて
    比べられるようにするため）
@@ -1743,7 +1743,7 @@ const PLANS = [
   { id:"std",
     name  :"スタンダード",            nameEn:"Standard",
     lead  :"アプリだけで続ける",      leadEn:"The app on its own",
-    price :3500, days:14,
+    price :3500, days:14, per:"2週間",
     pay   :BIZ.pay,
     feats :["14日分のメニュー（Fit 1 / Fit 3）",
             "naru の実演動画つき",
@@ -1757,7 +1757,7 @@ const PLANS = [
   { id:"coach",
     name  :"コーチングつき",          nameEn:"With coaching",
     lead  :"naru に直接みてもらう",   leadEn:"Work with NARU directly",
-    price :14800, days:30,
+    price :14800, days:null, monthly:true, per:"月",
     pay   :null,                      /* ← Stripe の支払いリンクを入れる */
     best  :true,
     /* 先行価格。景品表示法の二重価格表示にならないよう、「通常19,800円」とは
@@ -1775,8 +1775,10 @@ const PLANS = [
 /* プランの英語表記。無ければ日本語のまま */
 const planTx = (pl,k) => (lang()==="en" && pl[k+"En"]) ? pl[k+"En"] : pl[k];
 
-/* 1か月あたりの金額（365日 ÷ 請求の間隔 ÷ 12か月） */
-const perMonth = pl => Math.round(pl.price * (365 / pl.days) / 12 / 100) * 100;
+/* 1か月あたりの金額。毎月のプランはそのまま、
+   「◯日ごと」のプランは 365日 ÷ 間隔 ÷ 12か月 で換算する */
+const perMonth = pl => pl.monthly ? pl.price
+  : Math.round(pl.price * (365 / pl.days) / 12 / 100) * 100;
 
 /* 書類の英語版。日本語が正本で、英語は参考訳＋海外のお客様向けの追記。
    オーストラリアのお客様には Australian Consumer Law が適用されるため、
@@ -1791,14 +1793,14 @@ const LEGAL = {
       <tr><th>メール</th><td>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</td></tr>
       <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
       <tr><th>販売価格</th><td>${PLANS.map(pl=>
-        `${esc(pl.name)}：${pl.price.toLocaleString()}円 / ${pl.days===14?"2週間":pl.days+"日"}`
+        `${esc(pl.name)}：${pl.price.toLocaleString()}円 / ${esc(pl.per)}`
         ).join("<br>")}<br>表示価格はすべて税込です</td></tr>
       ${BIZ.invoice?`<tr><th>登録番号</th><td>${esc(BIZ.invoice)}<br>適格請求書発行事業者</td></tr>`:""}
       <tr><th>商品代金以外の<br>必要料金</th><td>インターネットの接続料金および通信料金は、お客様のご負担となります</td></tr>
       <tr><th>支払方法</th><td>クレジットカード（Visa／Mastercard／American Express／JCB ほか）<br>
         決済代行：Stripe, Inc.</td></tr>
       <tr><th>支払時期</th><td>お申し込み時に初回分を決済し、以後は
-        ${PLANS.map(pl=>`${esc(pl.name)}は${pl.days===14?"2週間":pl.days+"日"}ごと`).join("、")}に
+        ${PLANS.map(pl=>`${esc(pl.name)}は${pl.monthly?"毎月":esc(pl.per)+"ごと"}`).join("、")}
         自動で決済されます</td></tr>
       <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
       <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
@@ -3148,8 +3150,8 @@ function viewGate(){
         <div class="pnm">${esc(planTx(pl,"name"))}</div>
         <div class="pld">${esc(planTx(pl,"lead"))}</div>
         <div class="ppr"><b class="tnum">${pl.price.toLocaleString()}</b><i>円</i>
-          <span>/ ${pl.days===14?"2週間":pl.days+"日"}（税込）</span></div>
-        <div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>
+          <span>/ ${esc(pl.per)}（税込）</span></div>
+        ${pl.monthly?"":`<div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>`}
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
         ${pl.future?`<p class="pfu">${TX("gate.future", esc(pl.future.from),
             pl.future.price.toLocaleString(), pl.price.toLocaleString())}</p>`:""}
@@ -3157,7 +3159,7 @@ function viewGate(){
           ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
                 target="_blank" rel="noopener">${TX("gate.buy")}</a>`
           : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
-        <div class="pcy">${pl.days===14?TX("gate.renew14"):TX("gate.renew30")}</div>
+        <div class="pcy">${pl.monthly?TX("gate.renewMo"):TX("gate.renew14")}</div>
       </div>`).join("")}</div>
     <div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>
     <p class="gate-consent">${TX("gate.consent",
