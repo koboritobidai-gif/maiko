@@ -1717,10 +1717,11 @@ const BIZ = {
   email: "narufitness16@gmail.com",               // 問い合わせ用
   site : "https://naru-fit-daily.pages.dev",     // 公開後のアプリURL
   pay  : "https://buy.stripe.com/8x2eVfbugc0e6cw4GF87K00",
-  price: "2週間 3,500円（税込）",
+  /* 価格は PLANS が一次情報。ここは使っていない（残してあるのは互換のため） */
+  price: null,
   /* 英語表記。海外のお客様には日本の消費税がかからない（国外取引）ので
      「税込」とは書かず、通貨だけ明記している */
-  priceEn: "3,500 JPY / 2 weeks",
+  priceEn: null,
   /* ローマ字表記の氏名。英語の書類に出したいときに入れる（例 "Narumi Sugita"）。
      読みを勝手に決められないので、naru さんに確認してから入れること */
   nameEn: null,
@@ -1745,7 +1746,7 @@ const PLANS = [
   { id:"std",
     name  :"スタンダード",            nameEn:"Standard",
     lead  :"アプリだけで続ける",      leadEn:"The app on its own",
-    price :3500, days:14, per:"2週間",
+    price :3900, days:14, per:"2週間",
     pay   :BIZ.pay,
     feats :["14日分のメニュー（Fit 1 / Fit 3）",
             "naru の実演動画つき",
@@ -1822,7 +1823,9 @@ const LEGAL = {
       <tr><th>Phone</th><td>Disclosed without delay on request</td></tr>
       <tr><th>Email</th><td>${BIZ.email?esc(BIZ.email):TBD("contact email")}</td></tr>
       <tr><th>Website</th><td>${BIZ.site?esc(BIZ.site):TBD("app URL")}</td></tr>
-      <tr><th>Price</th><td>${esc(BIZ.priceEn)}<br>Charged in Japanese yen. Your bank or card
+      <tr><th>Price</th><td>${PLANS.map(pl=>
+        `${esc(pl.nameEn||pl.name)}: ${pl.price.toLocaleString()} JPY / ${pl.monthly?"month":"2 weeks"}`
+        ).join("<br>")}<br>Charged in Japanese yen. Your bank or card
         issuer may add a currency conversion fee.</td></tr>
       ${BIZ.invoice?`<tr><th>Registration<br>number</th><td>${esc(BIZ.invoice)}</td></tr>`:""}
       <tr><th>Other costs</th><td>Your own internet and data charges</td></tr>
