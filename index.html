@@ -1364,6 +1364,9 @@ So — let's begin today.`],
 "gate.renew30": ["30日ごとの自動更新・いつでも解約できます",
                  "Renews every 30 days \u00b7 cancel any time"],
 "gate.best"   : ["おすすめ","Recommended"],
+"gate.early"  : ["先行価格","Early price"],
+"gate.future" : ["{0}より {1}円 に改定します。それまでにお申し込みいただいた方は、継続されている限り {2}円 のままです。",
+                 "From {0} the price becomes {1} JPY. Sign up before then and you keep paying {2} JPY for as long as you stay."],
 "gate.payTbd" : ["準備中","Coming soon"],
 "gate.bonusH" : ["先着10名様","First 10 members"],
 "gate.bonus"  : ["初回のみ、30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
@@ -1757,6 +1760,11 @@ const PLANS = [
     price :14800, days:30,
     pay   :null,                      /* ← Stripe の支払いリンクを入れる */
     best  :true,
+    /* 先行価格。景品表示法の二重価格表示にならないよう、「通常19,800円」とは
+       書かず、将来の改定予定として書く。比較ではなく予定なので適法。
+       ただし from の日に本当に 19,800 円へ上げること。上げないと有利誤認になる。
+       日付は要確定（いまは公開のおよそ3か月後を置いてある） */
+    future:{ price:19800, from:"2027年2月1日" },
     feats :["スタンダードの内容すべて",
             "naru とのオンラインコーチング 50分 × 月1回",
             "フォームの確認、次の1か月の組み立て、食事の相談まで"],
@@ -3136,13 +3144,15 @@ function viewGate(){
     <div class="eyebrow" style="margin-top:26px">${TX("gate.plansH")}</div>
     <div class="plans">${PLANS.map(pl=>`
       <div class="plan${pl.best?" best":""}">
-        ${pl.best?`<span class="ptag">${TX("gate.best")}</span>`:""}
+        ${pl.best?`<span class="ptag">${TX(pl.future?"gate.early":"gate.best")}</span>`:""}
         <div class="pnm">${esc(planTx(pl,"name"))}</div>
         <div class="pld">${esc(planTx(pl,"lead"))}</div>
         <div class="ppr"><b class="tnum">${pl.price.toLocaleString()}</b><i>円</i>
           <span>/ ${pl.days===14?"2週間":pl.days+"日"}（税込）</span></div>
         <div class="ppm">${TX("gate.perMo", perMonth(pl).toLocaleString())}</div>
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
+        ${pl.future?`<p class="pfu">${TX("gate.future", esc(pl.future.from),
+            pl.future.price.toLocaleString(), pl.price.toLocaleString())}</p>`:""}
         ${pl.pay
           ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
                 target="_blank" rel="noopener">${TX("gate.buy")}</a>`
@@ -3685,6 +3695,11 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .plan .btn[disabled]{background:var(--surface-sunk);color:var(--ink-mute);
   border:1px solid rgba(226,236,206,.08)}
 .pcy{margin-top:8px;font-size:10.5px;text-align:center;color:var(--ink-mute)}
+
+
+/* 先行価格のお知らせ */
+.pfu{margin:13px 0 0;padding:11px 12px;background:var(--olive-soft);
+  border-radius:var(--r-sm);font-size:11.5px;line-height:1.75;color:var(--olive-dark)}
 
 </style>
 </body>
