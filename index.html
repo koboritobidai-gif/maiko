@@ -227,7 +227,7 @@ button{border:0;background:none;cursor:pointer}
 .dot-r::marker{color:var(--orange-b)}
 
 /* ── LP ── */
-.lp{flex:1 0 auto;display:flex;flex-direction:column;padding:0 22px}
+.lp{flex:1 0 auto;display:flex;flex-direction:column;padding:20px 22px 0}
 .lp-top{flex:none;margin-top:auto}
 .lp .hero-t{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.45;margin:12px 0 0}
 .about{flex:none;border-top:1px solid rgba(226,236,206,.1);margin-top:auto;padding:22px 0 5px}
@@ -1365,9 +1365,11 @@ So — let's begin today.`],
                  "Renews monthly \u00b7 cancel any time"],
 "gate.best"   : ["おすすめ","Recommended"],
 "gate.early"  : ["先行価格","Early price"],
+"lp.c1"       : ["1日10分から","From 10 minutes a day"],
+"lp.c2"       : ["週3〜4回のペースでもOK","3 to 4 times a week is fine"],
 "gate.limit"  : ["先着{0}名様","Only {0} places"],
-"gate.limitWhy":["naru が直接みられる人数に限りがあるため、{0}名様で締め切ります。枠が埋まりしだい、受付を停止します。",
-                 "NARU can only take on so many people at once, so this closes at {0}. We stop taking sign-ups as soon as the places are gone."],
+"gate.limitWhy":["naru が直接みられる人数の都合で、{0}名様で締め切ります。",
+                 "NARU can only take on so many people, so this closes at {0}."],
 "gate.full"   : ["満席になりました","All places taken"],
 
 "gate.payTbd" : ["準備中","Coming soon"],
@@ -2117,6 +2119,7 @@ function viewLP(){
         <img class="logomark" src="img/logo.png" srcset="img/logo.png 1x, img/logo@2x.png 2x" alt="NARU FIT DAILY" width="600" height="300">
         <div class="eyebrow">LIFESTYLE FITNESS COACH</div>
         <h1 class="hero-t">${TX("lp.hero")}</h1>
+        <div class="lp-chips"><span>${TX("lp.c1")}</span><span>${TX("lp.c2")}</span></div>
         <p class="sub" style="margin-top:14px">Welcome to my page 🌿</p>
       </div>
       <div class="about">
@@ -3656,7 +3659,7 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 /* ── ロゴ画像 ── */
 .logomark{display:block;width:100%;height:auto}
 .gate .logomark{max-width:236px;margin:0 0 14px}
-.lp .logomark{max-width:218px;margin:0 0 14px}
+.lp .logomark{max-width:218px;margin:0 auto 16px}
 
 
 /* ── 申し込み画面：naru からのメッセージ ── */
@@ -3722,6 +3725,12 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .pnx .d{font-size:11px;color:var(--ink-mute)}
 .pnx b{font-family:var(--f-dis);font-weight:900;font-stretch:82%;font-size:19px;
   color:var(--ink-soft);letter-spacing:.01em}
+
+
+/* LP の短いひとこと */
+.lp-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+.lp-chips span{background:var(--surface);border:1px solid rgba(226,236,206,.12);
+  border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;color:var(--ink-soft)}
 
 </style>
 </body>
