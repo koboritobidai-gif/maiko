@@ -1326,7 +1326,7 @@ addTxt({
 /* 紹介・申し込み */
 "gate.tagline": ["すべての人が、自分の身体を自分でデザインし、愛せるようになるアプリ",
                  "An app to help anyone design the body they want \u2014 and learn to love it."],
-"gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。単なる「ダイエット」や「筋力アップ」にとどまらず、体、脳、心の全てを正常に機能させ、人生の質（QOL）を底上げしましょう。",
+"gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。\n単なる「ダイエット」や「筋力アップ」にとどまらず\n体、脳、心の全てを正常に機能させ\n人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
 "gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
 "gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」\n「休日に時間があるから Fit 2 に挑戦」が\n自由に選べます。",
@@ -1390,7 +1390,7 @@ So — let's begin today.`],
 "lp.c1"       : ["1日10分から","From 10 minutes a day"],
 "lp.c2"       : ["週3〜4回のペースでもOK","3 to 4 times a week is fine"],
 "gate.limit"  : ["先着{0}名様","Only {0} places"],
-"gate.limitWhy":["はじめの{0}名様の価格です。{1}名様以降は {2}円 / {3} になります。",
+"gate.limitWhy":["はじめの{0}名様の価格です。\n{1}名様以降は {2}円 / {3} になります。",
                  "This is the price for the first {0} members. From member {1} it is {2} JPY / {3}."],
 "gate.full"   : ["満席になりました","All places taken"],
 
@@ -3257,7 +3257,7 @@ function viewGate(){
     ${langSwitch()}
     <img class="logomark" src="img/logo.png" srcset="img/logo.png 1x, img/logo@2x.png 2x" alt="NARU FIT DAILY" width="600" height="300">
     <p class="tagline">${esc(TX("gate.tagline"))}</p>
-    <p class="hook">${esc(TX("gate.hook"))}</p>
+    <p class="hook">${brk(TX("gate.hook"))}</p>
 
     <div class="steps">
       <div class="steps-h">${esc(TX("gate.steps"))}</div>
@@ -3297,7 +3297,7 @@ function viewGate(){
 
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
         ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit, pl.limit+1,
-             (pl.nextPrice||0).toLocaleString(), esc(pl.per))}</p>`
+             (pl.nextPrice||0).toLocaleString(), esc(pl.per)).split("\n").join("<br>")}</p>`
           :pl.note?`<p class="pfu">${esc(planTx(pl,"note"))}</p>`:""}
         ${pl.full
           ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
@@ -3897,13 +3897,13 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
    text-wrap:pretty   … 最後の行に1語だけ残さない（長い文用）
    word-break:auto-phrase … 文節の切れ目で折る（日本語向け・Chrome系）
    どれも対応していないブラウザでは、今までどおりの折り返しになる。 */
-.gate .tagline, .pfu, .pcy, .gate-consent,
+.gate .tagline, .pcy, .gate-consent,
 .swapnote, .plan .pld, .plan .ppm, .a2hs p, .lp-chips span, .levelhint{
   text-wrap:balance; word-break:auto-phrase;
 }
 /* 改行を文言のなかで指定しているので、自動では動かさない */
-.gate .lead, .steps-note{ text-wrap:normal }
-.gate .hook, .about span, .step .tx span, .note p, .sub, .daysub{
+.gate .lead, .steps-note, .gate .hook, .pfu{ text-wrap:normal }
+.about span, .step .tx span, .note p, .sub, .daysub{
   text-wrap:pretty; word-break:auto-phrase;
 }
 </style>
