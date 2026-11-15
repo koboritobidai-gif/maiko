@@ -228,7 +228,7 @@ button{border:0;background:none;cursor:pointer}
 
 /* ── LP ── */
 .lp{flex:1 0 auto;display:flex;flex-direction:column;padding:20px 22px 0}
-.lp-top{flex:none;margin-top:auto}
+.lp-top{flex:none;margin-top:auto;margin-bottom:22px}  /* 画面が短くても仕切り線とくっつかない */
 .lp .hero-t{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.45;margin:12px 0 0}
 .about{flex:none;border-top:1px solid rgba(226,236,206,.1);margin-top:auto;padding:22px 0 5px}
 .about li:last-child{margin-bottom:0}
@@ -1313,9 +1313,9 @@ addTxt({
 /* 最初の画面 */
 "lp.hero"    : ["小さなステップから、<br>効率よくカラダを<br>動かしていこう",
                 "Start small.<br>Train smart.<br>Keep moving."],
-"lp.a1"      : ["正しいトレーニングフォームを習いたい人","For anyone who wants cleaner, safer technique"],
-"lp.a2"      : ["効率良く運動のパフォーマンスをあげたい人","For anyone who wants to move better and faster"],
-"lp.a3"      : ["筋肥大を目指したい人","For anyone who wants to build real size"],
+"lp.a1"      : ["無理なく運動を習慣にしたい人","For anyone who wants exercise to finally stick"],
+"lp.a2"      : ["引き締まった理想の体を作りたい人","For anyone who wants the physique they picture"],
+"lp.a3"      : ["正しいフォームと体力をつけたい人","For anyone who wants clean form and real stamina"],
 "lp.resume"  : ["前回の続きから","Continue where you left off"],
 "lp.has"     : ["アカウントをお持ちの方は","Already signed up?"],
 "lp.login"   : ["ログイン","Log in"],
@@ -2152,9 +2152,9 @@ function viewLP(){
       <div class="about">
         <div class="eyebrow" style="margin-bottom:14px">ABOUT PERSONAL TRAINING</div>
         <ul style="margin:0;padding:0">
-          ${[["Perfecting your training form",TX("lp.a1")],
-             ["Optimizing athletic performance",TX("lp.a2")],
-             ["Hypertrophy &amp; Muscle Building",TX("lp.a3")]].map(([a,b])=>
+          ${[["Build healthy fitness habits",TX("lp.a1")],
+             ["Shape a confident physique",TX("lp.a2")],
+             ["Master form &amp; stamina",TX("lp.a3")]].map(([a,b])=>
             `<li><span class="ck">✓</span><span><b>${a}</b><span>${b}</span></span></li>`).join("")}
         </ul>
       </div>
