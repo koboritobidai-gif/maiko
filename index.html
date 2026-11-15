@@ -3885,6 +3885,20 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .plan.soon{opacity:.62}
 .ptag.soon{background:var(--surface-alt);color:var(--ink-mute);
            border:1px solid rgba(226,236,206,.14)}
+
+/* ── 日本語の折り返し ────────────────────────────────────
+   「…ありま／す。」のように、最後の行に1〜2文字だけ残るのを防ぐ。
+   text-wrap:balance  … 行の長さを揃えて折り返す（短い文用）
+   text-wrap:pretty   … 最後の行に1語だけ残さない（長い文用）
+   word-break:auto-phrase … 文節の切れ目で折る（日本語向け・Chrome系）
+   どれも対応していないブラウザでは、今までどおりの折り返しになる。 */
+.gate .tagline, .gate .lead, .pfu, .pcy, .steps-note, .gate-consent,
+.swapnote, .plan .pld, .plan .ppm, .a2hs p, .lp-chips span, .levelhint{
+  text-wrap:balance; word-break:auto-phrase;
+}
+.gate .hook, .about span, .step .tx span, .note p, .sub, .daysub{
+  text-wrap:pretty; word-break:auto-phrase;
+}
 </style>
 </body>
 </html>
