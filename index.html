@@ -1799,13 +1799,11 @@ const PLANS = [
     feats :["14日分のメニュー（Fit 1 / Fit 2）",
             "naru の実演動画つき",
             "重量と回数の記録",
-            "その日の解説動画",
-            "コミュニティに参加できます（追加料金なし）"],
+            "その日の解説動画"],
     featsEn:["A full 14-day program (Fit 1 / Fit 2)",
              "NARU's own demo videos",
              "Log your weight and reps",
-             "A short briefing for each day",
-             "The community, included at no extra cost"] },
+             "A short briefing for each day"] },
 
   { id:"coach",
     name  :"コーチングつき",          nameEn:"With coaching",
@@ -1836,6 +1834,9 @@ const PLANS = [
      作ってから Stripe のリンクを入れること。
      先に売ってしまうと、無いものを売ったことになる。 */
   { id:"comm",
+    /* いったん出さない。中身（3部屋）を作って、売り方が決まったら
+       hide を false にすれば、そのまま出る */
+    hide  :true,
     name  :"コミュニティ",            nameEn:"Community",
     lead  :"コミュニティだけ使う",    leadEn:"Just the community",
     price :330, days:null, monthly:true, per:"月",
@@ -1852,6 +1853,9 @@ const PLANS = [
     note  :"スタンダード・コーチングつきの方は、追加の料金なしで参加できます。ここはプログラムを終えたあとも、ゆるくつながっていたい方のためのプランです。",
     noteEn:"Standard and coaching members are already in, at no extra cost. This plan is for staying connected after the program ends." }
 ];
+/* いま売り出しているプランだけ。hide:true は画面にも特商法表記にも出さない */
+const SHOWN = () => PLANS.filter(pl => !pl.hide);
+
 /* プランの英語表記。無ければ日本語のまま */
 const planTx = (pl,k) => (lang()==="en" && pl[k+"En"]) ? pl[k+"En"] : pl[k];
 
@@ -1872,7 +1876,7 @@ const LEGAL = {
       <tr><th>電話番号</th><td>ご請求をいただいた場合、遅滞なく開示いたします</td></tr>
       <tr><th>メール</th><td>${BIZ.email?esc(BIZ.email):TBD("問い合わせ用メールアドレス")}</td></tr>
       <tr><th>販売URL</th><td>${BIZ.site?esc(BIZ.site):TBD("アプリのURL")}</td></tr>
-      <tr><th>販売価格</th><td>${PLANS.map(pl=>
+      <tr><th>販売価格</th><td>${SHOWN().map(pl=>
         `${esc(pl.name)}：${pl.price.toLocaleString()}円 / ${esc(pl.per)}`
         + (pl.nextPrice?`（はじめの${pl.limit}名様の価格です。${pl.limit+1}名様以降は`
            +`${pl.nextPrice.toLocaleString()}円 / ${esc(pl.per)}）`:"")
@@ -1882,7 +1886,7 @@ const LEGAL = {
       <tr><th>支払方法</th><td>クレジットカード（Visa／Mastercard／American Express／JCB ほか）<br>
         決済代行：Stripe, Inc.</td></tr>
       <tr><th>支払時期</th><td>お申し込み時に初回分を決済し、以後は
-        ${PLANS.map(pl=>`${esc(pl.name)}は${pl.monthly?"毎月":esc(pl.per)+"ごと"}`).join("、")}
+        ${SHOWN().map(pl=>`${esc(pl.name)}は${pl.monthly?"毎月":esc(pl.per)+"ごと"}`).join("、")}
         自動で決済されます</td></tr>
       <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
       <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
@@ -1904,7 +1908,7 @@ const LEGAL = {
       <tr><th>Phone</th><td>Disclosed without delay on request</td></tr>
       <tr><th>Email</th><td>${BIZ.email?esc(BIZ.email):TBD("contact email")}</td></tr>
       <tr><th>Website</th><td>${BIZ.site?esc(BIZ.site):TBD("app URL")}</td></tr>
-      <tr><th>Price</th><td>${PLANS.map(pl=>
+      <tr><th>Price</th><td>${SHOWN().map(pl=>
         `${esc(pl.nameEn||pl.name)}: ${pl.price.toLocaleString()} JPY / ${pl.monthly?"month":"2 weeks"}`
         + (pl.nextPrice?` (price for the first ${pl.limit} members; `
            +`${pl.nextPrice.toLocaleString()} JPY / ${pl.monthly?"month":"2 weeks"} from member ${pl.limit+1})`:"")
@@ -3284,7 +3288,7 @@ function viewGate(){
       `<li><b>${esc(TX(a,nvid))}</b><span>${esc(TX(b,nvid))}</span></li>`).join("")}</ul>
 
     <div class="eyebrow" style="margin-top:26px">${TX("gate.plansH")}</div>
-    <div class="plans">${PLANS.map(pl=>`
+    <div class="plans">${SHOWN().map(pl=>`
       <div class="plan${pl.best?" best":""}${pl.soon?" soon":""}">
         ${pl.limit?`<span class="ptag">${TX("gate.limit", pl.limit)}</span>`
            :pl.soon?`<span class="ptag soon">${TX("soon")}</span>`
