@@ -28,6 +28,7 @@
   --line:#2B3020;
   --r-lg:18px; --r-md:12px; --r-sm:8px;
   --safe:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px);   /* ホーム画面に追加したときの、上の時計・アイランドぶん */
   --nav-h:60px;
   --jp:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
   --font:"Saira",var(--jp);
@@ -47,7 +48,7 @@ button{border:0;background:none;cursor:pointer}
 .noscroll{scrollbar-width:none}.noscroll::-webkit-scrollbar{display:none}
 
 /* ── アプリの外枠 ── */
-#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+#app{max-width:430px;margin:0 auto;height:100dvh;padding-top:var(--safe-top);display:flex;flex-direction:column;position:relative;overflow:hidden}
 @media(min-width:520px){
   body{background:#050504 fixed}
   #app{background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-top) 22%,var(--bg-bottom) 78%);
@@ -3662,7 +3663,7 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 
 /* ── ロゴ画像 ── */
 .logomark{display:block;width:100%;height:auto}
-.gate .logomark{max-width:236px;margin:0 0 14px}
+.gate .logomark{max-width:236px;margin:0 auto 14px}
 .lp .logomark{max-width:218px;margin:0 auto 16px}
 
 
