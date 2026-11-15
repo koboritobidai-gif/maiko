@@ -1230,6 +1230,25 @@ addTxt({
                    "You have used all your rest days. Skip today and you cannot make it up this cycle."],
 "home.allVideos": ["NARU の実演動画をぜんぶ見る &nbsp;→","See all of NARU\u2019s demo videos &nbsp;→"],
 "home.settings" : ["メニューの設定を変える","Change your settings"],
+
+/* ホーム画面に追加する案内 */
+"a2hs.h"     : ["ホーム画面に追加すると、アプリとして使えます",
+                "Add this to your home screen to use it as an app"],
+"a2hs.why"   : ["次からはアイコンから、すぐ開けます。全画面になって見やすくなります。",
+                "After that you open it straight from the icon, full screen."],
+"a2hs.ios1"  : ["画面の下にある {0} を押す","Tap {0} at the bottom of the screen"],
+"a2hs.ios2"  : ["メニューを下にたどって「ホーム画面に追加」を選ぶ",
+                "Scroll down the menu and choose \u201cAdd to Home Screen\u201d"],
+"a2hs.ios3"  : ["右上の「追加」を押す","Tap \u201cAdd\u201d at the top right"],
+"a2hs.and1"  : ["画面の右上にある {0} を押す","Tap {0} at the top right"],
+"a2hs.and2"  : ["「アプリをインストール」または「ホーム画面に追加」を選ぶ",
+                "Choose \u201cInstall app\u201d or \u201cAdd to Home screen\u201d"],
+"a2hs.and3"  : ["「インストール」を押す","Tap \u201cInstall\u201d"],
+"a2hs.pc"    : ["スマホで開くと、ホーム画面に追加してアプリとして使えます。このページのURLを、自分のスマホに送っておいてください。",
+                "Open this on your phone to add it to your home screen. Send yourself the link."],
+"a2hs.close" : ["閉じる","Close"],
+"a2hs.setH"  : ["ホーム画面に追加する","Add to your home screen"],
+"a2hs.setB"  : ["やり方をもう一度見る","Show me how again"],
 "home.lastDay"  : ["この2週間は今日で最終日です（{0} / {1} 日 実施）",
                    "Today is the last day of this cycle ({0} of {1} done)"],
 "home.nextUp"   : ["次の予定：DAY {0} {1}","Next: DAY {0} {1}"],
@@ -2234,6 +2253,8 @@ function viewHome(){
           ${strip.map(d=>`<div class="${d.done?"done":""} ${d.today?"today":""}">${d.ja}<i>${d.done?"✓":"·"}</i></div>`).join("")}
         </div>
 
+        ${a2hsBlock()}
+
         ${wodBlock()}
         ${videoBlock(todaysVideoEx())}
         ${SHOW_VIDEO_LIST?`<button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
@@ -2278,6 +2299,49 @@ function todaysVideoEx(){
 }
 /* その日の解説動画。PROGRAM の各日に wod があるときだけ出る。
    ホームと「今日」の両方から呼ぶ */
+/* ── ホーム画面に追加する案内 ───────────────────────────────
+   App Store には出していないので、放っておくと Safari のまま使われてしまう。
+   すでにホーム画面から開いている人と、閉じた人には出さない。 */
+function standalone(){
+  try{
+    return window.matchMedia("(display-mode: standalone)").matches
+        || window.navigator.standalone === true;
+  }catch(e){ return false; }
+}
+function a2hsPlat(){
+  const ua = navigator.userAgent || "";
+  /* iPadOS は Macintosh を名乗るので、タッチの有無で見分ける */
+  if(/iPhone|iPod/.test(ua)) return "ios";
+  if(/iPad/.test(ua)) return "ios";
+  if(/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return "ios";
+  if(/Android/.test(ua)) return "and";
+  return "pc";
+}
+const IOS_SHARE = '<svg class="shicon" viewBox="0 0 24 24" aria-hidden="true">'
+  + '<path d="M12 3.2 8.6 6.6l1.1 1.1 1.5-1.5V15h1.6V6.2l1.5 1.5 1.1-1.1z"/>'
+  + '<path d="M5.4 10.2h3v1.6h-3v8h11.2v-8h-3v-1.6h3a1.6 1.6 0 0 1 1.6 1.6v8a1.6 1.6 0 0 1-1.6 1.6H5.4a1.6 1.6 0 0 1-1.6-1.6v-8a1.6 1.6 0 0 1 1.6-1.6z"/>'
+  + '</svg>';
+const AND_MENU = '<svg class="shicon" viewBox="0 0 24 24" aria-hidden="true">'
+  + '<circle cx="12" cy="5.4" r="1.9"/><circle cx="12" cy="12" r="1.9"/>'
+  + '<circle cx="12" cy="18.6" r="1.9"/></svg>';
+function a2hsBlock(){
+  if(standalone()) return "";
+  if(S.extras && S.extras.a2hs === "off") return "";
+  const pl = a2hsPlat();
+  const steps = pl==="ios"
+      ? [TX("a2hs.ios1", IOS_SHARE), TX("a2hs.ios2"), TX("a2hs.ios3")]
+    : pl==="and"
+      ? [TX("a2hs.and1", AND_MENU), TX("a2hs.and2"), TX("a2hs.and3")]
+      : null;
+  return `<div class="a2hs">
+    <button class="x" data-a2hs-off aria-label="${TX("a2hs.close")}">✕</button>
+    <b>${TX("a2hs.h")}</b>
+    ${steps ? `<ol>${steps.map(t=>`<li>${t}</li>`).join("")}</ol>
+               <p>${TX("a2hs.why")}</p>`
+            : `<p class="pc">${TX("a2hs.pc")}</p>`}
+  </div>`;
+}
+
 function wodBlock(){
   const p = todayProgram();
   if(!p || !p.wod) return "";
@@ -3004,6 +3068,12 @@ function viewSettings(){
           <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
         </div>` : ""}
 
+        ${standalone()?"":`
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:6px">${TX("a2hs.setH")}</div>
+          <button class="lnk first" data-a2hs-on>${TX("a2hs.setB")}</button>
+        </div>`}
+
         <div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:4px">${TX("set.aboutH")}</div>
           <button class="lnk first" data-legal="tokushoho">${TX("doc.tokusho")}</button>
@@ -3291,6 +3361,10 @@ function bind(){
     S.level=ob.level; save(); go("home");
   });
   on("[data-ob-back]",()=>{ ob.step--; render(); });
+
+  /* ホーム画面に追加する案内 */
+  on("[data-a2hs-off]",()=>{ S.extras=S.extras||{}; S.extras.a2hs="off"; save(); render(); });
+  on("[data-a2hs-on]", ()=>{ S.extras=S.extras||{}; delete S.extras.a2hs; save(); go("home"); });
 
   /* 強度切り替え */
   on("[data-level]",el=>{ S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
@@ -3737,6 +3811,22 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .lp-chips span{background:var(--surface);border:1px solid rgba(226,236,206,.12);
   border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;color:var(--ink-soft)}
 
+
+/* ── ホーム画面に追加する案内 ───────────────────────────── */
+.a2hs{position:relative;margin-top:13px;padding:15px 40px 15px 15px;
+      background:var(--olive-soft);border:1px solid rgba(202,255,60,.3);
+      border-radius:var(--r-lg)}
+.a2hs b{display:block;font-size:14px;font-weight:800;line-height:1.55;color:var(--ink)}
+.a2hs ol{margin:11px 0 0;padding:0 0 0 19px}
+.a2hs li{font-size:13.5px;line-height:1.7;color:var(--ink-soft);margin-top:5px}
+.a2hs li::marker{color:var(--olive);font-weight:800}
+.a2hs p{margin:10px 0 0;font-size:12.5px;line-height:1.7;color:var(--ink-mute)}
+.a2hs p.pc{margin-top:9px;font-size:13.5px;color:var(--ink-soft)}
+.a2hs .x{position:absolute;top:7px;right:7px;width:30px;height:30px;border-radius:999px;
+         font-size:13px;color:var(--ink-mute)}
+.a2hs .x:active{background:rgba(226,236,206,.1)}
+.a2hs .shicon{display:inline-block;vertical-align:-4px;width:18px;height:18px;
+              fill:var(--olive);margin:0 1px}
 </style>
 </body>
 </html>
