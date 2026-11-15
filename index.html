@@ -1326,9 +1326,9 @@ addTxt({
                  "An app to help anyone design the body they want \u2014 and learn to love it."],
 "gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。単なる「ダイエット」や「筋力アップ」にとどまらず、体、脳、心の全てを正常に機能させ、人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
-"gate.steps"  : ["体調や目標に合わせて選べる3ステップ","Three levels, picked by how you feel today"],
-"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 3 に挑戦」が、自由に選べます。",
-                 "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 3.\u201d It is your call, every day."],
+"gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
+"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 2 に挑戦」が、自由に選べます。",
+                 "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 2.\u201d It is your call, every day."],
 "gate.lead"   : ["2週間で1クール。14日分のメニューが、休む日まで組んであります。",
                  "One cycle is two weeks. All 14 days are planned out \u2014 rest days included."],
 "gate.p1t"    : ["14日分のプログラム","A full 14-day program"],
@@ -1388,8 +1388,8 @@ So — let's begin today.`],
 "lp.c1"       : ["1日10分から","From 10 minutes a day"],
 "lp.c2"       : ["週3〜4回のペースでもOK","3 to 4 times a week is fine"],
 "gate.limit"  : ["先着{0}名様","Only {0} places"],
-"gate.limitWhy":["はじめの{0}名様の価格です。{1}名様以降は {2}円 / 月 になります。",
-                 "This is the price for the first {0} members. From member {1} it is {2} JPY a month."],
+"gate.limitWhy":["はじめの{0}名様の価格です。{1}名様以降は {2}円 / {3} になります。",
+                 "This is the price for the first {0} members. From member {1} it is {2} JPY / {3}."],
 "gate.full"   : ["満席になりました","All places taken"],
 
 "gate.payTbd" : ["準備中","Coming soon"],
@@ -1456,10 +1456,13 @@ So — let's begin today.`],
 });
 
 const GOAL_LABEL = {tone:"goal.tone",lose:"goal.lose",build:"goal.build",stamina:"goal.stamina"};
+/* 2段階だけにする。中身のない中級（内部 id: fit2）は外した。
+   「Fit 2」として見せているのは、中身のある上級プログラム（内部 id: fit3）。
+   id を fit2 に付け替えると、すでに使っている人の保存データと
+   PROGRAM のキーが食い違うので、表示名だけ変えてある。 */
 const LEVELS = [
   {id:"fit1", name:"Fit 1", emoji:"🏃"},
-  {id:"fit2", name:"Fit 2", emoji:"🏋️"},
-  {id:"fit3", name:"Fit 3", emoji:"🔥"},
+  {id:"fit3", name:"Fit 2", emoji:"🔥"},
 ];
 const levelLead  = id => TX("lv."+id+".lead");
 const levelSub   = id => TX("lv."+id+".sub");
@@ -1740,8 +1743,12 @@ const BIZ = {
   name : "杉田 成美",
   email: "narufitness16@gmail.com",               // 問い合わせ用
   site : "https://naru-fit-daily.pages.dev",     // 公開後のアプリURL
-  /* スタンダード（3,900円 / 2週間ごと）の支払いリンク */
-  pay  : "https://buy.stripe.com/8x23cxbug8O2bwQ5KJ87K02",
+  /* スタンダード（先着5名・3,500円 / 2週間ごと）の支払いリンク。
+     Stripe でこの価格のリンクを作ったら、ここに入れる。
+     null のあいだ、申し込みボタンは「準備中」になる。
+     ※ 6名様以降に使う 3,900円のリンクはもうある：
+        https://buy.stripe.com/8x23cxbug8O2bwQ5KJ87K02 */
+  pay  : null,
   /* コーチングつき（14,800円 / 月）の支払いリンク */
   payCoach: "https://buy.stripe.com/dRmcN7cyke8m58sc9787K01",
   /* Stripe カスタマーポータル。お客様がここから解約・カード変更ができる。
@@ -1776,14 +1783,20 @@ const PLANS = [
   { id:"std",
     name  :"スタンダード",            nameEn:"Standard",
     lead  :"アプリだけで続ける",      leadEn:"The app on its own",
-    price :3900, days:14, per:"2週間",
+    price :3500, days:14, per:"2週間",
+    /* はじめの5名様は 3,500円。6人目からは nextPrice（3,900円）。
+       「先着5名様」と書いた以上、6人目からは本当に 3,900円 で売ること。
+       5名埋まったら price を 3900 にして、pay を 3,900円のリンクへ差し替える。
+       3,900円の支払いリンク: https://buy.stripe.com/8x23cxbug8O2bwQ5KJ87K02 */
+    limit :5,
+    nextPrice:3900,
     pay   :BIZ.pay,
-    feats :["14日分のメニュー（Fit 1 / Fit 3）",
+    feats :["14日分のメニュー（Fit 1 / Fit 2）",
             "naru の実演動画つき",
             "重量と回数の記録",
             "その日の解説動画",
             "コミュニティに参加できます（追加料金なし）"],
-    featsEn:["A full 14-day program (Fit 1 / Fit 3)",
+    featsEn:["A full 14-day program (Fit 1 / Fit 2)",
              "NARU's own demo videos",
              "Log your weight and reps",
              "A short briefing for each day",
@@ -3279,7 +3292,7 @@ function viewGate(){
 
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
         ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit, pl.limit+1,
-             (pl.nextPrice||0).toLocaleString())}</p>`
+             (pl.nextPrice||0).toLocaleString(), esc(pl.per))}</p>`
           :pl.note?`<p class="pfu">${esc(planTx(pl,"note"))}</p>`:""}
         ${pl.full
           ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
