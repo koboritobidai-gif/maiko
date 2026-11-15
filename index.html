@@ -1774,11 +1774,13 @@ const PLANS = [
     feats :["14日分のメニュー（Fit 1 / Fit 3）",
             "naru の実演動画つき",
             "重量と回数の記録",
-            "その日の解説動画"],
+            "その日の解説動画",
+            "コミュニティに参加できます（追加料金なし）"],
     featsEn:["A full 14-day program (Fit 1 / Fit 3)",
              "NARU's own demo videos",
              "Log your weight and reps",
-             "A short briefing for each day"] },
+             "A short briefing for each day",
+             "The community, included at no extra cost"] },
 
   { id:"coach",
     name  :"コーチングつき",          nameEn:"With coaching",
@@ -1810,7 +1812,7 @@ const PLANS = [
      先に売ってしまうと、無いものを売ったことになる。 */
   { id:"comm",
     name  :"コミュニティ",            nameEn:"Community",
-    lead  :"ゆるくつながって続ける",  leadEn:"Keep going, together",
+    lead  :"コミュニティだけ使う",    leadEn:"Just the community",
     price :330, days:null, monthly:true, per:"月",
     pay   :null,                      /* ← 中身ができてから入れる */
     soon  :true,                      /* 準備中であることを明示する */
@@ -1819,7 +1821,11 @@ const PLANS = [
             "悩み相談・質問ができる部屋"],
     featsEn:["A weekly note from NARU on food and mindset",
              "A room to post what you did today",
-             "A room to ask anything and talk it through"] }
+             "A room to ask anything and talk it through"],
+    /* スタンダード／コーチングつきには最初から含まれる。
+       この単体プランは、プログラムをやめたあとも残りたい人のためのもの。 */
+    note  :"スタンダード・コーチングつきの方は、追加の料金なしで参加できます。ここはプログラムを終えたあとも、ゆるくつながっていたい方のためのプランです。",
+    noteEn:"Standard and coaching members are already in, at no extra cost. This plan is for staying connected after the program ends." }
 ];
 /* プランの英語表記。無ければ日本語のまま */
 const planTx = (pl,k) => (lang()==="en" && pl[k+"En"]) ? pl[k+"En"] : pl[k];
@@ -3261,7 +3267,8 @@ function viewGate(){
 
         <ul class="pfe">${planTx(pl,"feats").map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
         ${pl.limit?`<p class="pfu">${TX("gate.limitWhy", pl.limit, pl.limit+1,
-             (pl.nextPrice||0).toLocaleString())}</p>`:""}
+             (pl.nextPrice||0).toLocaleString())}</p>`
+          :pl.note?`<p class="pfu">${esc(planTx(pl,"note"))}</p>`:""}
         ${pl.full
           ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
           : pl.pay
