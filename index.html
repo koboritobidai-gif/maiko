@@ -1195,6 +1195,7 @@ addTxt({
 "set.codeNote":["パスワードは定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
                 "The password changes from time to time. If you are asked for it again, check the email from your sign-up."],
 "set.relock" : ["パスワードを入れ直す","Enter the password again"],
+"set.cancel" : ["解約・お支払い方法の変更","Cancel or change your card"],
 "set.aboutH" : ["このアプリについて","About this app"],
 "set.notice" : ["ご利用にあたって（安全のために）","Before you start (for your safety)"],
 "set.reset"  : ["診断をやり直す（データ消去）","Start over (this erases your data)"],
@@ -1740,6 +1741,9 @@ const BIZ = {
   email: "narufitness16@gmail.com",               // 問い合わせ用
   site : "https://naru-fit-daily.pages.dev",     // 公開後のアプリURL
   pay  : "https://buy.stripe.com/8x2eVfbugc0e6cw4GF87K00",
+  /* Stripe カスタマーポータル。お客様がここから解約・カード変更ができる。
+     特商法の「返品・解約」に書く必要がある */
+  portal: "https://billing.stripe.com/p/login/8x2eVfbugc0e6cw4GF87K00",
   /* 価格は PLANS が一次情報。ここは使っていない（残してあるのは互換のため） */
   price: null,
   /* 英語表記。海外のお客様には日本の消費税がかからない（国外取引）ので
@@ -1862,7 +1866,9 @@ const LEGAL = {
       <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
       <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
         次回の更新日の前に解約していただくと、以後の課金は停止します。<br>
-        解約の手続きは ${TBD("解約ページのURL")} から行えます。</td></tr>
+        解約の手続きは <a href="${esc(BIZ.portal)}" target="_blank" rel="noopener"
+          style="color:var(--olive-dark)">解約ページ</a> から行えます（お申し込みに使った
+        メールアドレスを入力すると、解約の画面が開きます）。</td></tr>
       <tr><th>動作環境</th><td>インターネットに接続されたスマートフォン・タブレット・パソコン、
         および最新版のWebブラウザ</td></tr>
     </table>`,
@@ -1898,7 +1904,8 @@ const LEGAL = {
         that applies to you \u2014 including, for customers in Australia, the consumer guarantees
         under the Australian Consumer Law. If something we supply is faulty or not as described,
         contact us and we will put it right.<br>
-        You can cancel from ${TBD("cancellation page URL")}.</td></tr>
+        You can cancel yourself from <a href="${esc(BIZ.portal)}" target="_blank" rel="noopener"
+          style="color:var(--olive-dark)">this page</a> \u2014 enter the email you signed up with.</td></tr>
       <tr><th>What you<br>need</th><td>A smartphone, tablet or computer with an internet
         connection and an up-to-date web browser</td></tr>
     </table>` },
@@ -3091,7 +3098,9 @@ function viewSettings(){
               : TX("set.codeOk", `<b style="color:var(--olive-dark)">${esc(S.access&&S.access.code||"")}</b>`,
                    esc(S.access&&S.access.at?mmdd(S.access.at):"—")) + "<br>" + TX("set.codeNote")}
           </p>
-          <button class="lnk first" style="margin-top:8px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
+          ${BIZ.portal?`<a class="lnk first" style="margin-top:8px;display:block"
+            href="${esc(BIZ.portal)}" target="_blank" rel="noopener">${TX("set.cancel")}</a>`:""}
+          <button class="lnk${BIZ.portal?"":" first"}" style="margin-top:8px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
         </div>` : ""}
 
         ${standalone()?"":`
