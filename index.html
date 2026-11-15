@@ -1313,9 +1313,9 @@ addTxt({
 /* 最初の画面 */
 "lp.hero"    : ["小さなステップから、<br>効率よくカラダを<br>動かしていこう",
                 "Start small.<br>Train smart.<br>Keep moving."],
-"lp.a1"      : ["無理なく運動を習慣にしたい人","For anyone who wants exercise to finally stick"],
-"lp.a2"      : ["引き締まった理想の体を作りたい人","For anyone who wants the physique they picture"],
-"lp.a3"      : ["正しいフォームと体力をつけたい人","For anyone who wants clean form and real stamina"],
+"lp.a1"      : ["無理なく運動を習慣にしたい","For anyone who wants exercise to finally stick"],
+"lp.a2"      : ["引き締まった理想の体を作りたい","For anyone who wants the physique they picture"],
+"lp.a3"      : ["正しいフォームと体力をつけたい","For anyone who wants clean form and real stamina"],
 "lp.resume"  : ["前回の続きから","Continue where you left off"],
 "lp.has"     : ["アカウントをお持ちの方は","Already signed up?"],
 "lp.login"   : ["ログイン","Log in"],
@@ -1392,6 +1392,7 @@ So — let's begin today.`],
 "gate.full"   : ["満席になりました","All places taken"],
 
 "gate.payTbd" : ["準備中","Coming soon"],
+"gate.soonWhen": ["できしだいお知らせします","We\u2019ll let you know when it opens"],
 "gate.bonusH" : ["先着10名様","First 10 members"],
 "gate.bonus"  : ["初回のみ、30分のオンラインコーチングつき。トレーニングのことだけでなく、食事のことでも何でもご相談ください。",
                  "Includes a 30-minute online coaching session \u2014 training, food, anything you want to ask."],
@@ -1800,7 +1801,25 @@ const PLANS = [
             "フォームの確認、次の1か月の組み立て、食事の相談まで"],
     featsEn:["Everything in Standard",
              "A 50-minute online session with NARU, once a month",
-             "Form checks, planning the month ahead, and food"] }
+             "Form checks, planning the month ahead, and food"] },
+
+  /* ── コミュニティ（月額330円） ─────────────────────────────
+     掲示板・報告・相談の3部屋。スプレッドシートの【サブスク】の内容。
+     中身がまだアプリに無いので pay は null のまま＝ボタンは「準備中」。
+     作ってから Stripe のリンクを入れること。
+     先に売ってしまうと、無いものを売ったことになる。 */
+  { id:"comm",
+    name  :"コミュニティ",            nameEn:"Community",
+    lead  :"ゆるくつながって続ける",  leadEn:"Keep going, together",
+    price :330, days:null, monthly:true, per:"月",
+    pay   :null,                      /* ← 中身ができてから入れる */
+    soon  :true,                      /* 準備中であることを明示する */
+    feats :["naru からの週1回のヒント（食事・マインド）",
+            "今日やったことを報告しあう部屋",
+            "悩み相談・質問ができる部屋"],
+    featsEn:["A weekly note from NARU on food and mindset",
+             "A room to post what you did today",
+             "A room to ask anything and talk it through"] }
 ];
 /* プランの英語表記。無ければ日本語のまま */
 const planTx = (pl,k) => (lang()==="en" && pl[k+"En"]) ? pl[k+"En"] : pl[k];
@@ -3230,8 +3249,9 @@ function viewGate(){
 
     <div class="eyebrow" style="margin-top:26px">${TX("gate.plansH")}</div>
     <div class="plans">${PLANS.map(pl=>`
-      <div class="plan${pl.best?" best":""}">
+      <div class="plan${pl.best?" best":""}${pl.soon?" soon":""}">
         ${pl.limit?`<span class="ptag">${TX("gate.limit", pl.limit)}</span>`
+           :pl.soon?`<span class="ptag soon">${TX("soon")}</span>`
            :(pl.best?`<span class="ptag">${TX("gate.best")}</span>`:"")}
         <div class="pnm">${esc(planTx(pl,"name"))}</div>
         <div class="pld">${esc(planTx(pl,"lead"))}</div>
@@ -3248,7 +3268,7 @@ function viewGate(){
             ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
                   target="_blank" rel="noopener">${TX("gate.buy")}</a>`
             : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
-        <div class="pcy">${pl.monthly?TX("gate.renewMo"):TX("gate.renew14")}</div>
+        <div class="pcy">${pl.soon?TX("gate.soonWhen"):pl.monthly?TX("gate.renewMo"):TX("gate.renew14")}</div>
       </div>`).join("")}</div>
     ${""/* 先着10名様の無料コーチング特典。コーチングつきプラン（先着5名）と
          矛盾するため外してある。戻すときは下の1行を有効にする。
@@ -3828,6 +3848,11 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .a2hs .x:active{background:rgba(226,236,206,.1)}
 .a2hs .shicon{display:inline-block;vertical-align:-4px;width:18px;height:18px;
               fill:var(--olive);margin:0 1px}
+
+/* 準備中のプラン（中身がまだ無いもの）は控えめに見せる */
+.plan.soon{opacity:.62}
+.ptag.soon{background:var(--surface-alt);color:var(--ink-mute);
+           border:1px solid rgba(226,236,206,.14)}
 </style>
 </body>
 </html>
