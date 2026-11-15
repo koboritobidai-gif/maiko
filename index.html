@@ -1106,6 +1106,8 @@ function TX(k){
   for(let i=1;i<arguments.length;i++) v = v.split("{"+(i-1)+"}").join(arguments[i]);
   return v;
 }
+/* 文中の改行（\n）だけ <br> にして出す。それ以外は今までどおりエスケープする */
+const brk = t => esc(t).split("\n").join("<br>");
 const TXT = { ja:{}, en:{} };
 function addTxt(map){ for(const k in map){ TXT.ja[k]=map[k][0]; TXT.en[k]=map[k][1]; } }
 
@@ -1327,9 +1329,9 @@ addTxt({
 "gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。単なる「ダイエット」や「筋力アップ」にとどまらず、体、脳、心の全てを正常に機能させ、人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
 "gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
-"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」「休日に時間があるから Fit 2 に挑戦」が、自由に選べます。",
+"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」\n「休日に時間があるから Fit 2 に挑戦」が\n自由に選べます。",
                  "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 2.\u201d It is your call, every day."],
-"gate.lead"   : ["2週間で1クール。14日分のメニューが、休む日まで組んであります。",
+"gate.lead"   : ["2週間で1クール。\n14日分のメニューが、休む日まで組んであります。",
                  "One cycle is two weeks. All 14 days are planned out \u2014 rest days included."],
 "gate.p1t"    : ["14日分のプログラム","A full 14-day program"],
 "gate.p1b"    : ["DAY 1 から DAY 14 まで。休養日もクールダウンの日もメニューに入っています",
@@ -3262,10 +3264,10 @@ function viewGate(){
           <span>${esc(levelSub(l.id))}</span></span>
         ${levelReady(l.id)?"":`<span class="soon-tag">${TX("soon")}</span>`}
       </div>`).join("")}
-      <p class="steps-note">${esc(TX("gate.switch"))}</p>
+      <p class="steps-note">${brk(TX("gate.switch"))}</p>
     </div>
 
-    <p class="lead">${esc(TX("gate.lead"))}</p>
+    <p class="lead">${brk(TX("gate.lead"))}</p>
 
     <div class="gate-msg">
       <img class="photo" src="img/naru.jpg" alt="杉田 成美（NARU）" width="880" height="1100">
@@ -3892,10 +3894,12 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
    text-wrap:pretty   … 最後の行に1語だけ残さない（長い文用）
    word-break:auto-phrase … 文節の切れ目で折る（日本語向け・Chrome系）
    どれも対応していないブラウザでは、今までどおりの折り返しになる。 */
-.gate .tagline, .gate .lead, .pfu, .pcy, .steps-note, .gate-consent,
+.gate .tagline, .pfu, .pcy, .gate-consent,
 .swapnote, .plan .pld, .plan .ppm, .a2hs p, .lp-chips span, .levelhint{
   text-wrap:balance; word-break:auto-phrase;
 }
+/* 改行を文言のなかで指定しているので、自動では動かさない */
+.gate .lead, .steps-note{ text-wrap:normal }
 .gate .hook, .about span, .step .tx span, .note p, .sub, .daysub{
   text-wrap:pretty; word-break:auto-phrase;
 }
