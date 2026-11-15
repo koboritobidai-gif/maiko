@@ -1751,8 +1751,11 @@ const BIZ = {
      ※ 6名様以降に使う 3,900円のリンクはもうある：
         https://buy.stripe.com/8x23cxbug8O2bwQ5KJ87K02 */
   pay  : "https://buy.stripe.com/00w3cx55S3tIasM6ON87K03",
-  /* コーチングつき（14,800円 / 月）の支払いリンク */
+  /* コーチングつき（先着5名・14,800円 / 月）の支払いリンク */
   payCoach: "https://buy.stripe.com/dRmcN7cyke8m58sc9787K01",
+  /* コーチングつき（6名様以降・19,800円 / 月）の支払いリンク。
+     5名埋まったら PLANS の price を 19800 にして、pay をこちらへ差し替える */
+  payCoachFull: "https://buy.stripe.com/eVq9AVbugd4i0Scehf87K04",
   /* Stripe カスタマーポータル。お客様がここから解約・カード変更ができる。
      特商法の「返品・解約」に書く必要がある */
   portal: "https://billing.stripe.com/p/login/8x2eVfbugc0e6cw4GF87K00",
