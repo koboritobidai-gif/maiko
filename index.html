@@ -366,7 +366,8 @@ const EX = {
 
   /* ---- 自重（自宅） ---- */
   "push-up":{en:"Push-up",ja:"プッシュアップ",video:{src:"videos/push-up.mp4",poster:"videos/push-up.jpg"},
-    cues:["肘は45度に締める","胸から下ろして胸から上げる"],
+    cues:["肘は45度に締める","胸から下ろして胸から上げる",
+          "きついと感じたら膝つきでOK"],
     miss:["腰が落ちる","可動域が浅い"],breath:"下ろすとき吸い、押すとき吐く"},
   "knee-push-up":{en:"Knee Push-up",ja:"膝つきプッシュアップ",video:null,
     cues:["膝から頭まで一直線","手は肩幅よりやや広く"],
@@ -695,7 +696,8 @@ const EX_EN = {
   miss:["Elbows drifting forward","Using momentum"],breath:"Breathe out as you lift"},
 "pushdown":{cues:["Elbows fixed at your sides","Lock out and hold for a second"],
   miss:["Elbows moving back and forth","Leaning your body weight into it"],breath:"Breathe out as you push down"},
-"push-up":{cues:["Elbows at about 45 degrees","Lower with your chest and push with your chest"],
+"push-up":{cues:["Elbows at about 45 degrees","Lower with your chest and push with your chest",
+  "Drop to your knees if it gets hard \u2014 that is fine"],
   miss:["Hips sagging","Not going deep enough"],breath:"In on the way down, out as you push"},
 "knee-push-up":{cues:["Straight line from knees to head","Hands slightly wider than your shoulders"],
   miss:["Hips sticking up","Elbows flaring straight out"],breath:"In on the way down, out as you push"},
@@ -1773,7 +1775,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-6",
+  build: "2026.11.16-7",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
