@@ -1263,6 +1263,17 @@ addTxt({
                    "You have used all your rest days. Skip today and you cannot make it up this cycle."],
 "home.allVideos": ["NARU の実演動画をぜんぶ見る &nbsp;→","See all of NARU\u2019s demo videos &nbsp;→"],
 "home.settings" : ["メニューの設定を変える","Change your settings"],
+"home.guide"    : ["使い方ガイド","How to use this app"],
+"upd.msg"       : ["新しいバージョンがあります","A new version is available"],
+"upd.msgHard"   : ["新しいバージョンを取り直します","Fetching the new version"],
+"upd.btn"       : ["更新する","Update"],
+"guide.title"   : ["使い方ガイド","How to use this app"],
+"guide.lead"    : ["上から順に見ていけば、ひと通り使えるようになります。むずかしいことはありません。",
+                   "Go through these in order and you will know everything you need."],
+"guide.setH"    : ["使い方がわからないとき","If you are not sure how to use it"],
+"guide.askH"    : ["それでも解決しないとき","Still stuck?"],
+"guide.askB"    : ["遠慮なく naru に連絡してください。どこで止まったかだけ教えてもらえれば大丈夫です。",
+                   "Just email naru and say where you got stuck."],
 
 /* ホーム画面に追加する案内 */
 "a2hs.h"     : ["ホーム画面に追加すると、アプリとして使えます",
@@ -1986,7 +1997,9 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-19",
+  /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
+     version.json をそろえる（アプリはこれを見て更新に気づく） */
+  build: "2026.11.16-21",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2388,6 +2401,7 @@ function render(){
   else if(current==="timer") app.innerHTML = viewTimer();
   else if(current==="log") app.innerHTML = viewLog();
   else if(current==="settings") app.innerHTML = viewSettings();
+  else if(current==="guide") app.innerHTML = viewGuide();
   else if(current==="videos") app.innerHTML = SHOW_VIDEO_LIST ? viewVideos() : viewHome();
   bind();
 }
@@ -2550,7 +2564,8 @@ function viewHome(){
         </div>
 
         <div style="margin-top:11px">
-          <button class="btn btn-ghost" data-go="settings">${TX("home.settings")}</button>
+          <button class="btn btn-ghost" data-go="guide">${TX("home.guide")}</button>
+          <button class="btn btn-ghost" style="margin-top:9px" data-go="settings">${TX("home.settings")}</button>
         </div>
 
         <p class="sub" style="text-align:center;margin-top:14px">
@@ -3371,6 +3386,11 @@ function viewSettings(){
         </div>`}
 
         <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:6px">${TX("guide.setH")}</div>
+          <button class="lnk first" data-go="guide">${TX("home.guide")}</button>
+        </div>
+
+        <div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:4px">${TX("set.aboutH")}</div>
           <button class="lnk first" data-legal="tokushoho">${TX("doc.tokusho")}</button>
           <button class="lnk" data-legal="privacy">${TX("doc.privacy")}</button>
@@ -3382,6 +3402,79 @@ function viewSettings(){
 
         <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
         <button class="btn btn-ghost" style="margin-top:9px;color:#a4442c" data-reset>${TX("set.reset")}</button>
+      </div>
+    </div>
+    ${nav("home")}
+  </div>`;
+}
+
+/* =========================================================================
+   使い方ガイド
+   アプリに慣れていない方向け。むずかしい言い方をしない、1項目＝1つのことだけ
+   ========================================================================= */
+const GUIDE = [
+  {n:"1", h:"アプリを開く",
+   b:["ホーム画面の NARU FIT DAILY のアイコンをタップします。毎回 Safari から開き直す必要はありません。",
+      "アイコンがまだ無い方は、このあと出てくる「ホーム画面に追加する方法」を先に見てください。"]},
+  {n:"2", h:"今日やることを見る",
+   b:["画面のいちばん下にある「TRAIN／今日」をタップします。",
+      "今日のメニューが出ます。左上の「DAY 3」のような数字は、はじめてから何日目かです。"]},
+  {n:"3", h:"フォームを確かめる",
+   b:["種目の名前（Air Squat など）をタップすると、動画とフォームのポイントが開きます。",
+      "「よくあるミス」も書いてあるので、はじめの1回だけでも見ておくと安心です。",
+      "閉じるときは、いちばん下の「閉じる」をタップします。"]},
+  {n:"4", h:"タイマーを使う",
+   b:["プランク30秒のような時間の種目や、AMRAP の日は「タイマーを使う」をタップします。",
+      "あとは画面が数えてくれるので、動くことだけに集中して大丈夫です。"]},
+  {n:"5", h:"終わったら記録する",
+   b:["「終わったら記録する」をタップします。",
+      "重さや回数は、入れても入れなくてもかまいません。押すだけで「やった」が残ります。",
+      "記録すると、ホームの STREAK（連続日数）が増えていきます。"]},
+  {n:"6", h:"しんどい日は休む",
+   b:["ホームの「今日は休む（DAY ○ の休養日と振り替える）」をタップすると、今日を休みにできます。",
+      "休養日の分を今日に持ってくる形なので、2週間でやる回数は変わりません。",
+      "押し間違えたときは「やっぱり今日トレーニングする」で元に戻せます。"]},
+  {n:"7", h:"これまでの記録を見る",
+   b:["画面のいちばん下にある「LOG／記録」をタップします。",
+      "何日続いているか、これまで何回やったかが見られます。"]},
+  {n:"8", h:"アプリを最新にする",
+   b:["アプリを直したときは、ふつうは何もしなくても自動で新しくなります。",
+      "新しくならないときは、アプリを一度完全に終了して開き直してください。",
+      "iPhone：画面の下から上へゆっくりスワイプして指を止める → NARU FIT DAILY を上にはらって閉じる → もう一度アイコンをタップ。",
+      "設定のいちばん下に出ている ver. の数字が変わっていれば、新しくなっています。"]},
+  {n:"9", h:"うまくいかないときは",
+   b:["まず 8 の「アプリを最新にする」をためしてください。これでほとんど直ります。",
+      "それでもおかしいときは、設定のいちばん下の ver. の数字を添えて naru に連絡してください。"]}
+];
+
+function viewGuide(){
+  return `<div class="screen on">
+    ${topbar()}
+    <div class="scroll">
+      <div class="pad">
+        <h1 class="h1" style="margin-top:2px">${TX("guide.title")}</h1>
+        <p class="sub" style="margin-bottom:14px">${TX("guide.lead")}</p>
+        ${GUIDE.map(g=>`
+          <div class="gstep">
+            <div class="gnum">${g.n}</div>
+            <div class="gbody">
+              <h3>${esc(g.h)}</h3>
+              ${g.b.map(t=>`<p>${esc(t)}</p>`).join("")}
+            </div>
+          </div>`).join("")}
+        ${standalone()?"":`
+        <div class="card" style="padding:15px;margin-top:16px">
+          <div class="eyebrow" style="margin-bottom:6px">${TX("a2hs.setH")}</div>
+          <button class="lnk first" data-a2hs-on>${TX("a2hs.setB")}</button>
+        </div>`}
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:6px">${TX("guide.askH")}</div>
+          <p class="sub" style="margin:0 0 9px">${TX("guide.askB")}</p>
+          <a class="lnk first" style="display:block" href="mailto:${esc(BIZ.email)}">${esc(BIZ.email)}</a>
+        </div>
+        <p class="sub" style="text-align:center;margin-top:16px;font-size:10.5px;opacity:.5">
+          ver. ${esc(BIZ.build)}</p>
+        <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
       </div>
     </div>
     ${nav("home")}
@@ -3754,6 +3847,56 @@ backdrop.onclick=e=>{
 };
 
 /* =========================================================================
+   アプリの更新
+   このアプリは index.html 1枚でできているので、ページが読み込み直されるまで
+   古いままになる。ホーム画面から開くアプリは閉じてもページが生きているので、
+   放っておくと何日も古い版を使い続けてしまう。
+   そこで、戻ってきたときに version.json を見て、番号が変わっていたら読み直す。
+   ※ BIZ.build を変えたら version.json の build も必ず同じ値にすること
+   ========================================================================= */
+let updateFound = false;
+const UPD_KEY = "naru-tore-upd";          /* 「この番号のために一度読み直した」印 */
+const ss = {
+  get(){ try{ return sessionStorage.getItem(UPD_KEY) || ""; }catch(e){ return ""; } },
+  set(v){ try{ sessionStorage.setItem(UPD_KEY, v); }catch(e){} },
+  clear(){ try{ sessionStorage.removeItem(UPD_KEY); }catch(e){} }
+};
+function checkUpdate(){
+  if(updateFound) return;
+  try{
+    fetch("version.json?t=" + Date.now(), {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if(!j || !j.build) return;
+        if(String(j.build) === String(BIZ.build)){ ss.clear(); return; }  /* 追いついた */
+        updateFound = true;
+        /* 読み直したのにまだ古いまま（＝端末が古いページを握っている）。
+           ここでもう一度読み直すと、永遠に読み直し続けてしまうので必ず止める */
+        if(ss.get() === String(j.build)){ showUpdateBar(true); return; }
+        /* ホームにいるときだけ、黙って新しくする。見ている途中は邪魔しない */
+        if(current !== "home"){ showUpdateBar(false); return; }
+        ss.set(String(j.build));
+        location.reload();
+      })
+      .catch(function(){});
+  }catch(e){}
+}
+/* hard=true … ふつうに読み直しても古いままだった。キャッシュを避けて取り直す */
+function showUpdateBar(hard){
+  if(document.getElementById("updbar")) return;
+  const d = document.createElement("div");
+  d.id = "updbar";
+  d.innerHTML = '<span>' + TX(hard ? "upd.msgHard" : "upd.msg") + '</span>'
+              + '<button data-reload>' + TX("upd.btn") + '</button>';
+  document.body.appendChild(d);
+  d.querySelector("[data-reload]").onclick = function(){
+    ss.clear();
+    if(hard) location.replace(location.pathname + "?v=" + Date.now());
+    else location.reload();
+  };
+}
+
+/* =========================================================================
    起動
    ========================================================================= */
 load();
@@ -3770,6 +3913,17 @@ load();
     const ok = ACCESS.codes.find(c => c.toLowerCase() === String(k).trim().toLowerCase());
     if(ok){ S.access = {code:ok, at:todayKey()}; save(); }
     q.delete("k"); q.delete("code");
+    const rest = q.toString();
+    history.replaceState(null, "", location.pathname + (rest?"?"+rest:"") + location.hash);
+  }catch(e){}
+})();
+
+/* 更新のために付けた ?v= は、読み込めた時点で役目が済むのでURLから消す */
+(function dropV(){
+  try{
+    const q = new URLSearchParams(location.search);
+    if(!q.has("v")) return;
+    q.delete("v");
     const rest = q.toString();
     history.replaceState(null, "", location.pathname + (rest?"?"+rest:"") + location.hash);
   }catch(e){}
@@ -3796,18 +3950,22 @@ render();
 
 /* ホーム画面から開くアプリ（PWA）は、閉じてもページが生きたまま残る。
    そのままだと日付が変わっても画面が作り直されず、前の日の表示のままになる。
-   アプリに戻ってきたとき・画面を見たときに日付を見て、変わっていれば描き直す */
-(function keepDateFresh(){
-  function fresh(){
+   アプリに戻ってきたとき・画面を見たときに日付を見て、変わっていれば描き直す。
+   ついでに、アプリ自体が新しくなっていないかも見にいく */
+(function keepFresh(){
+  function freshDay(){
     if(!RENDER_DAY || RENDER_DAY === todayKey()) return;
     if(current==="run" || current==="timer") return;   /* 実行中は邪魔しない */
     ensureCycle();
     render();
   }
-  document.addEventListener("visibilitychange", function(){ if(!document.hidden) fresh(); });
-  window.addEventListener("pageshow", fresh);
-  window.addEventListener("focus", fresh);
-  setInterval(fresh, 60000);   /* 開きっぱなしで日付をまたいだとき用 */
+  function back(){ freshDay(); checkUpdate(); }
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) back(); });
+  window.addEventListener("pageshow", back);
+  window.addEventListener("focus", back);
+  setInterval(freshDay, 60000);     /* 開きっぱなしで日付をまたいだとき用 */
+  setInterval(checkUpdate, 1800000); /* 開きっぱなしのとき、30分おきに更新を見る */
+  checkUpdate();
 })();
 
 /* 期限が来ていれば、裏でお申し込みが続いているか確認する */
@@ -4182,6 +4340,24 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 .about span, .step .tx span, .note p, .sub, .daysub{
   text-wrap:pretty; word-break:auto-phrase;
 }
+
+/* 使い方ガイド */
+.gstep{display:flex;gap:12px;align-items:flex-start;margin-top:16px}
+.gnum{flex:none;width:26px;height:26px;border-radius:999px;background:var(--olive);color:#0B0B0A;
+  font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.gbody{min-width:0;flex:1}
+.gbody h3{margin:0;font-size:15.5px;font-weight:800;line-height:1.5;text-wrap:balance}
+.gbody p{margin:7px 0 0;font-size:13.5px;line-height:1.85;color:var(--ink-soft);
+  text-wrap:pretty;word-break:auto-phrase}
+
+/* 新しいバージョンのお知らせ */
+#updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(68px + var(--safe,0px));
+  z-index:60;max-width:398px;width:calc(100% - 32px);display:flex;align-items:center;gap:10px;
+  background:var(--olive);color:#0B0B0A;border-radius:999px;padding:10px 10px 10px 16px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:13px;font-weight:700}
+#updbar span{flex:1;min-width:0}
+#updbar button{flex:none;background:#0B0B0A;color:var(--olive);border-radius:999px;
+  padding:8px 15px;font-size:12.5px;font-weight:800}
 </style>
 </body>
 </html>
