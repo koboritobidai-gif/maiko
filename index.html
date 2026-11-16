@@ -1364,13 +1364,13 @@ addTxt({
 "lp.login"   : ["ログイン","Log in"],
 
 /* 紹介・申し込み */
-"gate.tagline": ["すべての人が、自分の身体を自分でデザインし、愛せるようになるアプリ",
-                 "An app to help anyone design the body they want \u2014 and learn to love it."],
+/* 折り返しは端末まかせにすると「デ／ザイン」のように語の途中で割れる。
+   ここで切る場所を決めておく（\n は brk() で <br> になる） */
+"gate.tagline": ["すべての人が、自分の身体を自分で\nデザインし、愛せるようになるアプリ",
+                 "An app to help anyone design the body they want\n\u2014 and learn to love it."],
 "gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。\n単なる「ダイエット」や「筋力アップ」にとどまらず\n体、脳、心の全てを正常に機能させ\n人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
 "gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
-"gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」\n「休日に時間があるから Fit 2 に挑戦」が\n自由に選べます。",
-                 "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 2.\u201d It is your call, every day."],
 "gate.lead"   : ["2週間で1クール。\n14日分のメニューが、休む日まで組んであります。",
                  "One cycle is two weeks. All 14 days are planned out \u2014 rest days included."],
 "gate.p1t"    : ["14日分のプログラム","A full 14-day program"],
@@ -1999,7 +1999,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-23",
+  build: "2026.11.16-24",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -3604,7 +3604,7 @@ function viewGate(){
   return `<div class="screen on"><div class="scroll"><div class="pad gate">
     ${langSwitch()}
     <img class="logomark" src="img/logo.png" srcset="img/logo.png 1x, img/logo@2x.png 2x" alt="NARU FIT DAILY" width="600" height="300">
-    <p class="tagline">${esc(TX("gate.tagline"))}</p>
+    <p class="tagline">${brk(TX("gate.tagline"))}</p>
     <p class="hook">${brk(TX("gate.hook"))}</p>
 
     <div class="steps">
@@ -3615,7 +3615,6 @@ function viewGate(){
           <span>${esc(levelSub(l.id))}</span></span>
         ${levelReady(l.id)?"":`<span class="soon-tag">${TX("soon")}</span>`}
       </div>`).join("")}
-      <p class="steps-note">${brk(TX("gate.switch"))}</p>
     </div>
 
     <p class="lead">${brk(TX("gate.lead"))}</p>
@@ -4065,7 +4064,7 @@ refreshAccess();
 
 /* 紹介画面のタグライン */
 .gate .tagline{margin:10px 0 0;font-size:12.5px;font-weight:700;color:var(--olive-dark);
-  line-height:1.7}
+  line-height:1.7;text-wrap:normal}
 .gate .lead{margin-top:8px}
 
 /* 紹介画面：naru のコピー */
