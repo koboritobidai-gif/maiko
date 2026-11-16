@@ -1658,16 +1658,14 @@ const PROGRAM = {
         P("push-up","10 rep"),
         P("tuck-up","10 rep")]}]},
 
-    /* シートの FIT1 タブに Day 6 の行がないため、ここはこれまでの内容のまま。
-       naru さんがシートに書き足したら差し替える */
-    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core and stamina together",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
-     pointEn:"Hold one line from head to heels and brace your core", parts:[
-      {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"2 min rest between rounds. Four rounds of each — take your time and keep it clean.", items:[
+    {t:"Bodyweight Power", ja:"自重での全身引き締め・キレのあるボディメイク",
+     jaEn:"Bodyweight toning with some snap", parts:[
+      {k:"TRAINING", note:"2min Rest　ジャンピングランジは前後に飛び跳ねながら、ダイナミックに脚を入れ替える（下半身と心肺の強化）。プッシュアップは通常より手の幅を広くして、胸と二の腕を引き締める。スタージャンプは大きくジャンプして手足を星の形に広げる。タックアップはコンパクトに膝を胸へ引き寄せ、お腹全体を力強く収縮させる。",
+       noteEn:"2 min rest between rounds. Jump and switch legs on the lunges — legs and lungs. Take a wider hand position on the push-ups for chest and triceps. Jump big and spread into a star. On the tuck-ups, pull your knees in tight and squeeze your whole midsection.", items:[
+        P("jump-lunge","10 rep"),
         P("wide-push-up","10 rep"),
-        P("burpee","10 rep"),
-        P("mountain-climber","10 rep")]}]},
+        P("star-jump","10 rep"),
+        P("tuck-up","10 rep")]}]},
 
     {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest — nice work this week",
      rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
@@ -1677,28 +1675,29 @@ const PROGRAM = {
      noteEn:"Fifteen minutes of full-body stretching. Sleep well and eat properly."},
 
     /* ── シート FIT1 タブ Day 8〜14 ─────────────────────────── */
-    {t:"Lower & Hips", ja:"【下半身＆ヒップメイク】ワイド＆フロント強化の日", jaEn:"Legs and hips — wide and front",
+    {t:"Core & Burn", ja:"体幹の軸づくり＆脂肪燃焼（バランスと瞬発力の融合）",
+     jaEn:"A steady axis, and fat burning — balance meets power",
      point:"背筋を伸ばしたまま股関節から前傾し、ハムストリングスを意識",
      pointEn:"Keep a long spine, hinge from the hips, and feel your hamstrings", parts:[
-      {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）ワイドスクワットは内もも・お尻を意識して、しっかりワイドにしゃがむ。フロントランジは左右交互に、前ももとお尻へしっかり負荷を乗せる。ホロウロックはお腹を丸めて、船のようにゆらゆら揺れる。",
-       noteEn:"2 min rest between rounds. Four rounds of each. Sit wide on the squats and feel your inner thighs and glutes. Alternate sides on the front lunges and load the front thigh and glute. On the hollow rocks, round your belly and rock like a boat.", items:[
-        P("wide-squat","10 rep"),
-        P("front-lunge","20 rep"),
-        P("hollow-rock","30 sec")]}]},
+      {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）バードドッグは四つん這いで対角の手足を遠くへ伸ばす（左右交互）。スクワットは太もも前とお尻を意識して、軸をブレさせずにしっかりしゃがむ。スケータージャンプは左右に大きくステップ＆ジャンプ（左右交互）。お尻の横の引き締めと脂肪燃焼に効きます。",
+       noteEn:"2 min rest between rounds. Four rounds of each. On the bird dogs, reach the opposite hand and foot far away, alternating sides. Squat with your axis steady and feel your quads and glutes. Step and jump wide side to side on the skaters — side glutes and fat burning.", items:[
+        P("bird-dog","20 rep"),
+        P("air-squat","15 rep"),
+        P("skater","20 rep")]}]},
 
     {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", jaEn:"Pushing strength and a steady core", parts:[
       {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）プッシュアップは椅子やソファに手を突いて。",
        noteEn:"2 min rest between rounds. Four rounds of each. Put your hands on a chair or sofa for the push-ups.", items:[
-        P("incline-push-up","10 rep"),
+        P("push-up","10 rep"),
         P("burpee","10 rep"),
         P("plank-hold","45 sec")]}]},
 
-    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め", jaEn:"Legs from every angle", parts:[
-      {k:"TRAINING", note:"ダンベルデッドリフトは、お尻を後ろに引いて背筋を真っ直ぐ伸ばしたまま前傾し、背面全体に効かせる。ショルダータップはプランクの姿勢で、お尻が揺れないよう左右交互に肩をタッチ。最後はおへそをグッと凹ませて、45秒間しっかり耐え抜こう！",
-       noteEn:"On the deadlifts, push your hips back and hinge with a long spine to load the whole back side. On the shoulder taps, hold the plank and tap without letting your hips sway. Finish by drawing your navel in and holding the full 45 seconds.", items:[
-        P("db-deadlift","10 rep"),
-        P("plank-shoulder-tap","20 rep"),
-        P("plank-hold","45 sec")]}]},
+    {t:"Back & Core", ja:"背面＆体幹のやさしい引き締め", jaEn:"An easy pass at your back side and core", parts:[
+      {k:"TRAINING", note:"2min Rest　グッドモーニングは道具なしで、胸の前で腕をクロスさせ、股関節を深く折りたたんで背面をストレッチ。バードドッグは四つん這いで対角の手足をまっすぐ遠くへ伸ばす（左右交互）。プランクは膝を床につけた楽な姿勢でOK。おへそを凹ませて、お腹の軸をしっかりキープ。",
+       noteEn:"2 min rest between rounds. Good mornings with no weight — cross your arms at your chest and fold deep at the hips. On the bird dogs, reach the opposite hand and foot straight out, alternating sides. The plank can be on your knees; draw your navel in and hold the line.", items:[
+        P("good-morning","10 rep"),
+        P("bird-dog","20 rep"),
+        P("plank-hold","30 sec")]}]},
 
     {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true,
      note:"20分ほど軽くランか、全身のストレッチをしよう！",
@@ -1717,9 +1716,9 @@ const PROGRAM = {
      jaEn:"Mobility and recovery — open up the whole body", cool:true,
      cardio:"お好みのフォームローラーや、軽いウォーキング（15分）",
      cardioEn:"Foam roll if you like, or an easy 15-minute walk", parts:[
-      {k:"MOBILITY", note:"ワールドグレイテストストレッチは左右各5回。股関節・胸・背中を一気にほぐす最強ストレッチです。トゥータッチは裏ももと背骨を気持ちよく伸ばします。",
-       noteEn:"Five each side on the World's Greatest Stretch — it opens hips, chest and back all at once. The toe touches lengthen your hamstrings and spine.", items:[
-        P("world-greatest","10 rep"),
+      {k:"MOBILITY", note:"ワールドグレイテストストレッチは左右各10回（計20回）。股関節・胸・背中を一気にほぐす最強ストレッチです。トゥータッチは裏ももと背骨を気持ちよく伸ばします。",
+       noteEn:"Ten each side on the World's Greatest Stretch (20 total) — it opens hips, chest and back all at once. The toe touches lengthen your hamstrings and spine.", items:[
+        P("world-greatest","20 rep"),
         P("toe-touch","10 rep")]}]},
 
     {t:"Bonus Challenge", ja:"お楽しみボーナスチャレンジ（やれる人だけ！）／ または休養",
@@ -2008,7 +2007,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-33",
+  build: "2026.11.16-34",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
