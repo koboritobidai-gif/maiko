@@ -1332,7 +1332,7 @@ addTxt({
                  "An app to help anyone design the body they want \u2014 and learn to love it."],
 "gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。\n単なる「ダイエット」や「筋力アップ」にとどまらず\n体、脳、心の全てを正常に機能させ\n人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
-"gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
+"gate.steps"  : ["体調や目標に合わせて選べる3つのプログラム","Three programs, picked by how you feel today"],
 "gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」\n「休日に時間があるから Fit 2 に挑戦」が\n自由に選べます。",
                  "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 2.\u201d It is your call, every day."],
 "gate.lead"   : ["2週間で1クール。\n14日分のメニューが、休む日まで組んであります。",
@@ -1441,6 +1441,10 @@ So — let's begin today.`],
 "lv.fit1.short": ["初級・基礎作り","Beginner \u00b7 base building"],
 "lv.fit2.short": ["中級・ボディメイク","Intermediate \u00b7 body-making"],
 "lv.fit3.short": ["上級・限界突破","Advanced \u00b7 breaking limits"],
+"lv.fit30.lead": ["30日間プログラム","The 30-day program"],
+"lv.fit30.sub" : ["週3〜4日に厳選。30日で走りきる完結型（自宅・自重）",
+                  "Three or four focused days a week. A complete 30-day run, at home."],
+"lv.fit30.short": ["30日・完結型","30 days \u00b7 complete"],
 
 /* 目的 */
 "goal.tone"   : ["引き締めたい","Get toned"],
@@ -1469,10 +1473,11 @@ const GOAL_LABEL = {tone:"goal.tone",lose:"goal.lose",build:"goal.build",stamina
 const LEVELS = [
   {id:"fit1", name:"Fit 1", emoji:"🏃"},
   {id:"fit3", name:"Fit 2", emoji:"🔥"},
+  {id:"fit30", name:"30 Days", emoji:"📅"},
 ];
 const levelLead  = id => TX("lv."+id+".lead");
 const levelSub   = id => TX("lv."+id+".sub");
-const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short"};
+const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short", fit30:"lv.fit30.short"};
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 
@@ -1682,11 +1687,87 @@ const PROGRAM = {
         P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("pushup-to-plank","9 rep")]}]},
     {t:"Full Rest", ja:"完全休養", jaEn:"Full rest", rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
      note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。", noteEn:"No training at all. Rest properly so you can give 100% on the next Day 1."}
+  ],
+
+  /* =================================================================
+     30 Days ── シート「30Days」タブ【Unit 1】そのまま
+     7日間 × 4週 ＋ 2日 ＝ 30日。29・30日目は Day 1・Day 2 に戻る。
+     14日サイクルの Fit 1 / Fit 2 とは別のプログラム。
+     ================================================================= */
+  fit30: [
+    {t:"Lower Body Base", ja:"下半身・土台づくり", jaEn:"Lower body and your foundation",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
+     pointEn:"Squeeze your glutes hard and lift your pelvis", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　間のRESTは30秒〜60秒！",
+       noteEn:"Four rounds of each. Take your time and keep it clean. Rest 30 to 60 seconds between.", items:[
+        P("air-squat","10 rep"),
+        P("reverse-lunge","16 rep"),
+        P("plank-hold","30 sec")]}]},
+
+    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain \u2014 feel your back side",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。",
+       noteEn:"Four rounds of each. Feel the leg raises in your lower abs, and brace hard on the supermans.", items:[
+        P("good-morning","20 rep"),
+        P("leg-raise","10 rep"),
+        P("superman","30 sec")]}]},
+
+    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
+     pointEn:"Keep your core still and your limbs in one line, without arching your back", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）",
+       noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
+        P("bird-dog","20 rep"),
+        P("side-lunge","16 rep"),
+        P("side-plank","30 sec")]}]},
+
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery", cool:true,
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
+     pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
+     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
+     noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
+     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+
+    {t:"Full Body", ja:"全身の引き締め", jaEn:"Tightening up, head to toe",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持",
+     pointEn:"Use a wall to feel your upper chest, and keep a straight line without arching", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　アームカールはダンベル、またはペットボトルを持って。",
+       noteEn:"Four rounds of each. For the curls, use dumbbells or a water bottle.", items:[
+        P("good-morning","10 rep"),
+        P("db-curl","10 rep"),
+        P("push-up","10 rep"),
+        P("tuck-up","10 rep")]}]},
+
+    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core and stamina together",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
+     pointEn:"Hold one line from head to heels and brace your core", parts:[
+      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）",
+       noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
+        P("wide-push-up","10 rep"),
+        P("burpee","10 rep"),
+        P("mountain-climber","10 rep")]}]},
+
+    {t:"Full Rest", ja:"完全休養（一週間お疲れ様でした！）", jaEn:"Full rest \u2014 nice work this week",
+     rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
+     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く",
+     pointEn:"Breathe deeply, let everything loosen, and clear the fatigue",
+     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。",
+     noteEn:"No training. Fifteen minutes of full-body stretching. Sleep well and eat properly."}
   ]
 };
 
 /* ---- 2週間（14日）サイクル -------------------------------------------- */
-const CYCLE = 14, WEEK = 7;
+/* プログラムごとのサイクル日数。
+   Fit 1 / Fit 2 … 7日 × 2周 ＝ 14日
+   30 Days      … 7日 × 4週 ＋ 2日 ＝ 30日（29・30日目は Day 1・Day 2 に戻る） */
+const CYCLE_LEN = { fit1:14, fit3:14, fit30:30 };
+const CYCLE_MAX = 30, WEEK = 7;
+function CYCLE(){ return CYCLE_LEN[fit()] || 14; }
 
 const addDays = (k,n) => { const d=new Date(k+"T00:00:00"); d.setDate(d.getDate()+n); return dkey(d); };
 const dayDiff = (a,b) => Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000);
@@ -1697,19 +1778,20 @@ function fit(){ const v=level(); return (PROGRAM[v] && PROGRAM[v].length) ? v : 
 /* サイクル（DAY 1〜14）は Fit レベルと切り離す。
    その日の調子で Fit を上げ下げしても、日数は進んだまま */
 function newCycle(start){
-  return { v:2, start:start, plan:Array.from({length:CYCLE},(_,i)=>i) };
+  return { v:3, len:CYCLE(), start:start, plan:Array.from({length:CYCLE()},(_,i)=>i) };
 }
 function ensureCycle(){
   let moved=false;
   if(!S.cycle || !S.cycle.start || !S.cycle.plan){ S.cycle=newCycle(todayKey()); moved=true; }
-  /* 旧データ（7日ぶんを2周する plan）を 14日ぶんの plan に作り直す */
-  if(S.cycle.v!==2){ const st=S.cycle.start; S.cycle=newCycle(st); moved=true; }
+  /* 旧データ、またはプログラムを切り替えて日数が変わったときは作り直す */
+  if(S.cycle.v!==3 || S.cycle.plan.length!==CYCLE()){
+    const st=S.cycle.start; S.cycle=newCycle(st); moved=true; }
   let d=dayDiff(S.cycle.start, todayKey());
   if(d<0){ S.cycle=newCycle(todayKey()); d=0; moved=true; }
   let guard=0;
-  while(d>=CYCLE && guard++<400){
+  while(d>=CYCLE() && guard++<400){
     S.cycles=S.cycles||[]; S.cycles.push(cycleSummary());
-    S.cycle=newCycle(addDays(S.cycle.start,CYCLE));
+    S.cycle=newCycle(addDays(S.cycle.start,CYCLE()));
     d=dayDiff(S.cycle.start, todayKey()); moved=true;
   }
   if(moved) save();
@@ -1718,16 +1800,16 @@ function ensureCycle(){
    14日ぶん用意してある Fit（Fit 1）はそのまま、7日ぶんの Fit（Fit 3）は2周する */
 function dayOf(n){
   ensureCycle();
-  if(n<1 || n>CYCLE) return null;
+  if(n<1 || n>CYCLE()) return null;
   const list = PROGRAM[fit()] || PROGRAM.fit1;
   return list[S.cycle.plan[n-1] % list.length] || null;
 }
-function cycleDates(){ return Array.from({length:CYCLE},(_,i)=>addDays(S.cycle.start,i)); }
+function cycleDates(){ return Array.from({length:CYCLE()},(_,i)=>addDays(S.cycle.start,i)); }
 function cycleSummary(){
   const list = PROGRAM[fit()] || PROGRAM.fit1;
   const need = S.cycle.plan.filter(i => !(list[i % list.length]||{}).rest).length;
   const did  = cycleDates().filter(k=>S.logs.some(l=>l.date===k)).length;
-  return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE-1), need:need, did:did};
+  return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE()-1), need:need, did:did};
 }
 function cycleDay(){ ensureCycle(); return dayDiff(S.cycle.start,todayKey())+1; }
 const dayTitle = n => { const d=dayOf(n); return d ? d.t : ""; };
@@ -1735,7 +1817,7 @@ const dayTitle = n => { const d=dayOf(n); return d ? d.t : ""; };
 /* 今日より後ろにある完全休養日。これが振り替えの残り回数になる */
 function restAhead(){
   const n=cycleDay(), out=[];
-  for(let i=n+1;i<=CYCLE;i++){ const d=dayOf(i); if(d && d.rest) out.push(i); }
+  for(let i=n+1;i<=CYCLE();i++){ const d=dayOf(i); if(d && d.rest) out.push(i); }
   return out;
 }
 function swapToRest(){
@@ -1775,7 +1857,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-7",
+  build: "2026.11.16-8",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2290,14 +2372,14 @@ function viewHome(){
 
         ${dd && dd.rest ? `
         <div class="hero rest">
-          <div class="day">DAY ${n} / ${CYCLE}</div>
+          <div class="day">DAY ${n} / ${CYCLE()}</div>
           <h2>${TX("home.rest")}</h2>
           <p>${TX("home.restBody")}<br>
-             ${n+1>CYCLE ? TX("home.nextCycle")
+             ${n+1>CYCLE() ? TX("home.nextCycle")
                          : TX("home.nextIs", n+1, esc(dayTitle(n+1)))}</p>
         </div>` : `
         <div class="hero">
-          <div class="day">DAY ${n} / ${CYCLE}${dd&&dd.cool?" · RECOVERY":""}</div>
+          <div class="day">DAY ${n} / ${CYCLE()}${dd&&dd.cool?" · RECOVERY":""}</div>
           <h2>${esc(p?p.t:"")}</h2>
           <button class="btn btn-orange" style="margin-top:14px" data-go="train">
             🔥 Today's Training &nbsp;→</button>
@@ -2336,7 +2418,7 @@ function viewHome(){
         </div>
 
         <p class="sub" style="text-align:center;margin-top:14px">
-          ${n>=CYCLE
+          ${n>=CYCLE()
             ? TX("home.lastDay", cs.did, cs.need)
             : TX("home.nextUp", n+1, esc(dayTitle(n+1)))}
         </p>
@@ -2443,7 +2525,7 @@ function viewTrain(){
     const ra = restAhead(), r = dayOf(n) || {};
     return `<div class="screen on">${topbar()}<div class="scroll"><div class="pad">
       <div class="hero rest" style="margin-top:4px">
-        <div class="day">DAY ${n} / ${CYCLE}</div>
+        <div class="day">DAY ${n} / ${CYCLE()}</div>
         <h2>${esc(r.t==="Full Rest"?TX("home.rest"):(r.t||TX("home.rest")))}</h2>
         <p>${r.note?esc(dayTx(r,"note")):TX("train.noMenu")}<br>
           ${ra.length?TX("train.swapHint", ra[0]):TX("train.lastRest")}</p>
