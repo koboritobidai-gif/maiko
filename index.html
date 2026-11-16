@@ -1466,8 +1466,8 @@ So — let's begin today.`],
 
 /* レベル */
 "lv.fit1.lead": ["初級者向け","Beginner"],
-"lv.fit1.sub" : ["まずはここから。リフレッシュと基礎作り（自宅・自重）",
-                 "Start here. Refresh and build your base (at home, bodyweight)"],
+"lv.fit1.sub" : ["まずはここから運動を毎日の習慣に！\nリフレッシュと基盤づくり（自宅と自重でOK）",
+                 "Start here \u2014 make moving a daily habit.\nRefresh and build your base (home, bodyweight)"],
 "lv.fit2.lead": ["中級者向け","Intermediate"],
 "lv.fit2.sub" : ["しっかりボディメイク、筋肉を育てる（自宅ダンベル／ジム）",
                  "Real body-making. Grow muscle (dumbbells at home / gym)"],
@@ -1999,7 +1999,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-24",
+  build: "2026.11.16-25",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2472,7 +2472,7 @@ function obSteps(){ return [
          ["build",TX("goal.build"),TX("goal.build.s")],["stamina",TX("goal.stamina"),TX("goal.stamina.s")]]},
   {t:TX("ob.2t"), s:TX("ob.2s"), k:"level",
    opts:shownLevels().map(l=>[l.id, l.name+"　"+levelLead(l.id),
-        levelReady(l.id) ? levelSub(l.id) : TX("ob.soon"), !levelReady(l.id)])},
+        levelReady(l.id) ? brk(levelSub(l.id)) : brk(TX("ob.soon")), !levelReady(l.id)])},
 ].filter(st => st.k!=="level" || askLevel());}
 
 function viewOB(){
@@ -3612,7 +3612,7 @@ function viewGate(){
       ${LEVELS.map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
         <span class="em">${l.emoji}</span>
         <span class="tx"><b>${esc(l.name)}：${esc(levelLead(l.id))}</b>
-          <span>${esc(levelSub(l.id))}</span></span>
+          <span>${brk(levelSub(l.id))}</span></span>
         ${levelReady(l.id)?"":`<span class="soon-tag">${TX("soon")}</span>`}
       </div>`).join("")}
     </div>
