@@ -1256,6 +1256,9 @@ addTxt({
 "home.nextIs"   : ["次は DAY {0}・{1} です。","Next up is DAY {0}, {1}."],
 "home.swap"     : ["今日は休む（DAY {0} の休養日と振り替える）","Rest today (swap with the rest day on DAY {0})"],
 "home.swapLeft" : ["振り替えできるのは、あと {0} 日ぶんです","You can swap {0} more day(s)"],
+"home.unswap"   : ["やっぱり今日トレーニングする","Train today after all"],
+"home.unswapNote": ["振り替えを取り消して、本来のメニューに戻します。",
+                    "Undo the swap and go back to today's original menu."],
 "home.swapOut"  : ["休養日を使い切りました。今日やらないと、この2週間では取り返せません。",
                    "You have used all your rest days. Skip today and you cannot make it up this cycle."],
 "home.allVideos": ["NARU の実演動画をぜんぶ見る &nbsp;→","See all of NARU\u2019s demo videos &nbsp;→"],
@@ -1924,6 +1927,20 @@ function swapToRest(){
   const p=S.cycle.plan, tmp=p[n-1]; p[n-1]=p[t-1]; p[t-1]=tmp;
   save(); render();
 }
+/* 振り替えた日かどうか。plan の中身が本来の並びとずれていれば、振り替え済み */
+function swapped(n){
+  const p = S.cycle && S.cycle.plan;
+  if(!p || n<1 || n>p.length) return false;
+  return p[n-1] !== n-1 && p.indexOf(n-1) >= 0;
+}
+/* 振り替えを取り消して、今日を本来のメニューに戻す */
+function unswap(){
+  const n=cycleDay(), p=S.cycle && S.cycle.plan;
+  if(!p || p[n-1]===n-1) return;
+  const t=p.indexOf(n-1); if(t<0) return;
+  const tmp=p[n-1]; p[n-1]=p[t]; p[t]=tmp;
+  save(); render();
+}
 
 /* ---- 事業者情報（ここだけ直せば書類に反映される） --------------------- */
 const BIZ = {
@@ -1956,7 +1973,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-15",
+  build: "2026.11.16-16",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2343,7 +2360,10 @@ let current="lp";
 function go(name){ current=name; render(); window.scrollTo(0,0); const s=app.querySelector(".scroll"); if(s) s.scrollTop=0; }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
+/* いつの日付で画面を作ったか。日をまたいだかどうかの判定に使う */
+let RENDER_DAY = "";
 function render(){
+  RENDER_DAY = todayKey();
   if(ACCESS.on && !unlocked() && current!=="lp" && current!=="gate") current="gate";
   if(current==="gate") app.innerHTML = viewGate();
   else if(current==="lp") app.innerHTML = viewLP();
@@ -2476,7 +2496,11 @@ function viewHome(){
           <p>${TX("home.restBody")}<br>
              ${n+1>CYCLE() ? TX("home.nextCycle")
                          : TX("home.nextIs", n+1, esc(dayTitle(n+1)))}</p>
-        </div>` : `
+        </div>
+        ${swapped(n) ? `
+          <button class="btn btn-ghost" style="margin-top:9px" data-unswap>
+            ${TX("home.unswap")}</button>
+          <p class="swapnote left">${TX("home.unswapNote")}</p>` : ""}` : `
         <div class="hero">
           <div class="day">DAY ${n} / ${CYCLE()}${dd&&dd.cool?" · RECOVERY":""}</div>
           <h2>${esc(p?p.t:"")}</h2>
@@ -2632,6 +2656,8 @@ function viewTrain(){
         <p>${r.note?esc(dayTx(r,"note")):TX("train.noMenu")}<br>
           ${ra.length?TX("train.swapHint", ra[0]):TX("train.lastRest")}</p>
       </div>
+      ${swapped(n) ? `<button class="btn btn-olive" style="margin-top:12px" data-unswap>
+        ${TX("home.unswap")}</button>` : ""}
       ${r.cardio?`<div class="cardio"><b>${TX("train.cardio")}</b>${esc(dayTx(r,"cardio"))}</div>`:""}
       ${r.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(r,"point"))}</div>`:""}
       <button class="btn btn-ghost" style="margin-top:14px" data-go="home">${TX("train.back")}</button>
@@ -3651,6 +3677,7 @@ function bind(){
 
   /* 休養日との振り替え */
   on("[data-swap]",()=>swapToRest());
+  on("[data-unswap]",()=>unswap());
 
   /* パスワードを入れ直す */
   on("[data-relock]",()=>{ S.access=null; save(); gateVal=""; gateMail=""; gateErr=""; go("gate"); });
@@ -3748,6 +3775,22 @@ load();
 
 current = !unlocked() ? (S.profile ? "gate" : "lp") : (S.profile ? "home" : "lp");
 render();
+
+/* ホーム画面から開くアプリ（PWA）は、閉じてもページが生きたまま残る。
+   そのままだと日付が変わっても画面が作り直されず、前の日の表示のままになる。
+   アプリに戻ってきたとき・画面を見たときに日付を見て、変わっていれば描き直す */
+(function keepDateFresh(){
+  function fresh(){
+    if(!RENDER_DAY || RENDER_DAY === todayKey()) return;
+    if(current==="run" || current==="timer") return;   /* 実行中は邪魔しない */
+    ensureCycle();
+    render();
+  }
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) fresh(); });
+  window.addEventListener("pageshow", fresh);
+  window.addEventListener("focus", fresh);
+  setInterval(fresh, 60000);   /* 開きっぱなしで日付をまたいだとき用 */
+})();
 
 /* 期限が来ていれば、裏でお申し込みが続いているか確認する */
 refreshAccess();
