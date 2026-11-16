@@ -1999,7 +1999,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-25",
+  build: "2026.11.16-26",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2553,7 +2553,8 @@ function viewHome(){
 
         ${a2hsBlock()}
 
-        ${wodBlock()}
+        ${/* この日の解説動画はホームには出さない。
+              「Today's Training」を押したあとの画面（TRAIN）だけに出す */""}
         ${videoBlock(todaysVideoEx())}
         ${SHOW_VIDEO_LIST?`<button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
           ${TX("home.allVideos")}</button>`:""}
