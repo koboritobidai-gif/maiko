@@ -1298,9 +1298,9 @@ addTxt({
 "train.tapHint" : ["種目をタップするとフォームのポイントが見られます",
                    "Tap an exercise to see the form points"],
 "train.record"  : ["終わったら記録する","Log it when you are done"],
-"train.timer"   : ["タイマーを使う（時間種目）","Use the timer (timed sets)"],
-"train.roundsN" : ["この種目を続けて{0}周しよう！（焦らず、丁寧に）",
-                   "{0} rounds of these, back to back. Take your time and keep it clean."],
+"train.timer"   : ["タイマーを使う（時間種目・AMRAP）","Use the timer (timed sets \u00b7 AMRAP)"],
+"train.roundsN" : ["{0}周を目安にしよう！（焦らず、丁寧に）",
+                   "Aim for {0} rounds. Take your time and keep it clean."],
 "train.rounds"  : ["ROUNDS","ROUNDS"]
 });
 
@@ -1650,19 +1650,20 @@ const PROGRAM = {
       {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）", noteEn:"5-5-5-5-5 (@80-85% of max)",
        items:[P("back-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
-      {k:"TRAINING", r:4, items:[
+      /* target は「12分で何周を目安にするか」。見出しは "12 MIN AMRAP" のまま */
+      {k:"AMRAP", min:12, target:4, items:[
         P("db-squat","10 rep"), P("db-press","8 rep"), P("tuck-up","15 rep")]}]},
     {t:"Upper Push / Pull", ja:"逆三角形のシルエット", jaEn:"The V-taper", parts:[
       {k:"STRENGTH", n:"BENCH PRESS", note:"5-5-5-5-5（@80-85%）　※ OHP に替えても可", noteEn:"5-5-5-5-5 (@80-85%) · OHP works too",
        items:[P("bench-press","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("pull-up","8 rep × 3 set　※ 加重／ラットプルダウンでも可")]},
-      {k:"TRAINING", r:4, items:[
+      {k:"AMRAP", min:12, target:4, items:[
         P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","15 rep")]}]},
     {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", jaEn:"A strong back and usable strength", cardio:"30 cal BIKE", cardioEn:"30 cal BIKE", parts:[
       {k:"STRENGTH", n:"DEADLIFT", note:"5-5-5-5-5（@80-85%）　※ トラップバーでも可", noteEn:"5-5-5-5-5 (@80-85%) · trap bar is fine",
        items:[P("deadlift","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("bulgarian-split","左右各 8 rep × 3 set")]},
-      {k:"TRAINING", r:4, items:[
+      {k:"AMRAP", min:12, target:4, items:[
         P("barbell-clean","8 rep"), P("box-jump","10 rep"), P("hollow-rock","15 rep")]}]},
     {t:"Active Recovery", ja:"積極的疲労回復", jaEn:"Active recovery", cool:true,
      cardio:"軽いジョギング、または低強度のローイング（30分）", cardioEn:"Easy jog or low-intensity rowing (30 min)",
@@ -1672,13 +1673,13 @@ const PROGRAM = {
       {k:"STRENGTH", n:"FRONT SQUAT", note:"5-5-5-5-5（@75-80%）　フロントキープでコアを使う", noteEn:"5-5-5-5-5 (@75-80%) · the front rack makes your core work",
        items:[P("front-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("db-incline-press","10 rep × 3 set")]},
-      {k:"TRAINING", r:4, items:[
+      {k:"AMRAP", min:12, target:4, items:[
         P("db-thruster","10 rep"), P("burpee-over-db","8 rep"), P("row-machine","200 m")]}]},
     {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", jaEn:"Explosive power, past your limit", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"STRENGTH", n:"POWER SNATCH", note:"3-3-3-3-3（@75-80%）　※ ハングクリーンでも可", noteEn:"3-3-3-3-3 (@75-80%) · hang clean works too",
        items:[P("power-snatch","3 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("rdl","10 rep × 3 set")]},
-      {k:"TRAINING", r:4, items:[
+      {k:"AMRAP", min:12, target:4, items:[
         P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("pushup-to-plank","9 rep")]}]},
     {t:"Full Rest", ja:"完全休養", jaEn:"Full rest", rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
      note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。", noteEn:"No training at all. Rest properly so you can give 100% on the next Day 1."}
@@ -1775,7 +1776,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-2",
+  build: "2026.11.16-3",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2481,7 +2482,8 @@ function viewTrain(){
               <span class="hr"></span>
             </div>
             ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(dayTx(part,"note"))}</p>`
-              :part.r?`<p class="pnote" style="margin:-2px 0 8px">${TX("train.roundsN", part.r)}</p>`:""}
+              :(part.target||part.r)?`<p class="pnote" style="margin:-2px 0 8px">${
+                 TX("train.roundsN", part.target||part.r)}</p>`:""}
             ${part.items.map(it=>{
               const d = doseOf(it);
               if(d==="—") return "";
