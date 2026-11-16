@@ -1500,6 +1500,10 @@ const levelSub   = id => TX("lv."+id+".sub");
 const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short"};
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
+
+/* Fit 1 / Fit 2 を後から切り替えられるのは、コーチングつきの方だけ。
+   アプリのみ（3,500円・3,900円）の方は、診断で決まったメニューのまま進む */
+function canSwitchFit(){ return isCoach(); }
 /* 画面に出すプログラム。30 Days はコーチングつきの人だけ */
 const shownLevels = () => LEVELS;
 
@@ -1974,7 +1978,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-17",
+  build: "2026.11.16-18",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2679,7 +2683,7 @@ function viewTrain(){
             ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
           </div>
 
-          ${p.fixed?"":`<div class="seg-dark">
+          ${(p.fixed || !canSwitchFit())?"":`<div class="seg-dark">
             ${shownLevels().map(l=>{ const ok=levelReady(l.id);
               return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
@@ -3325,7 +3329,7 @@ function viewSettings(){
         <p class="sub" style="margin-bottom:4px">${TX("set.lead")}</p>
         ${SHOW_LANG?row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang()):""}
         ${row(TX("set.goal"),[["tone",TX("goal.tone")],["lose",TX("goal.lose")],["build",TX("goal.build")],["stamina",TX("goal.stamina")]],"goal",pf.goal)}
-        ${row(TX("set.level"),shownLevels().map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level())}
+        ${canSwitchFit()?row(TX("set.level"),shownLevels().map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level()):""}
         ${row(TX("set.place"),[["gym",TX("set.gym")],["home",TX("set.home")]],"place",pf.place)}
         ${row(TX("set.freq"),[[2,TX("set.d2")],[3,TX("set.d3")],[4,TX("set.d4")],[5,TX("set.d5")]],"days",pf.days)}
 
@@ -3667,7 +3671,8 @@ function bind(){
   on("[data-a2hs-on]", ()=>{ S.extras=S.extras||{}; delete S.extras.a2hs; save(); go("home"); });
 
   /* 強度切り替え */
-  on("[data-level]",el=>{ S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
+  on("[data-level]",el=>{ if(!canSwitchFit()) return;
+    S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
 
   /* 種目詳細 */
   on("[data-lang]",el=>setLang(el.dataset.lang));
