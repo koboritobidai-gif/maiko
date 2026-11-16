@@ -1999,7 +1999,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-21",
+  build: "2026.11.16-22",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2656,9 +2656,10 @@ function videoBlock(exId, force){
      ただし設定の動画ライブラリから開いたときは、自分で選んでいるので出す */
   if(fit()==="fit3" && !force) return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
-  /* 動画が無い種目は、枠ごと出さない（「準備中」の空枠を見せない）。
+  /* 動画が無いときは、枠ごと出さない（「準備中」の空枠を見せない）。
+     種目に動画が無いときも、その日に動画つきの種目が1つも無いときも同じ。
      撮影して EX に video を入れれば、自動で出るようになる */
-  if(exId && !v) return "";
+  if(!v && !force) return "";
   const title = exId ? TX("vid.form", EX[exId].en) : TX("vid.onePoint");
   const sub = exId ? (v ? TX("vid.have") : TX("vid.none")) : TX("vid.dayNone");
   return `<div class="video">
