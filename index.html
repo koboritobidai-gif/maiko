@@ -1297,6 +1297,10 @@ addTxt({
                    "Tap an exercise to see the form points"],
 "train.record"  : ["終わったら記録する","Log it when you are done"],
 "train.timer"   : ["タイマーを使う（時間種目・AMRAP）","Use the timer (timed sets \u00b7 AMRAP)"],
+"train.amrap"   : ["{0}分のあいだに、この3種目をできるだけ多く周回しよう！",
+                   "{0} minutes \u2014 get through as many rounds of the three as you can."],
+"train.amrapT"  : ["{0}分のあいだに、この3種目をできるだけ多く周回しよう！（目安 {1}周）",
+                   "{0} minutes \u2014 as many rounds as you can. Aim for about {1}."],
 "train.rounds"  : ["ROUNDS","ROUNDS"]
 });
 
@@ -1560,7 +1564,7 @@ const PROGRAM = {
      wod:{src:"videos/day1-wod.mp4", poster:"videos/day1-wod.jpg"}, parts:[
       {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
         P("air-squat","10 rep"),
-        P("knee-push-up","10 rep"),
+        P("push-up","10 rep"),
         P("plank-hold","30 sec")]}]},
     {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain — feel your back side", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。", noteEn:"Four rounds of each. Take your time and keep it clean. Feel the leg raises in your lower abs, and brace hard on the supermans.", items:[
@@ -1646,7 +1650,8 @@ const PROGRAM = {
       {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）", noteEn:"5-5-5-5-5 (@80-85% of max)",
        items:[P("back-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
-      {k:"AMRAP", min:12, items:[
+      /* target は「12分で何周を目安にするか」。naru から指示があった日だけ入れる */
+      {k:"AMRAP", min:12, target:4, items:[
         P("db-squat","10 rep"), P("db-press","8 rep"), P("tuck-up","15 rep")]}]},
     {t:"Upper Push / Pull", ja:"逆三角形のシルエット", jaEn:"The V-taper", parts:[
       {k:"STRENGTH", n:"BENCH PRESS", note:"5-5-5-5-5（@80-85%）　※ OHP に替えても可", noteEn:"5-5-5-5-5 (@80-85%) · OHP works too",
@@ -2469,10 +2474,13 @@ function viewTrain(){
           ${p.parts.map((part,pi)=>`
             <div class="partline">
               <span class="badge">PART ${pi+1}</span>
-              <span>· ${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
+              <span>· ${part.min?part.min+" MIN ":""}${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
               <span class="hr"></span>
             </div>
-            ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(dayTx(part,"note"))}</p>`:""}
+            ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(dayTx(part,"note"))}</p>`
+              :part.k==="AMRAP"?`<p class="pnote" style="margin:-2px 0 8px">${
+                 part.target ? TX("train.amrapT", part.min, part.target)
+                             : TX("train.amrap", part.min)}</p>`:""}
             ${part.items.map(it=>{
               const d = doseOf(it);
               if(d==="—") return "";
