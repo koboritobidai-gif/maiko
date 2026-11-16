@@ -1463,10 +1463,6 @@ So — let's begin today.`],
 "lv.fit1.short": ["初級・基礎作り","Beginner \u00b7 base building"],
 "lv.fit2.short": ["中級・ボディメイク","Intermediate \u00b7 body-making"],
 "lv.fit3.short": ["上級・限界突破","Advanced \u00b7 breaking limits"],
-"lv.fit30.lead": ["30日間プログラム","The 30-day program"],
-"lv.fit30.sub" : ["週3〜4日に厳選。30日で走りきる完結型（自宅・自重）",
-                  "Three or four focused days a week. A complete 30-day run, at home."],
-"lv.fit30.short": ["30日・完結型","30 days \u00b7 complete"],
 
 /* 目的 */
 "goal.tone"   : ["引き締めたい","Get toned"],
@@ -1495,15 +1491,14 @@ const GOAL_LABEL = {tone:"goal.tone",lose:"goal.lose",build:"goal.build",stamina
 const LEVELS = [
   {id:"fit1", name:"Fit 1", emoji:"🏃"},
   {id:"fit3", name:"Fit 2", emoji:"🔥"},
-  {id:"fit30", name:"30 Days", emoji:"📅"},
 ];
 const levelLead  = id => TX("lv."+id+".lead");
 const levelSub   = id => TX("lv."+id+".sub");
-const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short", fit30:"lv.fit30.short"};
+const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short"};
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 /* 画面に出すプログラム。30 Days はコーチングつきの人だけ */
-const shownLevels = () => LEVELS.filter(l => l.id!=="fit30" || isCoach());
+const shownLevels = () => LEVELS;
 
 /* =========================================================================
    状態
@@ -1841,96 +1836,38 @@ const PROGRAM = {
      note:"トレーニングは一切なし。全身のストレッチを15分。次の Day 1 で100%の出力が出せるよう、しっかり睡眠と栄養を。",
      noteEn:"No training at all. Fifteen minutes of stretching. Sleep and eat properly for the next Day 1."}
   ],
-
-  /* =================================================================
-     30 Days ── シート「30Days」タブ【Unit 1】そのまま
-     7日間 × 4週 ＋ 2日 ＝ 30日。29・30日目は Day 1・Day 2 に戻る。
-     14日サイクルの Fit 1 / Fit 2 とは別のプログラム。
-     ================================================================= */
-  fit30: [
-    {t:"Lower Body Base", ja:"下半身・土台づくり", jaEn:"Lower body and your foundation",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
-     pointEn:"Squeeze your glutes hard and lift your pelvis", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　間のRESTは30秒〜60秒！",
-       noteEn:"Four rounds of each. Take your time and keep it clean. Rest 30 to 60 seconds between.", items:[
-        P("air-squat","10 rep"),
-        P("reverse-lunge","16 rep"),
-        P("plank-hold","30 sec")]}]},
-
-    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain \u2014 feel your back side",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。",
-       noteEn:"Four rounds of each. Feel the leg raises in your lower abs, and brace hard on the supermans.", items:[
-        P("good-morning","20 rep"),
-        P("leg-raise","10 rep"),
-        P("superman","30 sec")]}]},
-
-    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
-     pointEn:"Keep your core still and your limbs in one line, without arching your back", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）",
-       noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
-        P("bird-dog","20 rep"),
-        P("side-lunge","16 rep"),
-        P("side-plank","30 sec")]}]},
-
-    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery", cool:true,
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
-     pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
-     note:"20分ほど、全身のストレッチ",
-     noteEn:"About 20 minutes of full-body stretching.",
-     parts:[]},
-
-    {t:"Full Body", ja:"全身の引き締め", jaEn:"Tightening up, head to toe",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持",
-     pointEn:"Use a wall to feel your upper chest, and keep a straight line without arching", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）　アームカールはダンベル、またはペットボトルを持って。",
-       noteEn:"Four rounds of each. For the curls, use dumbbells or a water bottle.", items:[
-        P("good-morning","10 rep"),
-        P("db-curl","10 rep"),
-        P("push-up","10 rep"),
-        P("tuck-up","10 rep")]}]},
-
-    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core and stamina together",
-     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
-     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
-     pointEn:"Hold one line from head to heels and brace your core", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）",
-       noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
-        P("wide-push-up","10 rep"),
-        P("burpee","10 rep"),
-        P("mountain-climber","10 rep")]}]},
-
-    {t:"Full Rest", ja:"完全休養（一週間お疲れ様でした！）", jaEn:"Full rest \u2014 nice work this week",
-     rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
-     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く",
-     pointEn:"Breathe deeply, let everything loosen, and clear the fatigue",
-     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。",
-     noteEn:"No training. Fifteen minutes of full-body stretching. Sleep well and eat properly."}
-  ]
 };
 
 /* ---- 2週間（14日）サイクル -------------------------------------------- */
-/* プログラムごとのサイクル日数。
-   Fit 1 / Fit 2 … 7日 × 2周 ＝ 14日
-   30 Days      … 7日 × 4週 ＋ 2日 ＝ 30日（29・30日目は Day 1・Day 2 に戻る） */
-const CYCLE_LEN = { fit1:14, fit3:14, fit30:30 };
-const CYCLE_MAX = 30, WEEK = 7;
-function CYCLE(){ return CYCLE_LEN[fit()] || 14; }
+/* ── 29日目・30日目（コーチングつきの人だけ）────────────────
+   14日のプログラムを2周すると28日。残りの2日はシートの【Cardio day】から。
+   29日目＝パターン①、30日目＝パターン③。 */
+const CARDIO_DAYS = [
+  {t:"Steady Rowing", ja:"一定ペースのローイング", jaEn:"Steady rowing", fixed:true,
+   note:"フォームを意識しながら、1分あたり22〜26ストロークの一定リズムで15分間漕ぎ続けます。全身の連動性と姿勢改善に最適です。",
+   noteEn:"Row for 15 minutes at a steady 22 to 26 strokes a minute, with your form in mind. Great for whole-body coordination and posture.",
+   parts:[{k:"CARDIO", items:[P("row-machine","15 min")]}]},
+
+  {t:"Finisher AMRAP", ja:"16分 AMRAP", jaEn:"16-minute AMRAP", fixed:true,
+   note:"ボックスジャンプは、ステップアップに替えてもOKです。",
+   noteEn:"Box step-ups are fine instead of box jumps.",
+   parts:[{k:"16 MIN AMRAP", items:[
+     P("db-thruster","10 rep"), P("kb-swing","10 rep"),
+     P("burpee","10 rep"), P("box-jump","10 rep")]}]}
+];
+
+/* サイクルの日数。
+   スタンダードの人     … 7日 × 2周 ＝ 14日
+   コーチングつきの人   … 14日を2周（28日）＋ Cardio day 2日 ＝ 30日
+   （メニューの中身は同じ。コーチングの人は30日で走りきる形になる） */
+const WEEK = 7, BASE = 14;
+function CYCLE(){ return isCoach() ? 30 : BASE; }
 
 const addDays = (k,n) => { const d=new Date(k+"T00:00:00"); d.setDate(d.getDate()+n); return dkey(d); };
 const dayDiff = (a,b) => Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000);
 
 /* いま選んでいる Fit レベル。内容がまだ無い Fit 2 は Fit 1 に落とす */
-function fit(){
-  const v=level();
-  if(v==="fit30" && !isCoach()) return "fit1";   // コーチング以外には見せない
-  return (PROGRAM[v] && PROGRAM[v].length) ? v : "fit1";
-}
+function fit(){ const v=level(); return (PROGRAM[v] && PROGRAM[v].length) ? v : "fit1"; }
 
 /* サイクル（DAY 1〜14）は Fit レベルと切り離す。
    その日の調子で Fit を上げ下げしても、日数は進んだまま */
@@ -1955,16 +1892,21 @@ function ensureCycle(){
 }
 /* n 日目（1〜14）のプログラム。
    14日ぶん用意してある Fit（Fit 1）はそのまま、7日ぶんの Fit（Fit 3）は2周する */
+/* plan に入っている番号 → その日の中身。
+   0〜27 は 14日プログラムを2周、28・29 は Cardio day（コーチングつきのみ） */
+function dayData(i){
+  if(i >= BASE*2) return CARDIO_DAYS[i - BASE*2] || null;
+  const list = PROGRAM[fit()] || PROGRAM.fit1;
+  return list[i % list.length] || null;
+}
 function dayOf(n){
   ensureCycle();
   if(n<1 || n>CYCLE()) return null;
-  const list = PROGRAM[fit()] || PROGRAM.fit1;
-  return list[S.cycle.plan[n-1] % list.length] || null;
+  return dayData(S.cycle.plan[n-1]);
 }
 function cycleDates(){ return Array.from({length:CYCLE()},(_,i)=>addDays(S.cycle.start,i)); }
 function cycleSummary(){
-  const list = PROGRAM[fit()] || PROGRAM.fit1;
-  const need = S.cycle.plan.filter(i => !(list[i % list.length]||{}).rest).length;
+  const need = S.cycle.plan.filter(i => !(dayData(i)||{}).rest).length;
   const did  = cycleDates().filter(k=>S.logs.some(l=>l.date===k)).length;
   return {start:S.cycle.start, end:addDays(S.cycle.start,CYCLE()-1), need:need, did:did};
 }
@@ -2014,7 +1956,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-13",
+  build: "2026.11.16-15",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2710,11 +2652,11 @@ function viewTrain(){
             ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
           </div>
 
-          <div class="seg-dark">
+          ${p.fixed?"":`<div class="seg-dark">
             ${shownLevels().map(l=>{ const ok=levelReady(l.id);
               return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
-          <p class="levelhint">${TX("train.levelHint")}</p>
+          <p class="levelhint">${TX("train.levelHint")}</p>`}
 
           ${p.parts.map((part,pi)=>`
             <div class="partline">
@@ -3534,7 +3476,7 @@ function viewGate(){
 
     <div class="steps">
       <div class="steps-h">${esc(TX("gate.steps"))}</div>
-      ${LEVELS.filter(l=>l.id!=="fit30").map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
+      ${LEVELS.map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
         <span class="em">${l.emoji}</span>
         <span class="tx"><b>${esc(l.name)}：${esc(levelLead(l.id))}</b>
           <span>${esc(levelSub(l.id))}</span></span>
