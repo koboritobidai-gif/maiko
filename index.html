@@ -1584,7 +1584,8 @@ const PROGRAM = {
         P("side-plank","30 sec")]}]},
     {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
      note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
-     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+     /* 種目の一覧は出さない（naru の指示）。文章だけの日 */
+     parts:[]},
     {t:"Full Body", ja:"全身の引き締め", jaEn:"Full-body toning", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。", noteEn:"Four rounds of each. Take your time and keep it clean. Use dumbbells or a water bottle for the arm curls.", items:[
         P("good-morning","10 rep"),
@@ -1621,7 +1622,8 @@ const PROGRAM = {
     /* シートの Day 11 は種目が空欄だったので、Day 4 と同じ内容にしています */
     {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
      note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
-     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+     /* 種目の一覧は出さない（naru の指示）。文章だけの日 */
+     parts:[]},
     {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", jaEn:"Tighten the midsection, connect the back", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
       {k:"TRAINING", note:"ツイスト・クランチは腹部の斜筋を意識して。", noteEn:"Feel the twist crunches in your obliques.", items:[
         P("twist-crunch","16 rep × 3 set"),
@@ -1857,7 +1859,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-8",
+  build: "2026.11.16-9",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2578,9 +2580,12 @@ function viewTrain(){
           `).join("")}
         </div>
 
-        <p class="sub" style="text-align:center;margin:14px 0 10px">${TX("train.tapHint")}</p>
+        ${p.parts.some(pt=>pt.items&&pt.items.length)
+          ? `<p class="sub" style="text-align:center;margin:14px 0 10px">${TX("train.tapHint")}</p>`
+          : `<div style="height:14px"></div>`}
         <button class="btn btn-olive" data-go="entry">${TX("train.record")}</button>
-        <button class="btn btn-ghost" style="margin-top:9px" data-go="timer">${TX("train.timer")}</button>
+        ${p.parts.some(pt=>pt.items&&pt.items.length)
+          ? `<button class="btn btn-ghost" style="margin-top:9px" data-go="timer">${TX("train.timer")}</button>`:""}
         <button class="btn btn-ghost" style="margin-top:9px" data-go="home">${TX("train.back")}</button>
       </div>
     </div>
