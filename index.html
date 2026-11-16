@@ -1609,34 +1609,36 @@ const PROGRAM = {
      ================================================================= */
   fit1: [
     /* ── 【Unit 1】シート FIT1 タブ Day 1〜7 ─────────────────── */
-    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", jaEn:"Squat basics (push & squat)",
+    {t:"Lower & Core", ja:"下半身＆体幹の土台づくり", jaEn:"Building the base \u2014 legs and core",
      cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
      point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
      pointEn:"Squeeze your glutes hard and lift your pelvis",
      wod:{src:"videos/day1-wod.mp4", poster:"videos/day1-wod.jpg"}, parts:[
-      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
-        P("air-squat","10 rep"),
-        P("reverse-lunge","16 rep"),
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）スクワットは太もも前とお尻を意識して、じっくりしゃがむ。リバースランジは左右交互に10回ずつ（計20回）。プランクはおへそを背中に引き込み、お腹全体で体を支える。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean. Sink slowly into the squat and feel your quads and glutes. Alternate sides on the lunges, 10 each (20 total). On the plank, draw your navel in and hold with your whole midsection.", items:[
+        P("db-squat","10 rep"),
+        P("reverse-lunge","20 rep"),
         P("plank-hold","30 sec")]}]},
 
-    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain \u2014 feel your back side",
+    {t:"Posterior & Core", ja:"背面（ポステリアチェーン）＆お腹の引き締め", jaEn:"Back side and midsection",
      cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
      point:"丁寧なフォームでやりましょう。", pointEn:"Keep every rep clean.",
      wod:{src:"videos/day2-wod.mp4", poster:"videos/day2-wod.jpg"}, parts:[
-      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）グッドモーニングは膝ではなく、股関節を後ろに引く（ヒップヒンジ）。",
-       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. For the good mornings, hinge at the hips, not the knees.", items:[
-        P("good-morning","20 rep"),
-        P("leg-raise","10 rep"),
-        P("superman","30 sec")]}]},
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）グッドモーニングは膝ではなく、股関節を後ろに引いてお辞儀をするように。ベントオーバーロウは背すじを伸ばしたまま、肘を後ろに引いて背中を寄せる。レッグレイズは腰が浮かないように、下腹部で脚を持ち上げる。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. On the good mornings, bow from the hips, not the knees. On the rows, keep a long spine and drive your elbows back. On the leg raises, keep your lower back down and lift with your lower abs.", items:[
+        P("good-morning","12 rep"),
+        P("db-row","10 rep"),
+        P("leg-raise","10 rep")]}]},
 
-    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)",
+    {t:"Upper Push & Cardio", ja:"上半身の押す力 ＆ 有酸素リフレッシュ", jaEn:"Pushing strength, then a cardio refresh",
      cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
      point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
      pointEn:"Keep your core still and your limbs in one line, without arching your lower back", parts:[
-      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
-        P("bird-dog","20 rep"),
-        P("side-lunge","16 rep"),
-        P("side-plank","30 sec")]}]},
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）フロアプレスは床に仰向けで行う安全なダンベルプレス。胸と二の腕をしっかり引き締める。プッシュアップは膝つきでもOK。ジャンピングジャックは全身をリズミカルに動かして、心拍数を心地よく上げる。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. The floor press is a safe dumbbell press on your back \u2014 feel your chest and triceps. Push-ups on your knees are fine. Keep the jacks rhythmic and let your heart rate come up.", items:[
+        P("floor-press","10 rep"),
+        P("push-up","10 rep"),
+        P("jumping-jack","30 sec")]}]},
 
     {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true,
      note:"20分ほど軽くランか、全身のストレッチをしよう！",
@@ -1679,7 +1681,7 @@ const PROGRAM = {
       {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
         P("wide-squat","10 rep"),
         P("db-deadlift","10 rep"),
-        P("shoulder-tap","20 rep")]}]},
+        P("plank-shoulder-tap","20 rep")]}]},
 
     {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", jaEn:"Pushing strength and a steady core", parts:[
       {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）プッシュアップは椅子やソファに手を突いて。",
@@ -1700,12 +1702,12 @@ const PROGRAM = {
      noteEn:"About 20 minutes of easy running, or a full-body stretch.",
      parts:[]},
 
-    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", jaEn:"Tighten the midsection, connect the back", parts:[
-      {k:"TRAINING", note:"間のRESTは30秒〜60秒！　ツイスト・クランチは腹斜筋を意識して。",
-       noteEn:"Rest 30 to 60 seconds between. Feel the twist crunches in your obliques.", items:[
-        P("twist-crunch","16 rep × 3 set"),
-        P("superman","10 rep × 3 set"),
-        P("knee-to-chest","12 rep × 3 set")]}]},
+    {t:"Shoulder & Core", ja:"【肩＆体幹】リズムよく追い込む", jaEn:"Shoulders and core, in rhythm", parts:[
+      {k:"TRAINING", r:3, note:"30秒動いて15秒休憩で1サイクル。合計3周（約9分）です。ショルダープレスは綺麗なフォームでリズムよく押し上げる。ホロウロックはお腹を丸めて、船のようにゆらゆら揺れる。サイドレイズは肩の横をピンポイントで引き締める。",
+       noteEn:"Thirty seconds on, fifteen seconds off \u2014 three rounds, about nine minutes. Press with clean form and a steady rhythm. On the hollow rocks, round your belly and rock like a boat. Keep the lateral raises right on the side of the shoulder.", items:[
+        P("db-press","30 sec"),
+        P("hollow-rock","30 sec"),
+        P("lateral-raise","30 sec")]}]},
 
     {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", jaEn:"Stamina and whole-body flow", parts:[
       {k:"TRAINING", note:"間のRESTは30秒〜60秒！　マウンテンクライマーはリズムよく。",
@@ -1999,7 +2001,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-29",
+  build: "2026.11.16-31",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
