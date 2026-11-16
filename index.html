@@ -1773,7 +1773,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-5",
+  build: "2026.11.16-6",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2475,7 +2475,7 @@ function viewTrain(){
           ${p.parts.map((part,pi)=>`
             <div class="partline">
               <span class="badge">PART ${pi+1}</span>
-              <span>· ${part.min?part.min+" MIN ":""}${part.k}${part.n?" · "+part.n:""}${part.r?" · "+part.r+" ROUNDS":""}</span>
+              <span>· ${part.min?part.min+" MIN ":""}${part.k}${part.n?" · "+part.n:""}${part.r?"【"+part.r+" rounds】":""}</span>
               <span class="hr"></span>
             </div>
             ${part.note?`<p class="pnote" style="margin:-2px 0 8px">${esc(dayTx(part,"note"))}</p>`:""}
