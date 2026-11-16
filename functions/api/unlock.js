@@ -14,6 +14,7 @@
    ========================================================================= */
 
 const DAYS = 7;                       // 何日ごとに Stripe へ確認しに行くか
+const COACH_FROM = 10000;             // この金額以上の申し込みは「コーチングつき」とみなす
 const OK_STATUS = ["active", "trialing", "past_due"];
 /* past_due（カード期限切れなどで引き落とし失敗中）も通す。
    Stripe が自動で再試行している期間なので、ここで締め出すと
@@ -47,14 +48,26 @@ export async function onRequestPost({ request, env }) {
   if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email) || email.length > 254)
     return json({ ok: false, reason: "format" }, 400);
 
-  let found = false;
+  let found = false, plan = "std";
   try {
     /* Stripe ではメールアドレスは一意ではないので、同じアドレスの顧客が
        複数いることがある。1件でも生きていれば通す。 */
     const cus = await stripe(env, "customers?limit=20&email=" + encodeURIComponent(email));
     for (const c of (cus.data || [])) {
       const subs = await stripe(env, "subscriptions?limit=20&status=all&customer=" + c.id);
-      if ((subs.data || []).some(s => OK_STATUS.includes(s.status))) { found = true; break; }
+      for (const s of (subs.data || [])) {
+        if (!OK_STATUS.includes(s.status)) continue;
+        found = true;
+        /* コーチングつきかどうかは「金額」で見分ける。
+           スタンダード 3,500 / 3,900 円、コーチング 14,800 / 19,800 円。
+           価格IDを直接書くと、値段を変えるたびにここも直すことになるので、
+           しきい値（1万円）で判定している。 */
+        for (const it of ((s.items && s.items.data) || [])) {
+          const yen = (it.price && it.price.unit_amount) || 0;
+          if (yen >= COACH_FROM) plan = "coach";
+        }
+      }
+      if (plan === "coach") break;
     }
   } catch (e) {
     /* Stripe に届かない／キーが間違っている。
@@ -67,7 +80,7 @@ export async function onRequestPost({ request, env }) {
 
   const until = Date.now() + DAYS * 864e5;
   await note(env, request, email);
-  return json({ ok: true, until: until, days: DAYS });
+  return json({ ok: true, until: until, days: DAYS, plan: plan });
 }
 
 /* ── ログインの記録 ──────────────────────────────────────────

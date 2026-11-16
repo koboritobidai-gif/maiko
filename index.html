@@ -1332,7 +1332,7 @@ addTxt({
                  "An app to help anyone design the body they want \u2014 and learn to love it."],
 "gate.hook"   : ["「Fitness」を通して、人生もカラダも豊かになれるように。\n単なる「ダイエット」や「筋力アップ」にとどまらず\n体、脳、心の全てを正常に機能させ\n人生の質（QOL）を底上げしましょう。",
                  "Fitness here is about more than losing weight or lifting more. It is about your body, your mind and your head all working as they should \u2014 and about raising the quality of the life you live."],
-"gate.steps"  : ["体調や目標に合わせて選べる3つのプログラム","Three programs, picked by how you feel today"],
+"gate.steps"  : ["体調や目標に合わせて選べる2ステップ","Two levels, picked by how you feel today"],
 "gate.switch" : ["「今日は仕事でヘトヘトだから Fit 1 に落とそう」\n「休日に時間があるから Fit 2 に挑戦」が\n自由に選べます。",
                  "\u201cWiped out after work \u2014 drop to Fit 1.\u201d \u201cFree weekend \u2014 take on Fit 2.\u201d It is your call, every day."],
 "gate.lead"   : ["2週間で1クール。\n14日分のメニューが、休む日まで組んであります。",
@@ -1480,6 +1480,8 @@ const levelSub   = id => TX("lv."+id+".sub");
 const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.short", fit30:"lv.fit30.short"};
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
+/* 画面に出すプログラム。30 Days はコーチングつきの人だけ */
+const shownLevels = () => LEVELS.filter(l => l.id!=="fit30" || isCoach());
 
 /* =========================================================================
    状態
@@ -1775,7 +1777,11 @@ const addDays = (k,n) => { const d=new Date(k+"T00:00:00"); d.setDate(d.getDate(
 const dayDiff = (a,b) => Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000);
 
 /* いま選んでいる Fit レベル。内容がまだ無い Fit 2 は Fit 1 に落とす */
-function fit(){ const v=level(); return (PROGRAM[v] && PROGRAM[v].length) ? v : "fit1"; }
+function fit(){
+  const v=level();
+  if(v==="fit30" && !isCoach()) return "fit1";   // コーチング以外には見せない
+  return (PROGRAM[v] && PROGRAM[v].length) ? v : "fit1";
+}
 
 /* サイクル（DAY 1〜14）は Fit レベルと切り離す。
    その日の調子で Fit を上げ下げしても、日数は進んだまま */
@@ -1859,7 +1865,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-10",
+  build: "2026.11.16-11",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2327,7 +2333,7 @@ function obSteps(){ return [
    opts:[["tone",TX("goal.tone"),TX("goal.tone.s")],["lose",TX("goal.lose"),TX("goal.lose.s")],
          ["build",TX("goal.build"),TX("goal.build.s")],["stamina",TX("goal.stamina"),TX("goal.stamina.s")]]},
   {t:TX("ob.2t"), s:TX("ob.2s"), k:"level",
-   opts:LEVELS.map(l=>[l.id, l.name+"　"+levelLead(l.id),
+   opts:shownLevels().map(l=>[l.id, l.name+"　"+levelLead(l.id),
         levelReady(l.id) ? levelSub(l.id) : TX("ob.soon"), !levelReady(l.id)])},
 ];}
 
@@ -2553,7 +2559,7 @@ function viewTrain(){
           </div>
 
           <div class="seg-dark">
-            ${LEVELS.map(l=>{ const ok=levelReady(l.id);
+            ${shownLevels().map(l=>{ const ok=levelReady(l.id);
               return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
           <p class="levelhint">${TX("train.levelHint")}</p>
@@ -3198,7 +3204,7 @@ function viewSettings(){
         <p class="sub" style="margin-bottom:4px">${TX("set.lead")}</p>
         ${SHOW_LANG?row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang()):""}
         ${row(TX("set.goal"),[["tone",TX("goal.tone")],["lose",TX("goal.lose")],["build",TX("goal.build")],["stamina",TX("goal.stamina")]],"goal",pf.goal)}
-        ${row(TX("set.level"),LEVELS.map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level())}
+        ${row(TX("set.level"),shownLevels().map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level())}
         ${row(TX("set.place"),[["gym",TX("set.gym")],["home",TX("set.home")]],"place",pf.place)}
         ${row(TX("set.freq"),[[2,TX("set.d2")],[3,TX("set.d3")],[4,TX("set.d4")],[5,TX("set.d5")]],"days",pf.days)}
 
@@ -3283,6 +3289,17 @@ const ACCESS = {
                                     // 古いものを消すと、そのパスワードの人は再入力になる
   buy  : BIZ.pay                    // 申し込みページ（Stripe）
 };
+/* コーチングつき（14,800円／19,800円）で申し込んでいる人かどうか。
+   30 Days はこのコースの中身なので、この人にだけ見せる。
+   パスワードで入った人（naru と maiko）にも見せる。 */
+function isCoach(){
+  if(!ACCESS.on) return true;
+  const a = S.access;
+  if(!a) return false;
+  if(a.code) return true;                 // パスワードで入った人＝運営
+  return a.plan === "coach";
+}
+
 function unlocked(){
   if(!ACCESS.on) return true;
   if(!S.access) return false;
@@ -3303,7 +3320,7 @@ async function checkEmail(email){
       body   :JSON.stringify({email:email})
     });
     const d = await r.json().catch(()=>({}));
-    if(d && d.ok){ return {r:"ok", until:d.until}; }
+    if(d && d.ok){ return {r:"ok", until:d.until, plan:d.plan||"std"}; }
     if(d && d.reason==="nosub") return {r:"nosub"};
     return {r:"err"};
   }catch(e){ return {r:"err"}; }
@@ -3317,7 +3334,7 @@ async function refreshAccess(){
   const a = S.access;
   if(!a || !a.email || !a.until || Date.now() < a.until) return;
   const res = await checkEmail(a.email);
-  if(res.r==="ok"){ S.access.until = res.until; save(); return; }
+  if(res.r==="ok"){ S.access.until = res.until; S.access.plan = res.plan; save(); return; }
   if(res.r==="nosub"){
     S.access = null; save();
     gateErr = TX("gate.emailNo"); go("gate");
@@ -3344,7 +3361,7 @@ async function submitMail(){
   const res = await checkEmail(v);
   gateBusy = false;
   if(res.r === "ok"){
-    S.access = {email:v, until:res.until, at:todayKey()}; save();
+    S.access = {email:v, until:res.until, plan:res.plan, at:todayKey()}; save();
     gateMail=""; gateErr="";
     go(S.profile ? "home" : "ob");
     return;
@@ -3365,7 +3382,7 @@ function viewGate(){
 
     <div class="steps">
       <div class="steps-h">${esc(TX("gate.steps"))}</div>
-      ${LEVELS.map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
+      ${LEVELS.filter(l=>l.id!=="fit30").map(l=>`<div class="step${levelReady(l.id)?"":" soon"}">
         <span class="em">${l.emoji}</span>
         <span class="tx"><b>${esc(l.name)}：${esc(levelLead(l.id))}</b>
           <span>${esc(levelSub(l.id))}</span></span>
