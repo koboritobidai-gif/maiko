@@ -1689,12 +1689,12 @@ const PROGRAM = {
       {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）プッシュアップは椅子やソファに手を突いて。",
        noteEn:"2 min rest between rounds. Four rounds of each. Put your hands on a chair or sofa for the push-ups.", items:[
         P("push-up","10 rep"),
-        P("burpee","10 rep"),
+        P("mountain-climber","20 rep"),
         P("plank-hold","45 sec")]}]},
 
     {t:"Back & Core", ja:"背面＆体幹のやさしい引き締め", jaEn:"An easy pass at your back side and core", parts:[
-      {k:"TRAINING", note:"2min Rest　グッドモーニングは道具なしで、胸の前で腕をクロスさせ、股関節を深く折りたたんで背面をストレッチ。バードドッグは四つん這いで対角の手足をまっすぐ遠くへ伸ばす（左右交互）。プランクは膝を床につけた楽な姿勢でOK。おへそを凹ませて、お腹の軸をしっかりキープ。",
-       noteEn:"2 min rest between rounds. Good mornings with no weight — cross your arms at your chest and fold deep at the hips. On the bird dogs, reach the opposite hand and foot straight out, alternating sides. The plank can be on your knees; draw your navel in and hold the line.", items:[
+      {k:"TRAINING", r:4, note:"2min Rest　目標それぞれ、4周しよう！（焦らず、丁寧に）グッドモーニングは道具なしで、胸の前で腕をクロスさせ、股関節を深く折りたたんで背面をストレッチ。バードドッグは四つん這いで対角の手足をまっすぐ遠くへ伸ばす（左右交互）。プランクは膝を床につけた楽な姿勢でOK。おへそを凹ませて、お腹の軸をしっかりキープ。",
+       noteEn:"2 min rest between rounds. Four rounds of each. Good mornings with no weight — cross your arms at your chest and fold deep at the hips. On the bird dogs, reach the opposite hand and foot straight out, alternating sides. The plank can be on your knees; draw your navel in and hold the line.", items:[
         P("good-morning","10 rep"),
         P("bird-dog","20 rep"),
         P("plank-hold","30 sec")]}]},
@@ -1705,18 +1705,18 @@ const PROGRAM = {
      parts:[]},
 
     {t:"8 Min AMRAP", ja:"【心肺＆全身燃焼】8分間ゲーム感覚", jaEn:"Eight minutes — how many rounds can you get?",
-     note:"タイマーを8分セットして、この3種目を自分のペースで何周できるか挑戦！リバースランジは左右交互に10回ずつ（計20回）、ショルダータップは左右交互に16回です。",
-     noteEn:"Set a timer for eight minutes and see how many rounds you can get at your own pace. Reverse lunges are 10 each side (20 total); shoulder taps are 16, alternating.", parts:[
+     note:"タイマーを8分セットして、この3種目を自分のペースで何周できるか挑戦！リバースランジ・ショルダータップは、どちらも左右交互に16回です。",
+     noteEn:"Set a timer for eight minutes and see how many rounds you can get at your own pace. Reverse lunges and shoulder taps are both 16, alternating sides.", parts:[
       {k:"8 MIN AMRAP", items:[
         P("jumping-jack","20 rep"),
-        P("reverse-lunge","20 rep"),
+        P("reverse-lunge","16 rep"),
         P("plank-shoulder-tap","16 rep")]}]},
 
     {t:"Mobility & Recovery", ja:"【モビリティ＆リカバリー】全身の可動域を広げるストレッチ",
      jaEn:"Mobility and recovery — open up the whole body", cool:true,
      cardio:"お好みのフォームローラーや、軽いウォーキング（15分）",
      cardioEn:"Foam roll if you like, or an easy 15-minute walk", parts:[
-      {k:"MOBILITY", note:"ワールドグレイテストストレッチは左右各10回（計20回）。股関節・胸・背中を一気にほぐす最強ストレッチです。トゥータッチは裏ももと背骨を気持ちよく伸ばします。",
+      {k:"MOBILITY", note:"ワールドグレイテストストレッチは左右各10回（計20回）。股関節・胸・背中を一気にほぐすストレッチです。トゥータッチは裏ももと背骨を気持ちよく伸ばします。",
        noteEn:"Ten each side on the World's Greatest Stretch (20 total) — it opens hips, chest and back all at once. The toe touches lengthen your hamstrings and spine.", items:[
         P("world-greatest","20 rep"),
         P("toe-touch","10 rep")]}]},
@@ -2007,7 +2007,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.16-34",
+  build: "2026.11.16-35",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
