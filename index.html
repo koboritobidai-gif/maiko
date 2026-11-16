@@ -2014,7 +2014,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-12",
+  build: "2026.11.16-13",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2662,6 +2662,9 @@ function videoBlock(exId, force){
      ただし設定の動画ライブラリから開いたときは、自分で選んでいるので出す */
   if(fit()==="fit3" && !force) return "";
   const v = exId ? (EX[exId] && EX[exId].video) : null;
+  /* 動画が無い種目は、枠ごと出さない（「準備中」の空枠を見せない）。
+     撮影して EX に video を入れれば、自動で出るようになる */
+  if(exId && !v) return "";
   const title = exId ? TX("vid.form", EX[exId].en) : TX("vid.onePoint");
   const sub = exId ? (v ? TX("vid.have") : TX("vid.none")) : TX("vid.dayNone");
   return `<div class="video">
