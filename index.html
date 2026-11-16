@@ -1504,6 +1504,14 @@ const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 /* Fit 1 / Fit 2 を後から切り替えられるのは、コーチングつきの方だけ。
    アプリのみ（3,500円・3,900円）の方は、診断で決まったメニューのまま進む */
 function canSwitchFit(){ return isCoach(); }
+
+/* 最初に選んだメニューは、設定の「全部消してやり直す」でも消さずに控えておく。
+   アプリのみの方が、やり直して別のメニューに乗り換えるのを防ぐ */
+const LOCK_KEY = "naru-tore-level";
+function lockedLevel(){ try{ return localStorage.getItem(LOCK_KEY) || ""; }catch(e){ return ""; } }
+function lockLevel(v){ try{ if(v) localStorage.setItem(LOCK_KEY, v); }catch(e){} }
+/* 診断でメニューを選ばせるか。すでに決まっていて、切り替えできない方には聞かない */
+function askLevel(){ return canSwitchFit() || !levelReady(lockedLevel()); }
 /* 画面に出すプログラム。30 Days はコーチングつきの人だけ */
 const shownLevels = () => LEVELS;
 
@@ -1978,7 +1986,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-18",
+  build: "2026.11.16-19",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2451,7 +2459,7 @@ function obSteps(){ return [
   {t:TX("ob.2t"), s:TX("ob.2s"), k:"level",
    opts:shownLevels().map(l=>[l.id, l.name+"　"+levelLead(l.id),
         levelReady(l.id) ? levelSub(l.id) : TX("ob.soon"), !levelReady(l.id)])},
-];}
+].filter(st => st.k!=="level" || askLevel());}
 
 function viewOB(){
   const steps = obSteps();
@@ -3661,8 +3669,9 @@ function bind(){
   });
   on("[data-ob-next]",()=>{
     if(ob.step<obSteps().length-1){ ob.step++; render(); return; }
-    S.profile={goal:ob.goal,level:ob.level,place:ob.place,days:ob.days};
-    S.level=ob.level; save(); go("home");
+    const lv = askLevel() ? ob.level : lockedLevel();
+    S.profile={goal:ob.goal,level:lv,place:ob.place,days:ob.days};
+    S.level=lv; lockLevel(lv); save(); go("home");
   });
   on("[data-ob-back]",()=>{ ob.step--; render(); });
 
@@ -3778,6 +3787,9 @@ load();
     gateMail = String(m).trim().toLowerCase();
   }catch(e){}
 })();
+
+/* すでに診断を済ませている方は、そのときのメニューを控えておく（控えが無いときだけ） */
+if(S.profile && S.profile.level && !lockedLevel()) lockLevel(S.profile.level);
 
 current = !unlocked() ? (S.profile ? "gate" : "lp") : (S.profile ? "home" : "lp");
 render();
