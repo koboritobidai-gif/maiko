@@ -166,7 +166,9 @@ button{border:0;background:none;cursor:pointer}
 .exrow .nm{display:flex;flex-direction:column}
 .exrow .en{display:block;font-size:12.5px;font-weight:700;line-height:1.35}
 .exrow .ja{display:block;font-size:10px;color:var(--ink-mute);margin-top:2px;line-height:1.4}
-.exrow .dose{font-size:11px;font-weight:700;white-space:nowrap;color:var(--ink-soft)}
+.exrow .dose{font-size:11px;font-weight:700;color:var(--ink-soft);text-align:right;
+              white-space:nowrap;overflow-wrap:anywhere}
+@media(max-width:360px){.exrow .dose{white-space:normal}}
 .exrow .chev{color:var(--ink-mute);font-size:15px}
 .trainwrap{position:relative;overflow:hidden;background:var(--panel);border-radius:var(--r-lg);padding:18px;color:var(--ink)}
 
@@ -390,6 +392,18 @@ const EX = {
   "wall-sit":{en:"Wall Sit",ja:"ウォールシット",video:null,
     cues:["背中を壁につけて膝90度","太ももの前が焼ける感覚をキープ"],
     miss:["膝がつま先より前に出る","腰が壁から離れる"],breath:"止めずに細く吐く"},
+  "shoulder-tap":{en:"Shoulder Tap",ja:"ショルダータップ",video:null,
+    cues:["プランクの姿勢で、左右交互に肩をタッチ","お尻を左右に振らない"],
+    miss:["腰が落ちる","体が大きく揺れる"],breath:"タッチのたびに吐く"},
+  "shoulder-press":{en:"Shoulder Press",ja:"ショルダープレス",video:null,
+    cues:["肋骨を締めて、腰を反らさない","耳の横を通して真上へ押す"],
+    miss:["腰が反る","肘が前に逃げる"],breath:"押し上げるときに吐く"},
+  "single-leg-rdl":{en:"Single Leg Romanian Deadlift",ja:"シングルレッグ・ルーマニアンデッドリフト",video:null,
+    cues:["軸足のハムストリングスが伸びるところまで","骨盤を床と平行に保つ"],
+    miss:["骨盤が開く","背中が丸まる"],breath:"戻すときに吐く"},
+  "power-clean":{en:"Power Clean",ja:"パワークリーン",video:null,
+    cues:["床から膝まではゆっくり、そこから一気に","肘を速く回して肩で受ける"],
+    miss:["腕で引き上げる","背中が丸まる"],breath:"立ち上がりで吐く"},
   "reverse-lunge":{en:"Reverse Lunge",ja:"リバースランジ",video:{src:"videos/reverse-lunge.mp4",poster:"videos/reverse-lunge.jpg"},
     cues:["後ろに大きく引いて真下に落ちる","前足で床を押して戻る",
           "ダンベルを持てる人は、負荷をかけよう！"],
@@ -713,6 +727,14 @@ const EX_EN = {
   miss:["Hips tilting to one side","Lifting from your lower back"],breath:"Breathe out as you lift"},
 "wall-sit":{cues:["Back flat on the wall, knees at 90 degrees","Keep that burn in the front of your thighs"],
   miss:["Knees past your toes","Lower back peeling off the wall"],breath:"Keep breathing out slowly"},
+"shoulder-tap":{cues:["From a plank, tap each shoulder in turn","Do not let your hips swing"],
+  miss:["Hips dropping","Body rocking side to side"],breath:"Breathe out on each tap"},
+"shoulder-press":{cues:["Ribs down, no arching","Press straight up, past your ears"],
+  miss:["Lower back arching","Elbows drifting forward"],breath:"Breathe out as you press"},
+"single-leg-rdl":{cues:["Go until the standing hamstring stretches","Keep your hips square to the floor"],
+  miss:["Hips opening out","Rounding your back"],breath:"Breathe out as you stand"},
+"power-clean":{cues:["Slow off the floor to the knee, then fast","Turn the elbows over quickly and catch on the shoulders"],
+  miss:["Pulling with the arms","Rounding your back"],breath:"Breathe out as you stand up"},
 "reverse-lunge":{cues:["Step back long and drop straight down","Push the floor away with your front foot to stand",
   "If you can hold dumbbells, add the load!"],
   miss:["Step too short","Upper body tipping forward"],breath:"Breathe out as you stand"},
@@ -1565,88 +1587,119 @@ const PROGRAM = {
        合っている Day 3 / Day 6 / Day 7 だけ入れています。要確認は下のメモ参照。
      ================================================================= */
   fit1: [
-    /* ---- Unit 1 ---- */
-    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", jaEn:"Squat basics (push & squat)", cardio:CARDIO, cardioEn:CARDIO_EN,
-     /* その日の解説。naru が1本で話しているもの。無い日は出ない */
+    /* ── 【Unit 1】シート FIT1 タブ Day 1〜7 ─────────────────── */
+    {t:"Squat & Push", ja:"スクワット基礎構築（プッシュ＆スクワット）", jaEn:"Squat basics (push & squat)",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
+     pointEn:"Squeeze your glutes hard and lift your pelvis",
      wod:{src:"videos/day1-wod.mp4", poster:"videos/day1-wod.jpg"}, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
         P("air-squat","10 rep"),
-        P("push-up","10 rep"),
+        P("reverse-lunge","16 rep"),
         P("plank-hold","30 sec")]}]},
-    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain — feel your back side", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）レッグレイズは下腹部、スーパーマンは腹部に力をしっかり入れて。", noteEn:"Four rounds of each. Take your time and keep it clean. Feel the leg raises in your lower abs, and brace hard on the supermans.", items:[
-        P("glute-bridge","20 rep"),
+
+    {t:"Posterior Chain", ja:"ポステリアチェーン（体の背面）の意識", jaEn:"Posterior chain \u2014 feel your back side",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"丁寧なフォームでやりましょう。", pointEn:"Keep every rep clean.", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）グッドモーニングは膝ではなく、股関節を後ろに引く（ヒップヒンジ）。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. For the good mornings, hinge at the hips, not the knees.", items:[
+        P("good-morning","20 rep"),
         P("leg-raise","10 rep"),
         P("superman","30 sec")]}]},
-    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)", cardio:CARDIO, cardioEn:CARDIO_EN,
-     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ", pointEn:"Keep your core still and your limbs in one line, without arching your lower back", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
-        P("bird-dog","16 rep"),
+
+    {t:"Multi-planar", ja:"横方向の動き（マルチプラナー基礎）", jaEn:"Side-to-side movement (multi-planar basics)",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
+     pointEn:"Keep your core still and your limbs in one line, without arching your lower back", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
+        P("bird-dog","20 rep"),
         P("side-lunge","16 rep"),
         P("side-plank","30 sec")]}]},
-    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
-     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
-     /* 種目の一覧は出さない（naru の指示）。文章だけの日 */
+
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true,
+     note:"20分ほど軽くランか、全身のストレッチをしよう！",
+     noteEn:"About 20 minutes of easy running, or a full-body stretch.",
+     point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
+     pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
      parts:[]},
-    {t:"Full Body", ja:"全身の引き締め", jaEn:"Full-body toning", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。", noteEn:"Four rounds of each. Take your time and keep it clean. Use dumbbells or a water bottle for the arm curls.", items:[
+
+    {t:"Full Body", ja:"全身の引き締め", jaEn:"Full-body toning",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持",
+     pointEn:"Use a wall to feel your upper chest, and keep a straight line without arching", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）アームカールはダンベル、またはペットボトルを持って。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. Use dumbbells or a water bottle for the curls.", items:[
         P("good-morning","10 rep"),
         P("db-curl","10 rep"),
-        P("pike-push-up","10 rep"),
+        P("push-up","10 rep"),
         P("tuck-up","10 rep")]}]},
-    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core meets stamina", cardio:CARDIO, cardioEn:CARDIO_EN,
-     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける", pointEn:"Hold a straight line from head to heels and keep your core braced", parts:[
-      {k:"TRAINING", r:4, note:"目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Four rounds of each. Take your time and keep it clean.", items:[
-        P("reverse-lunge","16 rep"),
+
+    {t:"Core & Stamina", ja:"体幹とスタミナの融合", jaEn:"Core and stamina together",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
+     pointEn:"Hold one line from head to heels and brace your core", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
+        P("wide-push-up","10 rep"),
         P("burpee","10 rep"),
         P("mountain-climber","10 rep")]}]},
-    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest (great work this week!)", rest:true,
-     cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
-     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く", pointEn:"Breathe deep, let everything loosen, and clear the fatigue",
-     note:"トレーニングはなし。全身のストレッチを15分。しっかり寝て、栄養を補給する日です。", noteEn:"No training. 15 minutes of full-body stretching. Sleep well and eat well today."},
 
-    /* ---- Unit 2 ---- */
-    {t:"Lower & Back", ja:"下半身＆背中の連動強化", jaEn:"Lower body and back, working together", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", items:[
-        P("wide-squat","10 rep × 3 set"),
-        P("towel-row","10 rep × 3 set"),
-        P("plank-shoulder-tap","12 rep × 3 set")]}]},
-    {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", jaEn:"Upper-body pushing and a stable core", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", items:[
-        P("incline-push-up","10 rep × 3 set"),
-        P("hip-hinge","12 rep × 3 set"),
-        P("side-plank","左右各 20 sec × 3 set")]}]},
-    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め（前後・左右）", jaEn:"Lower body in every direction (front-back, side-side)", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", items:[
-        P("front-lunge","左右交互 10 rep × 3 set"),
-        P("glute-bridge-hold","12 rep × 3 set"),
-        P("bird-dog","16 rep × 3 set")]}]},
-    /* シートの Day 11 は種目が空欄だったので、Day 4 と同じ内容にしています */
-    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true, cardio:CARDIO, cardioEn:CARDIO_EN,
-     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。", noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
-     /* 種目の一覧は出さない（naru の指示）。文章だけの日 */
+    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest \u2014 nice work this week",
+     rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
+     point:"深い呼吸で全身の筋肉を緩め、翌日以降への疲労を抜く",
+     pointEn:"Breathe deeply, let everything loosen, and clear the fatigue",
+     note:"全身のストレッチを15分。しっかり寝て、栄養を補給する日です。",
+     noteEn:"Fifteen minutes of full-body stretching. Sleep well and eat properly."},
+
+    /* ── 【Unit 2】シート FIT1 タブ Day 8〜14 ────────────────── */
+    {t:"Lower & Back", ja:"下半身＆背中の連動強化", jaEn:"Legs and back, working together",
+     point:"背筋を伸ばしたまま股関節から前傾し、ハムストリングスを意識",
+     pointEn:"Keep a long spine, hinge from the hips, and feel your hamstrings", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）", noteEn:"Rest 30 to 60 seconds between. Four rounds of each \u2014 take your time and keep it clean.", items:[
+        P("wide-squat","10 rep"),
+        P("db-deadlift","10 rep"),
+        P("shoulder-tap","20 rep")]}]},
+
+    {t:"Upper Push & Core", ja:"上半身の押す力と体幹の安定", jaEn:"Pushing strength and a steady core", parts:[
+      {k:"TRAINING", r:4, note:"間のRESTは30秒〜60秒！　目標それぞれ、4周しよう！（焦らず、丁寧に）プッシュアップは椅子やソファに手を突いて。",
+       noteEn:"Rest 30 to 60 seconds between. Four rounds of each. Put your hands on a chair or sofa for the push-ups.", items:[
+        P("incline-push-up","10 rep"),
+        P("burpee","10 rep"),
+        P("plank-hold","45 sec")]}]},
+
+    {t:"Lower Body 3D", ja:"下半身の立体的な引き締め（前後・左右）", jaEn:"Legs from every angle", parts:[
+      {k:"TRAINING", note:"間のRESTは30秒〜60秒！　ヒップリフトは、お尻を上げた状態で2秒キープ。",
+       noteEn:"Rest 30 to 60 seconds between. Hold the glute bridge for two seconds at the top.", items:[
+        P("front-lunge","20 rep"),
+        P("glute-bridge","10 rep"),
+        P("bird-dog","20 rep")]}]},
+
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery (flush out the fatigue)", cool:true,
+     note:"20分ほど軽くランか、全身のストレッチをしよう！",
+     noteEn:"About 20 minutes of easy running, or a full-body stretch.",
      parts:[]},
-    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", jaEn:"Tighten the midsection, connect the back", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", note:"ツイスト・クランチは腹部の斜筋を意識して。", noteEn:"Feel the twist crunches in your obliques.", items:[
+
+    {t:"Core & Posterior", ja:"お腹まわりの引き締めと背面の連動", jaEn:"Tighten the midsection, connect the back", parts:[
+      {k:"TRAINING", note:"間のRESTは30秒〜60秒！　ツイスト・クランチは腹斜筋を意識して。",
+       noteEn:"Rest 30 to 60 seconds between. Feel the twist crunches in your obliques.", items:[
         P("twist-crunch","16 rep × 3 set"),
         P("superman","10 rep × 3 set"),
         P("knee-to-chest","12 rep × 3 set")]}]},
-    {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", jaEn:"Full-body stamina and coordination", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"TRAINING", items:[
+
+    {t:"Stamina & Flow", ja:"全身のスタミナと連動性の向上", jaEn:"Stamina and whole-body flow", parts:[
+      {k:"TRAINING", note:"間のRESTは30秒〜60秒！　マウンテンクライマーはリズムよく。",
+       noteEn:"Rest 30 to 60 seconds between. Keep a steady rhythm on the mountain climbers.", items:[
         P("squat-calf-raise","10 rep × 3 set"),
         P("inchworm","8 rep × 3 set"),
         P("mountain-climber","30 sec × 3 set")]}]},
-    {t:"Full Rest", ja:"完全休養！REST", jaEn:"Full rest!", rest:true,
-     note:"完全休養。もしくは、できるなら！ 1分間のプランクホールド → 30回のバーピー → 50回のマウンテンクライマー、これを 3 Rounds！！！", noteEn:"Full rest. Or, if you are up for it: 1-minute plank hold → 30 burpees → 50 mountain climbers, 3 rounds!!!"}
+
+    {t:"Bonus Challenge", ja:"お楽しみボーナスチャレンジ（やれる人だけ！）／ または休養", jaEn:"Bonus challenge \u2014 only if you are up for it, or rest",
+     note:"やれる人だけ！しんどければ、完全休養にしてOKです。",
+     noteEn:"Only if you are up for it. If you are beat, take the rest day instead.", parts:[
+      {k:"TRAINING", r:3, note:"これを3周！", noteEn:"Three rounds of this!", items:[
+        P("plank-hold","1 min"),
+        P("burpee","30 rep"),
+        P("mountain-climber","50 rep")]}]}
   ],
-
-  /* シート「意識する点」列のうち、その日の種目と合っていなかったぶん。
-     naru さんに正しい日を確認してから入れる：
-       Day 1「お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる」→ ヒップリフトの Day 2 向きか
-       Day 4「お尻・太ももを意識し、股関節を引き込んで腰を落とす」→ サイドランジの Day 3 向きか
-       Day 5「壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持」→ ウォール・プッシュアップの日が無い
-       Day 8「背筋を伸ばしたまま股関節から前傾し、ハムストリングスを意識」→ ヒップヒンジの Day 9 向きか  */
-
   fit2: null,   /* 準備中。スプレッドシートにも Fit 2 の中身はまだありません */
 
   /* ===== Fit 3（ジム・アスリート向け）===============================
@@ -1655,42 +1708,138 @@ const PROGRAM = {
      【Unit2】は Day 6・Day 7 が空欄のため、まだ入れていません。
      ================================================================= */
   fit3: [
-    {t:"Lower Body Focus", ja:"下半身のパワーと土台", jaEn:"Lower-body power and foundation", cardio:"30 cal ROW", cardioEn:"30 cal ROW", parts:[
-      {k:"STRENGTH", n:"BACK SQUAT", note:"5-5-5-5-5（@80-85% Max Strength）", noteEn:"5-5-5-5-5 (@80-85% of max)",
+    /* ── シート FIT2 タブ【Unit1】Day 1〜14 ────────────────── */
+    {t:"Squat Base", ja:"スクワット基礎構築（下半身強化）", jaEn:"Squat base (building the legs)",
+     cardio:"30 cal ROW ／ 60秒 プランクホールド", cardioEn:"30 cal ROW / 60 sec plank hold",
+     point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
+     pointEn:"Squeeze your glutes hard and lift your pelvis", parts:[
+      {k:"STRENGTH", n:"BACK SQUAT", note:"5回 × 5セット（@80-85% Max Strength）　セット間のRESTは90秒",
+       noteEn:"5 \u00d7 5 at 80-85% of max. Rest 90 seconds between sets.",
        items:[P("back-squat","5 rep × 5 set")]},
-      {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
-      {k:"AMRAP", min:12, r:4, items:[
-        P("db-squat","10 rep"), P("db-press","8 rep"), P("tuck-up","15 rep")]}]},
-    {t:"Upper Push / Pull", ja:"逆三角形のシルエット", jaEn:"The V-taper", parts:[
-      {k:"STRENGTH", n:"BENCH PRESS", note:"5-5-5-5-5（@80-85%）　※ OHP に替えても可", noteEn:"5-5-5-5-5 (@80-85%) · OHP works too",
+      {k:"ACCESSORY", note:"リバースランジはダンベルを持って。ゴブレットスクワットはやや重めで。",
+       noteEn:"Hold dumbbells for the lunges. Go a little heavy on the goblet squats.", items:[
+        P("reverse-lunge","16 rep × 3 set"),
+        P("goblet-squat","10 rep × 3 set")]}]},
+
+    {t:"Upper Push / Pull", ja:"逆三角形のシルエット", jaEn:"The V-taper",
+     cardio:"45秒 サイドプランク", cardioEn:"45 sec side plank", parts:[
+      {k:"STRENGTH", n:"BENCH PRESS", note:"5回 × 5セット　「あと1〜2回で限界がくる重さ」で",
+       noteEn:"5 \u00d7 5. Pick a weight where you have one or two reps left in the tank.",
        items:[P("bench-press","5 rep × 5 set")]},
-      {k:"ACCESSORY", items:[P("pull-up","8 rep × 3 set　※ 加重／ラットプルダウンでも可")]},
-      {k:"AMRAP", min:12, r:4, items:[
-        P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","15 rep")]}]},
-    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", jaEn:"A strong back and usable strength", cardio:"30 cal BIKE", cardioEn:"30 cal BIKE", parts:[
-      {k:"STRENGTH", n:"DEADLIFT", note:"5-5-5-5-5（@80-85%）　※ トラップバーでも可", noteEn:"5-5-5-5-5 (@80-85%) · trap bar is fine",
+      {k:"ACCESSORY", note:"加重、またはラットプルダウンでも可。", noteEn:"Add weight, or use the lat pulldown.",
+       items:[P("pull-up","10 rep × 3 set")]},
+      {k:"TRAINING", r:3, items:[
+        P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","10 rep")]}]},
+
+    {t:"Posterior Chain & Hinge", ja:"強靭な背面と実用的な強さ", jaEn:"A strong back and usable strength",
+     cardio:"30 cal BIKE", cardioEn:"30 cal BIKE",
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
+     pointEn:"Keep your core still and your limbs in one line, without arching", parts:[
+      {k:"STRENGTH", n:"DEADLIFT", note:"5回 × 5セット　「あと1〜2回で限界がくる重さ」で",
+       noteEn:"5 \u00d7 5. One or two reps left in the tank.",
        items:[P("deadlift","5 rep × 5 set")]},
-      {k:"ACCESSORY", items:[P("bulgarian-split","左右各 8 rep × 3 set")]},
-      {k:"AMRAP", min:12, r:4, items:[
+      {k:"ACCESSORY", items:[P("single-leg-rdl","左右各 8 rep × 3 set")]},
+      {k:"12 MIN AMRAP", items:[
         P("barbell-clean","8 rep"), P("box-jump","10 rep"), P("hollow-rock","15 rep")]}]},
-    {t:"Active Recovery", ja:"積極的疲労回復", jaEn:"Active recovery", cool:true,
+
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery", cool:true,
      cardio:"軽いジョギング、または低強度のローイング（30分）", cardioEn:"Easy jog or low-intensity rowing (30 min)",
-     note:"高強度のウェイトは完全にオフ。股関節と胸椎の可動域を上げて、血流を促す日です。", noteEn:"No heavy lifting at all. Open up the hips and upper back, and get the blood moving.",
+     point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
+     pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
+     note:"モビリティワーク（股関節・胸椎の可動域UP）と、軽いジョギングまたは低強度のローイングで血流を促し、疲労物質を流す。",
+     noteEn:"Mobility work for the hips and upper back, plus easy cardio to move the blood and clear the fatigue.",
      parts:[{k:"COOL DOWN", items:MOBILITY}]},
-    {t:"Full Body Integration", ja:"全身の連動とタフネス", jaEn:"Full-body coordination and toughness", parts:[
-      {k:"STRENGTH", n:"FRONT SQUAT", note:"5-5-5-5-5（@75-80%）　フロントキープでコアを使う", noteEn:"5-5-5-5-5 (@75-80%) · the front rack makes your core work",
+
+    {t:"Full Body Integration", ja:"全身の連動とタフネス", jaEn:"Full-body coordination and toughness",
+     point:"壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持",
+     pointEn:"Use a wall to feel your upper chest, and keep a straight line without arching", parts:[
+      {k:"STRENGTH", n:"FRONT SQUAT", note:"5回 × 5セット　少し余裕を持たせた、綺麗なフォームで挙げられる重さで",
+       noteEn:"5 \u00d7 5. A weight you can keep clean, with something left over.",
        items:[P("front-squat","5 rep × 5 set")]},
       {k:"ACCESSORY", items:[P("db-incline-press","10 rep × 3 set")]},
-      {k:"AMRAP", min:12, r:4, items:[
+      {k:"TRAINING", r:3, items:[
+        P("db-thruster","10 rep"), P("burpee-over-db","10 rep"), P("row-machine","200 m")]}]},
+
+    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", jaEn:"Explosive power, past your limit",
+     cardio:"ストレッチを長めに", cardioEn:"Stretch harder",
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
+     pointEn:"Hold one line from head to heels and brace your core", parts:[
+      {k:"STRENGTH", n:"POWER CLEAN", note:"3回 × 5セット　スピードを落とさず、キレよく挙げられる重さ",
+       noteEn:"3 \u00d7 5. A weight you can still move fast and sharp.",
+       items:[P("power-clean","3 rep × 5 set")]},
+      {k:"ACCESSORY", note:"ハムストリングスと臀部の筋肥大を狙って。", noteEn:"Target the hamstrings and glutes.",
+       items:[P("rdl","10 rep × 3 set")]},
+      {k:"12 MIN AMRAP", items:[
+        P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("kb-swing","9 rep")]}]},
+
+    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest \u2014 nice work this week", rest:true,
+     note:"トレーニングは一切なし。次の週の Day 1 で100%の出力が出せるよう、しっかり睡眠と十分な栄養を補給する日。",
+     noteEn:"No training at all. Sleep and eat properly so you can give 100% on next week's Day 1."},
+
+    {t:"Squat Base II", ja:"スクワット基礎構築（第二弾）＋パワーアップ", jaEn:"Squat base, round two",
+     cardio:"30 cal ROW", cardioEn:"30 cal ROW",
+     point:"お尻の筋肉（大臀筋）をしっかり収縮させて骨盤を持ち上げる",
+     pointEn:"Squeeze your glutes hard and lift your pelvis", parts:[
+      {k:"STRENGTH", n:"BACK SQUAT", note:"5回 × 5セット（@80-85% Max Strength）",
+       noteEn:"5 \u00d7 5 at 80-85% of max.", items:[P("back-squat","5 rep × 5 set")]},
+      {k:"ACCESSORY", items:[P("reverse-lunge","16 rep × 3 set")]},
+      {k:"12 MIN AMRAP", note:"できるだけ、スピードも意識して。", noteEn:"Keep the pace up.", items:[
+        P("db-squat","10 rep"), P("db-press","8 rep"), P("tuck-up","15 rep")]}]},
+
+    {t:"Upper Push / Pull II", ja:"逆三角形のシルエット（第二弾）", jaEn:"The V-taper, round two", parts:[
+      {k:"STRENGTH", n:"SHOULDER PRESS", note:"5回 × 5セット　「あと1〜2回で限界がくる重さ」で",
+       noteEn:"5 \u00d7 5. One or two reps left in the tank.",
+       items:[P("shoulder-press","5 rep × 5 set")]},
+      {k:"ACCESSORY", note:"加重、またはラットプルダウンでも可。", noteEn:"Add weight, or use the lat pulldown.",
+       items:[P("pull-up","10 rep × 3 set")]},
+      {k:"TRAINING", r:3, items:[
+        P("renegade-row","10 rep"), P("kb-swing","10 rep"), P("toes-to-bar","15 rep")]}]},
+
+    {t:"Posterior Chain & Hinge II", ja:"強靭な背面と実用的な強さ（第二弾）", jaEn:"Strong back, round two",
+     cardio:"30 cal BIKE", cardioEn:"30 cal BIKE",
+     point:"体幹をブレさせず、腰を反らさずに手足を一直線にキープ",
+     pointEn:"Keep your core still and your limbs in one line, without arching", parts:[
+      {k:"STRENGTH", n:"DEADLIFT", note:"5回 × 5セット（@80-85%）　※ トラップバーでも可",
+       noteEn:"5 \u00d7 5 at 80-85%. A trap bar works too.",
+       items:[P("deadlift","5 rep × 5 set")]},
+      {k:"ACCESSORY", items:[P("bulgarian-split","左右各 8 rep × 3 set")]},
+      {k:"12 MIN AMRAP", items:[
+        P("barbell-clean","8 rep"), P("box-jump","10 rep"), P("hollow-rock","15 rep　軽めに")]}]},
+
+    {t:"Active Recovery", ja:"アクティブリカバリー（疲労を抜く日）", jaEn:"Active recovery", cool:true,
+     cardio:"軽いジョギング、または低強度のローイング（30分）", cardioEn:"Easy jog or low-intensity rowing (30 min)",
+     point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
+     pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
+     note:"モビリティワーク（股関節・胸椎の可動域UP）と、軽いジョギングまたは低強度のローイングで血流を促し、疲労物質を流す。",
+     noteEn:"Mobility work for the hips and upper back, plus easy cardio to move the blood and clear the fatigue.",
+     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+
+    {t:"Full Body Integration II", ja:"全身の連動とタフネス（第二弾）", jaEn:"Full-body coordination, round two",
+     point:"壁を使って大胸筋上部を意識、腰が反らないよう一直線を維持",
+     pointEn:"Use a wall to feel your upper chest, and keep a straight line without arching", parts:[
+      {k:"STRENGTH", n:"FRONT SQUAT", note:"5回 × 5セット（@75-80%）　フロントキープでコアを使う",
+       noteEn:"5 \u00d7 5 at 75-80%. The front rack makes your core work.",
+       items:[P("front-squat","5 rep × 5 set")]},
+      {k:"ACCESSORY", items:[P("db-incline-press","10 rep × 3 set")]},
+      {k:"12 MIN AMRAP", items:[
         P("db-thruster","10 rep"), P("burpee-over-db","8 rep"), P("row-machine","200 m")]}]},
-    {t:"Olympic & Power", ja:"瞬発力とスタミナの限界突破", jaEn:"Explosive power, past your limit", cardio:CARDIO, cardioEn:CARDIO_EN, parts:[
-      {k:"STRENGTH", n:"POWER SNATCH", note:"3-3-3-3-3（@75-80%）　※ ハングクリーンでも可", noteEn:"3-3-3-3-3 (@75-80%) · hang clean works too",
-       items:[P("power-snatch","3 rep × 5 set")]},
-      {k:"ACCESSORY", items:[P("rdl","10 rep × 3 set")]},
-      {k:"AMRAP", min:12, r:4, items:[
-        P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("pushup-to-plank","9 rep")]}]},
-    {t:"Full Rest", ja:"完全休養", jaEn:"Full rest", rest:true, cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
-     note:"トレーニングは一切なし。次の Day 1 で100%の出力が出せるよう、しっかり休む日です。", noteEn:"No training at all. Rest properly so you can give 100% on the next Day 1."}
+
+    {t:"Olympic & Power II", ja:"瞬発力とスタミナの限界突破（第二弾）", jaEn:"Explosive power, round two",
+     cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
+     point:"頭からかかとまで一直線をキープし、腹圧をしっかりかける",
+     pointEn:"Hold one line from head to heels and brace your core", parts:[
+      {k:"STRENGTH", n:"POWER CLEAN", note:"3回 × 5セット（@75-80%）　神経系の活性化　※ ハングクリーンでも可",
+       noteEn:"3 \u00d7 5 at 75-80%, to wake up the nervous system. Hang clean works too.",
+       items:[P("power-clean","3 rep × 5 set")]},
+      {k:"ACCESSORY", note:"ハムストリングスと臀部の筋肥大を狙って。", noteEn:"Target the hamstrings and glutes.",
+       items:[P("rdl","10 rep × 3 set")]},
+      {k:"12 MIN AMRAP", items:[
+        P("wall-ball","15 rep"), P("echo-bike","12 cal"), P("kb-swing","9 rep")]}]},
+
+    {t:"Full Rest", ja:"完全休養REST（一週間お疲れ様でした！）", jaEn:"Full rest \u2014 nice work this week", rest:true,
+     cardio:"のんびり散歩（20分）", cardioEn:"Easy walk (20 min)",
+     note:"トレーニングは一切なし。全身のストレッチを15分。次の Day 1 で100%の出力が出せるよう、しっかり睡眠と栄養を。",
+     noteEn:"No training at all. Fifteen minutes of stretching. Sleep and eat properly for the next Day 1."}
   ],
 
   /* =================================================================
@@ -1731,9 +1880,9 @@ const PROGRAM = {
      cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
      point:"お尻・太ももを意識し、股関節を引き込んで腰を落とす",
      pointEn:"Feel your glutes and thighs; pull the hips in and sink down",
-     note:"20分ほど、全身のストレッチ。無理に伸ばさず、呼吸を止めないこと。",
-     noteEn:"About 20 minutes of full-body stretching. Do not force it, and keep breathing.",
-     parts:[{k:"COOL DOWN", items:MOBILITY}]},
+     note:"20分ほど、全身のストレッチ",
+     noteEn:"About 20 minutes of full-body stretching.",
+     parts:[]},
 
     {t:"Full Body", ja:"全身の引き締め", jaEn:"Tightening up, head to toe",
      cardio:"外を走る、もしくは歩く（20分）", cardioEn:"Run or walk outside (20 min)",
@@ -1865,7 +2014,7 @@ const BIZ = {
   /* 画面に出す版。中身を直すたびにここを上げる。
      「直したのに変わらない」が、反映待ちなのか端末のキャッシュなのかを
      見分けるために使う（設定画面のいちばん下に出る） */
-  build: "2026.11.16-11",
+  build: "2026.11.16-12",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
