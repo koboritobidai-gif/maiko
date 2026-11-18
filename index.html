@@ -219,7 +219,8 @@ button{border:0;background:none;cursor:pointer}
 @keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
 .grab{width:38px;height:4px;border-radius:999px;background:#cfcabb;margin:0 auto 14px}
 .modal{margin:auto 18px;max-width:360px;background:var(--surface-alt);border-radius:22px;padding:26px 22px;
-       text-align:center;animation:up .3s cubic-bezier(.22,1,.36,1) both}
+       text-align:center;animation:up .3s cubic-bezier(.22,1,.36,1) both;
+       max-height:calc(100dvh - 32px);overflow:auto;-webkit-overflow-scrolling:touch}
 .backdrop.center{align-items:center}
 .detail-sec{margin-top:16px}
 .detail-sec h4{margin:0 0 7px;font-size:12px;letter-spacing:.12em;font-weight:800;color:var(--ink-mute)}
@@ -1223,7 +1224,11 @@ addTxt({
 "set.codeNote":["パスワードは定期的に入れ替わります。入力を求められたら、お申し込み後のメールをご確認ください。",
                 "The password changes from time to time. If you are asked for it again, check the email from your sign-up."],
 "set.relock" : ["パスワードを入れ直す","Enter the password again"],
-"set.cancel" : ["解約・お支払い方法の変更","Cancel or change your card"],
+/* 解約はこちらで受ける（お客様に自分で止めてもらう導線は置かない）。
+   問い合わせ先は BIZ.email */
+"set.cancelH": ["解約・お支払い方法について","Cancelling or changing your card"],
+"set.cancelB": ["解約やカードの変更をご希望のときは、下のアドレスまでご連絡ください。こちらで手続きをして、完了をお知らせします。",
+                 "To cancel or change your card, email us at the address below. We will do it for you and confirm when it is done."],
 "set.aboutH" : ["このアプリについて","About this app"],
 "set.notice" : ["ご利用にあたって（安全のために）","Before you start (for your safety)"],
 "set.reset"  : ["診断をやり直す（データ消去）","Start over (this erases your data)"],
@@ -1464,6 +1469,23 @@ So — let's begin today.`],
                  "If the email does not work, contact {0} and we will send you a password."],
 "gate.codeErr": ["パスワードが違います。お申し込み後にお送りしたメールをご確認ください。",
                  "That password is not right. Please check the email we sent after your sign-up."],
+
+/* 二重のお申し込みを止める確認画面。実際に3回決済されてしまった事故があったので、
+   2回目からは、いったん止めて「もう払っていないか」を確かめてもらう */
+"buy.k"       : ["確認","CHECK"],
+"buy.h"       : ["二重のご請求を防ぐための確認です",
+                 "A check, so you are not charged twice"],
+"buy.b1"      : ["この端末では、前にもお申し込みの画面に進んでいます。すでにお支払いがお済みの場合、もう一度お申し込みになると二重にご請求されてしまいます。",
+                 "You have opened the payment page on this device before. If you have already paid, signing up again will charge you twice."],
+"buy.b2"      : ["お支払いがお済みの方は、お申し込みに使ったメールアドレスを入れてください。確認して、そのままアプリに入れます。",
+                 "If you have already paid, enter the email you signed up with. We will check it and let you straight in."],
+"buy.check"   : ["確認する","Check"],
+"buy.again"   : ["まだ払っていない・新しく申し込む",
+                 "I have not paid yet — sign me up"],
+"buy.no"      : ["このメールアドレスでのお申し込みは見つかりませんでした。下のボタンから新しくお申し込みいただけます。",
+                 "No live subscription for that address. You can sign up with the button below."],
+"buy.err"     : ["いま確認ができませんでした。少し時間をおいてお試しいただくか、{0} までご連絡ください。",
+                 "We could not check just now. Please try again shortly, or contact {0}."],
 "doc.tokusho" : ["特定商取引法に基づく表記","Legal notice (Japan)"],
 "doc.privacy" : ["プライバシーポリシー","Privacy Policy"],
 "doc.notice"  : ["ご利用にあたって","Before you start"],
@@ -2009,8 +2031,11 @@ const BIZ = {
   /* コーチングつき（6名様以降・19,800円 / 月）の支払いリンク。
      5名埋まったら PLANS の price を 19800 にして、pay をこちらへ差し替える */
   payCoachFull: "https://buy.stripe.com/eVq9AVbugd4i0Scehf87K04",
-  /* Stripe カスタマーポータル。お客様がここから解約・カード変更ができる。
-     特商法の「返品・解約」に書く必要がある */
+  /* Stripe カスタマーポータル。お客様が自分で解約できるページ。
+     【いまは画面に出していない】解約はこちらで受けて、Stripe の管理画面から
+     止める運用にしたため（2026/11/18）。こちらで手続きするときの確認用に残してある。
+     お客様に自分でやってもらう運用に戻すなら、設定と特商法の「返品・解約」に
+     このリンクを置き直す。 */
   portal: "https://billing.stripe.com/p/login/8x2eVfbugc0e6cw4GF87K00",
   /* 価格は PLANS が一次情報。ここは使っていない（残してあるのは互換のため） */
   price: null,
@@ -2026,7 +2051,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.18-3",
+  build: "2026.11.18-4",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2149,10 +2174,11 @@ const LEGAL = {
         自動で決済されます</td></tr>
       <tr><th>提供時期</th><td>決済の完了後、ただちにご利用いただけます</td></tr>
       <tr><th>返品・解約</th><td>デジタルコンテンツの性質上、決済後の返金は承っておりません。<br>
-        次回の更新日の前に解約していただくと、以後の課金は停止します。<br>
-        解約の手続きは <a href="${esc(BIZ.portal)}" target="_blank" rel="noopener"
-          style="color:var(--olive-dark)">解約ページ</a> から行えます（お申し込みに使った
-        メールアドレスを入力すると、解約の画面が開きます）。</td></tr>
+        次回の更新日の前にご連絡いただければ、以後の課金は停止します。<br>
+        解約をご希望の場合は、${BIZ.email?`<a href="mailto:${esc(BIZ.email)}"
+          style="color:var(--olive-dark)">${esc(BIZ.email)}</a>`:TBD("contact email")}
+        までご連絡ください。お申し込みに使ったメールアドレスをお知らせいただければ、
+        当方で解約の手続きを行い、完了をご連絡いたします。</td></tr>
       <tr><th>動作環境</th><td>インターネットに接続されたスマートフォン・タブレット・パソコン、
         および最新版のWebブラウザ</td></tr>
     </table>`,
@@ -2188,8 +2214,9 @@ const LEGAL = {
         that applies to you \u2014 including, for customers in Australia, the consumer guarantees
         under the Australian Consumer Law. If something we supply is faulty or not as described,
         contact us and we will put it right.<br>
-        You can cancel yourself from <a href="${esc(BIZ.portal)}" target="_blank" rel="noopener"
-          style="color:var(--olive-dark)">this page</a> \u2014 enter the email you signed up with.</td></tr>
+        To cancel, email ${BIZ.email?`<a href="mailto:${esc(BIZ.email)}"
+          style="color:var(--olive-dark)">${esc(BIZ.email)}</a>`:TBD("contact email")}
+        and tell us the address you signed up with. We will cancel it for you and confirm by email.</td></tr>
       <tr><th>What you<br>need</th><td>A smartphone, tablet or computer with an internet
         connection and an up-to-date web browser</td></tr>
     </table>` },
@@ -3423,9 +3450,13 @@ function viewSettings(){
               : TX("set.codeOk", `<b style="color:var(--olive-dark)">${esc(S.access&&S.access.code||"")}</b>`,
                    esc(S.access&&S.access.at?mmdd(S.access.at):"—")) + "<br>" + TX("set.codeNote")}
           </p>
-          ${BIZ.portal?`<a class="lnk first" style="margin-top:8px;display:block"
-            href="${esc(BIZ.portal)}" target="_blank" rel="noopener">${TX("set.cancel")}</a>`:""}
-          <button class="lnk${BIZ.portal?"":" first"}" style="margin-top:8px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
+          <div class="note" style="margin-top:11px">
+            <div class="k">${TX("set.cancelH")}</div>
+            <p>${esc(TX("set.cancelB"))}</p>
+            ${BIZ.email?`<a class="lnk first" style="margin-top:9px;display:block"
+              href="mailto:${esc(BIZ.email)}">${esc(BIZ.email)}</a>`:""}
+          </div>
+          <button class="lnk first" style="margin-top:11px;color:#a4442c" data-relock>${S.access&&S.access.email?TX("set.relockM"):TX("set.relock")}</button>
         </div>` : ""}
 
         ${standalone()?"":`
@@ -3585,6 +3616,66 @@ function unlocked(){
   return ACCESS.codes.some(c => c.toLowerCase() === String(S.access.code).toLowerCase());
 }
 
+/* ── 二重のお申し込みを止める ──────────────────────────────
+   お支払いの画面に進んだことを、その端末に覚えておく。
+   2回目からはいったん止めて、「もう払っていないか」を先に確かめてもらう。
+   （同じ方が同じ期間に3回決済されてしまった事故があったため）
+   返金しても Stripe の決済手数料は戻ってこないので、起こさないのが一番安い。 */
+const BUY_KEY = "naru-tore-buy";
+function buySeen(){
+  try{
+    const j = JSON.parse(localStorage.getItem(BUY_KEY) || "null");
+    return (j && j.t && Date.now() - j.t < 90*864e5) ? j : null;
+  }catch(e){ return null; }
+}
+function buyMark(){
+  try{ localStorage.setItem(BUY_KEY, JSON.stringify({t:Date.now()})); }catch(e){}
+}
+/* 申し込みボタン。はじめての人はそのまま Stripe へ（止めない） */
+function goBuy(url){
+  if(!url) return;
+  if(buySeen()){ openBuyGuard(url); return; }
+  buyMark();
+  window.open(url, "_blank", "noopener");
+}
+function openBuyGuard(url){
+  backdrop.className = "backdrop center on";
+  backdrop.innerHTML = `<div class="modal" style="text-align:left">
+    <div class="eyebrow">${TX("buy.k")}</div>
+    <h2 style="margin:6px 0 0;font-size:19px;font-weight:800;line-height:1.5">${TX("buy.h")}</h2>
+    <p class="sub" style="margin:10px 0 0;line-height:1.8">${esc(TX("buy.b1"))}</p>
+    <p class="sub" style="margin:9px 0 0;line-height:1.8">${esc(TX("buy.b2"))}</p>
+    <div class="gate-code stack" style="margin-top:14px">
+      <input id="buymail" type="email" inputmode="email" autocapitalize="off" autocorrect="off"
+             spellcheck="false" autocomplete="email" placeholder="${TX("gate.email")}"
+             aria-label="${TX("gate.email")}">
+      <button class="btn btn-olive" data-buycheck>${TX("buy.check")}</button>
+    </div>
+    <p id="buymsg" class="gate-hint" style="margin-top:9px"></p>
+    <a class="btn btn-ghost" style="margin-top:12px" href="${esc(url)}"
+       target="_blank" rel="noopener" data-buygo>${TX("buy.again")}</a>
+    <button class="btn btn-ghost" style="margin-top:8px" data-close>${TX("btn.close")}</button>
+  </div>`;
+  const bm = document.getElementById("buymail");
+  if(bm) bm.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); buyCheck(); } };
+}
+async function buyCheck(){
+  const el  = document.getElementById("buymail");
+  const msg = document.getElementById("buymsg");
+  const v   = String(el ? el.value : "").trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(v)){ if(msg) msg.textContent = TX("gate.emailNo"); return; }
+  if(msg) msg.textContent = TX("gate.emailWait");
+  const res = await checkEmail(v);
+  if(res.r === "ok"){
+    /* 払い済みだった。二重に払わせずに、そのまま入ってもらう */
+    S.access = {email:v, until:res.until, plan:res.plan, at:todayKey()}; save();
+    closeSheet(); gateMail=""; gateErr="";
+    go(S.profile ? "home" : "ob");
+    return;
+  }
+  if(msg) msg.textContent = res.r === "nosub" ? TX("buy.no") : TX("buy.err", BIZ.email||"");
+}
+
 /* ── メールアドレスで確認する ──────────────────────────────
    返り値 "ok" / "nosub"（お申し込みが見つからない） / "err"（確認できない） */
 async function checkEmail(email){
@@ -3697,8 +3788,8 @@ function viewGate(){
         ${pl.full
           ? `<button class="btn btn-ghost" disabled>${TX("gate.full")}</button>`
           : pl.pay
-            ? `<a class="btn ${pl.best?"btn-orange":"btn-tan"}" href="${esc(pl.pay)}"
-                  target="_blank" rel="noopener">${TX("gate.buy")}</a>`
+            ? `<button class="btn ${pl.best?"btn-orange":"btn-tan"}"
+                  data-buy="${esc(pl.pay)}">${TX("gate.buy")}</button>`
             : `<button class="btn btn-ghost" disabled>${TX("gate.payTbd")}</button>`}
         <div class="pcy">${pl.soon?TX("gate.soonWhen"):pl.monthly?TX("gate.renewMo"):TX("gate.renew14")}</div>
       </div>`).join("")}</div>
@@ -3796,6 +3887,9 @@ function bind(){
   if(ci) ci.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault();
     const b=app.querySelector("[data-unlock]"); if(b) b.click(); } };
 
+  /* 申し込む（2回目からは確認をはさむ） */
+  on("[data-buy]",el=>goBuy(el.dataset.buy));
+
   /* メールアドレスで入る */
   on("[data-pw]",()=>{ gatePw=true; gateErr=""; render(); });
   on("[data-mailgo]",()=>{ submitMail(); });
@@ -3892,6 +3986,9 @@ backdrop.onclick=e=>{
   const v=t.closest("[data-view-progress]"); if(v){ closeSheet(); stopTimer(); T.tick=null; go("log"); return; }
   const j=t.closest("[data-jump]"); if(j){ closeSheet(); enterItem(+j.dataset.jump); return; }
   const x=t.closest("[data-ex]"); if(x){ openExercise(x.dataset.ex, x.dataset.vid==="1"); return; }
+  const bc=t.closest("[data-buycheck]"); if(bc){ buyCheck(); return; }
+  /* 「それでも申し込む」はふつうのリンク。開く前に、進んだことだけ覚えておく */
+  const bg=t.closest("[data-buygo]"); if(bg){ buyMark(); return; }
 };
 
 /* =========================================================================
@@ -4171,6 +4268,10 @@ refreshAccess();
   color:var(--ink);letter-spacing:.04em}
 .gate-code input:focus{outline:none;border-color:var(--olive)}
 .gate-code .btn{width:auto;flex:none;padding:0 20px;height:50px}
+/* 確認の画面（モーダル）では幅が足りないので、入れる欄とボタンを縦に並べる */
+.gate-code.stack{display:block}
+.gate-code.stack input{width:100%}
+.gate-code.stack .btn{width:100%;margin-top:9px}
 .gate-hint,.gate-err{margin-top:9px;font-size:12px;line-height:1.65;text-align:center}
 .gate-hint{color:var(--ink-mute)}
 .gate-err{color:#a8431a;font-weight:700}
