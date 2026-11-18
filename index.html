@@ -1264,6 +1264,10 @@ addTxt({
 "home.allVideos": ["NARU の実演動画をぜんぶ見る &nbsp;→","See all of NARU\u2019s demo videos &nbsp;→"],
 "home.settings" : ["メニューの設定を変える","Change your settings"],
 "home.guide"    : ["使い方ガイド","How to use this app"],
+"coach.f.rest"  : ["今日はお休みだよ","Today is a rest day"],
+"coach.f.done"  : ["今日も頑張ったね","Nice work today"],
+"coach.f.cool"  : ["今日は軽く整えよう","Keep it easy today"],
+"coach.f.tip"   : ["ワンポイントアドバイス","One-point advice"],
 "upd.msg"       : ["新しいバージョンがあります","A new version is available"],
 "upd.msgHard"   : ["新しいバージョンを取り直します","Fetching the new version"],
 "upd.btn"       : ["更新する","Update"],
@@ -2022,7 +2026,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.17-1",
+  build: "2026.11.18-1",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2526,6 +2530,7 @@ function viewHome(){
   const n = cycleDay(), dd = dayOf(n), p = (dd && !dd.rest) ? dd : null, lv = level();
   const ra = restAhead(), cs = cycleSummary();
   const doneToday = S.logs.some(l=>l.date===todayKey());
+  const cf = coachFace(dd, doneToday, n);
   const wk = thisWeekCount(), tgt = weekTarget();
   const now = new Date();
   const strip = Array.from({length:7},(_,i)=>{
@@ -2582,9 +2587,12 @@ function viewHome(){
         ${SHOW_VIDEO_LIST?`<button class="btn btn-ghost" style="margin-top:9px" data-go="videos">
           ${TX("home.allVideos")}</button>`:""}
 
-        <div class="note">
-          <div class="k">FROM NARU</div>
-          <p>${esc(coachNote(p, lv, doneToday))}</p>
+        <div class="note coach">
+          <img class="face" src="${cf.img}" alt="naru" width="460" height="460" loading="lazy">
+          <div class="tx">
+            <div class="k2">${esc(cf.label)}</div>
+            <p>${esc(coachNote(p, lv, doneToday))}</p>
+          </div>
         </div>
 
         <div style="margin-top:11px">
@@ -2601,6 +2609,22 @@ function viewHome(){
     </div>
     ${nav("home")}
   </div>`;
+}
+
+/* その日の naru の写真と、ひとこと見出し。
+   休養日は寝顔、記録ずみはサムズアップ、回復日はOK、
+   ふだんはワンポイントアドバイス（指さし／考えるポーズを日替わりで） */
+const FACES = {
+  rest : "img/naru/sleep.jpg",
+  done : "img/naru/good.jpg",
+  cool : "img/naru/ok.jpg",
+  tip  : ["img/naru/point.jpg", "img/naru/think.jpg"]
+};
+function coachFace(dd, doneToday, n){
+  if(dd && dd.rest)  return {img:FACES.rest, label:TX("coach.f.rest")};
+  if(doneToday)      return {img:FACES.done, label:TX("coach.f.done")};
+  if(dd && dd.cool)  return {img:FACES.cool, label:TX("coach.f.cool")};
+  return {img:FACES.tip[(n||1) % FACES.tip.length], label:TX("coach.f.tip")};
 }
 
 function coachNote(p, lv, doneToday){
@@ -4382,6 +4406,17 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 #updbar span{flex:1;min-width:0}
 #updbar button{flex:none;background:#0B0B0A;color:var(--olive);border-radius:999px;
   padding:8px 15px;font-size:12.5px;font-weight:800}
+
+/* naru のひとこと（写真つき） */
+.note.coach{display:flex;gap:13px;align-items:flex-start;padding:13px 15px}
+.note.coach .face{flex:none;width:58px;height:58px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--olive);background:var(--surface-alt)}
+.note.coach .tx{min-width:0;flex:1;padding-top:1px}
+.note.coach .k2{font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--olive);
+  line-height:1.5;text-wrap:balance}
+.note.coach p{margin:5px 0 0;font-size:13px;line-height:1.75;
+  text-wrap:pretty;word-break:auto-phrase}
+@media(max-width:340px){.note.coach{gap:10px}.note.coach .face{width:50px;height:50px}}
 </style>
 </body>
 </html>
