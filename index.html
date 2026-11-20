@@ -1229,6 +1229,12 @@ addTxt({
 "set.cancelH": ["解約・お支払い方法について","Cancelling or changing your card"],
 "set.cancelB": ["解約やカードの変更をご希望のときは、下のアドレスまでご連絡ください。こちらで手続きをして、完了をお知らせします。",
                  "To cancel or change your card, email us at the address below. We will do it for you and confirm when it is done."],
+/* 確認モード。パスワードで入った端末（naru と maiko）だけに出る */
+"peek.h"     : ["DAY を切り替えて確認する","Jump to a DAY"],
+"peek.b"     : ["直したメニューを、その日が来るのを待たずに確かめられます。お客様の画面には出ません。",
+                 "Check a day you have just changed, without waiting for it to come round. Customers never see this."],
+"peek.on"    : ["確認モード：DAY {0} を表示しています","Preview mode \u00b7 showing DAY {0}"],
+"peek.off"   : ["今日に戻す","Back to today"],
 "set.aboutH" : ["このアプリについて","About this app"],
 "set.notice" : ["ご利用にあたって（安全のために）","Before you start (for your safety)"],
 "set.reset"  : ["診断をやり直す（データ消去）","Start over (this erases your data)"],
@@ -2051,7 +2057,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.20-1",
+  build: "2026.11.20-2",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2471,6 +2477,35 @@ function topbar(){
   return `<div class="topbar">
     <div class="logo">NARU FIT DAILY</div>
     <div class="pill">🔥 <span class="tnum">${streak()}</span> STREAK</div>
+  </div>${peekBar()}`;
+}
+
+/* ── 確認モード（運営だけ）────────────────────────────────
+   DAY 9 を直したときに、9日目が来るまで見られないのは不便なので、
+   パスワードで入った端末だけ、好きな DAY に飛べるようにする。
+   サイクルの開始日をずらしているだけなので、出る画面はお客様とまったく同じ。 */
+function isStaff(){ return !!(S.access && S.access.code); }
+function peekOn(){ return !!(S.extras && S.extras.peek); }
+function peekTo(n){
+  if(!isStaff()) return;
+  ensureCycle();
+  S.extras = S.extras || {};
+  /* 最初に飛ぶときだけ、本当の開始日を控えておく */
+  if(!S.extras.peek) S.extras.peek = {back:S.cycle.start};
+  S.cycle.start = addDays(todayKey(), -(n-1));
+  save(); go("train");
+}
+function peekOff(){
+  if(!peekOn()) return;
+  S.cycle.start = S.extras.peek.back;
+  delete S.extras.peek;
+  save(); render();
+}
+function peekBar(){
+  if(!peekOn() || !isStaff()) return "";
+  return `<div class="peekbar">
+    <span>${TX("peek.on", cycleDay())}</span>
+    <button data-peek-off>${TX("peek.off")}</button>
   </div>`;
 }
 
@@ -3470,6 +3505,15 @@ function viewSettings(){
           <button class="lnk first" data-go="guide">${TX("home.guide")}</button>
         </div>
 
+        ${isStaff()?`
+        <div class="card" style="padding:15px;margin-top:11px">
+          <div class="eyebrow" style="margin-bottom:6px">${TX("peek.h")}</div>
+          <p class="sub" style="margin:0 0 11px">${TX("peek.b")}</p>
+          <div class="peekgrid">${Array.from({length:CYCLE()},(_,i)=>
+            `<button data-peek="${i+1}" class="${cycleDay()===i+1?"on":""}">${i+1}</button>`).join("")}</div>
+          ${peekOn()?`<button class="btn btn-ghost" style="margin-top:11px" data-peek-off>${TX("peek.off")}</button>`:""}
+        </div>`:""}
+
         <div class="card" style="padding:15px;margin-top:11px">
           <div class="eyebrow" style="margin-bottom:4px">${TX("set.aboutH")}</div>
           <button class="lnk first" data-legal="tokushoho">${TX("doc.tokusho")}</button>
@@ -3886,6 +3930,10 @@ function bind(){
   const ci=document.getElementById("code");
   if(ci) ci.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault();
     const b=app.querySelector("[data-unlock]"); if(b) b.click(); } };
+
+  /* 確認モード（運営だけ） */
+  on("[data-peek]",el=>peekTo(+el.dataset.peek));
+  on("[data-peek-off]",()=>peekOff());
 
   /* 申し込む（2回目からは確認をはさむ） */
   on("[data-buy]",el=>goBuy(el.dataset.buy));
@@ -4507,6 +4555,18 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 #updbar span{flex:1;min-width:0}
 #updbar button{flex:none;background:#0B0B0A;color:var(--olive);border-radius:999px;
   padding:8px 15px;font-size:12.5px;font-weight:800}
+
+/* 確認モード（運営だけ） */
+.peekbar{display:flex;align-items:center;gap:10px;padding:8px 16px;
+  background:var(--olive-soft);border-bottom:1px solid rgba(202,255,60,.28);
+  font-size:12px;font-weight:700;color:var(--olive-dark)}
+.peekbar span{flex:1;min-width:0}
+.peekbar button{flex:none;background:var(--olive);color:#0B0B0A;border-radius:999px;
+  padding:5px 13px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.peekgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.peekgrid button{background:var(--surface);border:1px solid rgba(226,236,206,.12);
+  border-radius:9px;padding:9px 0;font-size:13px;font-weight:800;color:var(--ink)}
+.peekgrid button.on{background:var(--olive);color:#0B0B0A;border-color:var(--olive)}
 
 /* naru のひとこと（写真つき） */
 .note.coach{display:flex;gap:10px;align-items:flex-end;padding:13px 0 0 15px;overflow:hidden;
