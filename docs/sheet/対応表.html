@@ -1,0 +1,162 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>
+@page{size:A4;margin:14mm 13mm 15mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans CJK JP","Noto Sans JP",system-ui,sans-serif;
+ color:#1a1c16;font-size:9.5pt;line-height:1.78;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1{font-size:18pt;margin:0;line-height:1.35;letter-spacing:.01em}
+.sub{color:#6b6f5e;font-size:8.5pt;margin:6px 0 0}
+.hd{border-bottom:2.5px solid #1a1c16;padding-bottom:10px;margin-bottom:16px}
+h2{font-size:12.5pt;margin:16px 0 8px;padding:0 0 6px;border-bottom:2px solid #1a1c16;
+ break-after:avoid;page-break-after:avoid}
+h2:first-of-type{margin-top:0}
+h3{font-size:10.5pt;margin:13px 0 5px;break-after:avoid;page-break-after:avoid}
+p{margin:0 0 7px}
+.lead{background:#f4f2e8;border-left:4px solid #8aa32e;padding:12px 14px;margin:0 0 15px;border-radius:0 6px 6px 0}
+.lead p{margin:0 0 7px}.lead p:last-child{margin:0}
+.lead b{color:#49551b}
+table{width:100%;border-collapse:collapse;margin:8px 0 10px;font-size:8.8pt;
+ break-inside:avoid;page-break-inside:avoid}
+th,td{border:1px solid #d8d5c7;padding:6px 8px;vertical-align:top;text-align:left}
+th{background:#f4f2e8;font-weight:700}
+th.nw,td.p{white-space:nowrap;font-weight:700}
+td.ok{color:#49551b;font-weight:700;white-space:nowrap}
+td.ng{color:#9c4a2e;font-weight:700;white-space:nowrap}
+ol,ul{margin:4px 0 9px;padding-left:1.25em}
+li{margin:0 0 3px}
+.flow{margin:10px 0 13px}
+.flow .st{display:flex;gap:10px;margin:0 0 7px;break-inside:avoid;page-break-inside:avoid}
+.flow .n{flex:none;width:21px;height:21px;border-radius:50%;background:#6b7a3a;color:#fff;
+ font-size:8.5pt;font-weight:700;text-align:center;line-height:21px;margin-top:2px}
+.flow .b{flex:1}
+.flow .b b{display:block;font-size:10pt}
+.flow .b span{font-size:8.5pt;color:#6b6f5e}
+.flow .st.me .n{background:#1a1c16}
+.box{border:1px solid #d8d5c7;border-radius:7px;padding:10px 12px;margin:7px 0 10px;background:#fbfaf5;
+ break-inside:avoid;page-break-inside:avoid}
+.box .k{font-size:8pt;font-weight:700;letter-spacing:.08em;color:#6b7a3a;margin-bottom:5px}
+.box p:last-child{margin-bottom:0}
+.warn{border:1px solid #e0b9ab;background:#fdf4f0}
+.warn .k{color:#9c4a2e}
+.q{border:1px dashed #b9b4a0;background:#fff;border-radius:7px;padding:10px 12px;margin:7px 0 10px;
+ break-inside:avoid;page-break-inside:avoid}
+.q .k{font-size:8pt;font-weight:700;letter-spacing:.08em;color:#6b6f5e;margin-bottom:5px}
+.q p:last-child{margin-bottom:0}
+.note{font-size:8.5pt;color:#6b6f5e}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:8pt;background:#f4f2e8;
+ border-radius:3px;padding:1px 5px}
+.foot{margin-top:18px;padding-top:10px;border-top:1px solid #d8d5c7;font-size:8.5pt;color:#8d8f80}
+</style></head><body>
+
+<div class="hd">
+  <h1>スプレッドシートとアプリの対応</h1>
+  <p class="sub">NARU FIT DAILY　／　どこを直すとアプリのどこが変わるか・更新したときの確認のしかた　／　2026年11月20日　／　maiko</p>
+</div>
+
+<div class="lead">
+  <p><b>結論：確認はこちらでやります。maiko さんは「シート更新した」と言うだけで大丈夫です。</b></p>
+  <p>前回読んだときのシートの中身を、こちら側に控えとして持つようにしました。次に読んだときに比べれば、
+  <b>naru さんが変えた行だけ</b>が出ます。「どこが変わったか分からない」はもう起きません。</p>
+</div>
+
+<h2>1. これからの流れ</h2>
+<div class="flow">
+  <div class="st"><div class="n">1</div><div class="b">
+    <b>naru がシートを直す</b>
+    <span>どのタブでも、どの行でもOK。どこを直したか伝えてもらう必要はありません</span></div></div>
+  <div class="st"><div class="n">2</div><div class="b">
+    <b>maiko が「シート更新した」と言う</b>
+    <span>それだけで大丈夫です</span></div></div>
+  <div class="st me"><div class="n">3</div><div class="b">
+    <b>こちらでシートを読んで、前回との違いを出す</b>
+    <span>例：「FIT1 の Day 9 の種目が変わりました」「FIT2 に Unit2 の Day 5 が足されました」</span></div></div>
+  <div class="st me"><div class="n">4</div><div class="b">
+    <b>アプリに反映する</b></div></div>
+  <div class="st me"><div class="n">5</div><div class="b">
+    <b>変わった画面のスクショだけ送る</b>
+    <span>maiko さんはここだけ見ればOK。全部を見比べる必要はありません</span></div></div>
+</div>
+
+<div class="box">
+  <div class="k">しくみ（覚えなくて大丈夫です）</div>
+  <p style="margin:0">アプリのコードと同じ場所に <code>docs/sheet/</code> を作って、FIT1・FIT2・30Days の
+  中身をそのまま控えてあります。読み込むたびにここと比べるので、差分が機械的に出ます。
+  いま控えてあるのは <b>2026年11月20日時点</b>のシートです。</p>
+</div>
+
+<h2>2. タブとアプリの対応</h2>
+<table>
+  <tr><th class="nw" style="width:27%">シートのタブ</th><th>アプリのどこ</th><th class="nw" style="width:16%">いまの状態</th></tr>
+  <tr><td class="p">FIT1 【Unit 1】<br>Day 1〜14</td>
+      <td><b>Fit 1</b> の DAY 1〜14</td><td class="ok">反映済み</td></tr>
+  <tr><td class="p">FIT1 【Unit2】<br>Day 1〜14</td>
+      <td>入っていません。入れるなら <b>Fit 1 の DAY 15〜28</b>（コーチングの方の2周目）</td>
+      <td class="ng">未反映</td></tr>
+  <tr><td class="p">FIT2 【Unit1】<br>Day 1〜14</td>
+      <td><b>Fit 2</b> の DAY 1〜14</td><td class="ok">反映済み</td></tr>
+  <tr><td class="p">FIT2 【Unit2】<br>Day 1〜7</td>
+      <td>入っていません。入れるなら <b>Fit 2 の DAY 15〜21</b></td><td class="ng">未反映</td></tr>
+  <tr><td class="p">FIT2 【動画】<br>Day1〜3</td>
+      <td>日ごとの解説文。<b>どこに出すか決まっていません</b></td><td class="ng">未反映</td></tr>
+  <tr><td class="p">30Days</td>
+      <td>入っていません。アプリの30日はいま「14日メニュー × 2周 ＋ 最後の2日は Cardio day」です</td>
+      <td class="ng">未反映</td></tr>
+  <tr><td class="p">FIT1 上部の<br>〈紹介文〉〈ロゴ意味〉〈メモ〉</td>
+      <td>アプリには入れていません（入れるならトップページの文章になります）</td><td>—</td></tr>
+  <tr><td class="p">戦略 ／ 帰国後task ／<br>講演・ワークショップ</td>
+      <td>アプリとは関係ありません</td><td>—</td></tr>
+</table>
+
+<h2>3. 1行がアプリのどこに出るか</h2>
+<p>FIT1・FIT2 タブの <b>列</b> と、アプリの表示の対応です。</p>
+<table>
+  <tr><th class="nw" style="width:24%">シートの列</th><th class="nw" style="width:30%">アプリのどこ</th><th>例</th></tr>
+  <tr><td class="p">日程</td><td>DAY の番号</td><td>Day 1 → <b>DAY 1</b></td></tr>
+  <tr><td class="p">フォーカス / テーマ</td><td>その日のタイトル</td>
+      <td>スクワット基礎構築 → <b>Squat &amp; Push</b><br>
+      <span class="note">※ 画面では英語で出しているので、日本語のテーマをそのまま載せてはいません</span></td></tr>
+  <tr><td class="p">エクササイズ種目</td><td>種目のリストと回数</td>
+      <td>10回 Squat → <b>Air Squat　10 rep</b><br>
+      <span class="note">※ 種目名からアプリの動画と解説がひもづきます</span></td></tr>
+  <tr><td class="p">目標・回数 / セット</td><td>「4 ROUNDS」の表示</td>
+      <td>それぞれ、4周しよう！ → <b>4 ROUNDS</b></td></tr>
+  <tr><td class="p">有酸素運動 / その他</td><td>グレーの「有酸素」の枠</td>
+      <td>外を走る、もしくは歩く（20分）</td></tr>
+  <tr><td class="p">意識する点・ポイント</td><td>種目の上に出る、その日のメモ</td>
+      <td>お尻の筋肉（大臀筋）をしっかり収縮させて…</td></tr>
+</table>
+<p class="note">FIT2 の「きつめに（@80%）」「REST：2min」は、STRENGTH 種目のメモに入ります。</p>
+
+<h2>4. シートに入っていないもの</h2>
+<p>これらはシートを直しても変わりません。直したいときは、こちらに言ってください。</p>
+<table>
+  <tr><th class="nw" style="width:34%">中身</th><th>どこにあるか</th></tr>
+  <tr><td class="p">種目ごとのフォームのポイント<br>／よくあるミス／呼吸</td>
+      <td>アプリの中に直接。<b>47種目ぶんは maiko さんの下書きのままで、naru さんの確認待ちです</b></td></tr>
+  <tr><td class="p">実演動画</td><td>Drive の動画 → アプリの <code>videos/</code>。種目名とファイルの対応はこちらで管理しています</td></tr>
+  <tr><td class="p">プラン・値段・特商法</td><td>アプリの中</td></tr>
+  <tr><td class="p">トップページの文章<br>なるのひとこと・写真</td><td>アプリの中</td></tr>
+</table>
+
+<h2>5. 決めてほしいこと</h2>
+<div class="q">
+  <div class="k">① FIT1 の Unit2（14日ぶん）を入れますか</div>
+  <p>いまコーチング（30日）の方は、<b>同じ14日を2周</b>しています。Unit2 を入れると、
+  15日目から別のメニューになります。スタンダード（14日）の方には関係ありません。</p>
+</div>
+<div class="q">
+  <div class="k">② FIT2 の Unit2（いま7日ぶん）はどうしますか</div>
+  <p>14日ぶん揃うのを待ってから入れるか、7日ぶんだけ先に入れるか。</p>
+</div>
+<div class="q">
+  <div class="k">③ 30Days タブは何にしますか</div>
+  <p>コーチングの方向けの<b>別メニュー</b>にするのか、いまのまま「Fit1/Fit2 を2周」で進めるのか。
+  シートには「Fit1とFit2を利用してもらう、選べるようにする」というメモが入っているので、
+  いまのアプリの作りと同じ考えに見えます。その場合、このタブは反映しなくて大丈夫です。</p>
+</div>
+<div class="q">
+  <div class="k">④ FIT2 の【動画】の解説文をどこに出しますか</div>
+  <p>「なぜ今日はこれをやるのか」の説明です。その日のメモに足すか、動画の下に出すか。</p>
+</div>
+
+<p class="foot">NARU FIT DAILY　スプレッドシートとアプリの対応　／　2026年11月20日　／　アプリ ver. 2026.11.18-4 時点</p>
+</body></html>
