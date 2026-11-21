@@ -1204,6 +1204,14 @@ addTxt({
 "set.goal"   : ["GOAL 目的","GOAL"],
 "set.level"  : ["LEVEL きょうの強度","LEVEL \u00b7 today\u2019s intensity"],
 "set.soon"   : ["（準備中）"," (coming soon)"],
+/* アプリのみ（14日）の方は、メニューの変更が1回だけできる */
+"set.levelM"   :["MENU 選んでいるメニュー","MENU \u00b7 your programme"],
+"set.levelOnce":["変更できるのは1回だけです。押すと確認が出ます。",
+                 "You can change this once. You will be asked to confirm."],
+"set.levelDone":["{0} で確定しています。メニューの変更は1回までです。",
+                 "Locked to {0}. The menu can be changed only once."],
+"set.levelAsk" :["{0} に変更しますか？\n\n変更できるのは1回だけです。このあと {1} に戻すことはできません。",
+                 "Change to {0}?\n\nYou can only do this once \u2014 you will not be able to go back to {1}."],
 "set.place"  : ["PLACE 場所","PLACE"],
 "set.gym"    : ["ジム","Gym"],
 "set.home"   : ["自宅","Home"],
@@ -1544,9 +1552,16 @@ const LEVEL_SHORT = {fit1:"lv.fit1.short", fit2:"lv.fit2.short", fit3:"lv.fit3.s
 /* 内容がまだ無いレベルは選ばせない */
 const levelReady = id => !!(PROGRAM[id] && PROGRAM[id].length);
 
-/* Fit 1 / Fit 2 を後から切り替えられるのは、コーチングつきの方だけ。
-   アプリのみ（3,500円・3,900円）の方は、診断で決まったメニューのまま進む */
-function canSwitchFit(){ return isCoach(); }
+/* Fit 1 / Fit 2 の切り替え。
+   ・コーチングつきの方 … いつでも何度でも（TRAIN のボタンでその日の調子に合わせる）
+   ・アプリのみ（3,500円・3,900円）の方 … 設定から1回だけ。TRAIN のボタンは出さない
+     （うっかり押して、その1回を使ってしまわないように） */
+const SW_KEY = "naru-tore-level-sw";
+function switchUsed(){ try{ return localStorage.getItem(SW_KEY)==="1"; }catch(e){ return false; } }
+function markSwitched(){ try{ localStorage.setItem(SW_KEY,"1"); }catch(e){} }
+function canSwitchFit(){ return isCoach() || !switchUsed(); }   /* 設定に出すか */
+function canToggleFit(){ return isCoach(); }                    /* TRAIN のボタンを出すか */
+const levelName = id => (LEVELS.find(l=>l.id===id)||{}).name || id;
 
 /* 最初に選んだメニューは、設定の「全部消してやり直す」でも消さずに控えておく。
    アプリのみの方が、やり直して別のメニューに乗り換えるのを防ぐ */
@@ -1554,7 +1569,7 @@ const LOCK_KEY = "naru-tore-level";
 function lockedLevel(){ try{ return localStorage.getItem(LOCK_KEY) || ""; }catch(e){ return ""; } }
 function lockLevel(v){ try{ if(v) localStorage.setItem(LOCK_KEY, v); }catch(e){} }
 /* 診断でメニューを選ばせるか。すでに決まっていて、切り替えできない方には聞かない */
-function askLevel(){ return canSwitchFit() || !levelReady(lockedLevel()); }
+function askLevel(){ return canToggleFit() || !levelReady(lockedLevel()); }
 /* 画面に出すプログラム。30 Days はコーチングつきの人だけ */
 const shownLevels = () => LEVELS;
 
@@ -2057,7 +2072,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.20-2",
+  build: "2026.11.21-1",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2817,7 +2832,7 @@ function viewTrain(){
             ${p.point?`<div class="cardio"><b>${TX("train.point")}</b>${esc(dayTx(p,"point"))}</div>`:""}
           </div>
 
-          ${(p.fixed || !canSwitchFit())?"":`<div class="seg-dark">
+          ${(p.fixed || !canToggleFit())?"":`<div class="seg-dark">
             ${shownLevels().map(l=>{ const ok=levelReady(l.id);
               return `<button class="${lv===l.id?"on":""}${ok?"":" soon"}" data-level="${l.id}" ${ok?"":"disabled"}>${l.name}</button>`;}).join("")}
           </div>
@@ -3455,6 +3470,32 @@ function viewSettings(){
           background:${cur==v?"var(--olive)":"var(--surface-alt)"};color:${cur==v?"#0B0B0A":"var(--ink)"}">${label}</button>`).join("")}
       </div>
     </div>`;
+  /* メニュー（Fit）の欄。
+     コーチングの方 … 今までどおり「きょうの強度」として何度でも
+     アプリのみの方 … 1回だけ。使い切ったら、確定した表示にする */
+  const levelRow = () => {
+    const one = !isCoach();
+    const title = one ? TX("set.levelM") : TX("set.level");
+    if(one && switchUsed())
+      return `<div class="card" style="padding:15px;margin-top:11px">
+        <div class="eyebrow" style="margin-bottom:6px">${title}</div>
+        <p class="sub" style="margin:0">${TX("set.levelDone",
+          `<b style="color:var(--olive-dark)">${esc(levelName(level()))}</b>`)}</p>
+      </div>`;
+    return `<div class="card" style="padding:15px;margin-top:11px">
+      <div class="eyebrow" style="margin-bottom:10px">${title}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${shownLevels().map(l=>{
+          const on = level()===l.id;
+          return `<button data-set="level" data-val="${l.id}"
+            style="border-radius:999px;padding:9px 15px;font-size:13px;font-weight:700;
+            background:${on?"var(--olive)":"var(--surface-alt)"};color:${on?"#0B0B0A":"var(--ink)"}"
+            >${esc(l.name)}${levelReady(l.id)?"":TX("set.soon")}</button>`;
+        }).join("")}
+      </div>
+      ${one?`<p class="sub" style="margin:11px 0 0">${TX("set.levelOnce")}</p>`:""}
+    </div>`;
+  };
   return `<div class="screen on">
     ${topbar()}
     <div class="scroll">
@@ -3463,7 +3504,7 @@ function viewSettings(){
         <p class="sub" style="margin-bottom:4px">${TX("set.lead")}</p>
         ${SHOW_LANG?row(TX("lang"),LANGS.map(([id,label])=>[id,label]),"lang",lang()):""}
         ${row(TX("set.goal"),[["tone",TX("goal.tone")],["lose",TX("goal.lose")],["build",TX("goal.build")],["stamina",TX("goal.stamina")]],"goal",pf.goal)}
-        ${canSwitchFit()?row(TX("set.level"),shownLevels().map(l=>[l.id,l.name+(levelReady(l.id)?"":TX("set.soon"))]),"level",level()):""}
+        ${levelRow()}
         ${row(TX("set.place"),[["gym",TX("set.gym")],["home",TX("set.home")]],"place",pf.place)}
         ${row(TX("set.freq"),[[2,TX("set.d2")],[3,TX("set.d3")],[4,TX("set.d4")],[5,TX("set.d5")]],"days",pf.days)}
 
@@ -3963,7 +4004,7 @@ function bind(){
   on("[data-a2hs-on]", ()=>{ S.extras=S.extras||{}; delete S.extras.a2hs; save(); go("home"); });
 
   /* 強度切り替え */
-  on("[data-level]",el=>{ if(!canSwitchFit()) return;
+  on("[data-level]",el=>{ if(!canToggleFit()) return;
     S.level=el.dataset.level; if(S.profile) S.profile.level=S.level; save(); render(); });
 
   /* 種目詳細 */
@@ -4011,6 +4052,13 @@ function bind(){
   on("[data-set]",el=>{
     const k=el.dataset.set; let v=el.dataset.val;
     if(k==="lang"){ setLang(v); return; }
+    /* アプリのみの方のメニュー変更は1回だけ。押し間違いを防ぐため確認を出す */
+    if(k==="level" && !isCoach()){
+      if(v===level() || !levelReady(v)) return;
+      if(switchUsed()) return;
+      if(!confirm(TX("set.levelAsk", levelName(v), levelName(level())))) return;
+      markSwitched(); lockLevel(v);
+    }
     if(k==="days") v=+v;
     if(!S.profile) S.profile={goal:"tone",level:"normal",place:"home",days:3};
     S.profile[k]=v; if(k==="level") S.level=v;
