@@ -1121,6 +1121,11 @@ const SHOW_LANG = false;
    一覧を出したくなったら true に戻す */
 const SHOW_VIDEO_LIST = false;
 
+/* コミュニティ（月額330円）。中身は作ってあるが、やり方を決めてからにするので
+   まだ出さない。出すときは true にして、BIZ.payFan に Stripe の決済リンク、
+   BIZ.ig に naru の Instagram のユーザー名を入れる */
+const SHOW_FAN = false;
+
 const LANGS = [["ja","日本語"],["en","English"]];
 function lang(){
   if(!SHOW_LANG) return "ja";
@@ -2127,7 +2132,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-6",
+  build: "2026.11.22-7",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2521,7 +2526,7 @@ let RENDER_DAY = "";
 function render(){
   RENDER_DAY = todayKey();
   if(ACCESS.on && !unlocked() && current!=="lp" && current!=="gate"
-     && current!=="community") current="gate";
+     && !(SHOW_FAN && current==="community")) current="gate";
   if(current==="gate") app.innerHTML = viewGate();
   else if(current==="lp") app.innerHTML = viewLP();
   else if(current==="ob") app.innerHTML = viewOB();
@@ -2534,7 +2539,7 @@ function render(){
   else if(current==="settings") app.innerHTML = viewSettings();
   else if(current==="guide") app.innerHTML = viewGuide();
   else if(current==="videos") app.innerHTML = SHOW_VIDEO_LIST ? viewVideos() : viewHome();
-  else if(current==="community") app.innerHTML = viewCommunity();
+  else if(current==="community") app.innerHTML = SHOW_FAN ? viewCommunity() : viewGate();
   bind();
 }
 
@@ -3946,11 +3951,11 @@ function viewGate(){
     ${""/* 先着10名様の無料コーチング特典。コーチングつきプラン（先着5名）と
          矛盾するため外してある。戻すときは下の1行を有効にする。
       `<div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>` */}
-    <button class="fanbox" data-go="community">
+    ${SHOW_FAN?`<button class="fanbox" data-go="community">
       <b>${TX("fan.bannerH")}</b>
       <span>${esc(TX("fan.banner", BIZ.fanPrice.toLocaleString()))}</span>
       <i>${TX("fan.more")}</i>
-    </button>
+    </button>`:""}
 
     <p class="gate-consent">${TX("gate.consent",
        `<button data-legal="notice">${TX("doc.notice")}</button>`)}</p>
