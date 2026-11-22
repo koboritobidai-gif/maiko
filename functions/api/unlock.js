@@ -15,6 +15,9 @@
 
 const DAYS = 7;                       // 何日ごとに Stripe へ確認しに行くか
 const COACH_FROM = 10000;             // この金額以上の申し込みは「コーチングつき」とみなす
+const PROGRAM_FROM = 1000;            // この金額未満は「コミュニティだけ」の方（月額330円）
+                                      // ※ ここを下回る申し込みでトレーニングを開かせない。
+                                      //    330円でプログラム全部が見られてしまうのを防ぐ。
 const OK_STATUS = ["active", "trialing", "past_due"];
 /* past_due（カード期限切れなどで引き落とし失敗中）も通す。
    Stripe が自動で再試行している期間なので、ここで締め出すと
@@ -48,7 +51,10 @@ export async function onRequestPost({ request, env }) {
   if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email) || email.length > 254)
     return json({ ok: false, reason: "format" }, 400);
 
-  let found = false, plan = "std";
+  /* 生きている申し込みのうち、いちばん高い金額で判定する。
+     コミュニティ（330円）とプログラム（3,500円）の両方に入っている方が
+     いても、正しくプログラムの方で通るようにするため。 */
+  let found = false, top = 0;
   try {
     /* Stripe ではメールアドレスは一意ではないので、同じアドレスの顧客が
        複数いることがある。1件でも生きていれば通す。 */
@@ -58,16 +64,17 @@ export async function onRequestPost({ request, env }) {
       for (const s of (subs.data || [])) {
         if (!OK_STATUS.includes(s.status)) continue;
         found = true;
-        /* コーチングつきかどうかは「金額」で見分ける。
-           スタンダード 3,500 / 3,900 円、コーチング 14,800 / 19,800 円。
+        /* どのプランかは「金額」で見分ける。
+           コミュニティ 330 円、スタンダード 3,500 / 3,900 円、
+           コーチング 14,800 / 19,800 円。
            価格IDを直接書くと、値段を変えるたびにここも直すことになるので、
-           しきい値（1万円）で判定している。 */
+           しきい値（1,000円・1万円）で判定している。 */
         for (const it of ((s.items && s.items.data) || [])) {
           const yen = (it.price && it.price.unit_amount) || 0;
-          if (yen >= COACH_FROM) plan = "coach";
+          if (yen > top) top = yen;
         }
       }
-      if (plan === "coach") break;
+      if (top >= COACH_FROM) break;
     }
   } catch (e) {
     /* Stripe に届かない／キーが間違っている。
@@ -78,6 +85,11 @@ export async function onRequestPost({ request, env }) {
 
   if (!found) return json({ ok: false, reason: "nosub" }, 200);
 
+  /* コミュニティ（月額330円）だけの方は、トレーニングプログラムは開けない。
+     ここを通すと、3,500円のプログラムが330円で見られてしまう。 */
+  if (top < PROGRAM_FROM) return json({ ok: false, reason: "fanonly" }, 200);
+
+  const plan = top >= COACH_FROM ? "coach" : "std";
   const until = Date.now() + DAYS * 864e5;
   await note(env, request, email);
   return json({ ok: true, until: until, days: DAYS, plan: plan });

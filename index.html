@@ -1473,6 +1473,9 @@ So — let's begin today.`],
                   "Enter the email address you used when you signed up. No password needed."],
 "gate.emailNo": ["このメールアドレスでのお申し込みが見つかりませんでした。入力の間違いか、解約されている可能性があります。",
                  "We could not find a live subscription for that address. Check the spelling, or it may have been cancelled."],
+/* コミュニティ（月額330円）だけの方。トレーニングプログラムは別のお申し込みが要る */
+"gate.emailFan":["コミュニティ（月額330円）のご登録を確認しました。トレーニングプログラムのご利用には、別途お申し込みが必要です。上のプランからお進みください。",
+                 "You are signed up for the community (330 yen a month). The training programme is a separate plan \u2014 please choose one above."],
 "gate.emailErr":["いま確認ができませんでした。少し時間をおいて、もう一度お試しください。",
                  "We could not check just now. Please try again in a moment."],
 "gate.emailWait":["確認しています…","Checking…"],
@@ -2072,7 +2075,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.21-1",
+  build: "2026.11.22-1",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -3758,7 +3761,9 @@ async function buyCheck(){
     go(S.profile ? "home" : "ob");
     return;
   }
-  if(msg) msg.textContent = res.r === "nosub" ? TX("buy.no") : TX("buy.err", BIZ.email||"");
+  if(msg) msg.textContent = res.r === "nosub" ? TX("buy.no")
+                          : res.r === "fan"   ? TX("gate.emailFan")
+                          : TX("buy.err", BIZ.email||"");
 }
 
 /* ── メールアドレスで確認する ──────────────────────────────
@@ -3773,6 +3778,7 @@ async function checkEmail(email){
     const d = await r.json().catch(()=>({}));
     if(d && d.ok){ return {r:"ok", until:d.until, plan:d.plan||"std"}; }
     if(d && d.reason==="nosub") return {r:"nosub"};
+    if(d && d.reason==="fanonly") return {r:"fan"};   /* コミュニティだけの方 */
     return {r:"err"};
   }catch(e){ return {r:"err"}; }
 }
@@ -3786,9 +3792,10 @@ async function refreshAccess(){
   if(!a || !a.email || !a.until || Date.now() < a.until) return;
   const res = await checkEmail(a.email);
   if(res.r==="ok"){ S.access.until = res.until; S.access.plan = res.plan; save(); return; }
-  if(res.r==="nosub"){
+  if(res.r==="nosub" || res.r==="fan"){
     S.access = null; save();
-    gateErr = TX("gate.emailNo"); go("gate");
+    gateErr = res.r==="fan" ? TX("gate.emailFan") : TX("gate.emailNo");
+    go("gate");
   }
 }
 let gateVal="", gateErr="", gateMail="", gateBusy=false, gatePw=false;
@@ -3817,8 +3824,12 @@ async function submitMail(){
     go(S.profile ? "home" : "ob");
     return;
   }
-  gateErr = res.r === "nosub" ? TX("gate.emailNo") : TX("gate.emailErr");
-  if(res.r !== "nosub") gatePw = true;   /* 確認できないときはパスワードの道を出す */
+  gateErr = res.r === "nosub" ? TX("gate.emailNo")
+          : res.r === "fan"   ? TX("gate.emailFan")
+          : TX("gate.emailErr");
+  /* 確認できないときだけパスワードの道を出す。
+     コミュニティだけの方は「確認できない」ではないので出さない */
+  if(res.r !== "nosub" && res.r !== "fan") gatePw = true;
   render();
 }
 
