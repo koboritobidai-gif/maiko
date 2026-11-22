@@ -568,7 +568,10 @@ const EX = {
   "jump-lunge":{en:"Jumping Reverse Lunge",ja:"ジャンピング・リバースランジ",video:{src:"videos/jump-lunge.mp4",poster:"videos/jump-lunge.jpg"},
     cues:["深く後ろに踏み込んでから真上に跳ぶ","空中で前後の足を入れ替える","着地はやわらかく、音を立てない"],
     miss:["膝が内に入る","上体が前に倒れる","着地で膝に落ちる"],breath:"跳ぶ瞬間に吐く"},
-  "toe-touch":{en:"Toe Touch",ja:"トゥータッチ",video:{src:"videos/toe-touch.mp4",poster:"videos/toe-touch.jpg"},
+  /* 2026/11/22 差し替え：1本の中でトゥータッチのあとマウンテンクライマーまで
+     やってしまっていたので、トゥータッチだけに切った。
+     ?v=2 は、すでに古いほうを読み込んだ端末に取り直させるため */
+  "toe-touch":{en:"Toe Touch",ja:"トゥータッチ",video:{src:"videos/toe-touch.mp4?v=2",poster:"videos/toe-touch.jpg?v=2"},
     cues:["お尻を高く上げた姿勢をつくる","対角の手でつま先にタッチする","背中は長く保ったまま"],
     miss:["膝が深く曲がる","背中が丸まる","勢いだけで振る"],breath:"タッチするときに吐く"},
   "db-reverse-lunge":{en:"Dumbbell Reverse Lunge",ja:"ダンベル・リバースランジ",video:{src:"videos/db-reverse-lunge.mp4",poster:"videos/db-reverse-lunge.jpg"},
@@ -2118,7 +2121,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-2",
+  build: "2026.11.22-3",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
