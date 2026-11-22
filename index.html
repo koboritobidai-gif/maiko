@@ -1809,13 +1809,12 @@ const PROGRAM = {
         P("toe-touch","10 rep")]}]},
 
     {t:"Bonus Challenge", ja:"お楽しみボーナスチャレンジ（やれる人だけ！）／ または休養",
-     jaEn:"Bonus challenge — only if you are up for it, or rest",
-     note:"【全身トータル】カウントダウン・ラダー。最初は各10回、次は各8回、6回、4回、最後は各2回と減らしていきます（休憩は自由）。V-up は Tuck up に替えてもOK。回数がどんどん減るので、ゲーム感覚で最後まで楽しく追い込めます！",
-     noteEn:"A countdown ladder: 10 of each, then 8, 6, 4 and finally 2 (rest as you like). Swap the V-ups for tuck-ups if you prefer. The numbers keep dropping, so it stays fun right to the end.", parts:[
-      {k:"COUNTDOWN", n:"10-8-6-4-2", items:[
-        P("air-squat","10 → 2 rep"),
-        P("push-up","10 → 2 rep"),
-        P("v-up","10 → 2 rep")]}]}
+     jaEn:"Bonus challenge — only if you are up for it, or rest", parts:[
+      {k:"TRAINING", r:4, note:"1min Rest　4周こなそう！　1周ごとに、1分間休憩をいれてください。",
+       noteEn:"1 min rest between rounds. Four rounds — take a one-minute break after each one.", items:[
+        P("air-squat","10 rep"),
+        P("push-up","10 rep"),
+        P("tuck-up","10 rep")]}]}
   ],
   fit2: null,   /* 準備中。スプレッドシートにも Fit 2 の中身はまだありません */
 
@@ -2121,7 +2120,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-3",
+  build: "2026.11.22-4",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
