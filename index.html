@@ -1530,6 +1530,9 @@ So — let's begin today.`],
 "fan.joinH"   : ["入会の流れ","How to join"],
 "fan.s1"      : ["下のボタンからお申し込み（月額{0}円）","Sign up with the button below ({0} yen a month)"],
 "fan.s2"      : ["お申し込みのときに、Instagram の ID をご記入ください","Enter your Instagram ID when you sign up"],
+/* フォローしていないと、限定のストーリーズが流れてきません */
+"fan.s2b"     : ["NARU のインスタ（{0}）をフォローしてください","Follow NARU on Instagram ({0})"],
+"fan.s2c"     : ["NARU のインスタをフォローしてください","Follow NARU on Instagram"],
 "fan.s3"      : ["NARU が「親しい友達」に追加します（2〜3日いただきます）",
                  "NARU adds you to his close friends list (please allow a couple of days)"],
 "fan.s4"      : ["限定のストーリーズが届くようになります","Members-only stories start arriving"],
@@ -2099,6 +2102,10 @@ const BIZ = {
      null のあいだは、アプリには「準備中」と出る */
   payFan: null,
   fanPrice: 330,
+  /* naru の Instagram のユーザー名（@ は付けない）。
+     入れると、コミュニティのページの入会の流れに「@〇〇 をフォローしてください」と出る。
+     null のあいだは「NARU のインスタをフォローしてください」とだけ出る */
+  ig: null,
 
   /* Stripe カスタマーポータル。お客様が自分で解約できるページ。
      【いまは画面に出していない】解約はこちらで受けて、Stripe の管理画面から
@@ -2120,7 +2127,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-5",
+  build: "2026.11.22-6",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -3994,8 +4001,13 @@ function viewCommunity(){
       `<li><b>${esc(TX(a))}</b><span>${esc(TX(b))}</span></li>`).join("")}</ul>
 
     <div class="eyebrow" style="margin-top:26px">${TX("fan.joinH")}</div>
-    <ol class="fansteps">${["fan.s1","fan.s2","fan.s3","fan.s4"].map((k,i)=>
-      `<li><span class="n">${i+1}</span><span>${esc(TX(k, yen))}</span></li>`).join("")}</ol>
+    <ol class="fansteps">${[
+      TX("fan.s1", yen),
+      TX("fan.s2"),
+      BIZ.ig ? TX("fan.s2b", "@"+BIZ.ig) : TX("fan.s2c"),
+      TX("fan.s3"),
+      TX("fan.s4")
+    ].map((t,i)=>`<li><span class="n">${i+1}</span><span>${esc(t)}</span></li>`).join("")}</ol>
 
     <div class="note" style="margin-top:18px">
       <div class="k">${TX("fan.noteH")}</div>
