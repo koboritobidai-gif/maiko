@@ -1503,6 +1503,40 @@ So — let's begin today.`],
                  "No live subscription for that address. You can sign up with the button below."],
 "buy.err"     : ["いま確認ができませんでした。少し時間をおいてお試しいただくか、{0} までご連絡ください。",
                  "We could not check just now. Please try again shortly, or contact {0}."],
+/* コミュニティ（月額330円）。トレーニングプログラムとは別物 */
+"fan.bannerH" : ["まずはコミュニティから 🌱","Start with the community 🌱"],
+"fan.banner"  : ["「いきなりトレーニングは少しハードルが高い」「まずは NARU の活動を応援したい」という方へ。月額{0}円のコミュニティもあります。",
+                 "Not ready to train yet, or just want to follow what NARU is doing? There is a community for {0} yen a month."],
+"fan.more"    : ["コミュニティを見る →","See the community →"],
+"fan.title"   : ["コミュニティ","Community"],
+"fan.per"     : ["月（税込）・いつでも解約できます","month \u00b7 cancel any time"],
+"fan.intro"   : ["ポジティブな仲間とつながって、ゆるく続けるための場所です。\nトレーニングをしていない方も、応援だけの方も歓迎します。",
+                 "A place to stay connected and keep moving, at your own pace.\nYou are welcome even if you are not training yet."],
+"fan.i1t"     : ["イベントの先行案内","First to hear about events"],
+"fan.i1b"     : ["日本でのランイベントやワークショップを、いちばん先にお知らせします。会員価格でご参加いただけます。",
+                 "Run events and workshops in Japan, announced here first \u2014 at a members\u2019 price."],
+"fan.i2t"     : ["月間チャレンジ","Monthly challenge"],
+"fan.i2b"     : ["毎月ひとつ、みんなで取り組むお題を出します。ひとりだと続かないことも、仲間がいれば続きます。",
+                 "One thing to take on together each month. What you drop on your own, you keep up with others."],
+"fan.i3t"     : ["トレーニングの豆知識","Training know-how"],
+"fan.i3b"     : ["体・脳・心のこと、NARU が実際にやっていること。短く、すぐ使えるものだけ。",
+                 "Body, brain and mind \u2014 what NARU actually does. Short, and usable today."],
+"fan.i4t"     : ["活動の裏側","Behind the scenes"],
+"fan.i4b"     : ["メルボルンでの日常や、日本に帰るまでの挑戦。ここだけの話をします。",
+                 "Daily life in Melbourne, and the road back to Japan. Things said only here."],
+"fan.joinH"   : ["入会の流れ","How to join"],
+"fan.s1"      : ["下のボタンからお申し込み（月額{0}円）","Sign up with the button below ({0} yen a month)"],
+"fan.s2"      : ["お申し込みのときに、Instagram の ID をご記入ください","Enter your Instagram ID when you sign up"],
+"fan.s3"      : ["NARU が「親しい友達」に追加します（2〜3日いただきます）",
+                 "NARU adds you to his close friends list (please allow a couple of days)"],
+"fan.s4"      : ["限定のストーリーズが届くようになります","Members-only stories start arriving"],
+"fan.noteH"   : ["ご注意","Please note"],
+"fan.note"    : ["トレーニングプログラム（14日間のメニュー・実演動画・記録）は含まれません。プログラムをご利用になりたい方は、前の画面のプランからお申し込みください。",
+                 "The training programme (the 14-day menu, demo videos and logging) is not included. For that, choose a plan on the previous screen."],
+"fan.buy"     : ["コミュニティに参加する","Join the community"],
+"fan.soon"    : ["ただいま準備中です。もうしばらくお待ちください。","Opening soon \u2014 thank you for your patience."],
+"fan.cancel"  : ["解約をご希望のときは、{0} までご連絡ください。こちらで手続きをして、完了をお知らせします。",
+                 "To cancel, email {0}. We will do it for you and confirm when it is done."],
 "doc.tokusho" : ["特定商取引法に基づく表記","Legal notice (Japan)"],
 "doc.privacy" : ["プライバシーポリシー","Privacy Policy"],
 "doc.notice"  : ["ご利用にあたって","Before you start"],
@@ -2055,6 +2089,15 @@ const BIZ = {
   /* コーチングつき（6名様以降・19,800円 / 月）の支払いリンク。
      5名埋まったら PLANS の price を 19800 にして、pay をこちらへ差し替える */
   payCoachFull: "https://buy.stripe.com/eVq9AVbugd4i0Scehf87K04",
+  /* コミュニティ（月額330円）の支払いリンク。
+     Stripe で「月額330円のサブスク」のリンクを作って、ここに貼る。
+     ・サブスク（継続）で作ること。一回払いにすると翌月から止まる
+     ・決済リンクの「カスタムフィールド」で Instagram の ID を必須にしておく
+       （あとから聞く手間が消える）
+     null のあいだは、アプリには「準備中」と出る */
+  payFan: null,
+  fanPrice: 330,
+
   /* Stripe カスタマーポータル。お客様が自分で解約できるページ。
      【いまは画面に出していない】解約はこちらで受けて、Stripe の管理画面から
      止める運用にしたため（2026/11/18）。こちらで手続きするときの確認用に残してある。
@@ -2075,7 +2118,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-1",
+  build: "2026.11.22-2",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -2468,7 +2511,8 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 let RENDER_DAY = "";
 function render(){
   RENDER_DAY = todayKey();
-  if(ACCESS.on && !unlocked() && current!=="lp" && current!=="gate") current="gate";
+  if(ACCESS.on && !unlocked() && current!=="lp" && current!=="gate"
+     && current!=="community") current="gate";
   if(current==="gate") app.innerHTML = viewGate();
   else if(current==="lp") app.innerHTML = viewLP();
   else if(current==="ob") app.innerHTML = viewOB();
@@ -2481,6 +2525,7 @@ function render(){
   else if(current==="settings") app.innerHTML = viewSettings();
   else if(current==="guide") app.innerHTML = viewGuide();
   else if(current==="videos") app.innerHTML = SHOW_VIDEO_LIST ? viewVideos() : viewHome();
+  else if(current==="community") app.innerHTML = viewCommunity();
   bind();
 }
 
@@ -3892,6 +3937,12 @@ function viewGate(){
     ${""/* 先着10名様の無料コーチング特典。コーチングつきプラン（先着5名）と
          矛盾するため外してある。戻すときは下の1行を有効にする。
       `<div class="gate-bonus"><b>${TX("gate.bonusH")}</b>${esc(TX("gate.bonus"))}</div>` */}
+    <button class="fanbox" data-go="community">
+      <b>${TX("fan.bannerH")}</b>
+      <span>${esc(TX("fan.banner", BIZ.fanPrice.toLocaleString()))}</span>
+      <i>${TX("fan.more")}</i>
+    </button>
+
     <p class="gate-consent">${TX("gate.consent",
        `<button data-legal="notice">${TX("doc.notice")}</button>`)}</p>
 
@@ -3919,6 +3970,42 @@ function viewGate(){
       <button data-legal="privacy">${TX("doc.privacy")}</button>
       <button data-legal="notice">${TX("doc.notice")}</button>
     </div>
+  </div></div></div>`;
+}
+
+/* =========================================================================
+   コミュニティ（月額330円）
+   トレーニングプログラムとは別物。申し込み前の方にも見てもらうので、
+   壁（ゲート）の手前から開ける。
+   ========================================================================= */
+const FAN_ITEMS = [["fan.i1t","fan.i1b"],["fan.i2t","fan.i2b"],
+                   ["fan.i3t","fan.i3b"],["fan.i4t","fan.i4b"]];
+function viewCommunity(){
+  const yen = BIZ.fanPrice.toLocaleString();
+  return `<div class="screen on"><div class="scroll"><div class="pad gate">
+    ${langSwitch()}
+    <h1 class="h1" style="margin-top:2px">${TX("fan.title")}</h1>
+    <p class="fanprice"><b class="tnum">${yen}</b><i>円</i><span>/ ${TX("fan.per")}</span></p>
+    <p class="sub" style="margin-top:10px;line-height:1.85">${brk(TX("fan.intro"))}</p>
+
+    <ul class="gate-pts" style="margin-top:20px">${FAN_ITEMS.map(([a,b])=>
+      `<li><b>${esc(TX(a))}</b><span>${esc(TX(b))}</span></li>`).join("")}</ul>
+
+    <div class="eyebrow" style="margin-top:26px">${TX("fan.joinH")}</div>
+    <ol class="fansteps">${["fan.s1","fan.s2","fan.s3","fan.s4"].map((k,i)=>
+      `<li><span class="n">${i+1}</span><span>${esc(TX(k, yen))}</span></li>`).join("")}</ol>
+
+    <div class="note" style="margin-top:18px">
+      <div class="k">${TX("fan.noteH")}</div>
+      <p>${esc(TX("fan.note"))}</p>
+    </div>
+
+    ${BIZ.payFan
+      ? `<button class="btn btn-orange" data-buy="${esc(BIZ.payFan)}">${TX("fan.buy")}</button>`
+      : `<button class="btn btn-ghost" style="margin-top:12px" disabled>${TX("fan.soon")}</button>`}
+    <div class="pcy">${BIZ.email?esc(TX("fan.cancel", BIZ.email)):""}</div>
+
+    <button class="btn btn-ghost" style="margin-top:18px" data-go="gate">${TX("train.back")}</button>
   </div></div></div>`;
 }
 
@@ -4614,6 +4701,25 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
 #updbar span{flex:1;min-width:0}
 #updbar button{flex:none;background:#0B0B0A;color:var(--olive);border-radius:999px;
   padding:8px 15px;font-size:12.5px;font-weight:800}
+
+/* コミュニティ（月額330円） */
+.fanbox{display:block;width:100%;text-align:left;margin-top:14px;
+  background:var(--surface);border:1px solid rgba(202,255,60,.28);
+  border-radius:var(--r-lg);padding:14px 16px}
+.fanbox b{display:block;font-size:13.5px;font-weight:800;color:var(--olive)}
+.fanbox span{display:block;margin-top:5px;font-size:12.5px;line-height:1.75;
+  color:var(--ink-soft);text-wrap:pretty;word-break:auto-phrase}
+.fanbox i{display:block;margin-top:8px;font-size:12px;font-weight:800;
+  font-style:normal;color:var(--olive-dark)}
+.fanprice{margin:12px 0 0;display:flex;align-items:baseline;gap:4px;color:var(--olive)}
+.fanprice b{font-size:38px;font-weight:800;line-height:1}
+.fanprice i{font-style:normal;font-size:15px;font-weight:700}
+.fanprice span{margin-left:4px;font-size:12.5px;color:var(--ink-mute);font-weight:700}
+.fansteps{list-style:none;margin:10px 0 0;padding:0}
+.fansteps li{display:flex;gap:11px;align-items:flex-start;margin-bottom:11px;
+  font-size:13px;line-height:1.75;text-wrap:pretty;word-break:auto-phrase}
+.fansteps .n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--olive);
+  color:#0B0B0A;font-size:11.5px;font-weight:800;text-align:center;line-height:22px;margin-top:2px}
 
 /* 確認モード（運営だけ） */
 .peekbar{display:flex;align-items:center;gap:10px;padding:8px 16px;
