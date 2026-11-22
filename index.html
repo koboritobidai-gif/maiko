@@ -1419,6 +1419,14 @@ addTxt({
 "train.wodT"  : ["この日の解説","Today\u2019s briefing"],
 "train.wodS"  : ["naru が、今日の狙いと進め方を話しています",
                  "NARU on what today is for, and how to work through it"],
+/* 自己紹介。メッセージの上に出す */
+"gate.profH"  : ["NARU｜NARU FIT DAILY 主宰","NARU \u2014 founder of NARU FIT DAILY"],
+"gate.prof1"  : ["トレーニング歴11年（ボディメイク・ハイブリッド競技出場）",
+                 "11 years of training \u2014 bodybuilding and hybrid competitions"],
+"gate.prof2"  : ["LGBTQ+スピーカーとして講演もしています",
+                 "Speaks publicly as an LGBTQ+ advocate"],
+"gate.prof3"  : ["米国・NZ留学経験あり｜日本語＆英語でサポートOK",
+                 "Studied in the US and New Zealand \u2014 support in Japanese and English"],
 "gate.msgH"   : ["MESSAGE FROM NARU","MESSAGE FROM NARU"],
 "gate.msg"    : [`「動ける身体、そして効率よく習慣化させる為のトレーニングツール」です！
 
@@ -2132,7 +2140,7 @@ const BIZ = {
      見分けるために使う（設定画面のいちばん下に出る） */
   /* バージョン表示。ここを変えたら必ず `python3 tools/version.py` を実行して
      version.json をそろえる（アプリはこれを見て更新に気づく） */
-  build: "2026.11.22-7",
+  build: "2026.11.23-1",
   /* 適格請求書（インボイス）発行事業者の登録番号。
      お客様が一般の方だけなら登録は不要なので、当面は null のまま。
      登録したら "T1234567890123" の形で入れると、特商法の表記に行が出ます */
@@ -3915,6 +3923,12 @@ function viewGate(){
 
     <div class="gate-msg">
       <img class="photo" src="img/naru.jpg" alt="杉田 成美（NARU）" width="880" height="1100">
+      <div class="prof">
+        <b>${esc(TX("gate.profH"))}</b>
+        <ul>${[["🏋️","gate.prof1"],["🏳️‍🌈","gate.prof2"],
+               ["🌏","gate.prof3"]].map(([em,k])=>
+          `<li><span class="em">${em}</span><span>${esc(TX(k))}</span></li>`).join("")}</ul>
+      </div>
       <div class="eyebrow">${TX("gate.msgH")}</div>
       ${TX("gate.msg").trim().split(/\n\s*\n/).map(x=>`<p>${esc(x.trim())}</p>`).join("")}
       <div class="sign">杉田 成美 — NARU</div>
@@ -4600,6 +4614,17 @@ code{background:rgba(226,236,206,.07);border-radius:4px;padding:1px 5px;font-siz
   border-radius:var(--r-lg);padding:18px 17px;overflow:hidden}
 .gate-msg .photo{display:block;width:calc(100% + 34px);max-width:none;height:auto;
   margin:-18px -17px 16px;aspect-ratio:1/1;object-fit:cover;object-position:50% 18%}
+/* 自己紹介（写真のすぐ下） */
+.gate-msg .prof{margin:0 0 16px;padding-bottom:15px;
+  border-bottom:1px solid rgba(226,236,206,.09)}
+.gate-msg .prof b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);
+  line-height:1.55;text-wrap:balance}
+.gate-msg .prof ul{list-style:none;margin:10px 0 0;padding:0}
+.gate-msg .prof li{display:flex;gap:9px;align-items:flex-start;margin:0 0 6px;
+  font-size:12.5px;line-height:1.72;color:var(--ink-soft);
+  text-wrap:pretty;word-break:auto-phrase}
+.gate-msg .prof li:last-child{margin-bottom:0}
+.gate-msg .prof .em{flex:none;font-size:13.5px;line-height:1.6}
 .gate-msg p{margin:0 0 11px;font-size:13.5px;line-height:1.95;color:var(--ink-soft)}
 .gate-msg p:first-of-type{color:var(--ink);font-weight:700;font-size:14.5px}
 .gate-msg .sign{margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,236,206,.08);
